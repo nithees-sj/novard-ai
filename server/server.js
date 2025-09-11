@@ -21,6 +21,12 @@ const {
   deleteNote,
   saveQuizResults
 } = require('./controllers/notesController');
+const { 
+  getUserVideoRequests, 
+  createVideoRequest, 
+  deleteVideoRequest, 
+  recommendVideos 
+} = require('./controllers/videosController');
 
 
 const app = express();
@@ -59,6 +65,12 @@ app.post('/generate-quiz', generateQuiz);
 app.get('/notes/:userId', getUserNotes);
 app.delete('/notes/:noteId', deleteNote);
 app.post('/save-quiz-results', saveQuizResults);
+
+// Video requests routes
+app.get('/video-requests/:userId', getUserVideoRequests);
+app.post('/video-requests', createVideoRequest);
+app.delete('/video-requests/:videoRequestId', deleteVideoRequest);
+app.post('/recommend-videos', recommendVideos);
 
 const PORT = 5000;
 app.listen(PORT, () => {
