@@ -1,0 +1,143 @@
+{
+  "Header": {
+    "title": "Your AI-Powered Partner for Career Growth and Doubt Solving",
+    "paragraph": "Unlocking Potential is an AI-powered platform that clears doubts instantly while guiding personalised career growth through tailored insights, curated resources, and continuous support."
+  },
+  "About": {
+    "paragraph": "Our platform empowers users to overcome learning challenges through intelligent doubt-solving tools and interactive community support. Whether facing a tricky coding problem or seeking clarification on a concept, users can post doubts, engage in AI-powered forums, and receive instant solutions from our chatbot. With the integrated PDF loader, users can upload documents, get summarized notes, and generate questions for deeper understanding—all designed to help users learn efficiently and confidently.",
+    "Why": [
+      "AI-Powered Doubt Solving",
+     "Instant Concept Clarification",
+     "Community Forums for Questions",
+     "PDF Loader for Summarized Notes"
+  ],
+    "Why2": [
+     "Empowering Your Learning Journey",
+      "Comprehensive Doubt Resolution",
+     "Actionable Knowledge Insights",
+    "Collaborative Problem Solving"
+  ]
+  },
+  
+  "Gallery": [
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/01-large.jpg",
+      "smallImage": "img/portfolio/01-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/02-large.jpg",
+      "smallImage": "img/portfolio/02-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/03-large.jpg",
+      "smallImage": "img/portfolio/03-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/04-large.jpg",
+      "smallImage": "img/portfolio/04-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/05-large.jpg",
+      "smallImage": "img/portfolio/05-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/06-large.jpg",
+      "smallImage": "img/portfolio/06-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/07-large.jpg",
+      "smallImage": "img/portfolio/07-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/08-large.jpg",
+      "smallImage": "img/portfolio/08-small.jpg"
+    },
+    {
+      "title": "Project Title",
+      "largeImage": "img/portfolio/09-large.jpg",
+      "smallImage": "img/portfolio/09-small.jpg"
+    }
+  ],
+    "Services": [
+    {
+      "name": "Doubt Submission",
+      "text": "Easily post your doubts with detailed descriptions and get precise answers from experts and AI-powered tools."
+   },
+   {
+     "name": "AI Doubt Solver Chatbot",
+     "text": "Interact with our intelligent chatbot to get instant clarifications and explanations for your questions."
+   },
+   {
+     "name": "Community Forums",
+      "text": "Engage with a vibrant community to discuss doubts, share knowledge, and collaborate on problem-solving."
+    },
+    {
+     "name": "PDF Loader & Summarizer",
+     "text": "Upload PDFs to extract key points, summarize content, and generate questions for better understanding."
+    },
+    {
+      "name": "Learning Insights",
+      "text": "Receive personalized learning recommendations based on the doubts you solve and topics you explore."
+   },
+   {
+      "name": "Knowledge Tracking",
+     "text": "Keep track of your solved doubts and progress to stay motivated and improve continuously."
+    }
+  ],
+
+  "Team": [
+    {
+      "img": "img/team/male.png",
+      "name": "Nithees SJ",
+      "linkedin":"https://www.linkedin.com/in/nithees-s-j-524262366/"
+    },
+    {
+      "img": "img/team/male.png",
+      "name": "Harsith S",
+      "linkedin":"https://www.linkedin.com/in/nithees-s-j-524262366/"
+    },
+    {
+      "img": "img/team/male.png",
+      "name": "Haraharasuthan P",
+      "linkedin":"https://www.linkedin.com/in/nithees-s-j-524262366/"
+    }
+  ],
+  "Contact": {
+    "address": "4321 California St, San Francisco, CA 12345 ",
+    "phone": "+1 123 456 1234",
+    "email": "info@company.com",
+    "facebook": "fb.com",
+    "twitter": "twitter.com",
+    "youtube": "youtube.com"
+  },
+  "Features": [
+    {
+      "icon": "fa fa-cogs",
+      "title": "AI-Powered Doubt Chatbot",
+      "text": "Clear doubts instantly with a personalised chatbot that provides step-by-step explanations across subjects."
+    },
+    {
+      "icon": "fa fa-video",
+      "title": "Smart Video Sessions",
+      "text": "Watch preloaded videos recommended based on your search, making learning quick and effective."
+    },
+    {
+      "icon": "fa fa-comments",
+      "title": "AI Forum",
+      "text": "Engage in an interactive forum where students can post doubts, share ideas, and receive AI-assisted responses."
+    },
+    {
+      "icon": "fa fa-file-alt",
+      "title": "AI Query Solver",
+      "text": "Upload PDFs, enter text, or submit questions directly to get instant explanations, solutions, and improvement tips."
+    }
+  ]
+}
