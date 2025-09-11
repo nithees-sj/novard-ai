@@ -16,6 +16,7 @@ import Career from "./pages/Career";
 import Doubts from "./pages/Doubts";
 import Forum from "./pages/Forum";
 import Video from "./pages/Video";
+import YouTubeVideos from "./pages/YouTubeVideos";
 import Notes from "./pages/Notes";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -131,6 +132,18 @@ export default function App() {
         path="/notes"
         element={
           user ? <Notes /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/youtube-videos"
+        element={
+          user ? <YouTubeVideos /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/video-summarizer"
+        element={
+          user ? <Video /> : <Navigate to="/" replace />
         }
       />
     </Routes>
