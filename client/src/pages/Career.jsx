@@ -74,12 +74,12 @@ const Career = () => {
     featuresContainer: {
       display: 'grid',
       gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '2rem',
-      maxWidth: '800px',
+      gap: '3rem',
+      maxWidth: '900px',
       width: '100%',
       justifyContent: 'center',
       margin: '0 auto',
-      padding: '0 1rem',
+      padding: '0 2rem',
     },
     featureCard: {
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
