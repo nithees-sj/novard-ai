@@ -11,6 +11,16 @@ const {getProjectCareerIds} = require('./controllers/projectsController');
 const {deleteProjectsByCareer} = require('./controllers/projectsController'); 
 const { processResumePrompt, getResumeByCareer, getResumeCareerIds, deleteResumeByCareer } = require('./controllers/resumeController');
 const { processChatbotPrompt } = require('./controllers/chatbot');
+const { 
+  upload, 
+  uploadNotes, 
+  chatWithNotes, 
+  summarizeNotes, 
+  generateQuiz, 
+  getUserNotes,
+  deleteNote,
+  saveQuizResults
+} = require('./controllers/notesController');
 
 
 const app = express();
@@ -40,6 +50,15 @@ app.get('/api/resumes/career/careerIds', getResumeCareerIds);
 app.delete('/api/resumes/delete/:careerId', deleteResumeByCareer);
 
 app.post('/api/chatbot', processChatbotPrompt);
+
+// Notes routes
+app.post('/upload-notes', upload.single('pdf'), uploadNotes);
+app.post('/chat-with-notes', chatWithNotes);
+app.post('/summarize-notes', summarizeNotes);
+app.post('/generate-quiz', generateQuiz);
+app.get('/notes/:userId', getUserNotes);
+app.delete('/notes/:noteId', deleteNote);
+app.post('/save-quiz-results', saveQuizResults);
 
 const PORT = 5000;
 app.listen(PORT, () => {
