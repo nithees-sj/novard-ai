@@ -16,77 +16,118 @@ export const Navigationinner = ({ title }) => {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      padding: "10px 20px",
-      backgroundColor: "#f8f9fa",
-      borderBottom: "1px solid #ddd",
+      padding: "8px 20px",
+      background: "rgba(255,255,255,0.95)",
+      backdropFilter: "blur(10px)",
+      borderBottom: "1px solid rgba(229,231,235,0.8)",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+      position: "sticky",
+      top: 0,
+      zIndex: 1000,
+      minHeight: "60px",
     },
     logoContainer: {
       display: "flex",
       alignItems: "center",
     },
     logo: {
-      height: "30px",
+      height: "28px",
       marginRight: "10px",
+      borderRadius: "6px",
     },
     logoText: {
-      fontSize: "28px",
-      fontWeight: "bold",
-      color:'Black'
+      fontSize: "20px",
+      fontWeight: "700",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+      letterSpacing: "0.3px"
     },
     title: {
-      fontSize: "25px",
-      fontWeight: "bold",
+      fontSize: "18px",
+      fontWeight: "600",
       margin: 0,
+      color: "#4a5568",
     },
     userInfo: {
-      fontSize: "20px",
+      fontSize: "14px",
       display: "flex",
-      fontWeight: "bold",
+      fontWeight: "500",
       alignItems: "center",
       cursor: "pointer",
+      padding: "6px 12px",
+      borderRadius: "20px",
+      background: "rgba(102, 126, 234, 0.08)",
+      border: "1px solid rgba(102, 126, 234, 0.15)",
+      transition: "all 0.3s ease",
+    },
+    userInfoHover: {
+      background: "rgba(102, 126, 234, 0.2)",
+      transform: "translateY(-2px)",
+      boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)",
     },
     profilePicture: {
-      height: "40px",
-      width: "40px",
+      height: "30px",
+      width: "30px",
       borderRadius: "50%",
-      marginLeft: "10px",
+      marginLeft: "8px",
+      border: "2px solid rgba(102, 126, 234, 0.3)",
+      transition: "all 0.3s ease",
     },
     popup: {
       position: "absolute",
-      top: "60px",
+      top: "65px",
       right: "20px",
-      width: "250px",
-      padding: "20px",
-      backgroundColor: "#fff",
-      border: "1px solid #ddd",
-      borderRadius: "5px",
-      boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+      width: "280px",
+      padding: "25px",
+      background: "rgba(255, 255, 255, 0.95)",
+      backdropFilter: "blur(20px)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+      borderRadius: "20px",
+      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
       textAlign: "center",
       zIndex: 1000,
+      animation: "slideDown 0.3s ease-out",
     },
     closeButton: {
       position: "absolute",
-      top: "0px",
-      right: "10px",
-      fontSize: "24px",
-      background: "none",
+      top: "10px",
+      right: "15px",
+      fontSize: "20px",
+      background: "rgba(102, 126, 234, 0.1)",
       border: "none",
+      borderRadius: "50%",
+      width: "30px",
+      height: "30px",
       cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      transition: "all 0.3s ease",
+      color: "#667eea",
     },
     popupImage: {
-      width: "100px",
-      height: "100px",
+      width: "80px",
+      height: "80px",
       borderRadius: "50%",
-      marginBottom: "10px",
+      marginBottom: "15px",
+      border: "3px solid rgba(102, 126, 234, 0.3)",
     },
     logoutButton: {
-      marginTop: "10px",
-      padding: "5px 10px",
+      marginTop: "15px",
+      padding: "10px 20px",
       border: "none",
-      backgroundColor: "#007bff",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       color: "#fff",
-      borderRadius: "5px",
+      borderRadius: "25px",
       cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "600",
+      transition: "all 0.3s ease",
+      boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
+      textTransform: "uppercase",
+      letterSpacing: "0.5px",
     },
   };
 
@@ -94,7 +135,13 @@ export const Navigationinner = ({ title }) => {
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
+        // Create user object with proper photoURL from localStorage or Firebase user
+        const userWithPhoto = {
+          ...currentUser,
+          photoURL: currentUser.photoURL || localStorage.getItem("profilePic") || null,
+          displayName: currentUser.displayName || localStorage.getItem("name") || "User"
+        };
+        setUser(userWithPhoto);
 
         // Fetch additional user data if required
         const fetchUserData = async () => {
@@ -120,6 +167,10 @@ export const Navigationinner = ({ title }) => {
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase sign-out
+      // Clear localStorage
+      localStorage.removeItem("name");
+      localStorage.removeItem("email");
+      localStorage.removeItem("profilePic");
       setUser(null);
     } catch (error) {
       console.error("Error during logout:", error);
@@ -137,14 +188,30 @@ export const Navigationinner = ({ title }) => {
 
       <div style={styles.title}>{title}</div>
 
-      <div style={styles.userInfo} onClick={togglePopup}>
+      <div 
+        style={styles.userInfo} 
+        onClick={togglePopup}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(102, 126, 234, 0.2)";
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 4px 15px rgba(102, 126, 234, 0.3)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
         {user && (
           <>
-            <span>{user.displayName}</span>
+            <span style={{ color: "#4a5568" }}>{user.displayName}</span>
             <img
-              src={user.photoURL}
+              src={user.photoURL || "/img/team/user.jpeg"}
               alt="Profile"
               style={styles.profilePicture}
+              onError={(e) => {
+                e.target.src = "/img/team/user.jpeg";
+              }}
             />
           </>
         )}
@@ -152,17 +219,55 @@ export const Navigationinner = ({ title }) => {
 
       {showPopup && user && (
         <div style={styles.popup}>
-          <button style={styles.closeButton} onClick={togglePopup}>
+          <button 
+            style={styles.closeButton} 
+            onClick={togglePopup}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(102, 126, 234, 0.2)";
+              e.currentTarget.style.transform = "scale(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(102, 126, 234, 0.1)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
             &times;
           </button>
           <img
-            src={user.photoURL}
+            src={user.photoURL || "/img/team/user.jpeg"}
             alt="Profile"
             style={styles.popupImage}
+            onError={(e) => {
+              e.target.src = "/img/team/user.jpeg";
+            }}
           />
-          <h4>{user.displayName}</h4>
-          <p>{user.email}</p>
-          <button style={styles.logoutButton} onClick={handleLogout}>
+          <h4 style={{ 
+            margin: "0 0 5px 0", 
+            color: "#2d3748", 
+            fontSize: "18px",
+            fontWeight: "600" 
+          }}>
+            {user.displayName}
+          </h4>
+          <p style={{ 
+            margin: "0 0 15px 0", 
+            color: "#718096", 
+            fontSize: "14px" 
+          }}>
+            {user.email}
+          </p>
+          <button 
+            style={styles.logoutButton} 
+            onClick={handleLogout}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(102, 126, 234, 0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(102, 126, 234, 0.4)";
+            }}
+          >
             Logout
           </button>
         </div>

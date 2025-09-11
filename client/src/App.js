@@ -12,6 +12,10 @@ import Skills from "./pages/Skills";
 import ProjectsPage from "./pages/Projects";
 import ResumePage from "./pages/Resumes";
 import Chatbot from "./pages/Chatbot";
+import Career from "./pages/Career";
+import Doubts from "./pages/Doubts";
+import Forum from "./pages/Forum";
+import Video from "./pages/Video";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
@@ -96,6 +100,30 @@ export default function App() {
         path="/chatbot"
         element={
           user ? <Chatbot /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/career"
+        element={
+          user ? <Career /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/doubts"
+        element={
+          user ? <Doubts /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/forum"
+        element={
+          user ? <Forum /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/video"
+        element={
+          user ? <Video /> : <Navigate to="/" replace />
         }
       />
     </Routes>

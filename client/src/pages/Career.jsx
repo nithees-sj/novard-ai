@@ -1,54 +1,49 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import careerImage from '../images/career.jpg';
-import doubtsImage from '../images/doubts.jpg';
-import aiForumImage from '../images/ai-forum.jpg';
-import videoImage from '../images/video.jpg';
+import roadmapImage from '../images/roadmap.jpg';
+import skillsImage from '../images/skills.jpg';
+import projectsImage from '../images/project.avif';
+import resumeImage from '../images/resume.avif';
 import { Navigationinner } from "../components/navigationinner";
 import ChatbotButton from '../components/ChatbotButton';
 
 const features = [
   {
-    title: 'CAREER',
+    title: 'ROADMAP',
     description: 'Navigate your career with a customized roadmap, detailing milestones and actionable strategies for success.',
-    imageUrl: careerImage,
-    route: '/career',
-    icon: '🎯',
-    color: '#3B82F6'
+    imageUrl: roadmapImage,
+    route: '/roadmap',
+    icon: '🗺️'
   },
   {
-    title: 'DOUBTS',
-    description: 'Get answers to your career-related questions and clear your doubts with our AI-powered assistance.',
-    imageUrl: doubtsImage,
-    route: '/doubts',
-    icon: '❓',
-    color: '#10B981'
+    title: 'SKILLS REQUIRED',
+    description: 'Get personalized insights on essential skills to improve your qualifications and job prospects.',
+    imageUrl: skillsImage,
+    route: '/skills-required',
+    icon: '💪'
   },
   {
-    title: 'AI FORUM',
-    description: 'Connect with like-minded individuals and share experiences in our AI-powered community forum.',
-    imageUrl: aiForumImage,
-    route: '/forum',
-    icon: '🤖',
-    color: '#8B5CF6'
+    title: 'PROJECT IDEAS',
+    description: 'Find project ideas that resonate with your career ambitions and help you develop expertise in your chosen field.',
+    imageUrl: projectsImage,
+    route: '/project-ideas',
+    icon: '💡'
   },
   {
-    title: 'VIDEO SESSIONS',
-    description: 'Access exclusive video sessions with industry experts and get personalized career guidance.',
-    imageUrl: videoImage,
-    route: '/video',
-    icon: '🎥',
-    color: '#F59E0B'
+    title: 'RESUME BUILD',
+    description: 'Design professional resumes that reflect your unique qualifications and help you stand out in the current job market.',
+    imageUrl: resumeImage,
+    route: '/resume-build',
+    icon: '📄'
   },
 ];
 
-const HomePage = () => {
+const Career = () => {
   const navigate = useNavigate();
 
   const handleLearnMore = (feature) => {
     navigate(feature.route);
   };
-
 
   const styles = {
     container: {
@@ -103,18 +98,11 @@ const HomePage = () => {
       height: '320px',
       maxWidth: '350px'
     },
-    featureCardHover: {
-      transform: 'translateY(-10px) scale(1.02)',
-      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-    },
     featureImage: {
       width: '100%',
       height: '180px',
       objectFit: 'cover',
       transition: 'transform 0.3s ease'
-    },
-    featureImageHover: {
-      transform: 'scale(1.05)'
     },
     featureContent: {
       padding: '1.2rem 1rem 1rem 1rem',
@@ -160,21 +148,16 @@ const HomePage = () => {
       width: 'fit-content',
       alignSelf: 'center',
       marginTop: '1rem'
-    },
-    featureButtonHover: {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)'
     }
   };
-  
 
   return (
     <>
-      <Navigationinner title={"HOME"} />
+      <Navigationinner title={"CAREER"} />
       <div style={styles.container}>
-        <h1 style={styles.welcomeText}>Welcome to NOVARD-AI</h1>
+        <h1 style={styles.welcomeText}>Career Development Tools</h1>
         <p style={styles.welcomeSubtext}>
-            Explore our comprehensive suite of Novard
+          Explore our comprehensive suite of career development resources
         </p>
         
         <div style={styles.featuresContainer}>
@@ -230,4 +213,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default Career;
