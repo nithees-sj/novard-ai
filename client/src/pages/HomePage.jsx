@@ -63,9 +63,9 @@ const HomePage = () => {
   },
   welcomeText: {
     color: '#111827', // Deep black
-    fontSize: '3rem',
+    fontSize: '2.2rem',
     fontWeight: 'bold',
-    marginBottom: '1.5rem',
+    marginBottom: '1.9rem',
     textAlign: 'center',
     textShadow: 'none'
   },
@@ -78,9 +78,9 @@ const HomePage = () => {
   },
   featuresContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '3rem',
-    maxWidth: '1000px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '2rem',
+    maxWidth: '900px',
     width: '100%',
     justifyContent: 'center',
     margin: '0 auto',
@@ -100,8 +100,8 @@ const HomePage = () => {
     backdropFilter: 'blur(10px)',
     border: '1.5px solid rgba(0,0,0,0.06)',
     width: '100%',
-    minHeight: '370px',
-    maxWidth: '370px'
+    minHeight: '350px',
+    maxWidth: '320px'
   },
   featureCardHover: {
     transform: 'translateY(-10px) scale(1.02)',
@@ -176,10 +176,7 @@ const HomePage = () => {
     <>
       <Navigationinner title={"HOME"} />
       <div style={styles.container}>
-        <h1 style={styles.welcomeText}>Welcome to NOVARD-AI</h1>
-        <p style={styles.welcomeSubtext}>
-            Explore our comprehensive suite of Novard
-        </p>
+        <h2 style={styles.welcomeText}>Welcome to NOVARD-AI</h2>
         
         <div style={styles.featuresContainer}>
           {features.map((feature, index) => (
