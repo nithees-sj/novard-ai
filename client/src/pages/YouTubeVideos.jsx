@@ -169,18 +169,21 @@ const styles = {
     overflowY: 'auto',
     padding: '2rem 1.5rem',
     order: 2,
-    flexShrink: 0
+    flexShrink: 0,
+    height: 'calc(100vh - 120px)',
+    position: 'sticky',
+    top: '10px'
   },
   sidebarHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '2.3rem',
-    paddingBottom: '1.3rem',
+    marginBottom: '1.8rem',
+    paddingBottom: '1rem',
     borderBottom: '1.5px solid rgba(0, 0, 0, 0.1)'
   },
   sidebarTitle: {
-    fontSize: '2rem',
+    fontSize: '1.6rem',
     fontWeight: '700',
     color: '#111827',
     margin: 0
@@ -205,13 +208,13 @@ const styles = {
   doubtItem: {
     background: '#ffffff',
     border: '1.2px solid rgba(0, 0, 0, 0.09)',
-    borderRadius: '15px',
-    padding: '2rem',
-    marginBottom: '1.6rem',
+    borderRadius: '12px',
+    padding: '1.5rem',
+    marginBottom: '1.2rem',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     position: 'relative',
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.07)'
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.07)'
   },
   doubtItemHover: {
     transform: 'translateY(-4px)',
@@ -223,22 +226,22 @@ const styles = {
     boxShadow: '0 8px 20px rgba(0, 0, 0, 0.21)'
   },
   doubtTitle: {
-    fontSize: '2rem',
+    fontSize: '1.3rem',
     fontWeight: '700',
     color: '#111827',
-    marginBottom: '1.05rem',
-    lineHeight: '1.5'
+    marginBottom: '0.8rem',
+    lineHeight: '1.4'
   },
   doubtDescription: {
-    fontSize: '1.35rem',
+    fontSize: '1rem',
     color: '#374151',
-    lineHeight: '1.7',
-    marginBottom: '0.9rem'
+    lineHeight: '1.5',
+    marginBottom: '0.6rem'
   },
   doubtDate: {
-    fontSize: '1.1rem',
+    fontSize: '0.9rem',
     color: '#6b7280',
-    marginBottom: '0.7rem'
+    marginBottom: '0.5rem'
   },
   deleteButton: {
     position: 'absolute',
@@ -264,7 +267,10 @@ const styles = {
     padding: '2rem 2rem',
     overflowY: 'auto',
     order: 1,
-    minWidth: 0
+    minWidth: 0,
+    height: 'calc(100vh - 120px)',
+    position: 'sticky',
+    top: '10px'
   },
   mainHeader: {
     marginBottom: '2.5rem'
@@ -304,9 +310,10 @@ const styles = {
     boxShadow: '0 7px 19px rgba(0,0,0,0.18)'
   },
   mainSubtitle: {
-    fontSize: '1.5rem',
+    fontSize: '1.2rem',
     color: '#4b5563',
-    marginBottom: '0'
+    marginBottom: '0',
+    lineHeight: '1.5'
   },
   videoGrid: {
     display: 'grid',
@@ -330,7 +337,7 @@ const styles = {
   },
   videoThumbnail: {
     width: '100%',
-    height: '245px',
+    height: '200px',
     objectFit: 'cover',
     transition: 'transform 0.3s ease'
   },
@@ -338,23 +345,23 @@ const styles = {
     transform: 'scale(1.07)'
   },
   videoInfo: {
-    padding: '2rem 2rem 1.2rem 2rem'
+    padding: '1.5rem 1.5rem 1rem 1.5rem'
   },
   videoTitle: {
-    fontSize: '1.76rem',
+    fontSize: '1.4rem',
     fontWeight: '800',
     color: '#111827',
-    marginBottom: '1.15rem',
-    lineHeight: '1.55',
+    marginBottom: '0.8rem',
+    lineHeight: '1.4',
     display: '-webkit-box',
     WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden'
   },
   videoDescription: {
-    fontSize: '1.25rem',
+    fontSize: '1rem',
     color: '#374151',
-    lineHeight: '1.7',
+    lineHeight: '1.5',
     display: '-webkit-box',
     WebkitLineClamp: 3,
     WebkitBoxOrient: 'vertical',
@@ -468,11 +475,41 @@ submitButton: {
   color: '#fff',
   boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
 },
-cancelButton: {
-  background: '#f2f4f5',
-  color: '#232323',
-  border: '1.5px solid #d1d5db'
-}
+  cancelButton: {
+    background: '#f2f4f5',
+    color: '#232323',
+    border: '1.5px solid #d1d5db'
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '3rem 2rem',
+    color: '#6b7280'
+  },
+  emptyIcon: {
+    fontSize: '3rem',
+    marginBottom: '1rem'
+  },
+  emptyTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '0.5rem'
+  },
+  emptyDescription: {
+    fontSize: '1rem',
+    lineHeight: '1.5'
+  },
+  toast: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '1rem 1.5rem',
+    borderRadius: '8px',
+    color: 'white',
+    fontWeight: '600',
+    zIndex: 1000,
+    fontSize: '1rem'
+  }
 
 };
 

@@ -307,10 +307,11 @@ const YouTubeVideoSummarizer = () => {
 
   const styles = {
     container: {
-      minHeight: "100vh",
+      height: "100vh",
       background: "#f8fafc",
       padding: "1rem",
       fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+      overflow: "hidden",
     },
     titleSection: {
       textAlign: "center",
@@ -360,6 +361,7 @@ const YouTubeVideoSummarizer = () => {
       gap: "1.5rem",
       maxWidth: "1800px",
       margin: "0 auto",
+      marginTop : "20px",
       height: "calc(100vh - 120px)",
     },
     contentArea: {
@@ -374,6 +376,7 @@ const YouTubeVideoSummarizer = () => {
       height: "100%",
       display: "flex",
       flexDirection: "column",
+      overflow: "hidden",
     },
     sidebar: {
       width: "360px",
@@ -386,6 +389,7 @@ const YouTubeVideoSummarizer = () => {
       border: "1px solid rgba(255, 255, 255, 0.2)",
       height: "100%",
       overflowY: "auto",
+      overflowX: "hidden",
     },
     sidebarTitle: {
       fontSize: "1.8rem",
@@ -461,10 +465,11 @@ const YouTubeVideoSummarizer = () => {
     chatContainer: {
       display: "flex",
       flexDirection: "column",
-      height: "calc(100vh - 200px)",
-      gap: "1.5rem",
+      height: "100%",
+      gap: "1rem",
       flex: 1,
       minHeight: 0,
+      overflow: "hidden",
     },
     messagesContainer: {
       flex: 1,
@@ -534,21 +539,21 @@ const YouTubeVideoSummarizer = () => {
       boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
     },
     summaryContent: {
-      padding: "2rem",
+      padding: "1.5rem",
       fontSize: "1.4rem",
       lineHeight: "1.8",
       color: "#374151",
       border: "1px solid rgba(107, 114, 128, 0.2)",
       borderRadius: "20px",
       background: "rgba(255, 255, 255, 0.9)",
-      height: "calc(100vh - 200px)",
+      height: "100%",
       overflowY: "auto",
       boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
       flex: 1,
     },
     quizContent: {
-      padding: "2rem",
-      height: "calc(100vh - 200px)",
+      padding: "1.5rem",
+      height: "100%",
       overflowY: "auto",
       flex: 1,
     },
