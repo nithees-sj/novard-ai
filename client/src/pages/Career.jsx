@@ -45,111 +45,129 @@ const Career = () => {
     navigate(feature.route);
   };
 
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '100vh',
-      background: '#f8fafc',
-      justifyContent: 'flex-start',
-      alignItems: 'center',
-      overflowY: 'auto', 
-      padding: '10px 1rem 2rem'
-    },
-    welcomeText: {
-      color: '#2d3748',
-      fontSize: '2.5rem',
-      fontWeight: 'bold',
-      marginBottom: '1rem',
-      textAlign: 'center',
-      textShadow: 'none'
-    },
-    welcomeSubtext: {
-      color: '#718096',
-      fontSize: '1.2rem',
-      marginBottom: '3rem',
-      textAlign: 'center',
-      maxWidth: '600px'
-    },
-    featuresContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '3rem',
-      maxWidth: '900px',
-      width: '100%',
-      justifyContent: 'center',
-      margin: '0 auto',
-      padding: '0 2rem',
-    },
-    featureCard: {
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '20px',
-      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      textAlign: 'center',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      position: 'relative',
-      width: '100%',
-      height: '320px',
-      maxWidth: '350px'
-    },
-    featureImage: {
-      width: '100%',
-      height: '180px',
-      objectFit: 'cover',
-      transition: 'transform 0.3s ease'
-    },
-    featureContent: {
-      padding: '1.2rem 1rem 1rem 1rem',
-      position: 'relative',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      flex: '1',
-      justifyContent: 'space-between'
-    },
-    featureIcon: {
-      fontSize: '2rem',
-      marginBottom: '0.5rem',
-      display: 'block'
-    },
-    featureTitle: {
-      fontSize: '1.1rem',
-      fontWeight: '700',
-      color: '#1a202c',
-      marginBottom: '0.5rem',
-      letterSpacing: '0.3px'
-    },
-    featureDescription: {
-      fontSize: '0.85rem',
-      color: '#4a5568',
-      marginBottom: '0',
-      lineHeight: '1.4',
-      flex: '1'
-    },
-    featureButton: {
-      background: 'linear-gradient(45deg, #667eea, #764ba2)',
-      color: 'white',
-      border: 'none',
-      padding: '10px 20px',
-      borderRadius: '25px',
-      cursor: 'pointer',
-      fontSize: '0.9rem',
-      fontWeight: '600',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      width: 'fit-content',
-      alignSelf: 'center',
-      marginTop: '1rem'
-    }
-  };
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '100vh',
+    background: '#ffffff',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    overflowY: 'auto',
+    padding: '24px 2.5rem 3rem'
+  },
+  welcomeText: {
+    color: '#111827',
+    fontSize: '3.2rem',
+    fontWeight: 'bold',
+    marginBottom: '1.5rem',
+    textAlign: 'center',
+    textShadow: 'none'
+  },
+  welcomeSubtext: {
+    color: '#374151',
+    fontSize: '1.45rem',
+    marginBottom: '3.5rem',
+    textAlign: 'center',
+    maxWidth: '680px'
+  },
+  featuresContainer: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '3.5rem',
+    maxWidth: '1000px',
+    width: '100%',
+    justifyContent: 'center',
+    margin: '0 auto',
+    padding: '0 2.5rem'
+  },
+  featureCard: {
+    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderRadius: '26px',
+    boxShadow: '0 10px 36px rgba(0,0,0,0.10)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    textAlign: 'center',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    backdropFilter: 'blur(11px)',
+    border: '1.5px solid rgba(0,0,0,0.07)',
+    position: 'relative',
+    width: '100%',
+    minHeight: '380px',
+    maxWidth: '380px',
+    padding: 0
+  },
+  featureCardHover: {
+    boxShadow: '0 20px 48px rgba(0,0,0,0.16)',
+    transform: 'translateY(-6px)',
+    border: '1.5px solid rgba(0,0,0,0.22)'
+  },
+  featureImage: {
+    width: '100%',
+    height: '200px',
+    objectFit: 'cover',
+    transition: 'transform 0.3s ease'
+  },
+  featureImageHover: {
+    transform: 'scale(1.04)'
+  },
+  featureContent: {
+    padding: '1.6rem 1.2rem 1.2rem 1.2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-start',
+    minHeight: 0
+  },
+  featureIcon: {
+    fontSize: '2.4rem',
+    marginBottom: '0.7rem',
+    display: 'block'
+  },
+  featureTitle: {
+    fontSize: '1.38rem',
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: '0.6rem',
+    letterSpacing: '0.45px'
+  },
+  featureDescription: {
+    fontSize: '1.05rem',
+    color: '#374151',
+    marginBottom: '0',
+    lineHeight: '1.55',
+    flex: '1'
+  },
+  featureButton: {
+    marginTop: '1.4rem',
+    alignSelf: 'center',
+    background: '#111827',
+    color: 'white',
+    border: 'none',
+    padding: '13px 28px',
+    borderRadius: '30px',
+    cursor: 'pointer',
+    fontSize: '1.09rem',
+    fontWeight: '700',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.09)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.7px',
+    width: 'fit-content',
+    position: 'relative',
+    bottom: 0
+  },
+  featureButtonHover: {
+    background: '#22262a',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.13)'
+  }
+};
+
 
   return (
     <>

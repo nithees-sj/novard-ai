@@ -24,111 +24,115 @@ const features = [
 
 const Video = () => {
   const navigate = useNavigate();
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '100vh',
-      background: '#f8fafc',
-      justifyContent: 'flex-start',
-      alignItems: 'center',
-      overflowY: 'auto', 
-      padding: '10px 1rem 2rem'
-    },
-    welcomeText: {
-      color: '#2d3748',
-      fontSize: '2.5rem',
-      fontWeight: 'bold',
-      marginBottom: '1rem',
-      textAlign: 'center',
-      textShadow: 'none'
-    },
-    welcomeSubtext: {
-      color: '#718096',
-      fontSize: '1.2rem',
-      marginBottom: '3rem',
-      textAlign: 'center',
-      maxWidth: '600px'
-    },
-    featuresContainer: {
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '3rem',
-      maxWidth: '900px',
-      width: '100%',
-      margin: '0 auto',
-      padding: '0 2rem',
-    },
-    featureCard: {
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '20px',
-      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      textAlign: 'center',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      position: 'relative',
-      width: '100%',
-      height: '360px',
-      maxWidth: '350px'
-    },
-    featureImage: {
-      width: '100%',
-      height: '180px',
-      objectFit: 'cover',
-      transition: 'transform 0.3s ease'
-    },
-    featureContent: {
-      padding: '1.5rem 1rem',
-      position: 'relative',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      flex: '1',
-      justifyContent: 'space-between'
-    },
-    featureIcon: {
-      fontSize: '2.5rem',
-      marginBottom: '0.8rem',
-      display: 'block'
-    },
-    featureTitle: {
-      fontSize: '1.1rem',
-      fontWeight: '700',
-      color: '#1a202c',
-      marginBottom: '0.8rem',
-      letterSpacing: '0.3px',
-      lineHeight: '1.3'
-    },
-    featureDescription: {
-      fontSize: '0.9rem',
-      color: '#4a5568',
-      marginBottom: '0',
-      lineHeight: '1.5',
-      flex: '1'
-    },
-    featureButton: {
-      background: 'linear-gradient(45deg, #667eea, #764ba2)',
-      color: 'white',
-      border: 'none',
-      padding: '12px 24px',
-      borderRadius: '25px',
-      cursor: 'pointer',
-      fontSize: '0.9rem',
-      fontWeight: '600',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      width: 'fit-content',
-      alignSelf: 'center',
-      marginTop: '1rem'
-    }
-  };
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '100vh',
+    background: '#fff', // Pure white for clean professional look
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    overflowY: 'auto',
+    padding: '36px 2.5rem 3rem',
+  },
+  welcomeText: {
+    color: '#111827', // Deep black
+    fontSize: '3rem',
+    fontWeight: 'bold',
+    marginBottom: '1.5rem',
+    textAlign: 'center',
+    textShadow: 'none'
+  },
+  welcomeSubtext: {
+    color: '#374151', // Neutral gray
+    fontSize: '1.3rem',
+    marginBottom: '3rem',
+    textAlign: 'center',
+    maxWidth: '700px'
+  },
+  featuresContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '2.8rem',
+    flexWrap: 'wrap',
+    maxWidth: '1100px',
+    width: '100%',
+    margin: '0 auto',
+    padding: '0 2.5rem',
+  },
+  featureCard: {
+    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderRadius: '26px',
+    boxShadow: '0 10px 36px rgba(0,0,0,0.12)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    textAlign: 'center',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    backdropFilter: 'blur(8px)',
+    border: '2px solid rgba(0,0,0,0.07)',
+    position: 'relative',
+    width: '100%',
+    height: '380px',
+    minWidth: '320px',
+    maxWidth: '340px',
+    marginBottom: '2rem'
+  },
+  featureImage: {
+    width: '100%',
+    height: '180px',
+    objectFit: 'cover',
+    transition: 'transform 0.3s ease'
+  },
+  featureContent: {
+    padding: '1.4rem 1.1rem 1.2rem 1.1rem',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'space-between'
+  },
+  featureIcon: {
+    fontSize: '2.5rem',
+    marginBottom: '0.85rem',
+    display: 'block'
+  },
+  featureTitle: {
+    fontSize: '1.2rem',
+    fontWeight: '700',
+    color: '#111827',  // Black heading
+    marginBottom: '0.8rem',
+    letterSpacing: '0.3px',
+    lineHeight: '1.3'
+  },
+  featureDescription: {
+    fontSize: '1rem',
+    color: '#4a5568',
+    marginBottom: '0',
+    lineHeight: '1.55',
+    flex: '1'
+  },
+  featureButton: {
+    background: '#111827',
+    color: 'white',
+    border: 'none',
+    padding: '13px 32px',
+    borderRadius: '32px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: '700',
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 14px rgba(0,0,0,0.13)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.7px',
+    marginTop: '1.1rem',
+    alignSelf: 'center',
+    width: 'fit-content'
+  }
+};
+
 
   const handleExplore = (feature) => {
     if (feature.route) {

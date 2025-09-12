@@ -11,125 +11,123 @@ export const Navigationinner = ({ title }) => {
   const [userData, setUserData] = useState({});
   const [showPopup, setShowPopup] = useState(false);
 
-  const styles = {
-    navbar: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "8px 20px",
-      background: "rgba(255,255,255,0.95)",
-      backdropFilter: "blur(10px)",
-      borderBottom: "1px solid rgba(229,231,235,0.8)",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-      position: "sticky",
-      top: 0,
-      zIndex: 1000,
-      minHeight: "60px",
-    },
-    logoContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    logo: {
-      height: "28px",
-      marginRight: "10px",
-      borderRadius: "6px",
-    },
-    logoText: {
-      fontSize: "20px",
-      fontWeight: "700",
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-      letterSpacing: "0.3px"
-    },
-    title: {
-      fontSize: "18px",
-      fontWeight: "600",
-      margin: 0,
-      color: "#4a5568",
-    },
-    userInfo: {
-      fontSize: "14px",
-      display: "flex",
-      fontWeight: "500",
-      alignItems: "center",
-      cursor: "pointer",
-      padding: "6px 12px",
-      borderRadius: "20px",
-      background: "rgba(102, 126, 234, 0.08)",
-      border: "1px solid rgba(102, 126, 234, 0.15)",
-      transition: "all 0.3s ease",
-    },
-    userInfoHover: {
-      background: "rgba(102, 126, 234, 0.2)",
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)",
-    },
-    profilePicture: {
-      height: "30px",
-      width: "30px",
-      borderRadius: "50%",
-      marginLeft: "8px",
-      border: "2px solid rgba(102, 126, 234, 0.3)",
-      transition: "all 0.3s ease",
-    },
-    popup: {
-      position: "absolute",
-      top: "65px",
-      right: "20px",
-      width: "280px",
-      padding: "25px",
-      background: "rgba(255, 255, 255, 0.95)",
-      backdropFilter: "blur(20px)",
-      border: "1px solid rgba(255, 255, 255, 0.2)",
-      borderRadius: "20px",
-      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
-      textAlign: "center",
-      zIndex: 1000,
-      animation: "slideDown 0.3s ease-out",
-    },
-    closeButton: {
-      position: "absolute",
-      top: "10px",
-      right: "15px",
-      fontSize: "20px",
-      background: "rgba(102, 126, 234, 0.1)",
-      border: "none",
-      borderRadius: "50%",
-      width: "30px",
-      height: "30px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "all 0.3s ease",
-      color: "#667eea",
-    },
-    popupImage: {
-      width: "80px",
-      height: "80px",
-      borderRadius: "50%",
-      marginBottom: "15px",
-      border: "3px solid rgba(102, 126, 234, 0.3)",
-    },
-    logoutButton: {
-      marginTop: "15px",
-      padding: "10px 20px",
-      border: "none",
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      color: "#fff",
-      borderRadius: "25px",
-      cursor: "pointer",
-      fontSize: "14px",
-      fontWeight: "600",
-      transition: "all 0.3s ease",
-      boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
-      textTransform: "uppercase",
-      letterSpacing: "0.5px",
-    },
-  };
+const styles = {
+  navbar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "14px 36px",
+    background: "rgba(255,255,255,0.98)",
+    backdropFilter: "blur(14px)",
+    borderBottom: "1px solid rgba(0,0,0,0.09)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+    position: "sticky",
+    top: 0,
+    zIndex: 1000,
+    minHeight: "72px"
+  },
+  logoContainer: {
+    display: "flex",
+    alignItems: "center"
+  },
+  logo: {
+    height: "36px",
+    marginRight: "14px",
+    borderRadius: "8px"
+  },
+  logoText: {
+    fontSize: "26px",
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: "0.5px"
+  },
+  title: {
+    fontSize: "22px",
+    fontWeight: "600",
+    margin: 0,
+    color: "#374151"
+  },
+  userInfo: {
+    fontSize: "17px",
+    display: "flex",
+    fontWeight: "600",
+    alignItems: "center",
+    cursor: "pointer",
+    padding: "11px 22px",
+    borderRadius: "24px",
+    background: "rgba(18, 18, 18, 0.04)",
+    border: "1px solid rgba(0,0,0,0.08)",
+    color: "#111827",
+    transition: "all 0.3s ease"
+  },
+  userInfoHover: {
+    background: "rgba(0,0,0,0.08)",
+    transform: "translateY(-2px)",
+    boxShadow: "0 6px 16px rgba(0,0,0,0.13)"
+  },
+  profilePicture: {
+    height: "38px",
+    width: "38px",
+    borderRadius: "50%",
+    marginLeft: "12px",
+    border: "2px solid rgba(0,0,0,0.10)",
+    transition: "all 0.3s ease"
+  },
+  popup: {
+    position: "absolute",
+    top: "78px",
+    right: "36px",
+    width: "320px",
+    padding: "35px",
+    background: "rgba(255,255,255,0.97)",
+    backdropFilter: "blur(18px)",
+    border: "1px solid rgba(0,0,0,0.11)",
+    borderRadius: "22px",
+    boxShadow: "0 20px 48px rgba(0,0,0,0.15)",
+    textAlign: "center",
+    zIndex: 1000,
+    animation: "slideDown 0.3s ease-out"
+  },
+  closeButton: {
+    position: "absolute",
+    top: "12px",
+    right: "18px",
+    fontSize: "24px",
+    background: "rgba(0, 0, 0, 0.07)",
+    border: "none",
+    borderRadius: "50%",
+    width: "32px",
+    height: "32px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.3s ease",
+    color: "#111827"
+  },
+  popupImage: {
+    width: "90px",
+    height: "90px",
+    borderRadius: "50%",
+    marginBottom: "18px",
+    border: "3px solid rgba(0,0,0,0.12)"
+  },
+  logoutButton: {
+    marginTop: "20px",
+    padding: "13px 32px",
+    border: "none",
+    background: "#111827",
+    color: "#fff",
+    borderRadius: "28px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "700",
+    transition: "all 0.3s ease",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.17)",
+    textTransform: "uppercase",
+    letterSpacing: "1px"
+  }
+};
 
   useEffect(() => {
     // Listen for auth state changes

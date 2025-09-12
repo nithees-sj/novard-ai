@@ -53,95 +53,103 @@ const Chatbot = () => {
     }
   };
 
-  const styles = {
-    pageContainer: {
-      minHeight: '100vh',
-      backgroundColor: '#f4f4f9',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-    },
-    navbar: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      zIndex: 1000,
-    },
-    chatbotContainer: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      flex: 1,
-      paddingTop: '70px',
-    },
-    chatbox: {
-      width: '100%',
-      maxWidth: '1000px',
-      height: '80vh',
-      backgroundColor: '#ffffff',
-      borderRadius: '8px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-    },
-    messages: {
-      flex: 1,
-      overflowY: 'auto',
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    message: {
-      padding: '10px 20px',
-      borderRadius: '10px',
-      marginBottom: '15px',
-      maxWidth: '75%',
-      display: 'inline-block',
-      wordBreak: 'break-word',
-      alignSelf: 'flex-start',
-    },
-    userMessage: {
-      backgroundColor: '#007bff',
-      color: '#fff',
-      textAlign: 'right',
-      alignSelf: 'flex-end',
-    },
-    aiMessage: {
-      backgroundColor: '#f1f1f1',
-      color: '#333',
-      textAlign: 'left',
-    },
-    inputContainer: {
-      borderTop: '1px solid #e0e0e0',
-      padding: '10px',
-      display: 'flex',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-    },
-    inputBox: {
-      flex: 1,
-      padding: '10px 15px',
-      borderRadius: '25px',
-      border: '1px solid #ddd',
-      fontSize: '16px',
-      outline: 'none',
-    },
-    sendButton: {
-      marginLeft: '10px',
-      backgroundColor: '#007bff',
-      color: '#fff',
-      padding: '10px',
-      borderRadius: '50%',
-      border: 'none',
-      cursor: 'pointer',
-      transition: 'background-color 0.3s',
-    },
-    sendButtonHover: {
-      backgroundColor: '#0056b3',
-    },
-  };
+const styles = {
+  pageContainer: {
+    minHeight: '100vh',
+    backgroundColor: '#fff', // White background
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  navbar: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    zIndex: 1000,
+  },
+  chatbotContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+    paddingTop: '80px',
+  },
+  chatbox: {
+    width: '100%',
+    maxWidth: '900px',
+    height: '76vh',
+    backgroundColor: '#fff',
+    borderRadius: '18px',
+    boxShadow: '0 8px 36px rgba(0,0,0,0.12)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  messages: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '32px',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  message: {
+    padding: '14px 24px',
+    borderRadius: '16px',
+    marginBottom: '18px',
+    maxWidth: '75%',
+    display: 'inline-block',
+    wordBreak: 'break-word',
+    fontSize: '1.1rem',
+    alignSelf: 'flex-start',
+    background: '#f4f4f4',
+    color: '#1a1a1a',
+  },
+  userMessage: {
+    backgroundColor: '#111827',
+    color: '#fff',
+    textAlign: 'right',
+    alignSelf: 'flex-end',
+  },
+  aiMessage: {
+    backgroundColor: '#f3f4f6',
+    color: '#232323',
+    textAlign: 'left',
+  },
+  inputContainer: {
+    borderTop: '1.5px solid #e5e7eb',
+    padding: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  inputBox: {
+    flex: 1,
+    padding: '14px 22px',
+    borderRadius: '32px',
+    border: '1.5px solid #d1d5db',
+    fontSize: '1.15rem',
+    outline: 'none',
+    background: '#f8fafb',
+  },
+  sendButton: {
+    marginLeft: '12px',
+    backgroundColor: '#111827',
+    color: '#fff',
+    padding: '13px',
+    borderRadius: '50%',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s, box-shadow 0.3s',
+    fontSize: '1.25rem',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
+  },
+  sendButtonHover: {
+    backgroundColor: '#23272b',
+    boxShadow: '0 6px 22px rgba(0,0,0,0.14)'
+  },
+};
+
 
   return (
     <div style={styles.pageContainer}>

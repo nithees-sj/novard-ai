@@ -150,299 +150,327 @@ const YouTubeVideos = () => {
     }
   };
 
-  const styles = {
-    container: {
-      display: 'flex',
-      minHeight: '100vh',
-      background: '#f8fafc',
-      overflow: 'hidden'
-    },
-    sidebar: {
-      width: '400px',
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(10px)',
-      borderLeft: '1px solid rgba(229, 231, 235, 0.8)',
-      overflowY: 'auto',
-      padding: '1.5rem',
-      order: 2
-    },
-    sidebarHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-      paddingBottom: '1rem',
-      borderBottom: '1px solid rgba(229, 231, 235, 0.8)'
-    },
-    sidebarTitle: {
-      fontSize: '1.5rem',
-      fontWeight: '700',
-      color: '#1f2937',
-      margin: 0
-    },
-    addButton: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      padding: '0.75rem 1.25rem',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: '600',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-    },
-    doubtItem: {
-      background: 'rgba(255, 255, 255, 0.8)',
-      border: '1px solid rgba(229, 231, 235, 0.5)',
-      borderRadius: '12px',
-      padding: '1.25rem',
-      marginBottom: '1.25rem',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      position: 'relative',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-    },
-    doubtItemSelected: {
-      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
-      border: '1px solid rgba(102, 126, 234, 0.3)',
-      boxShadow: '0 4px 16px rgba(102, 126, 234, 0.15)'
-    },
-    doubtTitle: {
-      fontSize: '1.65rem',
-      fontWeight: '600',
-      color: '#1f2937',
-      marginBottom: '0.75rem',
-      lineHeight: '1.4'
-    },
-    doubtDescription: {
-      fontSize: '1.15rem',
-      color: '#6b7280',
-      lineHeight: '1.5',
-      marginBottom: '0.75rem'
-    },
-    doubtDate: {
-      fontSize: '0.85rem',
-      color: '#9ca3af',
-      marginBottom: '0.75rem'
-    },
-    deleteButton: {
-      position: 'absolute',
-      top: '0.5rem',
-      right: '0.5rem',
-      background: 'rgba(239, 68, 68, 0.1)',
-      color: '#ef4444',
-      border: 'none',
-      borderRadius: '6px',
-      padding: '0.25rem',
-      cursor: 'pointer',
-      fontSize: '0.8rem',
-      transition: 'all 0.3s ease'
-    },
-    mainContent: {
-      flex: '1',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '2rem',
-      overflowY: 'auto',
-      order: 1
-    },
-    mainHeader: {
-      marginBottom: '2rem'
-    },
-    headerTop: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '0.5rem'
-    },
-    mainTitle: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      color: '#1f2937',
-      margin: 0,
-      flex: 1
-    },
-    refreshButton: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      padding: '0.5rem 1rem',
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      opacity: 1
-    },
-    mainSubtitle: {
-      fontSize: '1.1rem',
-      color: '#6b7280',
-      marginBottom: '0'
-    },
-    videoGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      gap: '1.5rem',
-      marginBottom: '2rem'
-    },
-    videoCard: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '16px',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer',
-      border: '1px solid rgba(229, 231, 235, 0.8)'
-    },
-    videoThumbnail: {
-      width: '100%',
-      height: '200px',
-      objectFit: 'cover',
-      transition: 'transform 0.3s ease'
-    },
-    videoInfo: {
-      padding: '1rem'
-    },
-    videoTitle: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      color: '#1f2937',
-      marginBottom: '0.5rem',
-      lineHeight: '1.4',
-      display: '-webkit-box',
-      WebkitLineClamp: 2,
-      WebkitBoxOrient: 'vertical',
-      overflow: 'hidden'
-    },
-    videoDescription: {
-      fontSize: '0.85rem',
-      color: '#6b7280',
-      lineHeight: '1.4',
-      display: '-webkit-box',
-      WebkitLineClamp: 3,
-      WebkitBoxOrient: 'vertical',
-      overflow: 'hidden'
-    },
-    loadingSpinner: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '2rem',
-      fontSize: '1.1rem',
-      color: '#6b7280'
-    },
-    addDoubtForm: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '16px',
-      padding: '2rem',
-      marginBottom: '1.5rem',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(229, 231, 235, 0.8)'
-    },
-    formTitle: {
-      fontSize: '1.25rem',
-      fontWeight: '600',
-      color: '#1f2937',
-      marginBottom: '1.25rem'
-    },
-    inputGroup: {
-      marginBottom: '1.25rem'
-    },
-    label: {
-      display: 'block',
-      fontSize: '1rem',
-      fontWeight: '500',
-      color: '#374151',
-      marginBottom: '0.75rem'
-    },
-    input: {
-      width: '100%',
-      padding: '1rem',
-      border: '1px solid rgba(209, 213, 219, 0.8)',
-      borderRadius: '8px',
-      fontSize: '1rem',
-      outline: 'none',
-      transition: 'border-color 0.2s ease',
-      fontFamily: 'inherit'
-    },
-    textarea: {
-      width: '100%',
-      padding: '1rem',
-      border: '1px solid rgba(209, 213, 219, 0.8)',
-      borderRadius: '8px',
-      fontSize: '1rem',
-      outline: 'none',
-      transition: 'border-color 0.2s ease',
-      fontFamily: 'inherit',
-      resize: 'vertical',
-      minHeight: '100px'
-    },
-    formButtons: {
-      display: 'flex',
-      gap: '0.5rem',
-      justifyContent: 'flex-end'
-    },
-    button: {
-      padding: '0.75rem 1.25rem',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: '600',
-      transition: 'all 0.3s ease'
-    },
-    submitButton: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-    },
-    cancelButton: {
-      background: 'rgba(107, 114, 128, 0.1)',
-      color: '#6b7280',
-      border: '1px solid rgba(107, 114, 128, 0.2)'
-    },
-    toast: {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      padding: '1rem 1.5rem',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      zIndex: 1000,
-      animation: 'slideIn 0.3s ease'
-    },
-    toastSuccess: {
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-    },
-    toastError: {
-      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-    },
-    emptyState: {
-      textAlign: 'center',
-      padding: '3rem 2rem',
-      color: '#6b7280'
-    },
-    emptyIcon: {
-      fontSize: '4rem',
-      marginBottom: '1rem'
-    },
-    emptyTitle: {
-      fontSize: '1.5rem',
-      fontWeight: '600',
-      marginBottom: '0.5rem',
-      color: '#374151'
-    },
-    emptyDescription: {
-      fontSize: '1rem',
-      lineHeight: '1.5'
-    }
-  };
+const styles = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    background: '#ffffff',
+    overflow: 'hidden',
+    padding: '0 3.5rem',             // Wider container
+    boxSizing: 'border-box'
+  },
+  sidebar: {
+    width: '440px',
+    background: 'rgba(255, 255, 255, 0.97)',
+    backdropFilter: 'blur(12px)',
+    borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
+    overflowY: 'auto',
+    padding: '2.5rem 2rem',
+    order: 2
+  },
+  sidebarHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '2.3rem',
+    paddingBottom: '1.3rem',
+    borderBottom: '1.5px solid rgba(0, 0, 0, 0.1)'
+  },
+  sidebarTitle: {
+    fontSize: '2rem',
+    fontWeight: '700',
+    color: '#111827',
+    margin: 0
+  },
+  addButton: {
+    background: '#111827',
+    color: 'white',
+    border: 'none',
+    borderRadius: '11px',
+    padding: '1.15rem 1.7rem',
+    cursor: 'pointer',
+    fontSize: '1.3rem',
+    fontWeight: '700',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.13)'
+  },
+  addButtonHover: {
+    background: '#000000',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.22)'
+  },
+  doubtItem: {
+    background: '#ffffff',
+    border: '1.2px solid rgba(0, 0, 0, 0.09)',
+    borderRadius: '15px',
+    padding: '2rem',
+    marginBottom: '1.6rem',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    position: 'relative',
+    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.07)'
+  },
+  doubtItemHover: {
+    transform: 'translateY(-4px)',
+    boxShadow: '0 9px 22px rgba(0, 0, 0, 0.16)'
+  },
+  doubtItemSelected: {
+    background: 'rgba(0,0,0,0.05)',
+    border: '1.5px solid rgba(0, 0, 0, 0.22)',
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.21)'
+  },
+  doubtTitle: {
+    fontSize: '2rem',
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: '1.05rem',
+    lineHeight: '1.5'
+  },
+  doubtDescription: {
+    fontSize: '1.35rem',
+    color: '#374151',
+    lineHeight: '1.7',
+    marginBottom: '0.9rem'
+  },
+  doubtDate: {
+    fontSize: '1.1rem',
+    color: '#6b7280',
+    marginBottom: '0.7rem'
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: '0.75rem',
+    right: '0.75rem',
+    background: 'rgba(0,0,0,0.07)',
+    color: '#111827',
+    border: 'none',
+    borderRadius: '7px',
+    padding: '0.45rem',
+    cursor: 'pointer',
+    fontSize: '1.08rem',
+    transition: 'all 0.3s ease'
+  },
+  deleteButtonHover: {
+    background: 'rgba(0,0,0,0.13)',
+    transform: 'scale(1.08)'
+  },
+  mainContent: {
+    flex: '1',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '3.2rem 2.8rem',
+    overflowY: 'auto',
+    order: 1
+  },
+  mainHeader: {
+    marginBottom: '4rem'
+  },
+  headerTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1.3rem'
+  },
+  mainTitle: {
+    fontSize: '4.7rem',
+    fontWeight: '900',
+    color: '#111827',
+    margin: 0,
+    flex: 1
+  },
+  refreshButton: {
+    background: '#111827',
+    color: 'white',
+    border: 'none',
+    borderRadius: '11px',
+    padding: '1rem 1.4rem',
+    fontSize: '1.8rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.85rem',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 11px rgba(0,0,0,0.11)'
+  },
+  refreshButtonHover: {
+    background: '#000000',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 7px 19px rgba(0,0,0,0.18)'
+  },
+  mainSubtitle: {
+    fontSize: '1.5rem',
+    color: '#4b5563',
+    marginBottom: '0'
+  },
+  videoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', // Bigger cards
+    gap: '2.3rem',
+    marginBottom: '2.9rem'
+  },
+  videoCard: {
+    background: '#ffffff',
+    borderRadius: '22px',
+    boxShadow: '0 11px 32px rgba(0, 0, 0, 0.12)',
+    overflow: 'hidden',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    border: '1.7px solid rgba(0, 0, 0, 0.09)'
+  },
+  videoCardHover: {
+    transform: 'translateY(-7px)',
+    boxShadow: '0 17px 38px rgba(0, 0, 0, 0.18)',
+    border: '1.7px solid rgba(0, 0, 0, 0.21)'
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '245px',
+    objectFit: 'cover',
+    transition: 'transform 0.3s ease'
+  },
+  videoThumbnailHover: {
+    transform: 'scale(1.07)'
+  },
+  videoInfo: {
+    padding: '2rem 2rem 1.2rem 2rem'
+  },
+  videoTitle: {
+    fontSize: '1.76rem',
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: '1.15rem',
+    lineHeight: '1.55',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden'
+  },
+  videoDescription: {
+    fontSize: '1.25rem',
+    color: '#374151',
+    lineHeight: '1.7',
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden'
+  },
+  loadingSpinner: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '2.7rem',
+    fontSize: '2.2rem',
+    color: '#111827'
+  },
+  submitButton: {
+    background: '#111827',
+    color: 'white',
+    borderRadius: '11px',
+    padding: '1.1rem 1.8rem',
+    fontSize: '1.3rem',
+    boxShadow: '0 5px 14px rgba(0,0,0,0.14)'
+  },
+  submitButtonHover: {
+    background: '#000000',
+    transform: 'translateY(-2px)'
+  },
+  cancelButton: {
+    background: 'rgba(0,0,0,0.06)',
+    color: '#111827',
+    border: '1px solid rgba(0,0,0,0.11)'
+  },
+  toastSuccess: {
+    background: '#111827',
+    color: 'white'
+  },
+  toastError: {
+    background: '#b91c1c'
+  },
+  addDoubtForm: {
+  background: '#fff',
+  borderRadius: '20px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.11)',
+  padding: '2.6rem 2.5rem 2.2rem 2.5rem',
+  margin: '0 auto',
+  maxWidth: '440px',
+  minWidth: '320px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  gap: '1.25rem'
+},
+formTitle: {
+  fontSize: '2rem',
+  fontWeight: '800',
+  color: '#111827',
+  marginBottom: '1rem',
+  textAlign: 'center',
+  letterSpacing: '0.03em'
+},
+inputGroup: {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
+  marginBottom: '0.7rem'
+},
+label: {
+  fontSize: '1.18rem',
+  fontWeight: '600',
+  color: '#2a2f34',
+  marginBottom: '0.16rem'
+},
+input: {
+  width: '100%',
+  padding: '15px 22px',
+  borderRadius: '12px',
+  border: '1.5px solid #d1d5db',
+  background: '#f8fafb',
+  fontSize: '1.17rem',
+  fontFamily: 'inherit',
+  outline: 'none',
+  boxSizing: 'border-box'
+},
+textarea: {
+  width: '100%',
+  padding: '15px 22px',
+  borderRadius: '12px',
+  border: '1.5px solid #d1d5db',
+  background: '#f8fafb',
+  fontSize: '1.17rem',
+  fontFamily: 'inherit',
+  outline: 'none',
+  minHeight: '90px',
+  resize: 'vertical',
+  boxSizing: 'border-box'
+},
+formButtons: {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1.2rem'
+},
+button: {
+  padding: '15px 32px',
+  borderRadius: '10px',
+  fontSize: '1.14rem',
+  fontWeight: '700',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.2s'
+},
+submitButton: {
+  background: '#111827',
+  color: '#fff',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
+},
+cancelButton: {
+  background: '#f2f4f5',
+  color: '#232323',
+  border: '1.5px solid #d1d5db'
+}
+
+};
+
 
   return (
     <>
@@ -464,7 +492,7 @@ const YouTubeVideos = () => {
                   onClick={() => !isLoading && getRecommendedVideos(selectedVideoRequest, true)}
                   disabled={isLoading}
                 >
-                  {isLoading ? '🔄 Loading...' : '🔄 Refresh Videos'}
+                  {isLoading ? ' Loading...' : ' Refresh Videos'}
                 </button>
               )}
             </div>
@@ -519,11 +547,6 @@ const YouTubeVideos = () => {
                       }
                     </p>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem'}}>
-                      {video.duration && (
-                        <span style={{...styles.videoDescription, color: '#9ca3af', fontSize: '0.8rem'}}>
-                          ⏱️ {video.duration}
-                        </span>
-                      )}
                       {video.reason && (
                         <p style={{...styles.videoDescription, fontStyle: 'italic', color: '#667eea', fontSize: '0.75rem', margin: 0}}>
                           💡 {video.reason}
