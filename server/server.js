@@ -27,6 +27,15 @@ const {
   deleteVideoRequest, 
   recommendVideos 
 } = require('./controllers/videosController');
+const { 
+  createYouTubeVideo,
+  getUserYouTubeVideos,
+  chatWithYouTubeVideo,
+  summarizeYouTubeVideo,
+  generateQuizForYouTubeVideo,
+  saveQuizResults: saveYouTubeQuizResults,
+  deleteYouTubeVideo
+} = require('./controllers/youtubeVideoController');
 
 
 const app = express();
@@ -71,6 +80,15 @@ app.get('/video-requests/:userId', getUserVideoRequests);
 app.post('/video-requests', createVideoRequest);
 app.delete('/video-requests/:videoRequestId', deleteVideoRequest);
 app.post('/recommend-videos', recommendVideos);
+
+// YouTube Video Summarizer routes
+app.post('/youtube-videos', createYouTubeVideo);
+app.get('/youtube-videos/:userId', getUserYouTubeVideos);
+app.post('/chat-with-youtube-video', chatWithYouTubeVideo);
+app.post('/summarize-youtube-video', summarizeYouTubeVideo);
+app.post('/generate-youtube-quiz', generateQuizForYouTubeVideo);
+app.post('/save-youtube-quiz-results', saveYouTubeQuizResults);
+app.delete('/youtube-videos/:videoId', deleteYouTubeVideo);
 
 const PORT = 5000;
 app.listen(PORT, () => {

@@ -18,6 +18,7 @@ import Forum from "./pages/Forum";
 import Video from "./pages/Video";
 import YouTubeVideos from "./pages/YouTubeVideos";
 import Notes from "./pages/Notes";
+import YouTubeVideoSummarizer from "./pages/YouTubeVideoSummarizer";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
@@ -141,9 +142,9 @@ export default function App() {
         }
       />
       <Route
-        path="/video-summarizer"
+        path="/youtube-video-summarizer"
         element={
-          user ? <Video /> : <Navigate to="/" replace />
+          user ? <YouTubeVideoSummarizer /> : <Navigate to="/" replace />
         }
       />
     </Routes>

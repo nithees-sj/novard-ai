@@ -14,11 +14,11 @@ const features = [
     route: '/youtube-videos'
   },
   {
-    title: 'YOUTUBE VIDEOS SUMMARIZER AND TRANSCRIBE',
-    description: 'Get AI-powered summaries and transcripts of YouTube videos to quickly understand key concepts and save time.',
+    title: 'VIDEO DOUBTS - YOUTUBE SUMMARIZER AND QUIZ',
+    description: 'Add video doubts with YouTube video links and interact with them through chat, summarization, and quiz features powered by AI.',
     imageUrl: aiForumImage,
     icon: '📝',
-    route: '/video-summarizer'
+    route: '/youtube-video-summarizer'
   },
 ];
 
