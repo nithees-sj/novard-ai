@@ -27,14 +27,15 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       - Focus on well-known, established courses that are likely to remain available
       
       Examples of real Udemy course patterns:
-      - https://www.udemy.com/course/the-complete-web-developer-course-2/
-      - https://www.udemy.com/course/the-complete-javascript-course/
-      - https://www.udemy.com/course/complete-python-bootcamp/
-      - https://www.udemy.com/course/aws-certified-solutions-architect-associate/
-      - https://www.udemy.com/course/machinelearning/
-      - 
+      -https://www.udemy.com/course/introduction-to-web-architecture-devops/
+      -https://www.udemy.com/course/devops-interview-questions/
+      -https://www.udemy.com/course/navigating-devops-excellence-for-business-success/
+      -https://www.udemy.com/course/aws-certified-devops-engineer-professional-hands-on/
+      -https://www.udemy.com/course/learn-containers/
+      -https://www.udemy.com/course/linux-tutorials/
+      -https://www.udemy.com/course/hands-on-introduction-to-linux-with-ubuntu/
       
-      Do NOT generate fake or made-up course URLs. Only use real courses that exist on Udemy.
+      Do NOT generate fake or made-up course URLs. Only use real courses that exist on Udemy website or you can even take from the above given example cources.
       Strong Note : Before giving the url of the course make sure that the course it present in the udemy, only give the course list by checking the udemy exising or not`,
       
       coursera: `Find ${maxVideos} popular, currently available Coursera courses related to "${keyword}". Return ONLY a JSON array with this exact format:
@@ -75,6 +76,8 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       - https://www.edureka.co/python-programming-certification-training
       - https://www.edureka.co/machine-learning-certification-training
       - https://www.edureka.co/blockchain-training
+      -https://www.edureka.co/css-certification-course?qId=68c495ef-8ab4-4f50-9d46-6622926d8968&index_name=prod_search_result_courses&objId=1519&objPos=1
+
       
       Do NOT generate fake or made-up course URLs. Only use real courses that exist on Edureka
       Strong Note : Before giving the url of the course make sure that the course it present in the Edureka, only give the course list by checking the Edureka exising or not`,

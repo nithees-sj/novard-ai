@@ -45,6 +45,16 @@ const {
   saveEducationalQuizResults,
   deleteEducationalVideo
 } = require('./controllers/educationalVideoController');
+const {
+  getUserDoubtClearances,
+  createDoubtClearance,
+  deleteDoubtClearance,
+  chatWithDoubtClearance,
+  summarizeDoubtClearance,
+  generateDoubtQuiz,
+  saveDoubtQuizResults,
+  getYouTubeRecommendations
+} = require('./controllers/doubtClearanceController');
 
 
 const app = express();
@@ -113,6 +123,16 @@ app.post('/summarize-educational-video', summarizeEducationalVideo);
 app.post('/generate-educational-quiz', generateEducationalQuiz);
 app.post('/save-educational-quiz-results', saveEducationalQuizResults);
 app.delete('/educational-videos/:videoId', deleteEducationalVideo);
+
+// Doubt Clearance routes
+app.get('/doubt-clearances/:userId', getUserDoubtClearances);
+app.post('/doubt-clearances', createDoubtClearance);
+app.delete('/doubt-clearances/:doubtId', deleteDoubtClearance);
+app.post('/chat-with-doubt-clearance', chatWithDoubtClearance);
+app.post('/summarize-doubt-clearance', summarizeDoubtClearance);
+app.post('/generate-doubt-quiz', generateDoubtQuiz);
+app.post('/save-doubt-quiz-results', saveDoubtQuizResults);
+app.post('/get-youtube-recommendations', getYouTubeRecommendations);
 
 const PORT = 5000;
 app.listen(PORT, () => {
