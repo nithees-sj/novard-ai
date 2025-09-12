@@ -7,15 +7,15 @@ import aiForumImage from '../images/ai-forum.jpg';
 
 const features = [
   {
-    title: 'YOUTUBE VIDEOS',
-    description: 'Access curated YouTube videos with industry experts, tutorials, and educational content to enhance your learning journey.',
+    title: 'VIDEOS',
+    description: 'Access curated videos with industry experts, tutorials, and educational content to enhance your learning journey.',
     imageUrl: videoImage,
     icon: '🎥',
     route: '/youtube-videos'
   },
   {
-    title: 'VIDEO DOUBTS - YOUTUBE SUMMARIZER AND QUIZ',
-    description: 'Add video doubts with YouTube video links and interact with them through chat, summarization, and quiz features powered by AI.',
+    title: 'VIDEO DOUBTS - SUMMARIZER AND QUIZ',
+    description: 'Add video doubts with YouTube video links and interact with them through chat, summarization, and quiz features.',
     imageUrl: aiForumImage,
     icon: '📝',
     route: '/youtube-video-summarizer'

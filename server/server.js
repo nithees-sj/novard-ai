@@ -36,6 +36,15 @@ const {
   saveQuizResults: saveYouTubeQuizResults,
   deleteYouTubeVideo
 } = require('./controllers/youtubeVideoController');
+const {
+  createEducationalVideo,
+  getUserEducationalVideos,
+  chatWithEducationalVideo,
+  summarizeEducationalVideo,
+  generateEducationalQuiz,
+  saveEducationalQuizResults,
+  deleteEducationalVideo
+} = require('./controllers/educationalVideoController');
 
 
 const app = express();
@@ -81,6 +90,12 @@ app.post('/video-requests', createVideoRequest);
 app.delete('/video-requests/:videoRequestId', deleteVideoRequest);
 app.post('/recommend-videos', recommendVideos);
 
+// Educational video requests routes
+app.get('/educational-video-requests/:userId', getUserVideoRequests);
+app.post('/educational-video-requests', createVideoRequest);
+app.delete('/educational-video-requests/:videoRequestId', deleteVideoRequest);
+app.post('/recommend-educational-videos', recommendVideos);
+
 // YouTube Video Summarizer routes
 app.post('/youtube-videos', createYouTubeVideo);
 app.get('/youtube-videos/:userId', getUserYouTubeVideos);
@@ -89,6 +104,15 @@ app.post('/summarize-youtube-video', summarizeYouTubeVideo);
 app.post('/generate-youtube-quiz', generateQuizForYouTubeVideo);
 app.post('/save-youtube-quiz-results', saveYouTubeQuizResults);
 app.delete('/youtube-videos/:videoId', deleteYouTubeVideo);
+
+// Educational Video Summarizer routes
+app.post('/educational-videos', createEducationalVideo);
+app.get('/educational-videos/:userId', getUserEducationalVideos);
+app.post('/chat-with-educational-video', chatWithEducationalVideo);
+app.post('/summarize-educational-video', summarizeEducationalVideo);
+app.post('/generate-educational-quiz', generateEducationalQuiz);
+app.post('/save-educational-quiz-results', saveEducationalQuizResults);
+app.delete('/educational-videos/:videoId', deleteEducationalVideo);
 
 const PORT = 5000;
 app.listen(PORT, () => {

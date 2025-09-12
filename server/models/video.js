@@ -13,6 +13,12 @@ const videoSchema = new mongoose.Schema({
     trim: true,
     maxlength: 1000
   },
+  platform: {
+    type: String,
+    required: true,
+    enum: ['youtube', 'udemy', 'coursera', 'edureka'],
+    default: 'youtube'
+  },
   userId: {
     type: String,
     required: true

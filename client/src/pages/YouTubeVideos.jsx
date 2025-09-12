@@ -5,15 +5,40 @@ import axios from 'axios';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
-const YouTubeVideos = () => {
+const EducationalVideos = () => {
   const [videoRequests, setVideoRequests] = useState([]);
   const [selectedVideoRequest, setSelectedVideoRequest] = useState(null);
   const [showAddVideoRequest, setShowAddVideoRequest] = useState(false);
   const [recommendedVideos, setRecommendedVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
-  const [newVideoRequest, setNewVideoRequest] = useState({ title: '', description: '' });
+  const [newVideoRequest, setNewVideoRequest] = useState({ title: '', description: '', platform: 'youtube' });
   const [videoCache, setVideoCache] = useState({}); // Cache videos for each request
+  const [selectedPlatform, setSelectedPlatform] = useState('youtube');
+
+  // Platform configurations
+  const platforms = {
+    youtube: {
+      name: 'YouTube',
+      icon: '📺',
+      color: '#FF0000'
+    },
+    udemy: {
+      name: 'Udemy',
+      icon: '🎓',
+      color: '#A435F0'
+    },
+    coursera: {
+      name: 'Coursera',
+      icon: '🎓',
+      color: '#0056D3'
+    },
+    edureka: {
+      name: 'Edureka',
+      icon: '🎓',
+      color: '#FF6B35'
+    },
+  };
 
   // Toast notification function
   const showToast = (message, type) => {
@@ -30,7 +55,7 @@ const YouTubeVideos = () => {
   const loadUserVideoRequests = async () => {
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/video-requests/${userId}`);
+      const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
       const videoRequestsData = Array.isArray(response.data) ? response.data : [];
       setVideoRequests(videoRequestsData);
       
@@ -60,9 +85,10 @@ const YouTubeVideos = () => {
     
     setIsLoading(true);
     try {
-      const response = await axios.post(`${apiUrl}/recommend-videos`, {
+      const response = await axios.post(`${apiUrl}/recommend-educational-videos`, {
         title: videoRequest.title,
-        description: videoRequest.description
+        description: videoRequest.description,
+        platform: videoRequest.platform || 'youtube'
       });
       const videos = response.data.videos || [];
       setRecommendedVideos(videos);
@@ -95,17 +121,18 @@ const YouTubeVideos = () => {
     setIsLoading(true);
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
-      const response = await axios.post(`${apiUrl}/video-requests`, {
+      const response = await axios.post(`${apiUrl}/educational-video-requests`, {
         title: newVideoRequest.title,
         description: newVideoRequest.description,
+        platform: newVideoRequest.platform,
         userId: userId
       });
       
       // Refresh the video requests list
       await loadUserVideoRequests();
       setShowAddVideoRequest(false);
-      setNewVideoRequest({ title: '', description: '' });
-      showToast('Video request added successfully!', 'success');
+      setNewVideoRequest({ title: '', description: '', platform: selectedPlatform });
+      showToast(`${platforms[newVideoRequest.platform].name} video request added successfully!`, 'success');
     } catch (error) {
       console.error('Error adding video request:', error);
       showToast('Error adding video request. Please try again.', 'error');
@@ -128,7 +155,7 @@ const YouTubeVideos = () => {
     }
 
     try {
-      await axios.delete(`${apiUrl}/video-requests/${videoRequestId}`);
+      await axios.delete(`${apiUrl}/educational-video-requests/${videoRequestId}`);
       await loadUserVideoRequests();
       
       // If the deleted video request was selected, clear selection and cache
@@ -226,14 +253,14 @@ const styles = {
     boxShadow: '0 8px 20px rgba(0, 0, 0, 0.21)'
   },
   doubtTitle: {
-    fontSize: '1.3rem',
+    fontSize: '1.5rem',
     fontWeight: '700',
     color: '#111827',
     marginBottom: '0.8rem',
     lineHeight: '1.4'
   },
   doubtDescription: {
-    fontSize: '1rem',
+    fontSize: '1.2rem',
     color: '#374151',
     lineHeight: '1.5',
     marginBottom: '0.6rem'
@@ -509,6 +536,46 @@ submitButton: {
     fontWeight: '600',
     zIndex: 1000,
     fontSize: '1rem'
+  },
+  platformSelector: {
+    display: 'flex',
+    gap: '0.5rem',
+    marginBottom: '1.5rem',
+    flexWrap: 'wrap',
+  },
+  platformButton: {
+    padding: '0.8rem 1.2rem',
+    fontSize: '1rem',
+    fontWeight: '600',
+    background: 'rgba(255, 255, 255, 0.8)',
+    color: '#6b7280',
+    border: '1px solid rgba(107, 114, 128, 0.3)',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  activePlatformButton: {
+    background: '#3b82f6',
+    color: '#ffffff',
+    border: '1px solid #3b82f6',
+    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+  },
+  platformIcon: {
+    fontSize: '1.2rem',
+  },
+  platformBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.3rem',
+    padding: '0.3rem 0.6rem',
+    borderRadius: '8px',
+    fontSize: '1.2rem',
+    fontWeight: '600',
+    marginBottom: '0.5rem',
+    marginRight: '10px',
   }
 
 };
@@ -516,14 +583,14 @@ submitButton: {
 
   return (
     <>
-      <Navigationinner title={"YOUTUBE VIDEOS"} />
+      <Navigationinner title={"EDUCATIONAL VIDEOS"} />
       <div style={styles.container}>
         {/* Main Content */}
         <div style={styles.mainContent}>
           <div style={styles.mainHeader}>
             <div style={styles.headerTop}>
               <h1 style={styles.mainTitle}>
-                {selectedVideoRequest ? `Videos for: ${selectedVideoRequest.title}` : 'YouTube Video Recommendations'}
+                {selectedVideoRequest ? `Videos for: ${selectedVideoRequest.title}` : 'Educational Video Recommendations'}
               </h1>
               {selectedVideoRequest && (
                 <button 
@@ -540,8 +607,8 @@ submitButton: {
             </div>
             <p style={styles.mainSubtitle}>
               {selectedVideoRequest 
-                ? 'Based on your video request, here are some recommended videos'
-                : 'Select a video request from the sidebar to see personalized video recommendations'
+                ? `Based on your ${platforms[selectedVideoRequest.platform]?.name || 'educational'} video request, here are some recommended videos`
+                : 'Select a video request from the sidebar to see personalized video recommendations from YouTube, Udemy, Coursera, and Edureka'
               }
             </p>
           </div>
@@ -559,27 +626,28 @@ submitButton: {
               {recommendedVideos.map((video, index) => (
                 <div
                   key={index}
-                  style={styles.videoCard}
+                  style={{...styles.videoCard, position: 'relative'}}
                   onClick={() => {
                     // Open video in new tab or embed player
                     window.open(video.url, '_blank');
                   }}
                 >
+
                   <img
                     src={video.thumbnail}
                     alt={video.title}
                     style={styles.videoThumbnail}
                     onError={(e) => {
                       console.log('Thumbnail failed to load:', video.thumbnail);
-                      // Fallback to default YouTube thumbnail
-                      e.target.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+                      // Fallback to courses.jpg for educational platforms
+                      e.target.src = '/courses.jpg';
                     }}
                   />
                   <div style={styles.videoInfo}>
                     <h3 style={styles.videoTitle}>{video.title}</h3>
                     {video.channel && (
                       <p style={{...styles.videoDescription, color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem'}}>
-                        📺 {video.channel}
+                        {video.platform === 'youtube' ? '📺' : '🎓'} {video.channel}
                       </p>
                     )}
                     <p style={styles.videoDescription}>
@@ -595,6 +663,35 @@ submitButton: {
                         </p>
                       )}
                     </div>
+                    
+                    {/* Enhanced metadata display for all platforms */}
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.8rem', color: '#6b7280'}}>
+                      {video.rating && (
+                        <span style={{background: '#f3f4f6', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
+                          ⭐ {video.rating}
+                        </span>
+                      )}
+                      {video.price && (
+                        <span style={{background: '#dcfce7', color: '#059669', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontWeight: '600'}}>
+                          💰 {video.price}
+                        </span>
+                      )}
+                      {video.enrollments && (
+                        <span style={{background: '#fef3c7', color: '#d97706', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
+                          👥 {video.enrollments.toLocaleString()}
+                        </span>
+                      )}
+                      {video.duration && (
+                        <span style={{background: '#e0e7ff', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
+                          ⏱️ {video.duration}
+                        </span>
+                      )}
+                      {video.instructor && video.platform !== 'youtube' && (
+                        <span style={{background: '#f3e8ff', color: '#7c3aed', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
+                          👨‍🏫 {video.instructor}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -604,10 +701,10 @@ submitButton: {
           {/* Empty Video State */}
           {!isLoading && (!Array.isArray(recommendedVideos) || recommendedVideos.length === 0) && selectedVideoRequest && (
             <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>🎥</div>
+              <div style={styles.emptyIcon}>🎓</div>
               <div style={styles.emptyTitle}>No videos found</div>
               <div style={styles.emptyDescription}>
-                We couldn't find relevant videos for this request. Try adding more details or check back later.
+                We couldn't find relevant videos for this {platforms[selectedVideoRequest.platform]?.name || 'educational'} request. Try adding more details or check back later.
               </div>
             </div>
           )}
@@ -618,7 +715,7 @@ submitButton: {
               <div style={styles.emptyIcon}>🎯</div>
               <div style={styles.emptyTitle}>Select a video request to get started</div>
               <div style={styles.emptyDescription}>
-                Choose a video request from the sidebar to see personalized video recommendations, or add a new request to begin.
+                Choose a video request from the sidebar to see personalized recommendations from YouTube, Udemy, Coursera, and Edureka, or add a new request to begin.
               </div>
             </div>
           )}
@@ -642,13 +739,36 @@ submitButton: {
               <h3 style={styles.formTitle}>Add New Video Request</h3>
               <form onSubmit={handleAddVideoRequest}>
                 <div style={styles.inputGroup}>
+                  <label style={styles.label}>Select Platform</label>
+                  <div style={styles.platformSelector}>
+                    {Object.entries(platforms).map(([key, platform]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        style={{
+                          ...styles.platformButton,
+                          ...(newVideoRequest.platform === key ? styles.activePlatformButton : {})
+                        }}
+                        onClick={() => {
+                          setNewVideoRequest(prev => ({ ...prev, platform: key }));
+                          setSelectedPlatform(key);
+                        }}
+                        disabled={isLoading}
+                      >
+                        <span style={styles.platformIcon}>{platform.icon}</span>
+                        {platform.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={styles.inputGroup}>
                   <label style={styles.label}>Title</label>
                   <input
                     type="text"
                     style={styles.input}
                     value={newVideoRequest.title}
                     onChange={(e) => setNewVideoRequest({ ...newVideoRequest, title: e.target.value })}
-                    placeholder="Enter doubt title..."
+                    placeholder="Enter video request title..."
                     required
                   />
                 </div>
@@ -658,7 +778,7 @@ submitButton: {
                     style={styles.textarea}
                     value={newVideoRequest.description}
                     onChange={(e) => setNewVideoRequest({ ...newVideoRequest, description: e.target.value })}
-                    placeholder="Describe your doubt in detail..."
+                    placeholder="Describe what kind of videos you're looking for..."
                     required
                   />
                 </div>
@@ -702,7 +822,19 @@ submitButton: {
               >
                 ✕
               </button>
-              <div style={styles.doubtTitle}>{videoRequest.title}</div>
+              <div style={styles.doubtTitle}>
+                <div style={{
+                  ...styles.platformBadge,
+                  background: platforms[videoRequest.platform]?.color + '20',
+                  color: platforms[videoRequest.platform]?.color
+                }}>
+                  <span style={styles.platformIcon}>
+                    {platforms[videoRequest.platform]?.icon || '🎓'}
+                  </span>
+                  {platforms[videoRequest.platform]?.name || 'Educational'}
+                </div>
+                {videoRequest.title}
+              </div>
               <div style={styles.doubtDescription}>{videoRequest.description}</div>
               <div style={styles.doubtDate}>
                 {new Date(videoRequest.createdAt).toLocaleDateString()}
@@ -713,10 +845,10 @@ submitButton: {
           {/* Empty State */}
           {Array.isArray(videoRequests) && videoRequests.length === 0 && (
             <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>🎥</div>
+              <div style={styles.emptyIcon}>🎓</div>
               <div style={styles.emptyTitle}>No video requests yet</div>
               <div style={styles.emptyDescription}>
-                Add your first video request to get personalized video recommendations!
+                Add your first video request to get personalized recommendations from YouTube, Udemy, Coursera, Edureka, and Unacademy!
               </div>
             </div>
           )}
@@ -738,4 +870,4 @@ submitButton: {
   );
 };
 
-export default YouTubeVideos;
+export default EducationalVideos;

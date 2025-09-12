@@ -430,416 +430,461 @@ const Notes = () => {
     );
   };
 
-const styles = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-    background: '#fff', // Pure white, for a modern minimal look
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-  },
-  sidebar: {
-    width: '340px',
-    background: 'rgba(255,255,255,0.99)',
-    backdropFilter: 'blur(12px)',
-    borderLeft: '1.5px solid rgba(0,0,0,0.08)',
-    padding: '2rem 1.5rem',
-    overflowY: 'auto',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.11)',
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  sidebarHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2.5rem',
-    paddingBottom: '1.5rem',
-    borderBottom: '1.5px solid rgba(0,0,0,0.06)'
-  },
-  sidebarTabs: {
-    display: 'flex',
-    marginBottom: '2rem',
-    background: 'rgba(255,255,255,0.6)',
-    borderRadius: '8px',
-    padding: '0.3rem'
-  },
-  sidebarTab: {
-    flex: '1',
-    padding: '0.9rem 1.1rem',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-    color: '#555',
-    transition: 'all 0.3s',
-    textAlign: 'center'
-  },
-  sidebarTabActive: {
-    background: 'rgba(0,0,0,0.06)',
-    color: '#111827'
-  },
-  addButton: {
-    background: '#111827',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '12px',
-    width: '44px',
-    height: '44px',
-    cursor: 'pointer',
-    fontSize: '1.4rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    boxShadow: '0 4px 18px rgba(0,0,0,0.16)',
-    fontWeight: '700'
-  },
-  noteItem: {
-    padding: '1.3rem 1rem',
-    marginBottom: '1.15rem',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-    border: '1.5px solid transparent',
-    background: 'rgba(255,255,255,0.82)',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-    position: 'relative'
-  },
-  noteItemActive: {
-    background: 'rgba(0,0,0,0.08)',
-    border: '1.5px solid #111827'
-  },
-  mainContent: {
-    flex: '1 1 0',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '2.5rem 3.5rem 2.5rem 2.5rem',
-    gap: '1.3rem',
-    height: '100vh',
-    overflow: 'hidden'
-  },
-  contentHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '2rem',
-    background: '#fff',
-    borderRadius: '18px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.07)',
-    border: '1px solid rgba(0,0,0,0.07)'
-  },
-  tabButtons: {
-    display: 'flex',
-    gap: '1rem'
-  },
-  tabButton: {
-    padding: '1.2rem 2.5rem',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    transition: 'all 0.3s',
-    minWidth: '140px',
-    textAlign: 'center'
-  },
-  tabButtonActive: {
-    background: '#111827',
-    color: '#fff',
-    boxShadow: '0 4px 18px rgba(0,0,0,0.13)',
-    transform: 'translateY(-2px)'
-  },
-  tabButtonInactive: {
-    background: '#fff',
-    color: '#555',
-    border: '1.5px solid rgba(0,0,0,0.07)'
-  },
-  chatContainer: {
-    flex: '1',
-    display: 'flex',
-    flexDirection: 'column',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
-    overflow: 'hidden'
-  },
-  messagesContainer: {
-    flex: '1',
-    padding: '1.5rem 2rem',
-    overflowY: 'auto',
-    minHeight: '480px',
-    maxHeight: '600px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem'
-  },
-  chatInputContainer: {
-    background: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.07)',
-    padding: '0.5rem',
-    border: '1.5px solid rgba(0,0,0,0.09)',
-    width: '100%',
-    maxWidth: '680px',
-    margin: '1rem auto 0 auto',
-    minHeight: 'auto',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  message: {
-    marginBottom: '1.15rem',
-    padding: '1.1rem 1.5rem',
-    borderRadius: '20px',
-    width: '100%',
-    minWidth: '260px',
-    maxWidth: '540px',
-    wordWrap: 'break-word',
-    overflowWrap: 'break-word',
-    display: 'inline-block',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.11)',
-    background: '#f6f6f8',
-    color: '#232323'
-  },
-  userMessage: {
-    background: '#111827',
-    color: '#fff',
-    textAlign: 'right',
-    alignSelf: 'flex-end',
-  },
-  botMessage: {
-    background: '#f3f4f5',
-    color: '#232323',
-    textAlign: 'left',
-    alignSelf: 'flex-start',
-  },
-  messageInput: {
-    flex: '1',
-    padding: '0.85rem 1.2rem',
-    border: '1.5px solid rgba(0,0,0,0.09)',
-    borderRadius: '8px',
-    fontSize: '1.15rem',
-    outline: 'none',
-    minHeight: '48px',
-    maxHeight: '80px',
-    resize: 'none',
-    fontFamily: 'inherit',
-    lineHeight: '1.4',
-    width: '100%',
-    overflow: 'hidden',
-    background: '#f7f7fa'
-  },
-  sendButton: {
-    padding: '0.5rem 1.25rem',
-    background: '#111827',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '7px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: '600',
-    transition: 'all 0.3s',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
-    minWidth: '62px',
-    height: '38px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  contentArea: {
-    flex: '1',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 8px 30px rgba(0,0,0,0.10)',
-    padding: '2.2rem',
-    overflowY: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
-  },
-  summaryContent: {
-    flex: '1',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 8px 30px rgba(0,0,0,0.10)',
-    padding: '1.5rem',
-    overflowY: 'auto',
-    height: '520px'
-  },
-  quizContent: {
-    flex: '1',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 8px 28px rgba(0,0,0,0.11)',
-    padding: '1.5rem',
-    overflowY: 'auto',
-    height: '500px'
-  },
-  quizQuestion: {
-    marginBottom: '2rem',
-    padding: '1.5rem',
-    background: 'rgba(0,0,0,0.03)',
-    borderRadius: '12px',
-    border: '1px solid rgba(0,0,0,0.09)'
-  },
-  quizOption: {
-    marginBottom: '0.75rem',
-    padding: '0.9rem 1.2rem',
-    background: '#fff',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-    border: '1.5px solid rgba(0,0,0,0.10)'
-  },
-  quizOptionSelected: {
-    background: 'rgba(0,0,0,0.07)',
-    border: '1.5px solid #111827'
-  },
-  quizSubmitButton: {
-    padding: '1rem 2.1rem',
-    background: '#111827',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    fontSize: '1.05rem',
-    fontWeight: '700',
-    transition: 'all 0.3s',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.11)',
-    marginTop: '1.5rem'
-  },
-  scoreCard: {
-    textAlign: 'center',
-    padding: '2.1rem 1.2rem',
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-  },
-  emptyState: {
-    textAlign: 'center',
-    color: '#666',
-    fontSize: '1.11rem'
-  },
-  hiddenInput: {
-    display: 'none'
-  },
-  quizPopup: {
-    position: 'absolute',
-    top: '0',
-    right: '100%',
-    width: '300px',
-    background: '#fff',
-    borderRadius: '12px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.17)',
-    padding: '1rem',
-    marginRight: '1rem',
-    zIndex: 1000,
-    maxHeight: '400px',
-    overflowY: 'auto',
-    border: '1.5px solid rgba(0,0,0,0.07)'
-  },
-  quizPopupHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem',
-    paddingBottom: '0.5rem',
-    borderBottom: '1.5px solid rgba(0,0,0,0.07)'
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '1.2rem',
-    cursor: 'pointer',
-    color: '#888'
-  },
-  toast: {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    padding: '1rem 1.5rem',
-    borderRadius: '8px',
-    color: 'white',
-    fontWeight: '600',
-    zIndex: 9999,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.23)',
-    animation: 'slideIn 0.3s'
-  },
-  toastSuccess: {
-    background: '#059669'
-  },
-  toastError: {
-    background: '#dc2626'
-  },
-  confirmationDialog: {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    background: 'rgba(0,0,0,0.37)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000
-  },
-  confirmationContent: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '2.3rem 1.8rem',
-    maxWidth: '425px',
-    width: '92%',
-    textAlign: 'center',
-    boxShadow: '0 18px 54px rgba(0,0,0,0.14)'
-  },
-  confirmationButtons: {
-    display: 'flex',
-    gap: '1.3rem',
-    justifyContent: 'center',
-    marginTop: '1.4rem'
-  },
-  confirmButton: {
-    padding: '0.85rem 1.6rem',
-    background: '#059669',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '1.05rem',
-    fontWeight: '700',
-    transition: 'all 0.3s'
-  },
-  cancelButton: {
-    padding: '0.85rem 1.6rem',
-    background: '#f3f3f6',
-    color: '#666',
-    border: '1.5px solid #ddd',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '1.05rem',
-    fontWeight: '700',
-    transition: 'all 0.3s'
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: '0.6rem',
-    right: '0.6rem',
-    background: 'rgba(239,68,68,0.12)',
-    color: '#ef4444',
-    border: 'none',
-    borderRadius: '7px',
-    width: '26px',
-    height: '26px',
-    cursor: 'pointer',
-    fontSize: '0.92rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.3s',
-    opacity: '0.75'
-  }
-};
+  const styles = {
+    container: {
+      display: 'flex',
+      minHeight: '100vh',
+      background: '#f8fafc',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+    },
+    mainContent: {
+      flex: '1',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1.5rem',
+      gap: '1rem'
+    },
+    sidebar: {
+      width: '350px',
+      background: 'rgba(255, 255, 255, 0.98)',
+      backdropFilter: 'blur(20px)',
+      borderLeft: '1px solid rgba(229, 231, 235, 0.8)',
+      padding: '1.5rem',
+      overflowY: 'auto',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+    },
+    sidebarHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '2rem',
+      paddingBottom: '1.5rem',
+      borderBottom: '2px solid rgba(102, 126, 234, 0.1)'
+    },
+    addButton: {
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '12px',
+      width: '44px',
+      height: '44px',
+      cursor: 'pointer',
+      fontSize: '1.4rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+      fontWeight: '600'
+    },
+    noteItem: {
+      padding: '1.5rem',
+      marginBottom: '0.75rem',
+      borderRadius: '12px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      border: '1px solid transparent',
+      background: 'rgba(255, 255, 255, 0.6)',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      position: 'relative'
+    },
+    noteItemActive: {
+      background: 'rgba(102, 126, 234, 0.1)',
+      border: '1px solid rgba(102, 126, 234, 0.3)'
+    },
+    mainContent: {
+      flex: '1',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1.5rem',
+      gap: '1rem',
+      height: 'calc(100vh - 80px)',
+      overflow: 'hidden'
+    },
+    contentHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '1.5rem',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    tabButtons: {
+      display: 'flex',
+      gap: '1rem'
+    },
+    tabButton: {
+      padding: '1.2rem 2.5rem',
+      border: 'none',
+      borderRadius: '12px',
+      cursor: 'pointer',
+      fontSize: '1.1rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease',
+      minWidth: '140px',
+      textAlign: 'center'
+    },
+    tabButtonActive: {
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+      transform: 'translateY(-2px)'
+    },
+    tabButtonInactive: {
+      background: 'rgba(255, 255, 255, 0.8)',
+      color: '#6b7280',
+      border: '2px solid rgba(229, 231, 235, 0.8)'
+    },
+    chatContainer: {
+      flex: '1',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'rgba(255, 255, 255, 0.95)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      overflow: 'hidden'
+    },
+    messagesContainer: {
+      flex: '1',
+      padding: '1rem 1.5rem',
+      overflowY: 'auto',
+      height: '500px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.75rem'
+    },
+    chatInputContainer: {
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '12px',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+      padding: '0.3rem',
+      border: '1px solid rgba(229, 231, 235, 0.8)',
+      width: '680px',
+      margin: '1rem auto 0 auto',
+      minHeight: 'auto'
+    },
+    message: {
+      marginBottom: '1.25rem',
+      padding: '1.25rem 1.5rem',
+      borderRadius: '20px',
+      width: '680px',
+      minWidth: '280px',
+      maxWidth: '580px',
+      wordWrap: 'break-word',
+      overflowWrap: 'break-word',
+      display: 'inline-block',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    userMessage: {
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+      color: '#1f2937',
+      border: '1px solid rgba(226, 232, 240, 0.8)',
+      display: 'block',
+      textAlign: 'left',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+      position: 'relative'
+    },
+    botMessage: {
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+      color: '#1f2937',
+      border: '1px solid rgba(226, 232, 240, 0.8)',
+      display: 'block',
+      textAlign: 'left',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+      position: 'relative'
+    },
+    inputContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem'
+    },
+    inputRow: {
+      display: 'flex',
+      gap: '0.75rem',
+      alignItems: 'flex-end'
+    },
+    inputRowSimple: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: '0.5rem',
+      alignItems: 'center'
+    },
+    messageInput: {
+      flex: '1',
+      padding: '0.75rem 1rem',
+      border: '1px solid rgba(229, 231, 235, 0.8)',
+      borderRadius: '8px',
+      fontSize: '1.5rem',
+      outline: 'none',
+      transition: 'all 0.3s ease',
+      minHeight: '65px',
+      maxHeight: '60px',
+      resize: 'none',
+      fontFamily: 'inherit',
+      lineHeight: '1.4',
+      width: '100%',
+      overflow: 'hidden'
+    },
+    sendButton: {
+      padding: '0.4rem 0.8rem',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '1.8rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+      minWidth: '60px',
+      height: '30px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    contentArea: {
+      flex: '1',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      padding: '2rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    contentArea: {
+      flex: '1',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      padding: '2rem',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      overflowY: 'auto',
+      height: '400px',
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    summaryContent: {
+      flex: '1',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      padding: '1.5rem',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      overflowY: 'auto',
+      height: '500px'
+    },
+    quizContent: {
+      flex: '1',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      padding: '1.5rem',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      overflowY: 'auto',
+      height: '500px'
+    },
+    quizQuestion: {
+      marginBottom: '2rem',
+      padding: '1.5rem',
+      background: 'rgba(59, 130, 246, 0.05)',
+      borderRadius: '12px',
+      border: '1px solid rgba(59, 130, 246, 0.1)'
+    },
+    quizOption: {
+      marginBottom: '0.75rem',
+      padding: '0.75rem 1rem',
+      background: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      border: '2px solid rgba(229, 231, 235, 0.8)'
+    },
+    quizOptionSelected: {
+      background: 'rgba(59, 130, 246, 0.1)',
+      border: '2px solid rgba(59, 130, 246, 0.4)'
+    },
+    quizSubmitButton: {
+      padding: '1rem 2rem',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '12px',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+      marginTop: '1rem'
+    },
+    scoreCard: {
+      textAlign: 'center',
+      padding: '2rem',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    emptyState: {
+      textAlign: 'center',
+      color: '#6b7280',
+      fontSize: '1.1rem'
+    },
+    hiddenInput: {
+      display: 'none'
+    },
+    quizPopup: {
+      position: 'absolute',
+      top: '0',
+      right: '100%',
+      width: '300px',
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '12px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+      padding: '1rem',
+      marginRight: '1rem',
+      zIndex: 1000,
+      maxHeight: '400px',
+      overflowY: 'auto',
+      border: '1px solid rgba(229, 231, 235, 0.8)'
+    },
+    quizPopupHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '1rem',
+      paddingBottom: '0.5rem',
+      borderBottom: '1px solid rgba(229, 231, 235, 0.8)'
+    },
+    closeButton: {
+      background: 'none',
+      border: 'none',
+      fontSize: '1.2rem',
+      cursor: 'pointer',
+      color: '#6b7280'
+    },
+    toast: {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      padding: '1rem 1.5rem',
+      borderRadius: '8px',
+      color: 'white',
+      fontWeight: '600',
+      zIndex: 9999,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+      animation: 'slideIn 0.3s ease-out'
+    },
+    toastSuccess: {
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+    },
+    toastError: {
+      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    },
+    confirmationDialog: {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000
+    },
+    confirmationContent: {
+      background: 'white',
+      borderRadius: '16px',
+      padding: '2rem',
+      maxWidth: '400px',
+      width: '90%',
+      textAlign: 'center',
+      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+    },
+    confirmationButtons: {
+      display: 'flex',
+      gap: '1rem',
+      justifyContent: 'center',
+      marginTop: '1.5rem'
+    },
+    confirmButton: {
+      padding: '0.75rem 1.5rem',
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease'
+    },
+    cancelButton: {
+      padding: '0.75rem 1.5rem',
+      background: 'rgba(107, 114, 128, 0.1)',
+      color: '#6b7280',
+      border: '2px solid rgba(107, 114, 128, 0.2)',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease'
+    },
+    deleteButton: {
+      position: 'absolute',
+      top: '0.5rem',
+      right: '0.5rem',
+      background: 'rgba(239, 68, 68, 0.1)',
+      color: '#ef4444',
+      border: 'none',
+      borderRadius: '6px',
+      width: '24px',
+      height: '24px',
+      cursor: 'pointer',
+      fontSize: '1.0rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.3s ease',
+      opacity: '0.7'
+    },
+    sidebarTabs: {
+      display: 'flex',
+      marginBottom: '1.5rem',
+      background: 'rgba(255, 255, 255, 0.5)',
+      borderRadius: '8px',
+      padding: '0.25rem'
+    },
+    sidebarTab: {
+      flex: '1',
+      padding: '0.75rem 1rem',
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '1.3rem',
+      fontWeight: '600',
+      color: '#6b7280',
+      transition: 'all 0.3s ease',
+      textAlign: 'center'
+    },
+    sidebarTabActive: {
+      background: 'rgba(102, 126, 234, 0.1)',
+      color: '#667eea'
+    }
+  };
 
   return (
     <>
@@ -930,7 +975,7 @@ const styles = {
                                 whiteSpace: 'pre-wrap',
                                 wordBreak: 'break-word',
                                 lineHeight: '1.7',
-                                fontSize: '1.1rem',
+                                fontSize: '1.5rem',
                                 fontWeight: '400',
                                 letterSpacing: '0.01em'
                               }}>
@@ -940,11 +985,11 @@ const styles = {
                               <div 
                                 dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
                                 style={{
-                                  lineHeight: '1.7',
-                                  wordBreak: 'break-word',
-                                  fontSize: '1.1rem',
+                                  lineHeight: '1.2',
+                                  // wordBreak: 'break-word',
+                                  fontSize: '1.5rem',
                                   fontWeight: '400',
-                                  letterSpacing: '0.01em'
+                                  letterSpacing: '0.02em'
                                 }}
                               />
                             )}
@@ -1263,18 +1308,19 @@ const styles = {
                 >
                   🗑️
                 </button>
-                <div style={{ fontWeight: '700', marginBottom: '0.5rem', fontSize: '1.1rem', color: '#1f2937' }}>
+                <div style={{ fontWeight: '700', marginBottom: '0.5rem', fontSize: '1.3rem'}}>
                   {note.title}
                 </div>
-                <div style={{ fontSize: '0.95rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
                   📅 {new Date(note.uploadedAt).toLocaleDateString()}
                 </div>
                 {note.summary && (
                   <div style={{ 
-                    fontSize: '0.9rem', 
+                    fontSize: '1.0rem', 
                     color: '#10b981', 
                     marginTop: '0.5rem',
                     fontWeight: '600',
+                    marginRight : "5px",
                     padding: '0.25rem 0.5rem',
                     background: 'rgba(16, 185, 129, 0.1)',
                     borderRadius: '6px',
@@ -1286,7 +1332,7 @@ const styles = {
                 {note.quizzes && note.quizzes.length > 0 && (
                   <div 
                     style={{ 
-                      fontSize: '0.9rem', 
+                      fontSize: '1.0rem', 
                       color: '#3b82f6', 
                       marginTop: '0.5rem', 
                       cursor: 'pointer',
