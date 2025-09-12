@@ -19,6 +19,7 @@ import Video from "./pages/Video";
 import YouTubeVideos from "./pages/YouTubeVideos";
 import Notes from "./pages/Notes";
 import YouTubeVideoSummarizer from "./pages/YouTubeVideoSummarizer";
+import DoubtClearance from "./pages/DoubtClearance";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
@@ -145,6 +146,12 @@ export default function App() {
         path="/youtube-video-summarizer"
         element={
           user ? <YouTubeVideoSummarizer /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/doubt-clearance"
+        element={
+          user ? <DoubtClearance /> : <Navigate to="/" replace />
         }
       />
     </Routes>

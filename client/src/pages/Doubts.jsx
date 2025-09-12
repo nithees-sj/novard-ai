@@ -17,7 +17,8 @@ const features = [
     title: 'DOUBT CLEARANCE',
     description: 'Get personalized doubt clearance sessions and participate in quiz-based learning to strengthen your understanding.',
     imageUrl: doubtClearanceImage,
-    icon: '❓'
+    icon: '❓',
+    route: '/doubt-clearance'
   },
 ];
 
