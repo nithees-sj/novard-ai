@@ -16,7 +16,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "14px 36px",
+    padding: "8px 24px",
     background: "rgba(255,255,255,0.98)",
     backdropFilter: "blur(14px)",
     borderBottom: "1px solid rgba(0,0,0,0.09)",
@@ -24,37 +24,37 @@ const styles = {
     position: "sticky",
     top: 0,
     zIndex: 1000,
-    minHeight: "72px"
+    minHeight: "56px"
   },
   logoContainer: {
     display: "flex",
     alignItems: "center"
   },
   logo: {
-    height: "36px",
-    marginRight: "14px",
-    borderRadius: "8px"
+    height: "32px",
+    marginRight: "12px",
+    borderRadius: "6px"
   },
   logoText: {
-    fontSize: "26px",
+    fontSize: "24px",
     fontWeight: "800",
     color: "#111827",
     letterSpacing: "0.5px"
   },
   title: {
-    fontSize: "22px",
+    fontSize: "20px",
     fontWeight: "600",
     margin: 0,
     color: "#374151"
   },
   userInfo: {
-    fontSize: "17px",
+    fontSize: "16px",
     display: "flex",
     fontWeight: "600",
     alignItems: "center",
     cursor: "pointer",
-    padding: "11px 22px",
-    borderRadius: "24px",
+    padding: "8px 18px",
+    borderRadius: "20px",
     background: "rgba(18, 18, 18, 0.04)",
     border: "1px solid rgba(0,0,0,0.08)",
     color: "#111827",
@@ -66,17 +66,17 @@ const styles = {
     boxShadow: "0 6px 16px rgba(0,0,0,0.13)"
   },
   profilePicture: {
-    height: "38px",
-    width: "38px",
+    height: "32px",
+    width: "32px",
     borderRadius: "50%",
-    marginLeft: "12px",
+    marginLeft: "10px",
     border: "2px solid rgba(0,0,0,0.10)",
     transition: "all 0.3s ease"
   },
   popup: {
     position: "absolute",
-    top: "78px",
-    right: "36px",
+    top: "64px",
+    right: "24px",
     width: "320px",
     padding: "35px",
     background: "rgba(255,255,255,0.97)",

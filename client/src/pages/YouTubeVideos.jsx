@@ -156,17 +156,20 @@ const styles = {
     minHeight: '100vh',
     background: '#ffffff',
     overflow: 'hidden',
-    padding: '0 3.5rem',             // Wider container
-    boxSizing: 'border-box'
+    padding: '0 1.5rem',
+    boxSizing: 'border-box',
+    maxWidth: '1800px',
+    margin: '0 auto'
   },
   sidebar: {
-    width: '440px',
+    width: '380px',
     background: 'rgba(255, 255, 255, 0.97)',
     backdropFilter: 'blur(12px)',
     borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
     overflowY: 'auto',
-    padding: '2.5rem 2rem',
-    order: 2
+    padding: '2rem 1.5rem',
+    order: 2,
+    flexShrink: 0
   },
   sidebarHeader: {
     display: 'flex',
@@ -258,12 +261,13 @@ const styles = {
     flex: '1',
     display: 'flex',
     flexDirection: 'column',
-    padding: '3.2rem 2.8rem',
+    padding: '2rem 2rem',
     overflowY: 'auto',
-    order: 1
+    order: 1,
+    minWidth: 0
   },
   mainHeader: {
-    marginBottom: '4rem'
+    marginBottom: '2.5rem'
   },
   headerTop: {
     display: 'flex',
@@ -272,11 +276,12 @@ const styles = {
     marginBottom: '1.3rem'
   },
   mainTitle: {
-    fontSize: '4.7rem',
+    fontSize: '3.2rem',
     fontWeight: '900',
     color: '#111827',
     margin: 0,
-    flex: 1
+    flex: 1,
+    lineHeight: '1.2'
   },
   refreshButton: {
     background: '#111827',
@@ -305,9 +310,9 @@ const styles = {
   },
   videoGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', // Bigger cards
-    gap: '2.3rem',
-    marginBottom: '2.9rem'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: '1.8rem',
+    marginBottom: '2rem'
   },
   videoCard: {
     background: '#ffffff',

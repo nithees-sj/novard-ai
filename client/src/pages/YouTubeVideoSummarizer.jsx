@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Navigationinner } from "../components/navigationinner";
+import ChatbotButton from '../components/ChatbotButton';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -25,6 +27,7 @@ const YouTubeVideoSummarizer = () => {
   const [showQuizConfirm, setShowQuizConfirm] = useState(false);
   const [sidebarTab, setSidebarTab] = useState('videos');
   const [newVideo, setNewVideo] = useState({ title: '', videoUrl: '' });
+  const [isAddingVideo, setIsAddingVideo] = useState(false);
 
   // Toast notification function
   const showToast = (message, type) => {
@@ -85,6 +88,7 @@ const YouTubeVideoSummarizer = () => {
       return;
     }
 
+    setIsAddingVideo(true);
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
       const response = await axios.post(`${apiUrl}/youtube-videos`, {
@@ -100,6 +104,8 @@ const YouTubeVideoSummarizer = () => {
     } catch (error) {
       console.error('Error adding video:', error);
       showToast(error.response?.data?.error || 'Error adding video', 'error');
+    } finally {
+      setIsAddingVideo(false);
     }
   };
 
@@ -302,205 +308,262 @@ const YouTubeVideoSummarizer = () => {
   const styles = {
     container: {
       minHeight: "100vh",
-      background: "#ffffff",
-      padding: "3rem",
+      background: "#f8fafc",
+      padding: "1rem",
       fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+    },
+    titleSection: {
+      textAlign: "center",
+      marginBottom: "2rem",
+      padding: "1.5rem 0",
+    },
+    pageTitle: {
+      fontSize: "2.5rem",
+      fontWeight: "700",
+      color: "#1f2937",
+      marginBottom: "0.5rem",
+      letterSpacing: "-0.02em",
+    },
+    pageSubtitle: {
+      fontSize: "1.1rem",
+      color: "#6b7280",
+      maxWidth: "600px",
+      margin: "0 auto",
+      lineHeight: "1.6",
     },
     header: {
       textAlign: "center",
-      marginBottom: "3rem",
+      marginBottom: "2rem",
+      padding: "2rem",
+      background: "rgba(255, 255, 255, 0.9)",
+      borderRadius: "20px",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
     },
     title: {
-      fontSize: "3.5rem",
-      fontWeight: "700",
-      color: "#000000",
+      fontSize: "3rem",
+      fontWeight: "800",
+      color: "#374151",
       marginBottom: "1rem",
-      background: "none",
-      WebkitBackgroundClip: "unset",
-      WebkitTextFillColor: "unset",
+      letterSpacing: "-0.02em",
     },
     subtitle: {
-      fontSize: "1.3rem",
-      color: "#4a4a4a",
-      maxWidth: "700px",
+      fontSize: "1.2rem",
+      color: "#6b7280",
+      maxWidth: "600px",
       margin: "0 auto",
+      lineHeight: "1.6",
     },
     mainContent: {
       display: "flex",
-      gap: "3rem",
-      maxWidth: "1600px",
+      gap: "1.5rem",
+      maxWidth: "1800px",
       margin: "0 auto",
+      height: "calc(100vh - 120px)",
     },
     contentArea: {
       flex: 1,
       order: 1,
-      background: "#ffffff",
-      borderRadius: "12px",
-      padding: "3rem",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-      backdropFilter: "none",
-      border: "2px solid #000000",
-      minHeight: "calc(100vh - 250px)",
+      background: "rgba(255, 255, 255, 0.95)",
+      borderRadius: "20px",
+      padding: "2rem",
+      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
     },
     sidebar: {
-      width: "500px",
+      width: "360px",
       order: 2,
-      background: "#ffffff",
-      borderRadius: "12px",
-      padding: "3rem",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-      backdropFilter: "none",
-      border: "2px solid #000000",
-      minHeight: "calc(100vh - 250px)",
+      background: "rgba(255, 255, 255, 0.95)",
+      borderRadius: "20px",
+      padding: "1.5rem",
+      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+      height: "100%",
+      overflowY: "auto",
     },
     sidebarTitle: {
       fontSize: "1.8rem",
-      fontWeight: "600",
-      color: "#000000",
+      fontWeight: "700",
+      color: "#374151",
       marginBottom: "2rem",
       textAlign: "center",
     },
     tabs: {
       display: "flex",
-      marginBottom: "3rem",
-      borderBottom: "2px solid #000000",
+      marginBottom: "2rem",
+      background: "rgba(255, 255, 255, 0.5)",
+      borderRadius: "15px",
+      padding: "0.5rem",
       gap: "0.5rem",
     },
     tabButton: {
       padding: "1rem 2rem",
-      fontSize: "1.1rem",
-      fontWeight: "500",
-      background: "#ffffff",
-      color: "#000000",
-      border: "2px solid #000000",
-      borderBottom: "none",
-      borderRadius: "8px 8px 0 0",
+      fontSize: "1.3rem",
+      fontWeight: "600",
+      background: "transparent",
+      color: "#9ca3af",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
     },
     activeTabButton: {
-      background: "#000000",
+      background: "#374151",
       color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(55, 65, 81, 0.2)",
     },
     sidebarTabs: {
       display: "flex",
       marginBottom: "2rem",
+      background: "rgba(255, 255, 255, 0.5)",
+      borderRadius: "15px",
+      padding: "0.5rem",
       gap: "0.5rem",
     },
     sidebarTab: {
       flex: 1,
       padding: "1rem",
-      fontSize: "1rem",
-      fontWeight: "500",
-      background: "#ffffff",
-      color: "#000000",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      fontSize: "1.2rem",
+      fontWeight: "600",
+      background: "transparent",
+      color: "#9ca3af",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
       textAlign: "center",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
     },
     activeSidebarTab: {
-      background: "#000000",
+      background: "#374151",
       color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(55, 65, 81, 0.2)",
     },
     addButton: {
       width: "100%",
       padding: "1.2rem",
-      fontSize: "1.1rem",
+      fontSize: "1.3rem",
       fontWeight: "600",
-      background: "#000000",
+      background: "#3b82f6",
       color: "#ffffff",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
       marginBottom: "2rem",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
+      boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
     },
     chatContainer: {
       display: "flex",
       flexDirection: "column",
-      height: "calc(100vh - 400px)",
+      height: "calc(100vh - 200px)",
       gap: "1.5rem",
+      flex: 1,
+      minHeight: 0,
     },
     messagesContainer: {
       flex: 1,
       overflowY: "auto",
       padding: "1.5rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.8)",
+      backdropFilter: "blur(10px)",
+      minHeight: 0,
     },
     message: {
       padding: "1.5rem",
       marginBottom: "1.5rem",
-      borderRadius: "12px",
-      fontSize: "1.1rem",
-      lineHeight: "1.6",
+      borderRadius: "20px",
+      fontSize: "1.3rem",
+      lineHeight: "1.7",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
     },
     userMessage: {
-      background: "#000000",
+      background: "#374151",
       color: "#ffffff",
-      marginLeft: "20%",
+      marginLeft: "30%",
+      maxWidth: "70%",
     },
     botMessage: {
-      background: "#ffffff",
-      color: "#000000",
-      border: "2px solid #000000",
-      marginRight: "20%",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#374151",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      marginRight: "30%",
+      maxWidth: "70%",
     },
     chatInputContainer: {
       display: "flex",
       gap: "1rem",
       alignItems: "flex-end",
+      width: "100%",
+      marginTop: "auto",
     },
     messageInput: {
       flex: 1,
       padding: "1.2rem",
-      fontSize: "1.1rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
-      color: "#000000",
+      fontSize: "1.3rem",
+      border: "1px solid rgba(107, 114, 128, 0.3)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#374151",
       resize: "none",
       minHeight: "60px",
       maxHeight: "150px",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+      fontFamily: "inherit",
+      outline: "none",
+      width: "100%",
     },
     sendButton: {
-      padding: "1.2rem 2rem",
-      fontSize: "1.1rem",
+      padding: "1rem 2rem",
+      fontSize: "1.3rem",
       fontWeight: "600",
-      background: "#000000",
+      background: "#3b82f6",
+      marginBottom : "12px",
       color: "#ffffff",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
+      boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
     },
     summaryContent: {
       padding: "2rem",
-      fontSize: "1.2rem",
+      fontSize: "1.4rem",
       lineHeight: "1.8",
-      color: "#000000",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
-      minHeight: "400px",
+      color: "#374151",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "20px",
+      background: "rgba(255, 255, 255, 0.9)",
+      height: "calc(100vh - 200px)",
+      overflowY: "auto",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+      flex: 1,
     },
     quizContent: {
       padding: "2rem",
+      height: "calc(100vh - 200px)",
+      overflowY: "auto",
+      flex: 1,
     },
     quizQuestion: {
-      marginBottom: "3rem",
+      marginBottom: "2rem",
       padding: "2rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "20px",
+      background: "rgba(255, 255, 255, 0.9)",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
     },
     questionText: {
-      fontSize: "1.3rem",
+      fontSize: "1.5rem",
       fontWeight: "600",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "1.5rem",
       lineHeight: "1.5",
     },
@@ -508,86 +571,97 @@ const YouTubeVideoSummarizer = () => {
       display: "block",
       width: "100%",
       padding: "1.2rem",
-      fontSize: "1.1rem",
-      background: "#ffffff",
-      color: "#000000",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      fontSize: "1.3rem",
+      background: "rgba(255, 255, 255, 0.8)",
+      color: "#374151",
+      border: "1px solid rgba(156, 163, 175, 0.3)",
+      borderRadius: "12px",
       cursor: "pointer",
       marginBottom: "1rem",
       textAlign: "left",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
     },
     selectedOption: {
-      background: "#000000",
+      background: "#374151",
       color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(55, 65, 81, 0.2)",
     },
     submitButton: {
       padding: "1.5rem 3rem",
       fontSize: "1.2rem",
       fontWeight: "600",
-      background: "#000000",
+      background: "#3b82f6",
       color: "#ffffff",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
       marginTop: "2rem",
+      boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+      transition: "all 0.3s ease",
     },
     videoItem: {
-      padding: "2rem",
-      marginBottom: "1.5rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      padding: "1.2rem",
+      marginBottom: "1rem",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
       cursor: "pointer",
       position: "relative",
-      transition: "all 0.2s ease",
+      transition: "all 0.3s ease",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
     },
     selectedVideoItem: {
-      background: "#000000",
-      color: "#ffffff",
+      background: "#f3f4f6",
+      color: "#374151",
+      border: "2px solidrgb(38, 39, 41)",
+      boxShadow: "0 4px 20px rgba(49, 50, 52, 0.2)",
     },
     videoTitle: {
-      fontSize: "1.2rem",
+      fontSize: "1.4rem",
       fontWeight: "600",
       marginBottom: "0.5rem",
+      color: "#374151",
     },
     videoUrl: {
-      fontSize: "1rem",
-      color: "#666666",
+      fontSize: "1.2rem",
+      color: "#6b7280",
       marginBottom: "0.5rem",
       wordBreak: "break-all",
     },
     videoDate: {
-      fontSize: "0.95rem",
-      color: "#888888",
+      fontSize: "1.1rem",
+      color: "#9ca3af",
     },
     deleteButton: {
       position: "absolute",
-      top: "1rem",
-      right: "1rem",
-      width: "40px",
-      height: "40px",
-      background: "#ffffff",
-      border: "2px solid #000000",
+      top: "0.5rem",
+      right: "0.5rem",
+      width: "28px",
+      height: "28px",
+      background: "rgba(239, 68, 68, 0.1)",
+      border: "1px solid rgba(239, 68, 68, 0.3)",
       borderRadius: "50%",
       cursor: "pointer",
-      fontSize: "1.2rem",
+      fontSize: "0.9rem",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      color: "#ef4444",
+      transition: "all 0.3s ease",
     },
     addVideoForm: {
       padding: "2rem",
       marginBottom: "2rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "20px",
+      background: "rgba(255, 255, 255, 0.9)",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
     },
     formTitle: {
       fontSize: "1.4rem",
       fontWeight: "600",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "2rem",
       textAlign: "center",
     },
@@ -598,84 +672,94 @@ const YouTubeVideoSummarizer = () => {
       display: "block",
       fontSize: "1.1rem",
       fontWeight: "500",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "0.8rem",
     },
     input: {
       width: "100%",
       padding: "1.2rem",
       fontSize: "1.1rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
-      color: "#000000",
+      border: "1px solid rgba(107, 114, 128, 0.3)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#374151",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
     },
     button: {
       width: "100%",
       padding: "1.2rem",
       fontSize: "1.1rem",
       fontWeight: "600",
-      background: "#000000",
+      background: "#3b82f6",
       color: "#ffffff",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "12px",
       cursor: "pointer",
+      boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+      transition: "all 0.3s ease",
+    },
+    disabledButton: {
+      background: "#9ca3af",
+      cursor: "not-allowed",
+      boxShadow: "0 2px 8px rgba(156, 163, 175, 0.3)",
     },
     emptyState: {
       textAlign: "center",
       padding: "4rem 2rem",
-      color: "#666666",
+      color: "#6b7280",
     },
     emptyStateTitle: {
       fontSize: "1.5rem",
       fontWeight: "600",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "1rem",
     },
     emptyStateText: {
       fontSize: "1.1rem",
-      color: "#666666",
+      color: "#6b7280",
       lineHeight: "1.6",
     },
     loadingSpinner: {
       textAlign: "center",
       padding: "2rem",
       fontSize: "1.2rem",
-      color: "#666666",
+      color: "#6b7280",
     },
     scoreDisplay: {
       textAlign: "center",
       padding: "3rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "20px",
+      background: "rgba(255, 255, 255, 0.9)",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
     },
     scoreText: {
       fontSize: "2.5rem",
       fontWeight: "700",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "1rem",
     },
     scoreSubtext: {
       fontSize: "1.3rem",
-      color: "#666666",
+      color: "#6b7280",
     },
     quizHistoryItem: {
       padding: "1.5rem",
       marginBottom: "1rem",
-      border: "2px solid #000000",
-      borderRadius: "8px",
-      background: "#ffffff",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
     },
     quizHistoryScore: {
       fontSize: "1.2rem",
       fontWeight: "600",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "0.5rem",
     },
     quizHistoryDate: {
       fontSize: "1rem",
-      color: "#666666",
+      color: "#6b7280",
     },
     toast: {
       position: "fixed",
@@ -683,18 +767,22 @@ const YouTubeVideoSummarizer = () => {
       right: "2rem",
       padding: "1.5rem 2rem",
       fontSize: "1.1rem",
-      borderRadius: "8px",
-      border: "2px solid #000000",
+      borderRadius: "15px",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
       zIndex: 1000,
       fontWeight: "500",
+      boxShadow: "0 8px 30px rgba(0, 0, 0, 0.15)",
+      backdropFilter: "blur(10px)",
     },
     toastSuccess: {
-      background: "#ffffff",
-      color: "#000000",
+      background: "rgba(16, 185, 129, 0.1)",
+      color: "#059669",
+      border: "1px solid rgba(16, 185, 129, 0.3)",
     },
     toastError: {
-      background: "#000000",
-      color: "#ffffff",
+      background: "rgba(239, 68, 68, 0.1)",
+      color: "#dc2626",
+      border: "1px solid rgba(239, 68, 68, 0.3)",
     },
     confirmationDialog: {
       position: "fixed",
@@ -709,23 +797,25 @@ const YouTubeVideoSummarizer = () => {
       zIndex: 1000,
     },
     confirmationContent: {
-      background: "#ffffff",
+      background: "rgba(255, 255, 255, 0.95)",
       padding: "3rem",
-      borderRadius: "12px",
-      border: "2px solid #000000",
+      borderRadius: "20px",
+      border: "1px solid rgba(107, 114, 128, 0.2)",
       maxWidth: "500px",
       width: "90%",
+      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
+      backdropFilter: "blur(10px)",
     },
     confirmationTitle: {
       fontSize: "1.5rem",
       fontWeight: "600",
-      color: "#000000",
+      color: "#374151",
       marginBottom: "1.5rem",
       textAlign: "center",
     },
     confirmationText: {
       fontSize: "1.1rem",
-      color: "#666666",
+      color: "#6b7280",
       marginBottom: "2rem",
       textAlign: "center",
       lineHeight: "1.6",
@@ -739,34 +829,32 @@ const YouTubeVideoSummarizer = () => {
       padding: "1rem 2rem",
       fontSize: "1.1rem",
       fontWeight: "600",
-      background: "#000000",
+      background: "#374151",
       color: "#ffffff",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      border: "none",
+      borderRadius: "15px",
       cursor: "pointer",
+      boxShadow: "0 2px 8px rgba(55, 65, 81, 0.2)",
+      transition: "all 0.3s ease",
     },
     cancelButton: {
       padding: "1rem 2rem",
       fontSize: "1.1rem",
       fontWeight: "600",
-      background: "#ffffff",
-      color: "#000000",
-      border: "2px solid #000000",
-      borderRadius: "8px",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#6b7280",
+      border: "1px solid rgba(102, 126, 234, 0.3)",
+      borderRadius: "15px",
       cursor: "pointer",
+      transition: "all 0.3s ease",
     },
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>YouTube Video Summarizer</h1>
-        <p style={styles.subtitle}>
-          Add YouTube videos and interact with them through chat, summarization, and quizzes
-        </p>
-      </div>
-
-      <div style={styles.mainContent}>
+    <>
+      <Navigationinner title="YouTube Video Summarizer" />
+      <div style={styles.container}>
+        <div style={styles.mainContent}>
         {/* Main Content Area */}
         <div style={styles.contentArea}>
           {selectedVideo ? (
@@ -979,6 +1067,7 @@ const YouTubeVideoSummarizer = () => {
               <button
                 style={styles.addButton}
                 onClick={() => setShowAddVideoForm(!showAddVideoForm)}
+                disabled={isAddingVideo}
               >
                 {showAddVideoForm ? '✕ Cancel' : '+ Add Video'}
               </button>
@@ -995,6 +1084,7 @@ const YouTubeVideoSummarizer = () => {
                       value={newVideo.title}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, title: e.target.value }))}
                       placeholder="Enter video title"
+                      disabled={isAddingVideo}
                       required
                     />
                   </div>
@@ -1007,12 +1097,20 @@ const YouTubeVideoSummarizer = () => {
                       value={newVideo.videoUrl}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, videoUrl: e.target.value }))}
                       placeholder="https://www.youtube.com/watch?v=..."
+                      disabled={isAddingVideo}
                       required
                     />
                   </div>
                   
-                  <button type="submit" style={styles.button}>
-                    Add Video
+                  <button 
+                    type="submit" 
+                    style={{
+                      ...styles.button,
+                      ...(isAddingVideo ? styles.disabledButton : {})
+                    }}
+                    disabled={isAddingVideo}
+                  >
+                    {isAddingVideo ? '⏳ Adding Video...' : 'Add Video'}
                   </button>
                 </form>
               )}
@@ -1117,7 +1215,9 @@ const YouTubeVideoSummarizer = () => {
           </div>
         </div>
       )}
-    </div>
+      {/* <ChatbotButton /> */}
+      </div>
+    </>
   );
 };
 
