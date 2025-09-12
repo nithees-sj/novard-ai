@@ -55,6 +55,21 @@ const {
   saveDoubtQuizResults,
   getYouTubeRecommendations
 } = require('./controllers/doubtClearanceController');
+const {
+  createIssue,
+  getAllIssues,
+  getIssueById,
+  getIssueComments,
+  addComment,
+  updateIssueStatus,
+  voteOnIssue,
+  voteOnComment,
+  searchIssues,
+  generateAIResponseForComment
+} = require('./controllers/forumController');
+const {
+  generateAIForumResponse
+} = require('./controllers/forumAIController');
 
 
 const app = express();
@@ -133,6 +148,31 @@ app.post('/summarize-doubt-clearance', summarizeDoubtClearance);
 app.post('/generate-doubt-quiz', generateDoubtQuiz);
 app.post('/save-doubt-quiz-results', saveDoubtQuizResults);
 app.post('/get-youtube-recommendations', getYouTubeRecommendations);
+
+// Forum routes
+app.post('/api/forum/issues', createIssue);
+app.get('/api/forum/issues', getAllIssues);
+app.get('/api/forum/issues/:issueId', getIssueById);
+app.get('/api/forum/issues/:issueId/comments', getIssueComments);
+app.post('/api/forum/comments', addComment);
+app.put('/api/forum/issues/:issueId/status', updateIssueStatus);
+app.post('/api/forum/issues/:issueId/vote', voteOnIssue);
+app.post('/api/forum/comments/:commentId/vote', voteOnComment);
+app.get('/api/forum/search', searchIssues);
+app.post('/api/forum/comments/:commentId/ai-response', generateAIResponseForComment);
+app.post('/api/forum/ai-response', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    const response = await generateAIForumResponse(prompt);
+    res.json({ response });
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    res.status(500).json({ error: 'Failed to generate AI response' });
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, () => {
