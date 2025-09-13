@@ -26,8 +26,12 @@ const YouTubeVideoSummarizer = () => {
   const [toast, setToast] = useState(null);
   const [showQuizConfirm, setShowQuizConfirm] = useState(false);
   const [sidebarTab, setSidebarTab] = useState('videos');
+  const [addVideoTab, setAddVideoTab] = useState('youtube'); // 'youtube' or 'upload'
   const [newVideo, setNewVideo] = useState({ title: '', videoUrl: '' });
   const [isAddingVideo, setIsAddingVideo] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
 
   // Toast notification function
   const showToast = (message, type) => {
@@ -106,6 +110,79 @@ const YouTubeVideoSummarizer = () => {
       showToast(error.response?.data?.error || 'Error adding video', 'error');
     } finally {
       setIsAddingVideo(false);
+    }
+  };
+
+  // Upload video file
+  const handleUploadVideo = async (e) => {
+    e.preventDefault();
+    
+    if (!newVideo.title.trim() || !uploadedFile) {
+      showToast('Please fill in title and select a video file', 'error');
+      return;
+    }
+
+    // Check for duplicate titles
+    const duplicateTitle = videos.find(video => 
+      video.title.toLowerCase() === newVideo.title.toLowerCase()
+    );
+    if (duplicateTitle) {
+      showToast('A video with this title already exists', 'error');
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    setVideoUploadProgress(0);
+    
+    try {
+      const userId = localStorage.getItem('userId') || 'demo-user';
+      const formData = new FormData();
+      formData.append('video', uploadedFile);
+      formData.append('title', newVideo.title);
+      formData.append('userId', userId);
+
+      const response = await axios.post(`${apiUrl}/upload-video`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setVideoUploadProgress(percentCompleted);
+        },
+      });
+      
+      setNewVideo({ title: '', videoUrl: '' });
+      setUploadedFile(null);
+      setShowAddVideoForm(false);
+      setVideoUploadProgress(0);
+      await loadUserVideos();
+      showToast('Video uploaded and processed successfully!', 'success');
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      showToast(error.response?.data?.error || 'Error uploading video', 'error');
+    } finally {
+      setIsUploadingVideo(false);
+      setVideoUploadProgress(0);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('video/')) {
+        showToast('Please select a valid video file', 'error');
+        return;
+      }
+      
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        showToast('File size must be less than 100MB', 'error');
+        return;
+      }
+      
+      setUploadedFile(file);
     }
   };
 
@@ -853,6 +930,83 @@ const YouTubeVideoSummarizer = () => {
       cursor: "pointer",
       transition: "all 0.3s ease",
     },
+    addVideoTabs: {
+      display: "flex",
+      marginBottom: "2rem",
+      background: "rgba(255, 255, 255, 0.5)",
+      borderRadius: "15px",
+      padding: "0.5rem",
+      gap: "0.5rem",
+    },
+    addVideoTab: {
+      flex: 1,
+      padding: "1rem",
+      fontSize: "1.1rem",
+      fontWeight: "600",
+      background: "transparent",
+      color: "#9ca3af",
+      border: "none",
+      borderRadius: "12px",
+      cursor: "pointer",
+      textAlign: "center",
+      transition: "all 0.3s ease",
+    },
+    activeAddVideoTab: {
+      background: "#3b82f6",
+      color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(59, 130, 246, 0.2)",
+    },
+    fileInput: {
+      width: "100%",
+      padding: "1.2rem",
+      fontSize: "1.1rem",
+      border: "2px dashed rgba(107, 114, 128, 0.3)",
+      borderRadius: "15px",
+      background: "rgba(255, 255, 255, 0.9)",
+      color: "#374151",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+    },
+    fileInfo: {
+      marginTop: "1rem",
+      padding: "1rem",
+      background: "rgba(59, 130, 246, 0.1)",
+      borderRadius: "12px",
+      border: "1px solid rgba(59, 130, 246, 0.2)",
+    },
+    fileName: {
+      fontSize: "1.1rem",
+      fontWeight: "600",
+      color: "#374151",
+      marginBottom: "0.5rem",
+    },
+    fileSize: {
+      fontSize: "1rem",
+      color: "#6b7280",
+    },
+    progressContainer: {
+      marginTop: "1rem",
+      marginBottom: "1rem",
+    },
+    progressBar: {
+      width: "100%",
+      height: "8px",
+      background: "rgba(107, 114, 128, 0.2)",
+      borderRadius: "4px",
+      overflow: "hidden",
+      marginBottom: "0.5rem",
+    },
+    progressFill: {
+      height: "100%",
+      background: "#3b82f6",
+      borderRadius: "4px",
+      transition: "width 0.3s ease",
+    },
+    progressText: {
+      fontSize: "1rem",
+      color: "#6b7280",
+      textAlign: "center",
+    },
   }
 
   return (
@@ -1078,46 +1232,140 @@ const YouTubeVideoSummarizer = () => {
               </button>
 
               {showAddVideoForm && (
-                <form style={styles.addVideoForm} onSubmit={handleAddVideo}>
+                <div style={styles.addVideoForm}>
                   <div style={styles.formTitle}>Add New Video</div>
                   
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>Video Title</label>
-                    <input
-                      style={styles.input}
-                      type="text"
-                      value={newVideo.title}
-                      onChange={(e) => setNewVideo(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter video title"
-                      disabled={isAddingVideo}
-                      required
-                    />
+                  {/* Add Video Tabs */}
+                  <div style={styles.addVideoTabs}>
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.addVideoTab,
+                        ...(addVideoTab === 'youtube' ? styles.activeAddVideoTab : {})
+                      }}
+                      onClick={() => setAddVideoTab('youtube')}
+                    >
+                      📺 YouTube URL
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.addVideoTab,
+                        ...(addVideoTab === 'upload' ? styles.activeAddVideoTab : {})
+                      }}
+                      onClick={() => setAddVideoTab('upload')}
+                    >
+                      📁 Upload Video
+                    </button>
                   </div>
-                  
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>YouTube URL</label>
-                    <input
-                      style={styles.input}
-                      type="url"
-                      value={newVideo.videoUrl}
-                      onChange={(e) => setNewVideo(prev => ({ ...prev, videoUrl: e.target.value }))}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      disabled={isAddingVideo}
-                      required
-                    />
-                  </div>
-                  
-                  <button 
-                    type="submit" 
-                    style={{
-                      ...styles.button,
-                      ...(isAddingVideo ? styles.disabledButton : {})
-                    }}
-                    disabled={isAddingVideo}
-                  >
-                    {isAddingVideo ? '⏳ Adding Video...' : 'Add Video'}
-                  </button>
-                </form>
+
+                  {/* YouTube URL Form */}
+                  {addVideoTab === 'youtube' && (
+                    <form onSubmit={handleAddVideo}>
+                      <div style={styles.inputGroup}>
+                        <label style={styles.label}>Video Title</label>
+                        <input
+                          style={styles.input}
+                          type="text"
+                          value={newVideo.title}
+                          onChange={(e) => setNewVideo(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Enter video title"
+                          disabled={isAddingVideo}
+                          required
+                        />
+                      </div>
+                      
+                      <div style={styles.inputGroup}>
+                        <label style={styles.label}>YouTube URL</label>
+                        <input
+                          style={styles.input}
+                          type="url"
+                          value={newVideo.videoUrl}
+                          onChange={(e) => setNewVideo(prev => ({ ...prev, videoUrl: e.target.value }))}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          disabled={isAddingVideo}
+                          required
+                        />
+                      </div>
+                      
+                      <button 
+                        type="submit" 
+                        style={{
+                          ...styles.button,
+                          ...(isAddingVideo ? styles.disabledButton : {})
+                        }}
+                        disabled={isAddingVideo}
+                      >
+                        {isAddingVideo ? '⏳ Adding Video...' : 'Add YouTube Video'}
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Video Upload Form */}
+                  {addVideoTab === 'upload' && (
+                    <form onSubmit={handleUploadVideo}>
+                      <div style={styles.inputGroup}>
+                        <label style={styles.label}>Video Title</label>
+                        <input
+                          style={styles.input}
+                          type="text"
+                          value={newVideo.title}
+                          onChange={(e) => setNewVideo(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Enter video title"
+                          disabled={isUploadingVideo}
+                          required
+                        />
+                      </div>
+                      
+                      <div style={styles.inputGroup}>
+                        <label style={styles.label}>Select Video File</label>
+                        <input
+                          style={styles.fileInput}
+                          type="file"
+                          accept="video/*"
+                          onChange={handleFileSelect}
+                          disabled={isUploadingVideo}
+                          required
+                        />
+                        {uploadedFile && (
+                          <div style={styles.fileInfo}>
+                            <div style={styles.fileName}>📁 {uploadedFile.name}</div>
+                            <div style={styles.fileSize}>
+                              {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {isUploadingVideo && (
+                        <div style={styles.progressContainer}>
+                          <div style={styles.progressBar}>
+                            <div 
+                              style={{
+                                ...styles.progressFill,
+                                width: `${videoUploadProgress}%`
+                              }}
+                            />
+                          </div>
+                          <div style={styles.progressText}>
+                            {videoUploadProgress}% uploaded
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button 
+                        type="submit" 
+                        style={{
+                          ...styles.button,
+                          ...(isUploadingVideo ? styles.disabledButton : {})
+                        }}
+                        disabled={isUploadingVideo || !uploadedFile}
+                      >
+                        {isUploadingVideo ? '⏳ Processing Video...' : 'Upload & Process Video'}
+                      </button>
+                    </form>
+                  )}
+                </div>
               )}
 
               {videos.length === 0 ? (
@@ -1147,10 +1395,14 @@ const YouTubeVideoSummarizer = () => {
                     >
                       🗑️
                     </button>
-                    <div style={styles.videoTitle}>{video.title}</div>
-                    <div style={styles.videoUrl}>{video.videoUrl}</div>
+                    <div style={styles.videoTitle}>
+                      {video.videoType === 'uploaded' ? '📁' : '📺'} {video.title}
+                    </div>
+                    <div style={styles.videoUrl}>
+                      {video.videoType === 'uploaded' ? `Uploaded file: ${video.originalFileName}` : video.videoUrl}
+                    </div>
                     <div style={styles.videoDate}>
-                      Added {new Date(video.createdAt).toLocaleDateString()}
+                      {video.videoType === 'uploaded' ? 'Uploaded' : 'Added'} {new Date(video.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 ))
