@@ -28,6 +28,8 @@ const {
   recommendVideos 
 } = require('./controllers/videosController');
 const { 
+  upload: uploadVideoMiddleware,
+  uploadVideo,
   createYouTubeVideo,
   getUserYouTubeVideos,
   chatWithYouTubeVideo,
@@ -140,6 +142,7 @@ app.post('/recommend-educational-videos', recommendVideos);
 
 // YouTube Video Summarizer routes
 app.post('/youtube-videos', createYouTubeVideo);
+app.post('/upload-video', uploadVideoMiddleware.single('video'), uploadVideo);
 app.get('/youtube-videos/:userId', getUserYouTubeVideos);
 app.post('/chat-with-youtube-video', chatWithYouTubeVideo);
 app.post('/summarize-youtube-video', summarizeYouTubeVideo);

@@ -28,6 +28,10 @@ const youtubeVideoSchema = new mongoose.Schema({
   chatHistory: [chatMessageSchema],
   quizzes: [quizSchema],
   userId: { type: String, required: true },
+  videoType: { type: String, enum: ['youtube', 'uploaded'], default: 'youtube' },
+  videoPath: { type: String, default: '' }, // For uploaded videos
+  originalFileName: { type: String, default: '' }, // For uploaded videos
+  fileSize: { type: Number, default: 0 }, // For uploaded videos
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

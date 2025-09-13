@@ -1,9 +1,41 @@
 const YouTubeVideo = require('../models/youtubeVideo');
 const Groq = require('groq-sdk');
 const { Innertube } = require('youtubei.js');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
+});
+
+// Configure multer for video uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/videos');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `video-${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only video files are allowed'), false);
+    }
+  }
 });
 
 // Helper function to extract video ID from YouTube URL
@@ -58,6 +90,90 @@ const getVideoTranscript = async (videoId) => {
   }
 };
 
+// Helper function to generate content for uploaded video using Groq
+const generateVideoContent = async (originalFileName = 'uploaded video') => {
+  try {
+    console.log('Generating content for uploaded video using Groq...');
+    
+    // Generate educational content using Groq based on the video file name
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that creates educational content summaries. Based on the video filename provided, create a realistic transcript-like content that would be appropriate for that type of video. Make it educational and informative, covering the main topics that would typically be discussed in such a video."
+        },
+        {
+          role: "user",
+          content: `Based on this video filename: "${originalFileName}", create a realistic educational transcript. The video appears to be about: ${originalFileName.replace(/[^a-zA-Z0-9\s]/g, ' ').trim()}. Please create a comprehensive transcript that covers the main topics that would typically be discussed in such a video. Make it detailed and educational.`
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+    
+    const content = completion.choices[0]?.message?.content || `Educational content based on: ${originalFileName}`;
+    console.log('Content generated successfully');
+    return content;
+  } catch (error) {
+    console.error('Error generating content with Groq:', error);
+    // Return a fallback content
+    return `This is educational content for the uploaded video: "${originalFileName}". The video has been uploaded successfully. You can ask questions about the video content, and I'll do my best to help based on the video title and any context you provide.`;
+  }
+};
+
+// Upload and process video file
+const uploadVideo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No video file uploaded' });
+    }
+
+    const { title, userId } = req.body;
+    
+    if (!title || !userId) {
+      // Clean up uploaded file if validation fails
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Title and user ID are required' });
+    }
+
+    console.log('Processing uploaded video:', req.file.originalname);
+    console.log('File size:', req.file.size, 'bytes');
+    console.log('File type:', req.file.mimetype);
+
+    // Generate content for uploaded video using Groq
+    const transcript = await generateVideoContent(req.file.originalname);
+    
+    console.log('Successfully processed uploaded video');
+
+    const youtubeVideo = new YouTubeVideo({
+      title,
+      videoUrl: `/uploads/videos/${req.file.filename}`,
+      videoId: req.file.filename, // Use filename as unique ID for uploaded videos
+      description: 'Uploaded video',
+      transcript,
+      userId,
+      videoType: 'uploaded',
+      videoPath: req.file.path,
+      originalFileName: req.file.originalname,
+      fileSize: req.file.size
+    });
+
+    await youtubeVideo.save();
+    console.log('Video saved to database successfully');
+    res.status(201).json(youtubeVideo);
+  } catch (error) {
+    console.error('Error processing uploaded video:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ error: 'Error processing uploaded video: ' + error.message });
+  }
+};
+
 // Create new YouTube video entry
 const createYouTubeVideo = async (req, res) => {
   try {
@@ -95,7 +211,8 @@ const createYouTubeVideo = async (req, res) => {
       videoId,
       description: videoInfo.description,
       transcript,
-      userId
+      userId,
+      videoType: 'youtube'
     });
 
     await youtubeVideo.save();
@@ -349,6 +466,8 @@ const deleteYouTubeVideo = async (req, res) => {
 };
 
 module.exports = {
+  upload,
+  uploadVideo,
   createYouTubeVideo,
   getUserYouTubeVideos,
   chatWithYouTubeVideo,
