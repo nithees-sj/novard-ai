@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import ChatbotButton from '../components/ChatbotButton';
 import videoImage from '../images/video.jpg';
+import teachguidance from '../images/teacher-guidance.jpg';
 import aiForumImage from '../images/ai-forum.jpg';
 
 const features = [
@@ -19,6 +20,13 @@ const features = [
     imageUrl: aiForumImage,
     icon: '📝',
     route: '/youtube-video-summarizer'
+  },
+  {
+    title: 'TEACHER GUIDANCE',
+    description: 'Can learn the subjects added by teachers with personalized guidance and structured learning paths.',
+    imageUrl: teachguidance,
+    icon: '👨‍🏫',
+    route: '/teacher-guidance'
   },
 ];
 

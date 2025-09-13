@@ -27,14 +27,19 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       - Focus on well-known, established courses that are likely to remain available
       
       Examples of real Udemy course patterns:
-      -https://www.udemy.com/course/introduction-to-web-architecture-devops/
-      -https://www.udemy.com/course/devops-interview-questions/
-      -https://www.udemy.com/course/navigating-devops-excellence-for-business-success/
-      -https://www.udemy.com/course/aws-certified-devops-engineer-professional-hands-on/
-      -https://www.udemy.com/course/learn-containers/
-      -https://www.udemy.com/course/linux-tutorials/
-      -https://www.udemy.com/course/hands-on-introduction-to-linux-with-ubuntu/
-      
+      -https://www.udemy.com/course/reactjs-design-patterns/
+      -https://www.udemy.com/course/react-part2/
+      -https://www.udemy.com/course/react-js-para-principiantes-desde-cero-curso-gratuito/
+      -https://www.udemy.com/course/reactjs-tic-tac-toe/
+      -https://www.udemy.com/course/hands-on-introduction-to-web-development-with-nextjs/
+      -https://www.udemy.com/course/react-js-course-build-a-complete-project-project-base/
+      -https://www.udemy.com/course/reactjs-for-beginners-reactjs-basics-react-level1/
+      -https://www.udemy.com/course/web-javascript-react-2022/
+      -https://www.udemy.com/course/learn-react-with-project/
+      -https://www.udemy.com/course/curso-de-react-js-desde-cero-gratis/
+      -https://www.udemy.com/course/react-js-inicia-en-el-mundo-de-los-frameworks-de-javascript/
+      -https://www.udemy.com/course/hands-on-introduction-to-frontend-development-with-react/
+
       Do NOT generate fake or made-up course URLs. Only use real courses that exist on Udemy website or you can even take from the above given example cources.
       Strong Note : Before giving the url of the course make sure that the course it present in the udemy, only give the course list by checking the udemy exising or not`,
       
@@ -55,6 +60,17 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       - https://www.coursera.org/learn/html-css-javascript-for-web-developers
       - https://www.coursera.org/learn/algorithmic-thinking-1
       - https://www.coursera.org/learn/neural-networks-deep-learning
+      -https://www.coursera.org/learn/programming-with-javascript
+      -https://www.coursera.org/specializations/javascript-beginner
+      -https://www.coursera.org/learn/introduction-html-css-javascript
+      -https://www.coursera.org/professional-certificates/ibm-full-stack-javascript-developer
+      -https://www.coursera.org/specializations/html-css-javascript-for-web-developers
+      -https://www.coursera.org/specializations/advanced-javascript
+      -https://www.coursera.org/learn/introduction-to-javascript-programming
+      -https://www.coursera.org/learn/javascript-programming-essentials
+      -https://www.coursera.org/specializations/javascript-programming-with-react-node-mongodb
+      -https://www.coursera.org/learn/learn-javascript
+      -https://www.coursera.org/professional-certificates/microsoft-javascript-starter-kit
       
       Do NOT generate fake or made-up course URLs. Only use real courses that exist on Coursera.
       Strong Note : Before giving the url of the course make sure that the course it present in the Coursera, only give the course list by checking the Coursera exising or not`,
@@ -77,6 +93,11 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       - https://www.edureka.co/machine-learning-certification-training
       - https://www.edureka.co/blockchain-training
       -https://www.edureka.co/css-certification-course?qId=68c495ef-8ab4-4f50-9d46-6622926d8968&index_name=prod_search_result_courses&objId=1519&objPos=1
+      -https://www.edureka.co/python-scripting?qId=68c49633-2ea8-40ab-a11d-2f8a926d8968&index_name=prod_search_result_courses&objId=777&objPos=1
+      -https://www.edureka.co/masters-program/python-developer-training?qId=68c49633-1cf0-4266-a0e7-2f8a926d8968&index_name=prod_search_result_courses&objId=2356&objPos=1
+      -https://www.edureka.co/data-science-python-certification-course?qId=68c49633-bac0-40e6-85bb-2f8a926d8968&index_name=prod_search_result_courses&objId=3124&objPos=1
+      -https://www.edureka.co/python-django?qId=68c49633-47c4-4018-8fea-2f8a926d8968&index_name=prod_search_result_courses&objId=2525&objPos=1
+      -https://www.edureka.co/pyspark-certification-training?qId=68c49633-61cc-42cc-b82f-2f8a926d8968&index_name=prod_search_result_courses&objId=651&objPos=1
 
       
       Do NOT generate fake or made-up course URLs. Only use real courses that exist on Edureka

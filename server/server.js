@@ -70,11 +70,28 @@ const {
 const {
   generateAIForumResponse
 } = require('./controllers/forumAIController');
+const {
+  getAllCourses,
+  getCourseById,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  addVideoToCourse,
+  updateVideoInCourse,
+  deleteVideoFromCourse
+} = require('./controllers/courseController');
+const {
+  generateQuizForVideo,
+  getVideoQuiz,
+  submitQuizAnswers,
+  getQuizResults
+} = require('./controllers/quizController');
 
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 connectDB();
 
@@ -173,6 +190,22 @@ app.post('/api/forum/ai-response', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate AI response' });
   }
 });
+
+// Course routes
+app.get('/api/courses', getAllCourses);
+app.get('/api/courses/:courseId', getCourseById);
+app.post('/api/courses', createCourse);
+app.put('/api/courses/:courseId', updateCourse);
+app.delete('/api/courses/:courseId', deleteCourse);
+app.post('/api/courses/:courseId/videos', addVideoToCourse);
+app.put('/api/courses/:courseId/videos/:videoId', updateVideoInCourse);
+app.delete('/api/courses/:courseId/videos/:videoId', deleteVideoFromCourse);
+
+// Quiz routes
+app.post('/api/courses/:courseId/videos/:videoId/generate-quiz', generateQuizForVideo);
+app.get('/api/courses/:courseId/videos/:videoId/quiz', getVideoQuiz);
+app.post('/api/courses/:courseId/videos/:videoId/quiz/submit', submitQuizAnswers);
+app.get('/api/courses/:courseId/videos/:videoId/quiz/results', getQuizResults);
 
 const PORT = 5000;
 app.listen(PORT, () => {

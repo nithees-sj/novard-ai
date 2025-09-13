@@ -20,6 +20,10 @@ import YouTubeVideos from "./pages/YouTubeVideos";
 import Notes from "./pages/Notes";
 import YouTubeVideoSummarizer from "./pages/YouTubeVideoSummarizer";
 import DoubtClearance from "./pages/DoubtClearance";
+import TeacherLogin from "./pages/TeacherLogin";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import CourseVideos from "./pages/CourseVideos";
+import TeacherGuidance from "./pages/TeacherGuidance";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
@@ -152,6 +156,24 @@ export default function App() {
         path="/doubt-clearance"
         element={
           user ? <DoubtClearance /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/teacher-login"
+        element={<TeacherLogin />}
+      />
+      <Route
+        path="/teacher-dashboard"
+        element={<TeacherDashboard />}
+      />
+      <Route
+        path="/course-videos/:courseId"
+        element={<CourseVideos />}
+      />
+      <Route
+        path="/teacher-guidance"
+        element={
+          user ? <TeacherGuidance /> : <Navigate to="/" replace />
         }
       />
     </Routes>
