@@ -149,7 +149,7 @@ const chatWithDoubtClearance = async (req, res) => {
           content: msg.content
         }))
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 1000
     });
@@ -222,7 +222,7 @@ const summarizeDoubtClearance = async (req, res) => {
           Please create a comprehensive summary of this doubt clearance session.`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.5,
       max_tokens: 1500
     });
@@ -323,7 +323,7 @@ const generateDoubtQuiz = async (req, res) => {
           - Generate 10-12 questions if the conversation is rich with content`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 3000
     });
@@ -565,7 +565,7 @@ const getYouTubeRecommendations = async (req, res) => {
           Based on the actual conversation above, extract 6-7 educational keywords that would help find relevant YouTube videos for the topics discussed in the chat.`
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 400
     });

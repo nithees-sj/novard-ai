@@ -74,26 +74,33 @@ const Forum = () => {
       flex: 1,
       height: 'calc(100vh - 80px)', // Subtract header height
       overflow: 'hidden', // Prevent main content from scrolling
+      position: 'relative', // Add for stacking context
     },
     leftPanel: {
-      flex: 2.5, // Increased from 1 to give more space to main content
+      flex: 2.5,
       display: 'flex',
       flexDirection: 'column',
       borderRight: '1px solid #e2e8f0',
-      overflow: 'auto', // Allow left panel to scroll
-      height: '100%', // Take full height
-      position: 'relative', // For proper centering
+      overflow: 'auto',
+      height: '100%',
+      position: 'relative',
+      marginRight: '450px', // Reserve space for fixed right panel
     },
     rightPanel: {
-      flex: 1, // Decreased from 1 to make sidebar narrower
+      // Remove flex, use fixed positioning
+      position: 'fixed',
+      top: '80px', // Height of header
+      right: 0,
+      width: '450px', // Match maxWidth
+      minWidth: '320px',
+      maxWidth: '450px',
+      height: 'calc(100vh - 80px)', // Fill below header
       display: 'flex',
       flexDirection: 'column',
-      minWidth: '320px', // Increased minimum width for better readability
-      maxWidth: '450px', // Increased maximum width for better content display
-      overflow: 'hidden', // Keep right panel fixed - no scrolling
-      height: '100%', // Take full height
-      position: 'sticky', // Make it sticky
-      top: 0, // Stick to top
+      overflow: 'hidden',
+      background: '#fff', // Optional: background for overlay
+      zIndex: 10, // Ensure above left panel
+      borderLeft: '1px solid #e2e8f0',
     },
     welcomeMessage: {
       display: 'flex',

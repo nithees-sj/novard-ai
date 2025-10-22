@@ -68,7 +68,7 @@ const generateQuizForVideo = async (req, res) => {
           content: prompt
         }
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 2000
     });

@@ -17,7 +17,7 @@ exports.processChatbotPrompt = async (req, res) => {
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: prompt },
       ],
-      model: "gemma2-9b-it",
+      model: "llama-3.3-70b-versatile",
       temperature: 0.5,
       max_tokens: 1024,
       top_p: 1,
