@@ -53,7 +53,7 @@ const Notes = () => {
   // Load notes when selectedNote changes
   useEffect(() => {
     if (selectedNote) {
-      loadChatHistory();
+      loadNoteData(selectedNote);
     }
   }, [selectedNote]);
 
@@ -90,9 +90,13 @@ const Notes = () => {
     // Load stored summary
     setSummary(note.summary || '');
     
-    // Load stored chat history - ensure it's always an array
+    // Load stored chat history - clean it to remove MongoDB _id fields
     const chatHistory = Array.isArray(note.chatHistory) ? note.chatHistory : [];
-    setChatMessages(chatHistory);
+    const cleanedChatHistory = chatHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    setChatMessages(cleanedChatHistory);
     
     // Load stored quiz history - ensure it's always an array
     const quizHistory = Array.isArray(note.quizzes) ? note.quizzes : [];
@@ -100,7 +104,7 @@ const Notes = () => {
     
     console.log('Loaded note data:', {
       title: note.title,
-      chatHistory: chatHistory.length,
+      chatHistory: cleanedChatHistory.length,
       quizHistory: quizHistory.length,
       summary: note.summary ? 'present' : 'empty'
     });

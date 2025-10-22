@@ -62,7 +62,13 @@ const YouTubeVideoSummarizer = () => {
   const loadVideoData = (video) => {
     if (!video) return;
     
-    setChatMessages(video.chatHistory || []);
+    // Clean chat history to remove MongoDB _id fields
+    const chatHistory = Array.isArray(video.chatHistory) ? video.chatHistory : [];
+    const cleanedChatHistory = chatHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    setChatMessages(cleanedChatHistory);
     setSummary(video.summary || '');
     setQuizHistory(video.quizzes || []);
   };
@@ -225,7 +231,13 @@ const YouTubeVideoSummarizer = () => {
       const updatedVideo = updatedVideos.data.find(v => v._id === selectedVideo._id);
       if (updatedVideo) {
         setSelectedVideo(updatedVideo);
-        setChatMessages(updatedVideo.chatHistory || []);
+        // Clean chat history to remove MongoDB _id fields
+        const chatHistory = Array.isArray(updatedVideo.chatHistory) ? updatedVideo.chatHistory : [];
+        const cleanedChatHistory = chatHistory.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        setChatMessages(cleanedChatHistory);
       }
     } catch (error) {
       console.error('Error sending message:', error);

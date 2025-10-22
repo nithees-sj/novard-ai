@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 
@@ -17,19 +17,7 @@ const CourseVideos = () => {
   });
   const [generatingQuiz, setGeneratingQuiz] = useState({});
 
-  useEffect(() => {
-    // Check if teacher is logged in
-    const isLoggedIn = localStorage.getItem('teacherLoggedIn');
-    if (!isLoggedIn) {
-      navigate('/teacher-login');
-      return;
-    }
-
-    // Load course and videos
-    loadCourse();
-  }, [courseId, navigate]);
-
-  const loadCourse = async () => {
+  const loadCourse = useCallback(async () => {
     try {
       if (!courseId || courseId === 'undefined') {
         console.error('Invalid course ID');
@@ -63,7 +51,19 @@ const CourseVideos = () => {
         navigate('/teacher-dashboard');
       }
     }
-  };
+  }, [courseId, navigate]);
+
+  useEffect(() => {
+    // Check if teacher is logged in
+    const isLoggedIn = localStorage.getItem('teacherLoggedIn');
+    if (!isLoggedIn) {
+      navigate('/teacher-login');
+      return;
+    }
+
+    // Load course and videos
+    loadCourse();
+  }, [loadCourse, navigate]);
 
   const handleAddVideo = async () => {
     if (newVideo.title && newVideo.driveLink) {
@@ -161,7 +161,7 @@ const CourseVideos = () => {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        await response.json();
         alert('Quiz generated successfully!');
         // Reload the course to get updated video data
         loadCourse();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const IssueDetail = ({ issue, onBack }) => {
   const [comments, setComments] = useState([]);
@@ -10,20 +10,9 @@ const IssueDetail = ({ issue, onBack }) => {
   const [generatingAI, setGeneratingAI] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    if (issue) {
-      fetchComments();
-      
-      // Set up auto-refresh for comments every 10 seconds
-      const interval = setInterval(() => {
-        fetchComments();
-      }, 10000);
+  const apiUrl = process.env.REACT_APP_API_ENDPOINT || 'http://localhost:5001';
 
-      return () => clearInterval(interval);
-    }
-  }, [issue]);
-
-  const fetchComments = async (isRefresh = false) => {
+  const fetchComments = useCallback(async (isRefresh = false) => {
     if (!issue) return;
 
     try {
@@ -33,7 +22,7 @@ const IssueDetail = ({ issue, onBack }) => {
         setLoading(true);
       }
       
-      const response = await fetch(`http://localhost:5000/api/forum/issues/${issue.issueId}/comments`);
+      const response = await fetch(`${apiUrl}/api/forum/issues/${issue.issueId}/comments`);
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -48,7 +37,20 @@ const IssueDetail = ({ issue, onBack }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [issue, apiUrl]);
+
+  useEffect(() => {
+    if (issue) {
+      fetchComments();
+      
+      // Set up auto-refresh for comments every 10 seconds
+      const interval = setInterval(() => {
+        fetchComments();
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [issue, fetchComments]);
 
   const handleRefresh = () => {
     fetchComments(true);
@@ -57,7 +59,7 @@ const IssueDetail = ({ issue, onBack }) => {
   const handleGenerateAIResponse = async (commentId) => {
     try {
       setGeneratingAI(commentId);
-      const response = await fetch(`http://localhost:5000/api/forum/comments/${commentId}/ai-response`, {
+      const response = await fetch(`${apiUrl}/api/forum/comments/${commentId}/ai-response`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +83,7 @@ const IssueDetail = ({ issue, onBack }) => {
   const handleStatusUpdate = async (newStatus) => {
     try {
       setUpdatingStatus(true);
-      const response = await fetch(`http://localhost:5000/api/forum/issues/${issue.issueId}/status`, {
+      const response = await fetch(`${apiUrl}/api/forum/issues/${issue.issueId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +95,7 @@ const IssueDetail = ({ issue, onBack }) => {
         throw new Error('Failed to update issue status');
       }
 
-      const updatedIssue = await response.json();
+      await response.json();
       // Update the issue in the parent component
       window.location.reload(); // Simple refresh for now
     } catch (error) {
@@ -113,7 +115,7 @@ const IssueDetail = ({ issue, onBack }) => {
       const userEmail = localStorage.getItem('email') || 'anonymous@example.com';
       const userName = localStorage.getItem('name') || 'Anonymous User';
 
-      const response = await fetch('http://localhost:5000/api/forum/comments', {
+      const response = await fetch(`${apiUrl}/api/forum/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Navigationinner } from "../components/navigationinner";
-import ChatbotButton from '../components/ChatbotButton';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+const apiUrl = process.env.REACT_APP_API_ENDPOINT || 'http://localhost:5001';
+console.log('DoubtClearance API URL:', apiUrl);
 
 const DoubtClearance = () => {
   const [doubts, setDoubts] = useState([]);
   const [selectedDoubt, setSelectedDoubt] = useState(null);
-  const [showAddDoubt, setShowAddDoubt] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +25,6 @@ const DoubtClearance = () => {
   const [youtubeRecommendations, setYoutubeRecommendations] = useState([]);
   const [showAddDoubtForm, setShowAddDoubtForm] = useState(false);
   const [toast, setToast] = useState(null);
-  const [showQuizConfirm, setShowQuizConfirm] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState('doubts');
   const [newDoubt, setNewDoubt] = useState({ title: '', description: '', imageUrl: '' });
   const [isAddingDoubt, setIsAddingDoubt] = useState(false);
   const [showQuizHistory, setShowQuizHistory] = useState(false);
@@ -42,7 +39,18 @@ const DoubtClearance = () => {
   const loadUserDoubts = async () => {
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/doubt-clearances/${userId}`);
+      console.log('Loading doubts for userId:', userId);
+      console.log('API URL for loading doubts:', apiUrl);
+      console.log('Making GET request to:', `${apiUrl}/doubt-clearances/${userId}`);
+      
+      const response = await axios.get(`${apiUrl}/doubt-clearances/${userId}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Doubts response status:', response.status);
+      console.log('Doubts response data:', response.data);
       const doubtsData = Array.isArray(response.data) ? response.data : [];
       setDoubts(doubtsData);
       
@@ -52,6 +60,10 @@ const DoubtClearance = () => {
       }
     } catch (error) {
       console.error('Error loading doubts:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
       setDoubts([]);
     }
   };
@@ -60,7 +72,13 @@ const DoubtClearance = () => {
   const loadDoubtData = (doubt) => {
     if (!doubt) return;
     
-    setChatMessages(doubt.chatHistory || []);
+    // Clean chat history to remove MongoDB _id fields
+    const chatHistory = Array.isArray(doubt.chatHistory) ? doubt.chatHistory : [];
+    const cleanedChatHistory = chatHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    setChatMessages(cleanedChatHistory);
     setSummary(doubt.summary || '');
     setQuizHistory(doubt.quizzes || []);
     setYoutubeRecommendations(doubt.youtubeRecommendations || []);
@@ -75,23 +93,45 @@ const DoubtClearance = () => {
       return;
     }
 
+    console.log('API URL:', apiUrl);
+    console.log('Adding doubt with data:', {
+      title: newDoubt.title,
+      description: newDoubt.description,
+      imageUrl: newDoubt.imageUrl,
+      userId: localStorage.getItem('userId') || 'demo-user'
+    });
+
     setIsAddingDoubt(true);
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
-      const response = await axios.post(`${apiUrl}/doubt-clearances`, {
+      const requestData = {
         title: newDoubt.title,
         description: newDoubt.description,
         imageUrl: newDoubt.imageUrl,
         userId
+      };
+      
+      console.log('Making request to:', `${apiUrl}/doubt-clearances`);
+      console.log('Request data:', requestData);
+      
+      const response = await axios.post(`${apiUrl}/doubt-clearances`, requestData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
+      console.log('Doubt added successfully:', response.data);
       setNewDoubt({ title: '', description: '', imageUrl: '' });
       setShowAddDoubtForm(false);
       await loadUserDoubts();
       showToast('Doubt added successfully!', 'success');
     } catch (error) {
       console.error('Error adding doubt:', error);
-      showToast(error.response?.data?.error || 'Error adding doubt', 'error');
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      showToast(error.response?.data?.error || error.message || 'Error adding doubt', 'error');
     } finally {
       setIsAddingDoubt(false);
     }
@@ -132,7 +172,13 @@ const DoubtClearance = () => {
       const updatedDoubt = updatedDoubts.data.find(d => d._id === selectedDoubt._id);
       if (updatedDoubt) {
         setSelectedDoubt(updatedDoubt);
-        setChatMessages(updatedDoubt.chatHistory || []);
+        // Clean chat history to remove MongoDB _id fields
+        const chatHistory = Array.isArray(updatedDoubt.chatHistory) ? updatedDoubt.chatHistory : [];
+        const cleanedChatHistory = chatHistory.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        setChatMessages(cleanedChatHistory);
       }
     } catch (error) {
       console.error('Error sending message:', error);

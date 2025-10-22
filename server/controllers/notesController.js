@@ -159,9 +159,15 @@ Instructions:
 - If asked about something not in the notes, politely explain that the information is not available in the provided notes
 - Maintain a helpful and educational tone`;
 
+    // Clean chatHistory to remove MongoDB _id fields and ensure proper format
+    const cleanedChatHistory = chatHistory.slice(-5).map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...chatHistory.slice(-5), // Reduce context to save tokens
+      ...cleanedChatHistory, // Use cleaned chat history
       { role: 'user', content: message }
     ];
 

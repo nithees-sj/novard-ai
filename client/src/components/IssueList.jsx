@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
   const [issues, setIssues] = useState([]);
@@ -9,11 +9,9 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [statusFilter, setStatusFilter] = useState('open');
 
-  useEffect(() => {
-    fetchIssues();
-  }, [sortBy, sortOrder, statusFilter]);
+  const apiUrl = process.env.REACT_APP_API_ENDPOINT || 'http://localhost:5001';
 
-  const fetchIssues = async () => {
+  const fetchIssues = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -23,7 +21,7 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
         limit: 20
       });
 
-      const response = await fetch(`http://localhost:5000/api/forum/issues?${params}`);
+      const response = await fetch(`${apiUrl}/api/forum/issues?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch issues');
       }
@@ -37,7 +35,11 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiUrl, sortBy, sortOrder, statusFilter]);
+
+  useEffect(() => {
+    fetchIssues();
+  }, [fetchIssues]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -52,7 +54,7 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
         limit: 20
       });
 
-      const response = await fetch(`http://localhost:5000/api/forum/search?${params}`);
+      const response = await fetch(`${apiUrl}/api/forum/search?${params}`);
       if (!response.ok) {
         throw new Error('Failed to search issues');
       }

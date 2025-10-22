@@ -74,17 +74,17 @@ const styles = {
   featuresContainer: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '3.5rem',
-    maxWidth: '1000px',
+    gap: '2.5rem',
+    maxWidth: '800px',
     width: '100%',
     justifyContent: 'center',
     margin: '0 auto',
-    padding: '0 2.5rem'
+    padding: '0 2rem'
   },
   featureCard: {
     backgroundColor: 'rgba(255,255,255,0.98)',
-    borderRadius: '26px',
-    boxShadow: '0 10px 36px rgba(0,0,0,0.10)',
+    borderRadius: '20px',
+    boxShadow: '0 8px 28px rgba(0,0,0,0.08)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -93,11 +93,11 @@ const styles = {
     transition: 'all 0.3s ease',
     cursor: 'pointer',
     backdropFilter: 'blur(11px)',
-    border: '1.5px solid rgba(0,0,0,0.07)',
+    border: '1px solid rgba(0,0,0,0.05)',
     position: 'relative',
     width: '100%',
-    minHeight: '380px',
-    maxWidth: '380px',
+    minHeight: '320px',
+    maxWidth: '320px',
     padding: 0
   },
   featureCardHover: {
@@ -107,7 +107,7 @@ const styles = {
   },
   featureImage: {
     width: '100%',
-    height: '200px',
+    height: '160px',
     objectFit: 'cover',
     transition: 'transform 0.3s ease'
   },
@@ -115,7 +115,7 @@ const styles = {
     transform: 'scale(1.04)'
   },
   featureContent: {
-    padding: '1.6rem 1.2rem 1.2rem 1.2rem',
+    padding: '1.2rem 1rem 1rem 1rem',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -124,39 +124,39 @@ const styles = {
     minHeight: 0
   },
   featureIcon: {
-    fontSize: '2.4rem',
-    marginBottom: '0.7rem',
+    fontSize: '2rem',
+    marginBottom: '0.5rem',
     display: 'block'
   },
   featureTitle: {
-    fontSize: '1.38rem',
+    fontSize: '1.2rem',
     fontWeight: '700',
     color: '#111827',
-    marginBottom: '0.6rem',
-    letterSpacing: '0.45px'
+    marginBottom: '0.5rem',
+    letterSpacing: '0.3px'
   },
   featureDescription: {
-    fontSize: '1.05rem',
+    fontSize: '0.95rem',
     color: '#374151',
     marginBottom: '0',
-    lineHeight: '1.55',
+    lineHeight: '1.5',
     flex: '1'
   },
   featureButton: {
-    marginTop: '1.4rem',
+    marginTop: '1rem',
     alignSelf: 'center',
     background: '#111827',
     color: 'white',
     border: 'none',
-    padding: '13px 28px',
-    borderRadius: '30px',
+    padding: '10px 24px',
+    borderRadius: '25px',
     cursor: 'pointer',
-    fontSize: '1.09rem',
+    fontSize: '0.95rem',
     fontWeight: '700',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.09)',
+    boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
     textTransform: 'uppercase',
-    letterSpacing: '0.7px',
+    letterSpacing: '0.5px',
     width: 'fit-content',
     position: 'relative',
     bottom: 0

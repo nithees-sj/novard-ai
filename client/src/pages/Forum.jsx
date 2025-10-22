@@ -6,6 +6,8 @@ import IssueList from '../components/IssueList';
 import IssueDetail from '../components/IssueDetail';
 import Notification from '../components/Notification';
 
+const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+
 const Forum = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [showIssueForm, setShowIssueForm] = useState(false);
@@ -25,7 +27,7 @@ const Forum = () => {
 
   const handleIssueSubmit = async (issueData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/forum/issues', {
+      const response = await fetch(`${apiUrl}/api/forum/issues`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,89 +64,101 @@ const Forum = () => {
     setNotification(null);
   };
 
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '100vh',
-      backgroundColor: '#f7fafc',
-    },
-    mainContent: {
-      display: 'flex',
-      flex: 1,
-      height: 'calc(100vh - 80px)', // Subtract header height
-      overflow: 'hidden', // Prevent main content from scrolling
-      position: 'relative', // Add for stacking context
-    },
-    leftPanel: {
-      flex: 2.5,
-      display: 'flex',
-      flexDirection: 'column',
-      borderRight: '1px solid #e2e8f0',
-      overflow: 'auto',
-      height: '100%',
-      position: 'relative',
-      marginRight: '450px', // Reserve space for fixed right panel
-    },
-    rightPanel: {
-      // Remove flex, use fixed positioning
-      position: 'fixed',
-      top: '80px', // Height of header
-      right: 0,
-      width: '450px', // Match maxWidth
-      minWidth: '320px',
-      maxWidth: '450px',
-      height: 'calc(100vh - 80px)', // Fill below header
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      background: '#fff', // Optional: background for overlay
-      zIndex: 10, // Ensure above left panel
-      borderLeft: '1px solid #e2e8f0',
-    },
-    welcomeMessage: {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100%',
-      width: '100%',
-      padding: '2rem',
-      textAlign: 'center',
-      minHeight: 'calc(100vh - 80px)', // Ensure it takes full height
-    },
-    welcomeContent: {
-      backgroundColor: '#fff',
-      borderRadius: '12px', // Increased border radius
-      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)', // Enhanced shadow
-      padding: '4rem', // Increased padding
-      maxWidth: '700px', // Increased max width
-      width: '100%',
-      margin: '0 auto', // Center horizontally
-    },
-    title: {
-      fontSize: '3rem', // Further increased from 2.5rem
-      fontWeight: 'bold',
-      color: '#2d3748',
-      marginBottom: '2rem', // Increased margin
-    },
-    description: {
-      fontSize: '1.5rem', // Further increased from 1.3rem
-      color: '#4a5568',
-      lineHeight: '1.8', // Increased line height
-      marginBottom: '3rem', // Increased margin
-    },
-    getStartedButton: {
-      padding: '1.25rem 3rem', // Further increased padding
-      backgroundColor: '#3182ce',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1.4rem', // Further increased font size
-      fontWeight: '600',
-    },
+  const getResponsiveStyles = () => {
+    const isMobile = window.innerWidth < 768;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    
+    return {
+      container: {
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        backgroundColor: '#f7fafc',
+      },
+      mainContent: {
+        display: 'flex',
+        flex: 1,
+        height: isMobile ? 'calc(100vh - 50px)' : isTablet ? 'calc(100vh - 56px)' : 'calc(100vh - 80px)',
+        overflow: 'hidden',
+        position: 'relative',
+        flexDirection: isMobile ? 'column' : 'row'
+      },
+      leftPanel: {
+        flex: isMobile ? 'none' : 2.5,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: isMobile ? 'none' : '1px solid #e2e8f0',
+        borderBottom: isMobile ? '1px solid #e2e8f0' : 'none',
+        overflow: 'auto',
+        height: isMobile ? '50%' : '100%',
+        position: 'relative',
+        marginRight: isMobile ? '0' : isTablet ? '300px' : '380px',
+        order: isMobile ? 2 : 1
+      },
+      rightPanel: {
+        position: isMobile ? 'relative' : 'fixed',
+        top: isMobile ? 'auto' : isTablet ? '56px' : '80px',
+        right: isMobile ? 'auto' : 0,
+        width: isMobile ? '100%' : isTablet ? '300px' : '380px',
+        minWidth: isMobile ? '100%' : '280px',
+        maxWidth: isMobile ? '100%' : isTablet ? '300px' : '380px',
+        height: isMobile ? '50%' : 'calc(100vh - 80px)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        background: '#fff',
+        zIndex: 10,
+        borderLeft: isMobile ? 'none' : '1px solid #e2e8f0',
+        borderTop: isMobile ? '1px solid #e2e8f0' : 'none',
+        order: isMobile ? 1 : 2
+      },
+      welcomeMessage: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+        width: '100%',
+        padding: isMobile ? '0.8rem' : isTablet ? '1.2rem' : '1.5rem',
+        textAlign: 'center',
+        minHeight: isMobile ? 'calc(50vh - 25px)' : isTablet ? 'calc(100vh - 56px)' : 'calc(100vh - 80px)',
+      },
+      welcomeContent: {
+        backgroundColor: '#fff',
+        borderRadius: isMobile ? '6px' : '10px',
+        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+        padding: isMobile ? '1.2rem' : isTablet ? '2rem' : '3rem',
+        maxWidth: isMobile ? '100%' : isTablet ? '500px' : '600px',
+        width: '100%',
+        margin: '0 auto',
+      },
+      title: {
+        fontSize: isMobile ? '1.5rem' : isTablet ? '2rem' : '2.4rem',
+        fontWeight: 'bold',
+        color: '#2d3748',
+        marginBottom: isMobile ? '0.8rem' : isTablet ? '1.2rem' : '1.5rem',
+      },
+      description: {
+        fontSize: isMobile ? '0.9rem' : isTablet ? '1rem' : '1.2rem',
+        color: '#4a5568',
+        lineHeight: '1.6',
+        marginBottom: isMobile ? '1.2rem' : isTablet ? '1.5rem' : '2rem',
+      },
+      getStartedButton: {
+        padding: isMobile ? '0.6rem 1.2rem' : isTablet ? '0.8rem 1.5rem' : '1rem 2rem',
+        backgroundColor: '#3182ce',
+        color: 'white',
+        border: 'none',
+        borderRadius: isMobile ? '6px' : '8px',
+        cursor: 'pointer',
+        fontSize: isMobile ? '0.9rem' : isTablet ? '1rem' : '1.1rem',
+        fontWeight: '600',
+        width: isMobile ? '100%' : 'auto'
+      },
+    };
   };
+
+  const styles = getResponsiveStyles();
 
   return (
     <>

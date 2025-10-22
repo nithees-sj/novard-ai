@@ -210,7 +210,7 @@ app.get('/api/courses/:courseId/videos/:videoId/quiz', getVideoQuiz);
 app.post('/api/courses/:courseId/videos/:videoId/quiz/submit', submitQuizAnswers);
 app.get('/api/courses/:courseId/videos/:videoId/quiz/results', getQuizResults);
 
-const PORT = 5000;
+const PORT = 5001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
