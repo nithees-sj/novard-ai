@@ -41,103 +41,104 @@ const styles = {
     justifyContent: 'flex-start',
     alignItems: 'center',
     overflowY: 'auto',
-    padding: '36px 2.5rem 3rem',
+    padding: '24px 2.5rem 3rem'
   },
   welcomeText: {
-    color: '#111827', // Deep black
-    fontSize: '3rem',
+    color: '#111827',
+    fontSize: '3.2rem',
     fontWeight: 'bold',
     marginBottom: '1.5rem',
     textAlign: 'center',
     textShadow: 'none'
   },
   welcomeSubtext: {
-    color: '#374151', // Neutral gray
-    fontSize: '1.3rem',
-    marginBottom: '3rem',
+    color: '#374151',
+    fontSize: '1.45rem',
+    marginBottom: '3.5rem',
     textAlign: 'center',
-    maxWidth: '700px'
+    maxWidth: '680px'
   },
   featuresContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '2.8rem',
-    flexWrap: 'wrap',
-    maxWidth: '1100px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '2rem',
+    maxWidth: '1200px',
     width: '100%',
+    justifyContent: 'center',
     margin: '0 auto',
-    padding: '0 2.5rem',
+    padding: '0 2rem'
   },
   featureCard: {
     backgroundColor: 'rgba(255,255,255,0.98)',
-    borderRadius: '26px',
-    boxShadow: '0 10px 36px rgba(0,0,0,0.12)',
+    borderRadius: '20px',
+    boxShadow: '0 8px 28px rgba(0,0,0,0.08)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'space-between',
     textAlign: 'center',
     transition: 'all 0.3s ease',
     cursor: 'pointer',
-    backdropFilter: 'blur(8px)',
-    border: '2px solid rgba(0,0,0,0.07)',
+    backdropFilter: 'blur(11px)',
+    border: '1px solid rgba(0,0,0,0.05)',
     position: 'relative',
     width: '100%',
-    height: '380px',
-    minWidth: '320px',
-    maxWidth: '340px',
-    marginBottom: '2rem'
+    minHeight: '340px',
+    maxWidth: '350px',
+    padding: 0
   },
   featureImage: {
     width: '100%',
-    height: '180px',
+    height: '170px',
     objectFit: 'cover',
     transition: 'transform 0.3s ease'
   },
   featureContent: {
-    padding: '1.4rem 1.1rem 1.2rem 1.1rem',
-    position: 'relative',
+    padding: '1.4rem 1.2rem 1.2rem 1.2rem',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'space-between'
+    justifyContent: 'flex-start',
+    minHeight: 0
   },
   featureIcon: {
-    fontSize: '2.5rem',
-    marginBottom: '0.85rem',
+    fontSize: '2.2rem',
+    marginBottom: '0.6rem',
     display: 'block'
   },
   featureTitle: {
-    fontSize: '1.2rem',
+    fontSize: '1.3rem',
     fontWeight: '700',
-    color: '#111827',  // Black heading
-    marginBottom: '0.8rem',
-    letterSpacing: '0.3px',
-    lineHeight: '1.3'
+    color: '#111827',
+    marginBottom: '0.6rem',
+    letterSpacing: '0.3px'
   },
   featureDescription: {
     fontSize: '1rem',
-    color: '#4a5568',
+    color: '#374151',
     marginBottom: '0',
-    lineHeight: '1.55',
+    lineHeight: '1.5',
     flex: '1'
   },
   featureButton: {
+    marginTop: '1.2rem',
+    alignSelf: 'center',
     background: '#111827',
     color: 'white',
     border: 'none',
-    padding: '13px 32px',
-    borderRadius: '32px',
+    padding: '12px 28px',
+    borderRadius: '25px',
     cursor: 'pointer',
     fontSize: '1rem',
     fontWeight: '700',
-    transition: 'all 0.3s',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.13)',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
     textTransform: 'uppercase',
-    letterSpacing: '0.7px',
-    marginTop: '1.1rem',
-    alignSelf: 'center',
-    width: 'fit-content'
+    letterSpacing: '0.5px',
+    width: 'fit-content',
+    position: 'relative',
+    bottom: 0
   }
 };
 

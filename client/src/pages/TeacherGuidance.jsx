@@ -163,7 +163,9 @@ const TeacherGuidance = () => {
       flexDirection: 'column',
       minHeight: '100vh',
       background: '#f8fafc',
-      padding: '2rem'
+      padding: '2rem',
+      alignItems: 'center',
+      justifyContent: 'flex-start'
     },
     pageTitle: {
       fontSize: '2.5rem',
@@ -182,7 +184,10 @@ const TeacherGuidance = () => {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
       gap: '1.5rem',
-      marginBottom: '2rem'
+      marginBottom: '2rem',
+      maxWidth: '1200px',
+      width: '100%',
+      justifyContent: 'center'
     },
     courseCard: {
       backgroundColor: 'white',
@@ -341,7 +346,10 @@ const TeacherGuidance = () => {
     courseSections: {
       display: 'flex',
       gap: '2rem',
-      marginTop: '2rem'
+      marginTop: '2rem',
+      maxWidth: '1400px',
+      width: '100%',
+      justifyContent: 'center'
     },
     sectionContainer: {
       flex: 1,
@@ -713,7 +721,7 @@ const TeacherGuidance = () => {
         </p>
 
           {selectedCourse ? (
-            <div>
+            <div style={{ maxWidth: '1400px', width: '100%', textAlign: 'center' }}>
               <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1a202c', marginBottom: '1rem' }}>
                 {selectedCourse.title}
               </h2>
@@ -871,7 +879,7 @@ const TeacherGuidance = () => {
               </div>
             </div>
           ) : (
-            <div>
+            <div style={{ maxWidth: '1200px', width: '100%', textAlign: 'center' }}>
               {courses.length > 0 ? (
                 <div style={styles.coursesGrid}>
                   {courses.map((course) => (

@@ -133,7 +133,16 @@ const SkillsPage = () => {
       marginBottom: "1rem",
       textAlign: "center", 
     },
-        skillItem: { padding: "10px 4px", fontSize: "1rem", color: "#2d3748", backgroundColor: "white", marginBottom: "10px", borderRadius: "5px" },
+    // ⬇️ Font size increased here
+    skillItem: { 
+      padding: "10px 4px", 
+      fontSize: "1.3rem",  // increased from 1rem
+      lineHeight: "1.6",
+      color: "#2d3748", 
+      backgroundColor: "white", 
+      marginBottom: "10px", 
+      borderRadius: "5px" 
+    },
     noSelectionContainer: {
       display: "flex",
       flexDirection: "column",

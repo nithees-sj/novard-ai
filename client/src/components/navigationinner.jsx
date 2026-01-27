@@ -181,7 +181,7 @@ const styles = {
     <nav style={styles.navbar}>
       <div style={styles.logoContainer}>
         <img src={mainlogo} alt="CareerDev Logo" style={styles.logo} />
-        <span style={styles.logoText}>NOVARD-AI</span>
+        <span style={styles.logoText}>Novard-AI</span>
       </div>
 
       <div style={styles.title}>{title}</div>
