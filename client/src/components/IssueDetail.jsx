@@ -42,8 +42,7 @@ const IssueDetail = ({ issue, onBack }) => {
   useEffect(() => {
     if (issue) {
       fetchComments();
-      
-      // Set up auto-refresh for comments every 10 seconds
+
       const interval = setInterval(() => {
         fetchComments();
       }, 10000);
@@ -96,8 +95,7 @@ const IssueDetail = ({ issue, onBack }) => {
       }
 
       await response.json();
-      // Update the issue in the parent component
-      window.location.reload(); // Simple refresh for now
+      window.location.reload();
     } catch (error) {
       console.error('Error updating issue status:', error);
       alert('Failed to update issue status. Please try again.');
@@ -135,8 +133,7 @@ const IssueDetail = ({ issue, onBack }) => {
       const newCommentData = await response.json();
       setComments(prev => [...prev, newCommentData]);
       setNewComment('');
-      
-      // Refresh comments to get AI response
+
       setTimeout(() => {
         fetchComments();
       }, 2000);
@@ -155,428 +152,93 @@ const IssueDetail = ({ issue, onBack }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open': return '#48bb78';
-      case 'closed': return '#e53e3e';
-      case 'resolved': return '#3182ce';
-      default: return '#718096';
+      case 'open': return 'bg-green-500';
+      case 'closed': return 'bg-red-500';
+      case 'resolved': return 'bg-blue-500';
+      default: return 'bg-gray-500';
     }
-  };
-
-  const styles = {
-    container: {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#f7fafc',
-      overflow: 'auto', // Allow scrolling within the container
-    },
-    header: {
-      padding: '1.5rem', // Increased padding
-      backgroundColor: 'white',
-      borderBottom: '1px solid #e2e8f0',
-      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)', // Increased shadow
-      flexShrink: 0, // Don't shrink the header
-    },
-    backButton: {
-      background: 'none',
-      border: 'none',
-      color: '#3182ce',
-      cursor: 'pointer',
-      fontSize: '1rem', // Increased from 0.875rem
-      marginBottom: '1.25rem', // Increased margin
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    issueCard: {
-      backgroundColor: 'white',
-      borderRadius: '12px', // Increased border radius
-      padding: '2rem', // Increased padding
-      marginBottom: '1.5rem', // Increased margin
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', // Increased shadow
-      flexShrink: 0, // Don't shrink the issue card
-    },
-    issueHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '1rem',
-    },
-    issueTitle: {
-      fontSize: '2.5rem', // Further increased from 2rem
-      fontWeight: 'bold',
-      color: '#2d3748',
-      margin: 0,
-      flex: 1,
-      marginRight: '2rem', // Increased margin
-    },
-    statusBadge: {
-      padding: '1rem 2rem', // Further increased padding
-      borderRadius: '30px', // Increased border radius
-      fontSize: '1.2rem', // Further increased from 1rem
-      fontWeight: '600',
-      textTransform: 'uppercase',
-    },
-    issueDescription: {
-      fontSize: '1.4rem', // Further increased from 1.2rem
-      color: '#4a5568',
-      lineHeight: '1.8', // Increased line height
-      marginBottom: '2rem', // Increased margin
-      whiteSpace: 'pre-wrap',
-    },
-    issueMeta: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingTop: '1rem',
-      borderTop: '1px solid #e2e8f0',
-    },
-    userInfo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-    },
-    avatar: {
-      width: '32px',
-      height: '32px',
-      borderRadius: '50%',
-      backgroundColor: '#e2e8f0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#4a5568',
-    },
-    tags: {
-      display: 'flex',
-      gap: '0.5rem',
-      flexWrap: 'wrap',
-      marginTop: '1rem',
-    },
-    tag: {
-      padding: '0.25rem 0.75rem',
-      backgroundColor: '#edf2f7',
-      color: '#4a5568',
-      borderRadius: '16px',
-      fontSize: '0.75rem',
-    },
-    commentsSection: {
-      flex: 1,
-      padding: '1.5rem', // Increased padding
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '0', // Allow flex to work properly
-    },
-    commentsList: {
-      flex: 1,
-      marginBottom: '1.5rem',
-      minHeight: '0', // Allow flex to work properly
-    },
-    commentsHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1rem',
-    },
-    commentsTitle: {
-      fontSize: '1.75rem', // Further increased from 1.5rem
-      fontWeight: 'bold',
-      color: '#2d3748',
-      margin: 0,
-    },
-    refreshButton: {
-      padding: '0.75rem 1.25rem', // Increased padding
-      backgroundColor: '#e2e8f0',
-      color: '#4a5568',
-      border: 'none',
-      borderRadius: '8px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1rem', // Increased from 0.875rem
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    disabledRefreshButton: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    commentForm: {
-      backgroundColor: 'white',
-      borderRadius: '12px', // Increased border radius
-      padding: '1.5rem', // Increased padding
-      marginTop: 'auto', // Push to bottom
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', // Enhanced shadow
-      flexShrink: 0, // Don't shrink the form
-    },
-    commentTextarea: {
-      width: '100%',
-      padding: '1.25rem', // Further increased padding
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.3rem', // Further increased from 1.1rem
-      minHeight: '120px', // Further increased from 100px
-      resize: 'vertical',
-      fontFamily: 'inherit',
-      marginBottom: '1.25rem', // Increased margin
-    },
-    submitButton: {
-      padding: '1.25rem 2.5rem', // Further increased padding
-      backgroundColor: '#3182ce',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1.2rem', // Further increased from 1rem
-      fontWeight: '600',
-    },
-    disabledButton: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    comment: {
-      backgroundColor: 'white',
-      borderRadius: '12px', // Further increased border radius
-      padding: '1.75rem', // Further increased padding
-      marginBottom: '1.5rem', // Further increased margin
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', // Enhanced shadow
-    },
-    aiComment: {
-      backgroundColor: '#f0f9ff',
-      borderLeft: '4px solid #3182ce',
-    },
-    commentHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '0.5rem',
-    },
-    commentAuthor: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    commentAvatar: {
-      width: '36px', // Increased from 24px
-      height: '36px', // Increased from 24px
-      borderRadius: '50%',
-      backgroundColor: '#e2e8f0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1rem', // Increased from 0.75rem
-      fontWeight: '600',
-      color: '#4a5568',
-    },
-    aiAvatar: {
-      backgroundColor: '#3182ce',
-      color: 'white',
-    },
-    commentContent: {
-      fontSize: '1.5rem', // Further increased from 1.3rem
-      color: '#4a5568',
-      lineHeight: '1.8', // Increased line height
-      whiteSpace: 'pre-wrap',
-      marginTop: '1rem', // Added top margin
-    },
-    commentMeta: {
-      fontSize: '0.875rem', // Increased from 0.75rem
-      color: '#718096',
-      marginTop: '0.75rem', // Increased margin
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    aiResponseButton: {
-      padding: '0.75rem 1.5rem', // Further increased padding
-      backgroundColor: '#3182ce',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1rem', // Further increased from 0.875rem
-      fontWeight: '600',
-    },
-    disabledAIButton: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    statusActions: {
-      display: 'flex',
-      gap: '1rem',
-      marginTop: '1.5rem',
-      paddingTop: '1.5rem',
-      borderTop: '1px solid #e2e8f0',
-    },
-    statusButton: {
-      padding: '0.75rem 1.5rem',
-      borderRadius: '8px',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: '600',
-      transition: 'all 0.2s',
-    },
-    closeButton: {
-      backgroundColor: '#e53e3e',
-      color: 'white',
-    },
-    resolveButton: {
-      backgroundColor: '#38a169',
-      color: 'white',
-    },
-    reopenButton: {
-      backgroundColor: '#3182ce',
-      color: 'white',
-    },
-    disabledStatusButton: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    loading: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#718096',
-    },
-    error: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#e53e3e',
-    },
-    empty: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#718096',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100%',
-      minHeight: 'calc(100vh - 200px)', // Ensure it takes proper height
-    },
   };
 
   if (!issue) {
     return (
-      <div style={styles.container}>
-        <div style={styles.empty}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#2d3748' }}>
-            Welcome to AI Forum
-          </h2>
-          <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: '#4a5568' }}>
-            Select an issue from the right panel to view details and comments
-          </p>
-          <div style={{ fontSize: '1rem', color: '#718096' }}>
-            Or create a new issue to get started!
-          </div>
+      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to AI Forum</h2>
+          <p className="text-sm text-gray-600 mb-4">Select an issue from the right panel to view details and comments</p>
+          <div className="text-xs text-gray-500">Or create a new issue to get started!</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={onBack} style={styles.backButton}>
+    <div className="w-full h-full flex flex-col bg-gray-50 overflow-auto">
+      <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="text-sm text-blue-600 hover:underline flex items-center gap-2"
+        >
           ← Back to Issues
         </button>
       </div>
 
-      <div style={styles.issueCard}>
-        <div style={styles.issueHeader}>
-          <h1 style={styles.issueTitle}>{issue.title}</h1>
-          <span
-            style={{
-              ...styles.statusBadge,
-              backgroundColor: getStatusColor(issue.status),
-              color: 'white',
-            }}
-          >
+      <div className="bg-white rounded-lg p-6 m-4 shadow-md flex-shrink-0">
+        <div className="flex justify-between items-start mb-3">
+          <h1 className="text-2xl font-bold text-gray-900 flex-1 mr-4">{issue.title}</h1>
+          <span className={`px-6 py-2 rounded-full text-sm font-semibold text-white uppercase ${getStatusColor(issue.status)}`}>
             {issue.status}
           </span>
         </div>
 
-        <p style={styles.issueDescription}>{issue.description}</p>
+        <p className="text-sm text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">{issue.description}</p>
 
         {issue.tags && issue.tags.length > 0 && (
-          <div style={styles.tags}>
+          <div className="flex gap-2 flex-wrap mb-4">
             {issue.tags.map((tag, index) => (
-              <span key={index} style={styles.tag}>
+              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-2xl text-xs">
                 {tag}
               </span>
             ))}
           </div>
         )}
 
-        <div style={styles.issueMeta}>
-          <div style={styles.userInfo}>
-            <div style={styles.avatar}>
+        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
               {issue.userName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div style={{ fontWeight: '600', color: '#2d3748', fontSize: '1.1rem' }}>
-                {issue.userName}
-              </div>
-              <div style={{ fontSize: '0.875rem', color: '#718096' }}>
-                {issue.userEmail}
-              </div>
+              <div className="font-semibold text-sm text-gray-900">{issue.userName}</div>
+              <div className="text-xs text-gray-500">{issue.userEmail}</div>
             </div>
           </div>
-          <div style={{ fontSize: '1rem', color: '#718096' }}>
-            {formatDate(issue.createdAt)}
-          </div>
+          <div className="text-xs text-gray-500">{formatDate(issue.createdAt)}</div>
         </div>
 
-        <div style={styles.statusActions}>
+        <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
           {issue.status === 'open' && (
             <>
               <button
                 onClick={() => handleStatusUpdate('resolved')}
-                style={{
-                  ...styles.statusButton,
-                  ...styles.resolveButton,
-                  ...(updatingStatus ? styles.disabledStatusButton : {})
-                }}
                 disabled={updatingStatus}
+                className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 disabled:opacity-60"
               >
                 {updatingStatus ? 'Updating...' : '✓ Mark as Resolved'}
               </button>
               <button
                 onClick={() => handleStatusUpdate('closed')}
-                style={{
-                  ...styles.statusButton,
-                  ...styles.closeButton,
-                  ...(updatingStatus ? styles.disabledStatusButton : {})
-                }}
                 disabled={updatingStatus}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-60"
               >
                 {updatingStatus ? 'Updating...' : '✕ Close Issue'}
               </button>
             </>
           )}
-          {issue.status === 'resolved' && (
+          {(issue.status === 'resolved' || issue.status === 'closed') && (
             <button
               onClick={() => handleStatusUpdate('open')}
-              style={{
-                ...styles.statusButton,
-                ...styles.reopenButton,
-                ...(updatingStatus ? styles.disabledStatusButton : {})
-              }}
               disabled={updatingStatus}
-            >
-              {updatingStatus ? 'Updating...' : '↻ Reopen Issue'}
-            </button>
-          )}
-          {issue.status === 'closed' && (
-            <button
-              onClick={() => handleStatusUpdate('open')}
-              style={{
-                ...styles.statusButton,
-                ...styles.reopenButton,
-                ...(updatingStatus ? styles.disabledStatusButton : {})
-              }}
-              disabled={updatingStatus}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
             >
               {updatingStatus ? 'Updating...' : '↻ Reopen Issue'}
             </button>
@@ -584,79 +246,59 @@ const IssueDetail = ({ issue, onBack }) => {
         </div>
       </div>
 
-      <div style={styles.commentsSection}>
-        <div style={styles.commentsHeader}>
-          <h3 style={styles.commentsTitle}>Comments ({comments.length})</h3>
+      <div className="flex-1 flex flex-col p-4 min-h-0">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-bold text-gray-900">Comments ({comments.length})</h3>
           <button
             onClick={handleRefresh}
-            style={{
-              ...styles.refreshButton,
-              ...(refreshing ? styles.disabledRefreshButton : {})
-            }}
             disabled={refreshing}
+            className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 disabled:opacity-60 flex items-center gap-2"
           >
             {refreshing ? 'Refreshing...' : '↻ Refresh'}
           </button>
         </div>
 
-        <div style={styles.commentsList}>
+        <div className="flex-1 mb-4 min-h-0">
           {loading ? (
-            <div style={styles.loading}>Loading comments...</div>
+            <div className="p-8 text-center text-gray-500 text-sm">Loading comments...</div>
           ) : error ? (
-            <div style={styles.error}>{error}</div>
+              <div className="p-8 text-center text-red-600 text-sm">{error}</div>
           ) : comments.length === 0 ? (
-            <div style={styles.empty}>No comments yet. Be the first to comment!</div>
+                <div className="p-8 text-center text-gray-500 text-sm">No comments yet. Be the first to comment!</div>
           ) : (
             comments.map((comment) => (
               <div
                 key={comment._id}
-                style={{
-                  ...styles.comment,
-                  ...(comment.isAI ? styles.aiComment : {})
-                }}
+                className={`bg-white rounded-lg p-4 mb-3 shadow-md ${comment.isAI ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}
               >
-                <div style={styles.commentHeader}>
-                  <div style={styles.commentAuthor}>
-                    <div
-                      style={{
-                        ...styles.commentAvatar,
-                        ...(comment.isAI ? styles.aiAvatar : {})
-                      }}
-                    >
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold ${comment.isAI ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {comment.isAI ? 'AI' : comment.userName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ fontWeight: '600', color: '#2d3748', fontSize: '1.1rem' }}>
+                      <div className="font-semibold text-sm text-gray-900">
                         {comment.isAI ? 'AI Assistant' : comment.userName}
                       </div>
-                      <div style={{ fontSize: '0.875rem', color: '#718096' }}>
-                        {comment.userEmail}
-                      </div>
+                      <div className="text-xs text-gray-500">{comment.userEmail}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: '#718096' }}>
-                    {formatDate(comment.createdAt)}
-                  </div>
+                  <div className="text-xs text-gray-500">{formatDate(comment.createdAt)}</div>
                 </div>
 
-                <div style={styles.commentContent}>{comment.content}</div>
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mt-2">{comment.content}</div>
 
-                <div style={styles.commentMeta}>
+                <div className="flex justify-between items-center mt-3 text-xs">
                   <div>
                     {comment.isAI && (
-                      <span style={{ color: '#3182ce', fontWeight: '600' }}>
-                        AI Response
-                      </span>
+                      <span className="text-blue-600 font-semibold">AI Response</span>
                     )}
                   </div>
                   {!comment.isAI && (
                     <button
                       onClick={() => handleGenerateAIResponse(comment._id)}
-                      style={{
-                        ...styles.aiResponseButton,
-                        ...(generatingAI === comment._id ? styles.disabledAIButton : {})
-                      }}
                       disabled={generatingAI === comment._id}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
                     >
                       {generatingAI === comment._id ? 'Generating...' : 'Get AI Response'}
                     </button>
@@ -667,22 +309,19 @@ const IssueDetail = ({ issue, onBack }) => {
           )}
         </div>
 
-        <div style={styles.commentForm}>
+        <div className="bg-white rounded-lg p-4 shadow-lg flex-shrink-0">
           <form onSubmit={handleSubmitComment}>
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              style={styles.commentTextarea}
+              className="w-full px-3 py-3 text-sm border border-gray-300 rounded-md min-h-[100px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600 mb-3"
               required
             />
             <button
               type="submit"
-              style={{
-                ...styles.submitButton,
-                ...(submittingComment ? styles.disabledButton : {})
-              }}
               disabled={submittingComment}
+              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
             >
               {submittingComment ? 'Posting...' : 'Post Comment'}
             </button>

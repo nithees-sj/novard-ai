@@ -83,234 +83,62 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open': return '#48bb78';
-      case 'closed': return '#e53e3e';
-      case 'resolved': return '#3182ce';
-      default: return '#718096';
+      case 'open': return 'bg-green-500';
+      case 'closed': return 'bg-red-500';
+      case 'resolved': return 'bg-blue-500';
+      default: return 'bg-gray-500';
     }
-  };
-
-  const styles = {
-    container: {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#f7fafc',
-      overflow: 'hidden', // Prevent container from scrolling
-    },
-    header: {
-      padding: '1rem',
-      backgroundColor: 'white',
-      borderBottom: '1px solid #e2e8f0',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      flexShrink: 0, // Don't shrink the header
-    },
-    title: {
-      fontSize: '1.75rem', // Further increased from 1.5rem
-      fontWeight: 'bold',
-      color: '#2d3748',
-      marginBottom: '1.5rem', // Increased margin
-    },
-    searchContainer: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginBottom: '1rem',
-    },
-    searchInput: {
-      flex: 1,
-      padding: '1rem', // Further increased padding
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.1rem', // Further increased from 1rem
-    },
-    searchButton: {
-      padding: '1rem 1.5rem', // Further increased padding
-      backgroundColor: '#3182ce',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1.1rem', // Further increased from 1rem
-    },
-    filtersContainer: {
-      display: 'flex',
-      gap: '1rem',
-      alignItems: 'center',
-    },
-    select: {
-      padding: '1rem', // Further increased padding
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.1rem', // Further increased from 1rem
-      backgroundColor: 'white',
-    },
-    addButton: {
-      padding: '1rem 2rem', // Further increased padding
-      backgroundColor: '#38a169',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px', // Increased border radius
-      cursor: 'pointer',
-      fontSize: '1.1rem', // Further increased from 1rem
-      fontWeight: '600',
-      marginLeft: 'auto',
-    },
-    issuesList: {
-      flex: 1,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      padding: '0.5rem',
-      height: '100%', // Ensure it takes full height
-    },
-    issueItem: {
-      backgroundColor: 'white',
-      borderRadius: '10px', // Increased border radius
-      padding: '1.25rem', // Increased padding
-      marginBottom: '0.75rem', // Increased margin
-      cursor: 'pointer',
-      border: '2px solid transparent',
-      transition: 'all 0.2s',
-      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)', // Increased shadow
-    },
-    selectedIssue: {
-      borderColor: '#3182ce',
-      backgroundColor: '#ebf8ff',
-    },
-    issueHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '0.5rem',
-    },
-    issueTitle: {
-      fontSize: '1.4rem', // Further increased from 1.2rem
-      fontWeight: '600',
-      color: '#2d3748',
-      margin: 0,
-      flex: 1,
-      marginRight: '1rem', // Increased margin
-    },
-    statusBadge: {
-      padding: '0.5rem 1rem', // Further increased padding
-      borderRadius: '20px', // Increased border radius
-      fontSize: '1rem', // Further increased from 0.875rem
-      fontWeight: '600',
-      textTransform: 'uppercase',
-    },
-    issueDescription: {
-      fontSize: '1.2rem', // Further increased from 1rem
-      color: '#4a5568',
-      lineHeight: '1.6', // Increased line height
-      marginBottom: '1.25rem', // Increased margin
-      display: '-webkit-box',
-      WebkitLineClamp: 3, // Increased from 2 to show more text
-      WebkitBoxOrient: 'vertical',
-      overflow: 'hidden',
-    },
-    issueMeta: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontSize: '1rem', // Further increased from 0.875rem
-      color: '#718096',
-    },
-    userInfo: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    avatar: {
-      width: '20px',
-      height: '20px',
-      borderRadius: '50%',
-      backgroundColor: '#e2e8f0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '0.625rem',
-      fontWeight: '600',
-      color: '#4a5568',
-    },
-    tags: {
-      display: 'flex',
-      gap: '0.5rem', // Increased gap
-      flexWrap: 'wrap',
-      marginTop: '1rem', // Increased margin
-      marginBottom: '1rem', // Added bottom margin
-    },
-    tag: {
-      padding: '0.375rem 0.875rem', // Increased padding
-      backgroundColor: '#e2e8f0',
-      color: '#2d3748',
-      borderRadius: '16px', // Increased border radius
-      fontSize: '0.875rem', // Increased font size
-      fontWeight: '500',
-      border: '1px solid #cbd5e0',
-    },
-    loading: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#718096',
-    },
-    error: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#e53e3e',
-    },
-    empty: {
-      padding: '2rem',
-      textAlign: 'center',
-      color: '#718096',
-    },
   };
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h3 style={styles.title}>Forum Issues</h3>
+      <div className="w-full h-full flex flex-col bg-gray-50">
+        <div className="p-4 bg-white border-b border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900">Forum Issues</h3>
         </div>
-        <div style={styles.loading}>Loading issues...</div>
+        <div className="p-8 text-center text-gray-500 text-sm">Loading issues...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h3 style={styles.title}>Forum Issues</h3>
+      <div className="w-full h-full flex flex-col bg-gray-50">
+        <div className="p-4 bg-white border-b border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900">Forum Issues</h3>
         </div>
-        <div style={styles.error}>{error}</div>
+        <div className="p-8 text-center text-red-600 text-sm">{error}</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Forum Issues</h3>
+    <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
+      <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Forum Issues</h3>
         
-        <div style={styles.searchContainer}>
+        <div className="flex gap-2 mb-3">
           <input
             type="text"
             placeholder="Search issues..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={styles.searchInput}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
-          <button onClick={handleSearch} style={styles.searchButton}>
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+          >
             Search
           </button>
         </div>
 
-        <div style={styles.filtersContainer}>
+        <div className="flex gap-2 items-center flex-wrap">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={styles.select}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="open">Open</option>
             <option value="closed">Closed</option>
@@ -321,7 +149,7 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={styles.select}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="createdAt">Date</option>
             <option value="upvotes">Votes</option>
@@ -331,61 +159,56 @@ const IssueList = ({ onIssueSelect, selectedIssueId, onCreateIssue }) => {
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
-            style={styles.select}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="desc">Descending</option>
             <option value="asc">Ascending</option>
           </select>
 
-          <button onClick={onCreateIssue} style={styles.addButton}>
+          <button
+            onClick={onCreateIssue}
+            className="ml-auto px-6 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700"
+          >
             + Add Issue
           </button>
         </div>
       </div>
 
-      <div style={styles.issuesList}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
         {issues.length === 0 ? (
-          <div style={styles.empty}>
+          <div className="p-8 text-center text-gray-500 text-sm">
             {searchQuery ? 'No issues found matching your search.' : 'No issues yet. Be the first to create one!'}
           </div>
         ) : (
           issues.map((issue) => (
             <div
               key={issue.issueId}
-              style={{
-                ...styles.issueItem,
-                ...(selectedIssueId === issue.issueId ? styles.selectedIssue : {})
-              }}
               onClick={() => onIssueSelect(issue)}
+              className={`bg-white rounded-lg p-4 mb-3 cursor-pointer border-2 transition-all shadow-md hover:shadow-lg ${selectedIssueId === issue.issueId ? 'border-blue-600 bg-blue-50' : 'border-transparent'
+                }`}
             >
-              <div style={styles.issueHeader}>
-                <h4 style={styles.issueTitle}>{issue.title}</h4>
-                <span
-                  style={{
-                    ...styles.statusBadge,
-                    backgroundColor: getStatusColor(issue.status),
-                    color: 'white',
-                  }}
-                >
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="text-sm font-semibold text-gray-900 flex-1 mr-4">{issue.title}</h4>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white uppercase ${getStatusColor(issue.status)}`}>
                   {issue.status}
                 </span>
               </div>
 
-              <p style={styles.issueDescription}>{issue.description}</p>
+              <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-3">{issue.description}</p>
 
               {issue.tags && issue.tags.length > 0 && (
-                <div style={styles.tags}>
+                <div className="flex gap-2 flex-wrap mb-3">
                   {issue.tags.map((tag, index) => (
-                    <span key={index} style={styles.tag}>
+                    <span key={index} className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs font-medium border border-gray-300">
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
 
-              <div style={styles.issueMeta}>
-                <div style={styles.userInfo}>
-                  <div style={styles.avatar}>
+              <div className="flex justify-between items-center text-xs text-gray-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
                     {issue.userName.charAt(0).toUpperCase()}
                   </div>
                   <span>{issue.userName}</span>

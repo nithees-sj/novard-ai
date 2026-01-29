@@ -6,29 +6,30 @@ export const Header = (props) => {
   const { isAuthenticated } = useAuth0();
 
   return (
-    <header id="header">
-      <br />
-      <br />
-      <br />
-      <br />
-      <div className="intro">
-        <div className="overlay">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-10 col-md-offset-1 intro-text">
-              <h2 style={{ fontSize: "4.5rem" }}>
-                  {props.data ? props.data.title : "Loading"}
-                  <span></span>
-                </h2>
-                <p>{props.data ? props.data.paragraph : "Loading"}</p>
-                {!isAuthenticated && (
-                  <LoginButton />
-                )}
-              </div>
+    <header id="header" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
+        <div className="animate-fade-in">
+          <h2 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold text-gray-900 mb-6 leading-tight">
+            {props.data ? props.data.title : "Loading"}
+          </h2>
+          <p className="text-xl sm:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto font-body leading-relaxed">
+            {props.data ? props.data.paragraph : "Loading"}
+          </p>
+          {!isAuthenticated && (
+            <div className="animate-slide-up">
+              <LoginButton />
             </div>
-          </div>
+          )}
         </div>
       </div>
+
+      {/* Decorative Elements */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse-slow"></div>
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-accent-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse-slow animation-delay-2000"></div>
     </header>
   );
 };

@@ -24,6 +24,7 @@ import TeacherLogin from "./pages/TeacherLogin";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CourseVideos from "./pages/CourseVideos";
 import TeacherGuidance from "./pages/TeacherGuidance";
+import SkillUnlocker from "./pages/SkillUnlocker";
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
@@ -117,6 +118,12 @@ export default function App() {
         }
       />
       <Route
+          path="/skill-unlocker"
+          element={
+            user ? <SkillUnlocker /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
         path="/doubts"
         element={
           user ? <Doubts /> : <Navigate to="/" replace />

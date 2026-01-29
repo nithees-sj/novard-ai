@@ -1,5 +1,4 @@
 import React from "react";
-import Button from "@mui/material/Button";
 import { signInWithGoogle } from "../Firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -8,9 +7,9 @@ function LoginButton() {
 
   const handleSignIn = async () => {
     try {
-      const user = await signInWithGoogle(); // Trigger Google login
+      const user = await signInWithGoogle();
       if (user) {
-        navigate("/home"); // Navigate to home page on success
+        navigate("/home");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -19,19 +18,14 @@ function LoginButton() {
   };
 
   return (
-    <Button
-      variant="contained"
-      color="primary"
+    <button
       onClick={handleSignIn}
-      style={{
-        textTransform: "none",
-        padding: "10px 20px", // Adjust padding for size
-        fontSize: "15px", // Adjust font size
-        borderRadius: 10,
-      }}
+      className="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-full 
+                 hover:from-primary-700 hover:to-primary-800 transform hover:scale-105 hover:shadow-lg
+                 transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
     >
       Continue with Google
-    </Button>
+    </button>
   );
 }
 

@@ -9,28 +9,16 @@ const ChatbotButton = () => {
     navigate('/chatbot');
   };
 
-  const styles = {
-    chatbotButton: {
-      position: 'fixed',
-      bottom: '2rem',
-      right: '2rem',
-      backgroundColor: '#3182ce',
-      color: 'white',
-      border: 'none',
-      borderRadius: '50%',
-      width: '60px',
-      height: '60px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-      cursor: 'pointer',
-      transition: 'background-color 0.3s',
-    },
-  };
-
   return (
-    <button style={styles.chatbotButton} onClick={handleChatbotNavigate}>
+    <button
+      onClick={handleChatbotNavigate}
+      className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-primary-600 to-primary-700 
+               text-white rounded-full shadow-lg hover:shadow-xl 
+               flex items-center justify-center
+               transform hover:scale-110 transition-all duration-300
+               animate-pulse-slow z-50"
+      aria-label="Open Chatbot"
+    >
       <SiChatbot size={28} />
     </button>
   );

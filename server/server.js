@@ -36,6 +36,7 @@ const {
   summarizeYouTubeVideo,
   generateQuizForYouTubeVideo,
   saveQuizResults: saveYouTubeQuizResults,
+  searchYouTubeVideos,
   deleteYouTubeVideo
 } = require('./controllers/youtubeVideoController');
 const {
@@ -88,6 +89,15 @@ const {
   submitQuizAnswers,
   getQuizResults
 } = require('./controllers/quizController');
+const {
+  generatePlan,
+  generateQuiz: generateSkillQuiz,
+  getUserPlans,
+  saveQuizResult,
+  toggleDayCompletion,
+  deletePlan,
+  refreshVideo
+} = require('./controllers/skillUnlockerController');
 
 
 const app = express();
@@ -148,6 +158,7 @@ app.post('/chat-with-youtube-video', chatWithYouTubeVideo);
 app.post('/summarize-youtube-video', summarizeYouTubeVideo);
 app.post('/generate-youtube-quiz', generateQuizForYouTubeVideo);
 app.post('/save-youtube-quiz-results', saveYouTubeQuizResults);
+app.post('/youtube/search', searchYouTubeVideos);
 app.delete('/youtube-videos/:videoId', deleteYouTubeVideo);
 
 // Educational Video Summarizer routes
@@ -209,6 +220,16 @@ app.post('/api/courses/:courseId/videos/:videoId/generate-quiz', generateQuizFor
 app.get('/api/courses/:courseId/videos/:videoId/quiz', getVideoQuiz);
 app.post('/api/courses/:courseId/videos/:videoId/quiz/submit', submitQuizAnswers);
 app.get('/api/courses/:courseId/videos/:videoId/quiz/results', getQuizResults);
+
+// Skill Unlocker routes
+app.post('/api/skill-unlocker/generate-plan', generatePlan);
+app.post('/api/skill-unlocker/generate-quiz', generateSkillQuiz);
+app.get('/api/skill-unlocker/plans/:userId', getUserPlans);
+app.post('/api/skill-unlocker/save-quiz-result', saveQuizResult);
+app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
+app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
+app.delete('/api/skill-unlocker/plans/:planId', deletePlan);
+app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 
 const PORT = 5001;
 app.listen(PORT, () => {

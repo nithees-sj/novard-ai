@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Navigationinner } from "../components/navigationinner";
 import selectCareerImage from "../images/select-job-image.jpg";
-import { MdDeleteOutline } from "react-icons/md"; 
+import { MdDeleteOutline } from "react-icons/md";
 import { marked } from 'marked';
 import ChatbotButton from '../components/ChatbotButton';
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
+const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const ProjectsPage = () => {
   const [selectedCareerId, setSelectedCareerId] = useState(null);
@@ -24,17 +24,11 @@ const ProjectsPage = () => {
       .get(`${apiUrl}/api/projects/careerIds`)
       .then((response) => {
         if (Array.isArray(response.data)) {
-          const transformedCareers = response.data.map((career) => ({
-            name: career,
-          }));
+          const transformedCareers = response.data.map((career) => ({ name: career }));
           setRoadmapCareers(transformedCareers);
-        } else {
-          console.error("API response is not an array:", response.data);
         }
       })
-      .catch((error) => {
-        console.error("Error fetching career IDs:", error);
-      });
+      .catch((error) => console.error("Error fetching career IDs:", error));
   };
 
   const handleSelectCareer = (careerId) => {
@@ -44,215 +38,114 @@ const ProjectsPage = () => {
       .then((response) => {
         if (response.data && typeof response.data === "object") {
           setSkillsData(response.data);
-          console.log("Fetched skills data:", response.data);
-        } else {
-          console.error("Skills data is not in the expected format:", response.data);
         }
       })
-      .catch((error) => console.error("Error fetching skills data:", error));
+      .catch((error) => console.error("Error fetching projects data:", error));
   };
 
   const handleAddNewCareer = () => {
     if (newCareer.trim() !== "") {
-      const careerObject = {
-        career: newCareer.trim(),
-        count,
-      };
-
       axios
-        .post(`${apiUrl}/api/projects/process`, careerObject)
-        .then((response) => {
-          console.log("Career added successfully:", response.data);
+        .post(`${apiUrl}/api/projects/process`, { career: newCareer.trim(), count })
+        .then(() => {
           setNewCareer("");
-          fetchCareers(); 
+          fetchCareers();
         })
-        .catch((error) => {
-          console.error("Error adding new career:", error);
-        });
+        .catch((error) => console.error("Error adding new career:", error));
     }
   };
 
   const handleDeleteCareer = (careerId) => {
     axios
       .delete(`${apiUrl}/api/projects/delete/${careerId}`)
-      .then((response) => {
-        console.log("Career deleted successfully:", response.data);
-        fetchCareers(); // Refetch careers after deletion
-      })
-      .catch((error) => {
-        console.error("Error deleting career:", error);
-      });
-  };
-
-  const styles = {
-    container: { display: "flex", minHeight: "100vh", backgroundColor: "#f7fafc" },
-    content: {
-      flex: 1,
-      padding: "4rem 1rem",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      maxHeight: "100vh",
-      overflowY: "auto",
-    },
-    heading: { fontSize: "2rem", fontWeight: "bold", color: "#2d3748", textAlign: "center", marginBottom: "1rem" },
-    sidebar: {
-      width: "250px",
-      backgroundColor: "F8F9FA",
-      padding: "1rem",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      boxShadow: "0 6px 20px rgba(0,0,0,0.1)", 
-      borderTopLeftRadius: "20px",
-      borderBottomLeftRadius: "20px", 
-      position: "relative", 
-      height: "100vh", 
-    },
-    title: { fontSize: "1.9rem", fontWeight: "bold", marginBottom: "1rem", textAlign: "center" },
-    roadmapButton: {
-      backgroundColor: "#3A6D8C",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      padding: "10px",
-      marginBottom: "0.5rem",
-      cursor: "pointer",
-      width: "100%",
-      textAlign: "left",
-      fontSize: "1rem",
-      transition: "background-color 0.3s",
-      display: "flex",
-      justifyContent: "space-between", 
-    },
-    roadmapButtonSelected: { backgroundColor: "#789DBC", fontSize: "1rem" },
-    skillsContainer: { marginTop: "2rem", padding: "1rem", backgroundColor: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", width: "90%" },
-    skillsHeading: {
-      fontSize: "3.5rem",
-      fontWeight: "bold",
-      marginBottom: "1rem",
-      textAlign: "center", 
-    },
-        skillItem: { padding: "10px 4px", fontSize: "1.3rem", color: "#2d3748", backgroundColor: "white", marginBottom: "10px", borderRadius: "5px" },
-    noSelectionContainer: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      marginTop: "75px",
-      justifyContent: "center",
-      height: "500px",
-      textAlign: "center",
-      padding: "2rem",
-      borderRadius: "10px",
-      backgroundColor: "#fff",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    },
-    noSelectionText: { fontSize: "2.5rem", color: "#4a5568" },
-    noSelectionImage: { width: "400px", height: "300px", objectFit: "cover", marginBottom: "20px" },
-    skillsCountDropdown: { width: "100%", padding: "10px", borderRadius: "5px", border: "2px solid #ddd" },
-    inputContainer: {
-      display: "flex",
-      justifyContent: "space-between",
-      marginTop: "50px", 
-      width: "100%",
-    },
-    inputWrapper: { width: "65%" , height : "30px" },
-    dropdownWrapper: { width: "30%" },
-    addCareerButtonWrapper: { width: "100%", marginTop: "1rem" },
-    addButton: { width: "100%", padding: "10px", borderRadius: "5px", border: "none", backgroundColor: "#47663B", color: "white", cursor: "pointer", fontSize: "1rem" },
+      .then(() => fetchCareers())
+      .catch((error) => console.error("Error deleting career:", error));
   };
 
   return (
     <>
       <Navigationinner title="PROJECTS" />
-      <div style={styles.container}>
-        <div style={styles.content}>
-          {selectedCareerId ? (
-            skillsData ? (
-              <div style={styles.skillsContainer}>
-                <h3 style={styles.skillsHeading}>Project Ideas For {selectedCareerId}</h3>
-                {Object.keys(skillsData).map((key) => {
-                  const skillValue = skillsData[key];
-                  return (
-                    <div key={key} style={styles.skillItem}>
-                      {typeof skillValue === "string" ? (
-                        <div dangerouslySetInnerHTML={{ __html: marked(skillValue) }} />
-                      ) : (
-                        <div>{skillValue}</div>
-                      )}
-                    </div>
-                  );
-                })}
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {selectedCareerId && skillsData ? (
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Project Ideas for {selectedCareerId}</h2>
+              <div className="space-y-3">
+                {Object.keys(skillsData).map((key) => (
+                  <div key={key} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div
+                      className="text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: typeof skillsData[key] === "string" ? marked(skillsData[key]) : skillsData[key] }}
+                    />
+                  </div>
+                ))}
               </div>
-            ) : (
-              <p>Loading projects data...</p>
-            )
+            </div>
           ) : (
-            <div style={styles.noSelectionContainer}>
-              <img src={selectCareerImage} alt="Select a career" style={styles.noSelectionImage} />
-              <p style={styles.noSelectionText}>Select a Role to view details</p>
+              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                <div className="max-w-md bg-white p-8 rounded-lg shadow-md">
+                  <img src={selectCareerImage} alt="Select a career" className="w-full h-48 object-cover rounded-md mb-4" />
+                  <p className="text-lg text-gray-600">Select a role to view project ideas</p>
+                </div>
             </div>
           )}
         </div>
 
-        <div style={styles.sidebar}>
-          <h3 style={styles.title}>ROLES</h3>
-          {roadmapCareers.length > 0 ? (
-            roadmapCareers.map((career, index) => (
+        {/* Sidebar */}
+        <div className="w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Roles</h3>
+
+          <div className="space-y-2 mb-6">
+            {roadmapCareers.map((career, index) => (
               <button
                 key={index}
-                style={{
-                  ...styles.roadmapButton,
-                  ...(selectedCareerId === career.name ? styles.roadmapButtonSelected : {}),
-                }}
+                className={`w-full px-3 py-2 text-left text-sm font-medium rounded-md transition-colors flex justify-between items-center ${selectedCareerId === career.name ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 onClick={() => handleSelectCareer(career.name)}
               >
-                {career.name}
+                <span>{career.name}</span>
                 <MdDeleteOutline
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteCareer(career.name);
                   }}
-                  style={{ cursor: "pointer", color: "white" }}
+                  className="cursor-pointer"
                 />
               </button>
-            ))
-          ) : (
-            <p>No careers available.</p>
-          )}
+            ))}
+          </div>
 
-          <div style={styles.inputContainer}>
-            <div style={styles.inputWrapper}>
+          {/* Add New Role */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={newCareer}
                 onChange={(e) => setNewCareer(e.target.value)}
-                placeholder="Roles with skill count ->"
-                style={{ ...styles.skillsCountDropdown, padding: "12px", fontSize: "1rem" }}
+                placeholder="Role name"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
               />
-            </div>
-            <div style={styles.dropdownWrapper}>
               <select
                 value={count}
                 onChange={(e) => setCount(parseInt(e.target.value))}
-                style={styles.skillsCountDropdown}
+                className="w-16 px-2 py-2 border border-gray-300 rounded-md text-sm"
               >
                 {[1, 2, 3, 4, 5].map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                  <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </div>
-          </div>
-
-          <div style={styles.addCareerButtonWrapper}>
-            <button onClick={handleAddNewCareer} style={styles.addButton}>
+            <button
+              onClick={handleAddNewCareer}
+              className="w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+            >
               Add Role
             </button>
           </div>
         </div>
-        <ChatbotButton/>
+
+        <ChatbotButton />
       </div>
     </>
   );

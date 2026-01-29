@@ -443,6 +443,40 @@ const saveQuizResults = async (req, res) => {
   }
 };
 
+// Search YouTube videos
+const searchYouTubeVideos = async (req, res) => {
+  try {
+    const { query, maxResults = 3 } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    console.log('Searching YouTube for:', query);
+
+    const yt = await Innertube.create();
+    const searchResults = await yt.search(query, { type: 'video' });
+
+    // Extract video data from search results
+    const videos = searchResults.videos
+      .slice(0, maxResults)
+      .map(video => ({
+        videoId: video.id,
+        title: video.title.text || video.title,
+        thumbnailUrl: video.thumbnails?.[0]?.url || video.best_thumbnail?.url || '',
+        url: `https://www.youtube.com/watch?v=${video.id}`,
+        duration: video.duration?.text || '',
+        channelName: video.author?.name || ''
+      }));
+
+    console.log(`Found ${videos.length} videos`);
+    res.json({ videos });
+  } catch (error) {
+    console.error('Error searching YouTube:', error);
+    res.status(500).json({ error: 'Error searching YouTube videos' });
+  }
+};
+
 // Delete YouTube video
 const deleteYouTubeVideo = async (req, res) => {
   try {
@@ -474,5 +508,6 @@ module.exports = {
   summarizeYouTubeVideo,
   generateQuizForYouTubeVideo,
   saveQuizResults,
+  searchYouTubeVideos,
   deleteYouTubeVideo
 };

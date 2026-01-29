@@ -64,140 +64,48 @@ const Forum = () => {
     setNotification(null);
   };
 
-  const getResponsiveStyles = () => {
-    const isMobile = window.innerWidth < 768;
-    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-    
-    return {
-      container: {
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        backgroundColor: '#f7fafc',
-      },
-      mainContent: {
-        display: 'flex',
-        flex: 1,
-        height: isMobile ? 'calc(100vh - 50px)' : isTablet ? 'calc(100vh - 56px)' : 'calc(100vh - 80px)',
-        overflow: 'hidden',
-        position: 'relative',
-        flexDirection: isMobile ? 'column' : 'row'
-      },
-      leftPanel: {
-        flex: isMobile ? 'none' : 2.5,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: isMobile ? 'none' : '1px solid #e2e8f0',
-        borderBottom: isMobile ? '1px solid #e2e8f0' : 'none',
-        overflow: 'auto',
-        height: isMobile ? '50%' : '100%',
-        position: 'relative',
-        marginRight: isMobile ? '0' : isTablet ? '300px' : '380px',
-        order: isMobile ? 2 : 1
-      },
-      rightPanel: {
-        position: isMobile ? 'relative' : 'fixed',
-        top: isMobile ? 'auto' : isTablet ? '56px' : '80px',
-        right: isMobile ? 'auto' : 0,
-        width: isMobile ? '100%' : isTablet ? '300px' : '380px',
-        minWidth: isMobile ? '100%' : '280px',
-        maxWidth: isMobile ? '100%' : isTablet ? '300px' : '380px',
-        height: isMobile ? '50%' : 'calc(100vh - 80px)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        background: '#fff',
-        zIndex: 10,
-        borderLeft: isMobile ? 'none' : '1px solid #e2e8f0',
-        borderTop: isMobile ? '1px solid #e2e8f0' : 'none',
-        order: isMobile ? 1 : 2
-      },
-      welcomeMessage: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%',
-        width: '100%',
-        padding: isMobile ? '0.8rem' : isTablet ? '1.2rem' : '1.5rem',
-        textAlign: 'center',
-        minHeight: isMobile ? 'calc(50vh - 25px)' : isTablet ? 'calc(100vh - 56px)' : 'calc(100vh - 80px)',
-      },
-      welcomeContent: {
-        backgroundColor: '#fff',
-        borderRadius: isMobile ? '6px' : '10px',
-        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
-        padding: isMobile ? '1.2rem' : isTablet ? '2rem' : '3rem',
-        maxWidth: isMobile ? '100%' : isTablet ? '500px' : '600px',
-        width: '100%',
-        margin: '0 auto',
-      },
-      title: {
-        fontSize: isMobile ? '1.5rem' : isTablet ? '2rem' : '2.4rem',
-        fontWeight: 'bold',
-        color: '#2d3748',
-        marginBottom: isMobile ? '0.8rem' : isTablet ? '1.2rem' : '1.5rem',
-      },
-      description: {
-        fontSize: isMobile ? '0.9rem' : isTablet ? '1rem' : '1.2rem',
-        color: '#4a5568',
-        lineHeight: '1.6',
-        marginBottom: isMobile ? '1.2rem' : isTablet ? '1.5rem' : '2rem',
-      },
-      getStartedButton: {
-        padding: isMobile ? '0.6rem 1.2rem' : isTablet ? '0.8rem 1.5rem' : '1rem 2rem',
-        backgroundColor: '#3182ce',
-        color: 'white',
-        border: 'none',
-        borderRadius: isMobile ? '6px' : '8px',
-        cursor: 'pointer',
-        fontSize: isMobile ? '0.9rem' : isTablet ? '1rem' : '1.1rem',
-        fontWeight: '600',
-        width: isMobile ? '100%' : 'auto'
-      },
-    };
-  };
-
-  const styles = getResponsiveStyles();
-
   return (
     <>
       <Navigationinner title={"AI FORUM"} />
-      <div style={styles.container}>
-        <div style={styles.mainContent}>
-          <div style={styles.leftPanel}>
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {selectedIssue ? (
               <IssueDetail 
                 issue={selectedIssue} 
                 onBack={handleBackToList}
               />
             ) : (
-              <div style={styles.welcomeMessage}>
-                <div style={styles.welcomeContent}>
-                  <h1 style={styles.title}>AI Forum</h1>
-                  <p style={styles.description}>
-                    Connect with like-minded individuals in our AI-powered forum. Share experiences, 
-                    ask questions, and learn from the community about career development, technology, 
-                    and professional growth.
+                <div className="text-center py-16">
+                  <div className="max-w-lg mx-auto">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                      AI Forum
+                    </h1>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Connect with peers, share experiences, and learn from the community about
+                      career development and professional growth.
                   </p>
                   <button 
                     onClick={handleCreateIssue}
-                    style={styles.getStartedButton}
+                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm 
+                             font-medium rounded-md transition-colors duration-200"
                   >
-                    Get Started - Create Your First Issue
+                      Create New Issue
                   </button>
                 </div>
               </div>
             )}
           </div>
-          
-          <div style={styles.rightPanel}>
-            <IssueList 
-              onIssueSelect={handleIssueSelect}
-              selectedIssueId={selectedIssue?.issueId}
-              onCreateIssue={handleCreateIssue}
-            />
-          </div>
+        </div>
+
+        {/* Sidebar - Issue List */}
+        <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+          <IssueList
+            onIssueSelect={handleIssueSelect}
+            selectedIssueId={selectedIssue?.issueId}
+            onCreateIssue={handleCreateIssue}
+          />
         </div>
         
         <ChatbotButton />

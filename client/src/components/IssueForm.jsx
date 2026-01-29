@@ -40,7 +40,6 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
         tags: tagsArray
       });
 
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -56,123 +55,28 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
 
   if (!isVisible) return null;
 
-  const styles = {
-    overlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-    },
-    modal: {
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      padding: '2rem',
-      width: '90%',
-      maxWidth: '600px',
-      maxHeight: '80vh',
-      overflowY: 'auto',
-      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-    },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-    },
-    title: {
-      fontSize: '2rem', // Further increased from 1.75rem
-      fontWeight: 'bold',
-      color: '#2d3748',
-      margin: 0,
-    },
-    closeButton: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      cursor: 'pointer',
-      color: '#718096',
-      padding: '0.25rem',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-    },
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-    },
-    label: {
-      fontWeight: '600',
-      color: '#4a5568',
-      fontSize: '1.2rem', // Further increased from 1rem
-    },
-    input: {
-      padding: '1.25rem', // Further increased padding
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.3rem', // Further increased from 1.1rem
-      transition: 'border-color 0.2s',
-    },
-    textarea: {
-      padding: '1.25rem', // Further increased padding
-      border: '1px solid #e2e8f0',
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.3rem', // Further increased from 1.1rem
-      minHeight: '180px', // Further increased from 150px
-      resize: 'vertical',
-      fontFamily: 'inherit',
-      transition: 'border-color 0.2s',
-    },
-    buttonGroup: {
-      display: 'flex',
-      gap: '1rem',
-      justifyContent: 'flex-end',
-      marginTop: '1rem',
-    },
-    button: {
-      padding: '1.25rem 2.5rem', // Further increased padding
-      borderRadius: '10px', // Increased border radius
-      fontSize: '1.3rem', // Further increased from 1.1rem
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      border: 'none',
-    },
-    submitButton: {
-      backgroundColor: '#3182ce',
-      color: 'white',
-    },
-    cancelButton: {
-      backgroundColor: '#e2e8f0',
-      color: '#4a5568',
-    },
-    disabledButton: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-  };
-
   return (
-    <div style={styles.overlay} onClick={onCancel}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <h2 style={styles.title}>Create New Issue</h2>
-          <button style={styles.closeButton} onClick={onCancel}>
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Create New Issue</h2>
+          <button
+            onClick={onCancel}
+            className="text-gray-500 hover:text-gray-700 text-2xl p-1"
+          >
             ×
           </button>
         </div>
         
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label} htmlFor="title">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="title" className="font-semibold text-sm text-gray-700">
               Title *
             </label>
             <input
@@ -181,14 +85,14 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              style={styles.input}
               placeholder="Enter a descriptive title for your issue"
+              className="px-4 py-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
               required
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label} htmlFor="description">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="description" className="font-semibold text-sm text-gray-700">
               Description *
             </label>
             <textarea
@@ -196,14 +100,14 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              style={styles.textarea}
               placeholder="Describe your issue in detail. Include any relevant information, steps to reproduce, or context that might help others understand and help with your issue."
+              className="px-4 py-3 text-sm border border-gray-300 rounded-md min-h-[150px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600"
               required
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label} htmlFor="tags">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="tags" className="font-semibold text-sm text-gray-700">
               Tags (optional)
             </label>
             <input
@@ -212,27 +116,23 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               name="tags"
               value={formData.tags}
               onChange={handleChange}
-              style={styles.input}
               placeholder="Enter tags separated by commas (e.g., javascript, react, bug)"
+              className="px-4 py-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
-          <div style={styles.buttonGroup}>
+          <div className="flex gap-3 justify-end mt-2">
             <button
               type="button"
               onClick={onCancel}
-              style={{...styles.button, ...styles.cancelButton}}
+              className="px-6 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-md hover:bg-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              style={{
-                ...styles.button,
-                ...styles.submitButton,
-                ...(isSubmitting ? styles.disabledButton : {})
-              }}
               disabled={isSubmitting}
+              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
             >
               {isSubmitting ? 'Creating...' : 'Create Issue'}
             </button>

@@ -13,53 +13,31 @@ const EducationalVideos = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [newVideoRequest, setNewVideoRequest] = useState({ title: '', description: '', platform: 'youtube' });
-  const [videoCache, setVideoCache] = useState({}); // Cache videos for each request
-  const [selectedPlatform, setSelectedPlatform] = useState('youtube');
+  const [videoCache, setVideoCache] = useState({});
 
-  // Platform configurations
   const platforms = {
-    youtube: {
-      name: 'YouTube',
-      icon: '📺',
-      color: '#FF0000'
-    },
-    udemy: {
-      name: 'Udemy',
-      icon: '🎓',
-      color: '#A435F0'
-    },
-    coursera: {
-      name: 'Coursera',
-      icon: '🎓',
-      color: '#0056D3'
-    },
-    edureka: {
-      name: 'Edureka',
-      icon: '🎓',
-      color: '#FF6B35'
-    },
+    youtube: { name: 'YouTube', icon: '📺', color: '#FF0000' },
+    udemy: { name: 'Udemy', icon: '🎓', color: '#A435F0' },
+    coursera: { name: 'Coursera', icon: '🎓', color: '#0056D3' },
+    edureka: { name: 'Edureka', icon: '🎓', color: '#FF6B35' },
   };
 
-  // Toast notification function
   const showToast = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Load user video requests on component mount
   useEffect(() => {
     loadUserVideoRequests();
   }, []);
 
-  // Load user video requests
   const loadUserVideoRequests = async () => {
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
       const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
       const videoRequestsData = Array.isArray(response.data) ? response.data : [];
       setVideoRequests(videoRequestsData);
-      
-      // If we have video requests and no selected request, select the first one
+
       if (videoRequestsData.length > 0 && !selectedVideoRequest) {
         setSelectedVideoRequest(videoRequestsData[0]);
         getRecommendedVideos(videoRequestsData[0], false);
@@ -70,15 +48,12 @@ const EducationalVideos = () => {
     }
   };
 
-  // Get recommended videos based on video request
   const getRecommendedVideos = async (videoRequest, forceRefresh = false) => {
     if (!videoRequest) return;
     
     const requestId = videoRequest._id || videoRequest.id;
-    
-    // Check if videos are already cached and not forcing refresh
+
     if (!forceRefresh && videoCache[requestId]) {
-      console.log('Loading videos from cache for:', videoRequest.title);
       setRecommendedVideos(videoCache[requestId]);
       return;
     }
@@ -92,14 +67,7 @@ const EducationalVideos = () => {
       });
       const videos = response.data.videos || [];
       setRecommendedVideos(videos);
-      
-      // Cache the videos for this request
-      setVideoCache(prev => ({
-        ...prev,
-        [requestId]: videos
-      }));
-      
-      console.log('Cached videos for:', videoRequest.title);
+      setVideoCache(prev => ({ ...prev, [requestId]: videos }));
     } catch (error) {
       console.error('Error getting recommended videos:', error);
       showToast('Error getting video recommendations', 'error');
@@ -109,7 +77,6 @@ const EducationalVideos = () => {
     }
   };
 
-  // Add new video request
   const handleAddVideoRequest = async (e) => {
     e.preventDefault();
     
@@ -121,18 +88,15 @@ const EducationalVideos = () => {
     setIsLoading(true);
     try {
       const userId = localStorage.getItem('userId') || 'demo-user';
-      const response = await axios.post(`${apiUrl}/educational-video-requests`, {
-        title: newVideoRequest.title,
-        description: newVideoRequest.description,
-        platform: newVideoRequest.platform,
+      await axios.post(`${apiUrl}/educational-video-requests`, {
+        ...newVideoRequest,
         userId: userId
       });
-      
-      // Refresh the video requests list
+
       await loadUserVideoRequests();
       setShowAddVideoRequest(false);
-      setNewVideoRequest({ title: '', description: '', platform: selectedPlatform });
-      showToast(`${platforms[newVideoRequest.platform].name} video request added successfully!`, 'success');
+      setNewVideoRequest({ title: '', description: '', platform: 'youtube' });
+      showToast('Video request added successfully!', 'success');
     } catch (error) {
       console.error('Error adding video request:', error);
       showToast('Error adding video request. Please try again.', 'error');
@@ -141,30 +105,18 @@ const EducationalVideos = () => {
     }
   };
 
-  // Select video request
-  const handleVideoRequestSelect = (videoRequest) => {
-    setSelectedVideoRequest(videoRequest);
-    // Only load videos if not already cached
-    getRecommendedVideos(videoRequest, false);
-  };
-
-  // Delete video request
   const handleDeleteVideoRequest = async (videoRequestId, videoRequestTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${videoRequestTitle}"?`)) {
-      return;
-    }
+    if (!window.confirm(`Delete "${videoRequestTitle}"?`)) return;
 
     try {
       await axios.delete(`${apiUrl}/educational-video-requests/${videoRequestId}`);
       await loadUserVideoRequests();
-      
-      // If the deleted video request was selected, clear selection and cache
+
       if (selectedVideoRequest && selectedVideoRequest._id === videoRequestId) {
         setSelectedVideoRequest(null);
         setRecommendedVideos([]);
       }
-      
-      // Remove from cache
+
       setVideoCache(prev => {
         const newCache = { ...prev };
         delete newCache[videoRequestId];
@@ -173,699 +125,222 @@ const EducationalVideos = () => {
       showToast('Video request deleted successfully!', 'success');
     } catch (error) {
       console.error('Error deleting video request:', error);
-      showToast('Error deleting video request. Please try again.', 'error');
+      showToast('Error deleting video request.', 'error');
     }
   };
-
-const styles = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-    background: '#ffffff',
-    overflow: 'hidden',
-    padding: '0 1.5rem',
-    boxSizing: 'border-box',
-    maxWidth: '1800px',
-    margin: '0 auto'
-  },
-  sidebar: {
-    width: '380px',
-    background: 'rgba(255, 255, 255, 0.97)',
-    backdropFilter: 'blur(12px)',
-    borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
-    overflowY: 'auto',
-    padding: '2rem 1.5rem',
-    order: 2,
-    flexShrink: 0,
-    height: 'calc(100vh - 120px)',
-    position: 'sticky',
-    top: '10px'
-  },
-  sidebarHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.8rem',
-    paddingBottom: '1rem',
-    borderBottom: '1.5px solid rgba(0, 0, 0, 0.1)'
-  },
-  sidebarTitle: {
-    fontSize: '1.6rem',
-    fontWeight: '700',
-    color: '#111827',
-    margin: 0
-  },
-  addButton: {
-    background: '#111827',
-    color: 'white',
-    border: 'none',
-    borderRadius: '11px',
-    padding: '1.15rem 1.7rem',
-    cursor: 'pointer',
-    fontSize: '1.3rem',
-    fontWeight: '700',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.13)'
-  },
-  addButtonHover: {
-    background: '#000000',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.22)'
-  },
-  doubtItem: {
-    background: '#ffffff',
-    border: '1.2px solid rgba(0, 0, 0, 0.09)',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    marginBottom: '1.2rem',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.07)'
-  },
-  doubtItemHover: {
-    transform: 'translateY(-4px)',
-    boxShadow: '0 9px 22px rgba(0, 0, 0, 0.16)'
-  },
-  doubtItemSelected: {
-    background: 'rgba(0,0,0,0.05)',
-    border: '1.5px solid rgba(0, 0, 0, 0.22)',
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.21)'
-  },
-  doubtTitle: {
-    fontSize: '1.5rem',
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: '0.8rem',
-    lineHeight: '1.4'
-  },
-  doubtDescription: {
-    fontSize: '1.2rem',
-    color: '#374151',
-    lineHeight: '1.5',
-    marginBottom: '0.6rem'
-  },
-  doubtDate: {
-    fontSize: '0.9rem',
-    color: '#6b7280',
-    marginBottom: '0.5rem'
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: '0.75rem',
-    right: '0.75rem',
-    background: 'rgba(0,0,0,0.07)',
-    color: '#111827',
-    border: 'none',
-    borderRadius: '7px',
-    padding: '0.45rem',
-    cursor: 'pointer',
-    fontSize: '1.08rem',
-    transition: 'all 0.3s ease'
-  },
-  deleteButtonHover: {
-    background: 'rgba(0,0,0,0.13)',
-    transform: 'scale(1.08)'
-  },
-  mainContent: {
-    flex: '1',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '2rem 2rem',
-    overflowY: 'auto',
-    order: 1,
-    minWidth: 0,
-    height: 'calc(100vh - 120px)',
-    position: 'sticky',
-    top: '10px'
-  },
-  mainHeader: {
-    marginBottom: '2.5rem'
-  },
-  headerTop: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.3rem'
-  },
-  mainTitle: {
-    fontSize: '3.2rem',
-    fontWeight: '900',
-    color: '#111827',
-    margin: 0,
-    flex: 1,
-    lineHeight: '1.2'
-  },
-  refreshButton: {
-    background: '#111827',
-    color: 'white',
-    border: 'none',
-    borderRadius: '11px',
-    padding: '1rem 1.4rem',
-    fontSize: '1.8rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.85rem',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 11px rgba(0,0,0,0.11)'
-  },
-  refreshButtonHover: {
-    background: '#000000',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 7px 19px rgba(0,0,0,0.18)'
-  },
-  mainSubtitle: {
-    fontSize: '1.2rem',
-    color: '#4b5563',
-    marginBottom: '0',
-    lineHeight: '1.5'
-  },
-  videoGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '1.8rem',
-    marginBottom: '2rem'
-  },
-  videoCard: {
-    background: '#ffffff',
-    borderRadius: '22px',
-    boxShadow: '0 11px 32px rgba(0, 0, 0, 0.12)',
-    overflow: 'hidden',
-    transition: 'all 0.3s ease',
-    cursor: 'pointer',
-    border: '1.7px solid rgba(0, 0, 0, 0.09)'
-  },
-  videoCardHover: {
-    transform: 'translateY(-7px)',
-    boxShadow: '0 17px 38px rgba(0, 0, 0, 0.18)',
-    border: '1.7px solid rgba(0, 0, 0, 0.21)'
-  },
-  videoThumbnail: {
-    width: '100%',
-    height: '200px',
-    objectFit: 'cover',
-    transition: 'transform 0.3s ease'
-  },
-  videoThumbnailHover: {
-    transform: 'scale(1.07)'
-  },
-  videoInfo: {
-    padding: '1.5rem 1.5rem 1rem 1.5rem'
-  },
-  videoTitle: {
-    fontSize: '1.4rem',
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: '0.8rem',
-    lineHeight: '1.4',
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden'
-  },
-  videoDescription: {
-    fontSize: '1rem',
-    color: '#374151',
-    lineHeight: '1.5',
-    display: '-webkit-box',
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden'
-  },
-  loadingSpinner: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '2.7rem',
-    fontSize: '2.2rem',
-    color: '#111827'
-  },
-  submitButton: {
-    background: '#111827',
-    color: 'white',
-    borderRadius: '11px',
-    padding: '1.1rem 1.8rem',
-    fontSize: '1.3rem',
-    boxShadow: '0 5px 14px rgba(0,0,0,0.14)'
-  },
-  submitButtonHover: {
-    background: '#000000',
-    transform: 'translateY(-2px)'
-  },
-  cancelButton: {
-    background: 'rgba(0,0,0,0.06)',
-    color: '#111827',
-    border: '1px solid rgba(0,0,0,0.11)'
-  },
-  toastSuccess: {
-    background: '#111827',
-    color: 'white'
-  },
-  toastError: {
-    background: '#b91c1c'
-  },
-  addDoubtForm: {
-  background: '#fff',
-  borderRadius: '20px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.11)',
-  padding: '2.6rem 2.5rem 2.2rem 2.5rem',
-  margin: '0 auto',
-  maxWidth: '440px',
-  minWidth: '320px',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'stretch',
-  gap: '1.25rem'
-},
-formTitle: {
-  fontSize: '2rem',
-  fontWeight: '800',
-  color: '#111827',
-  marginBottom: '1rem',
-  textAlign: 'center',
-  letterSpacing: '0.03em'
-},
-inputGroup: {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.75rem',
-  marginBottom: '0.7rem'
-},
-label: {
-  fontSize: '1.18rem',
-  fontWeight: '600',
-  color: '#2a2f34',
-  marginBottom: '0.16rem'
-},
-input: {
-  width: '100%',
-  padding: '15px 22px',
-  borderRadius: '12px',
-  border: '1.5px solid #d1d5db',
-  background: '#f8fafb',
-  fontSize: '1.17rem',
-  fontFamily: 'inherit',
-  outline: 'none',
-  boxSizing: 'border-box'
-},
-textarea: {
-  width: '100%',
-  padding: '15px 22px',
-  borderRadius: '12px',
-  border: '1.5px solid #d1d5db',
-  background: '#f8fafb',
-  fontSize: '1.17rem',
-  fontFamily: 'inherit',
-  outline: 'none',
-  minHeight: '90px',
-  resize: 'vertical',
-  boxSizing: 'border-box'
-},
-formButtons: {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '1.2rem'
-},
-button: {
-  padding: '15px 32px',
-  borderRadius: '10px',
-  fontSize: '1.14rem',
-  fontWeight: '700',
-  border: 'none',
-  cursor: 'pointer',
-  transition: 'all 0.2s'
-},
-submitButton: {
-  background: '#111827',
-  color: '#fff',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.13)'
-},
-  cancelButton: {
-    background: '#f2f4f5',
-    color: '#232323',
-    border: '1.5px solid #d1d5db'
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '3rem 2rem',
-    color: '#6b7280'
-  },
-  emptyIcon: {
-    fontSize: '3rem',
-    marginBottom: '1rem'
-  },
-  emptyTitle: {
-    fontSize: '1.5rem',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '0.5rem'
-  },
-  emptyDescription: {
-    fontSize: '1rem',
-    lineHeight: '1.5'
-  },
-  toast: {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    padding: '1rem 1.5rem',
-    borderRadius: '8px',
-    color: 'white',
-    fontWeight: '600',
-    zIndex: 1000,
-    fontSize: '1rem'
-  },
-  platformSelector: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap',
-  },
-  platformButton: {
-    padding: '0.8rem 1.2rem',
-    fontSize: '1rem',
-    fontWeight: '600',
-    background: 'rgba(255, 255, 255, 0.8)',
-    color: '#6b7280',
-    border: '1px solid rgba(107, 114, 128, 0.3)',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  },
-  activePlatformButton: {
-    background: '#3b82f6',
-    color: '#ffffff',
-    border: '1px solid #3b82f6',
-    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
-  },
-  platformIcon: {
-    fontSize: '1.2rem',
-  },
-  platformBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.3rem',
-    padding: '0.3rem 0.6rem',
-    borderRadius: '8px',
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    marginBottom: '0.5rem',
-    marginRight: '10px',
-  }
-
-};
-
 
   return (
     <>
       <Navigationinner title={"EDUCATIONAL VIDEOS"} />
-      <div style={styles.container}>
+      <div className="flex min-h-screen bg-gray-50">
         {/* Main Content */}
-        <div style={styles.mainContent}>
-          <div style={styles.mainHeader}>
-            <div style={styles.headerTop}>
-              <h1 style={styles.mainTitle}>
-                {selectedVideoRequest ? `Videos for: ${selectedVideoRequest.title}` : 'Educational Video Recommendations'}
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {selectedVideoRequest ? `Videos for: ${selectedVideoRequest.title}` : 'Educational Videos'}
               </h1>
               {selectedVideoRequest && (
                 <button 
-                  style={{
-                    ...styles.refreshButton,
-                    ...(isLoading ? { opacity: 0.6, cursor: 'not-allowed' } : {})
-                  }}
                   onClick={() => !isLoading && getRecommendedVideos(selectedVideoRequest, true)}
                   disabled={isLoading}
+                  className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-black transition-colors disabled:opacity-60"
                 >
-                  {isLoading ? ' Loading...' : ' Refresh Videos'}
+                  {isLoading ? 'Loading...' : 'Refresh'}
                 </button>
               )}
             </div>
-            <p style={styles.mainSubtitle}>
+            <p className="text-sm text-gray-600 mb-6">
               {selectedVideoRequest 
-                ? `Based on your ${platforms[selectedVideoRequest.platform]?.name || 'educational'} video request, here are some recommended videos`
-                : 'Select a video request from the sidebar to see personalized video recommendations from YouTube, Udemy, Coursera, and Edureka'
+                ? `Recommended ${platforms[selectedVideoRequest.platform]?.name || 'educational'} videos`
+                : 'Select a video request to see recommendations'
               }
             </p>
-          </div>
 
-          {/* Loading State */}
-          {isLoading && (
-            <div style={styles.loadingSpinner}>
-              🔍 Finding relevant videos...
-            </div>
-          )}
+            {/* Loading */}
+            {isLoading && (
+              <div className="text-center py-12 text-lg text-gray-700">
+                🔍 Finding relevant videos...
+              </div>
+            )}
 
-          {/* Video Grid */}
-          {!isLoading && Array.isArray(recommendedVideos) && recommendedVideos.length > 0 && (
-            <div style={styles.videoGrid}>
-              {recommendedVideos.map((video, index) => (
-                <div
-                  key={index}
-                  style={{...styles.videoCard, position: 'relative'}}
-                  onClick={() => {
-                    // Open video in new tab or embed player
-                    window.open(video.url, '_blank');
-                  }}
-                >
-
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    style={styles.videoThumbnail}
-                    onError={(e) => {
-                      console.log('Thumbnail failed to load:', video.thumbnail);
-                      // Fallback to courses.jpg for educational platforms
-                      e.target.src = '/courses.jpg';
-                    }}
-                  />
-                  <div style={styles.videoInfo}>
-                    <h3 style={styles.videoTitle}>{video.title}</h3>
-                    {video.channel && (
-                      <p style={{...styles.videoDescription, color: '#6b7280', fontSize: '0.85rem', marginBottom: '0.5rem'}}>
-                        {video.platform === 'youtube' ? '📺' : '🎓'} {video.channel}
-                      </p>
-                    )}
-                    <p style={styles.videoDescription}>
-                      {video.description.length > 150 
-                        ? `${video.description.substring(0, 150)}...` 
-                        : video.description
-                      }
-                    </p>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem'}}>
-                      {video.reason && (
-                        <p style={{...styles.videoDescription, fontStyle: 'italic', color: '#667eea', fontSize: '0.75rem', margin: 0}}>
-                          💡 {video.reason}
+            {/* Video Grid */}
+            {!isLoading && recommendedVideos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommendedVideos.map((video, index) => (
+                  <div
+                    key={index}
+                    onClick={() => window.open(video.url, '_blank')}
+                    className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
+                  >
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-40 object-cover"
+                      onError={(e) => { e.target.src = '/courses.jpg'; }}
+                    />
+                    <div className="p-4">
+                      <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2">{video.title}</h3>
+                      {video.channel && (
+                        <p className="text-xs text-gray-500 mb-2">
+                          {video.platform === 'youtube' ? '📺' : '🎓'} {video.channel}
                         </p>
                       )}
-                    </div>
-                    
-                    {/* Enhanced metadata display for all platforms */}
-                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.8rem', color: '#6b7280'}}>
-                      {video.rating && (
-                        <span style={{background: '#f3f4f6', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
-                          ⭐ {video.rating}
-                        </span>
-                      )}
-                      {video.price && (
-                        <span style={{background: '#dcfce7', color: '#059669', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontWeight: '600'}}>
-                          💰 {video.price}
-                        </span>
-                      )}
-                      {video.enrollments && (
-                        <span style={{background: '#fef3c7', color: '#d97706', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
-                          👥 {video.enrollments.toLocaleString()}
-                        </span>
-                      )}
-                      {video.duration && (
-                        <span style={{background: '#e0e7ff', color: '#3730a3', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
-                          ⏱️ {video.duration}
-                        </span>
-                      )}
-                      {video.instructor && video.platform !== 'youtube' && (
-                        <span style={{background: '#f3e8ff', color: '#7c3aed', padding: '0.25rem 0.5rem', borderRadius: '0.25rem'}}>
-                          👨‍🏫 {video.instructor}
-                        </span>
-                      )}
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">{video.description}</p>
+
+                      {/* Metadata */}
+                      <div className="flex flex-wrap gap-1">
+                        {video.rating && <span className="px-2 py-0.5 bg-gray-100 text-xs rounded">⭐ {video.rating}</span>}
+                        {video.price && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded font-semibold">💰 {video.price}</span>}
+                        {video.duration && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">⏱️ {video.duration}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Empty Video State */}
-          {!isLoading && (!Array.isArray(recommendedVideos) || recommendedVideos.length === 0) && selectedVideoRequest && (
-            <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>🎓</div>
-              <div style={styles.emptyTitle}>No videos found</div>
-              <div style={styles.emptyDescription}>
-                We couldn't find relevant videos for this {platforms[selectedVideoRequest.platform]?.name || 'educational'} request. Try adding more details or check back later.
+                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* No Video Request Selected State */}
-          {!selectedVideoRequest && (
-            <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>🎯</div>
-              <div style={styles.emptyTitle}>Select a video request to get started</div>
-              <div style={styles.emptyDescription}>
-                Choose a video request from the sidebar to see personalized recommendations from YouTube, Udemy, Coursera, and Edureka, or add a new request to begin.
+            {/* Empty States */}
+            {!isLoading && recommendedVideos.length === 0 && selectedVideoRequest && (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-4">🎓</div>
+                <div className="text-lg font-semibold text-gray-700 mb-2">No videos found</div>
+                <div className="text-sm text-gray-500">Try adding more details or check back later.</div>
               </div>
-            </div>
-          )}
+            )}
+
+            {!selectedVideoRequest && (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-4">🎯</div>
+                <div className="text-lg font-semibold text-gray-700 mb-2">Select a video request</div>
+                <div className="text-sm text-gray-500">Choose from the sidebar or add a new request.</div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}
-        <div style={styles.sidebar}>
-          <div style={styles.sidebarHeader}>
-            <h2 style={styles.sidebarTitle}>Your Video Requests</h2>
+        <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">Your Requests</h2>
             <button 
-              style={styles.addButton}
               onClick={() => setShowAddVideoRequest(!showAddVideoRequest)}
+              className="px-3 py-1.5 bg-gray-900 text-white text-sm font-semibold rounded-md hover:bg-black"
             >
-              + Add Request
+              + Add
             </button>
           </div>
 
-          {/* Add Video Request Form */}
+          {/* Add Form */}
           {showAddVideoRequest && (
-            <div style={styles.addDoubtForm}>
-              <h3 style={styles.formTitle}>Add New Video Request</h3>
-              <form onSubmit={handleAddVideoRequest}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Select Platform</label>
-                  <div style={styles.platformSelector}>
+            <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-4">
+              <h3 className="text-base font-bold text-gray-900 mb-3">Add Request</h3>
+              <form onSubmit={handleAddVideoRequest} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Platform</label>
+                  <div className="flex flex-wrap gap-2">
                     {Object.entries(platforms).map(([key, platform]) => (
                       <button
                         key={key}
                         type="button"
-                        style={{
-                          ...styles.platformButton,
-                          ...(newVideoRequest.platform === key ? styles.activePlatformButton : {})
-                        }}
-                        onClick={() => {
-                          setNewVideoRequest(prev => ({ ...prev, platform: key }));
-                          setSelectedPlatform(key);
-                        }}
-                        disabled={isLoading}
+                        onClick={() => setNewVideoRequest(prev => ({ ...prev, platform: key }))}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${newVideoRequest.platform === key ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                          }`}
                       >
-                        <span style={styles.platformIcon}>{platform.icon}</span>
-                        {platform.name}
+                        {platform.icon} {platform.name}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Title</label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={newVideoRequest.title}
-                    onChange={(e) => setNewVideoRequest({ ...newVideoRequest, title: e.target.value })}
-                    placeholder="Enter video request title..."
-                    required
-                  />
-                </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Description</label>
-                  <textarea
-                    style={styles.textarea}
-                    value={newVideoRequest.description}
-                    onChange={(e) => setNewVideoRequest({ ...newVideoRequest, description: e.target.value })}
-                    placeholder="Describe what kind of videos you're looking for..."
-                    required
-                  />
-                </div>
-                <div style={styles.formButtons}>
+                <input
+                  type="text"
+                  value={newVideoRequest.title}
+                  onChange={(e) => setNewVideoRequest({ ...newVideoRequest, title: e.target.value })}
+                  placeholder="Title"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  required
+                />
+                <textarea
+                  value={newVideoRequest.description}
+                  onChange={(e) => setNewVideoRequest({ ...newVideoRequest, description: e.target.value })}
+                  placeholder="Description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  rows="3"
+                  required
+                />
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    style={{ ...styles.button, ...styles.cancelButton }}
                     onClick={() => setShowAddVideoRequest(false)}
+                    className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    style={{ ...styles.button, ...styles.submitButton }}
                     disabled={isLoading}
+                    className="flex-1 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-black disabled:opacity-60"
                   >
-                    {isLoading ? 'Adding...' : 'Add Doubt'}
+                    Add
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Video Requests List */}
-          {Array.isArray(videoRequests) && videoRequests.map((videoRequest) => (
-            <div
-              key={videoRequest._id}
-              style={{
-                ...styles.doubtItem,
-                ...(selectedVideoRequest && selectedVideoRequest._id === videoRequest._id ? styles.doubtItemSelected : {})
-              }}
-              onClick={() => handleVideoRequestSelect(videoRequest)}
-            >
-              <button
-                style={styles.deleteButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteVideoRequest(videoRequest._id, videoRequest.title);
+          {/* Request List */}
+          <div className="space-y-2">
+            {videoRequests.map((request) => (
+              <div
+                key={request._id || request.id}
+                onClick={() => {
+                  setSelectedVideoRequest(request);
+                  getRecommendedVideos(request, false);
                 }}
-                title="Delete video request"
+                className={`relative p-3 rounded-lg border cursor-pointer transition-all ${selectedVideoRequest?._id === request._id
+                  ? 'bg-gray-900 text-white border-gray-900 shadow-lg'
+                  : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
+                  }`}
               >
-                ✕
-              </button>
-              <div style={styles.doubtTitle}>
-                <div style={{
-                  ...styles.platformBadge,
-                  background: platforms[videoRequest.platform]?.color + '20',
-                  color: platforms[videoRequest.platform]?.color
-                }}>
-                  <span style={styles.platformIcon}>
-                    {platforms[videoRequest.platform]?.icon || '🎓'}
-                  </span>
-                  {platforms[videoRequest.platform]?.name || 'Educational'}
+                <div className="pr-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span>{platforms[request.platform]?.icon || '🎓'}</span>
+                    <h3 className={`text-sm font-bold line-clamp-1 ${selectedVideoRequest?._id === request._id ? 'text-white' : 'text-gray-900'
+                      }`}>
+                      {request.title}
+                    </h3>
+                  </div>
+                  <p className={`text-xs line-clamp-2 ${selectedVideoRequest?._id === request._id ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                    {request.description}
+                  </p>
                 </div>
-                {videoRequest.title}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteVideoRequest(request._id || request.id, request.title);
+                  }}
+                  className={`absolute top-2 right-2 p-1 rounded hover:bg-opacity-20 hover:bg-black ${selectedVideoRequest?._id === request._id ? 'text-white' : 'text-gray-400'
+                    }`}
+                >
+                  ×
+                </button>
               </div>
-              <div style={styles.doubtDescription}>{videoRequest.description}</div>
-              <div style={styles.doubtDate}>
-                {new Date(videoRequest.createdAt).toLocaleDateString()}
-              </div>
-            </div>
-          ))}
-
-          {/* Empty State */}
-          {Array.isArray(videoRequests) && videoRequests.length === 0 && (
-            <div style={styles.emptyState}>
-              <div style={styles.emptyIcon}>🎓</div>
-              <div style={styles.emptyTitle}>No video requests yet</div>
-              <div style={styles.emptyDescription}>
-                Add your first video request to get personalized recommendations from YouTube, Udemy, Coursera, Edureka, and Unacademy!
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+
+        <ChatbotButton />
       </div>
 
-      {/* Toast Notifications */}
+      {/* Toast */}
       {toast && (
-        <div style={{
-          ...styles.toast,
-          ...(toast.type === 'success' ? styles.toastSuccess : styles.toastError)
-        }}>
+        <div className={`fixed top-5 right-5 px-4 py-3 rounded-md shadow-lg text-white font-semibold text-sm z-50 ${toast.type === 'success' ? 'bg-gray-900' : 'bg-red-600'
+          }`}>
           {toast.message}
         </div>
       )}
-
-      <ChatbotButton />
     </>
   );
 };
