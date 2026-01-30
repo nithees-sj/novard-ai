@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import axios from "axios";
 import { auth } from "../Firebase";
 import mainlogo from "../images/mainlogo.png";
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
-export const Navigationinner = ({ title }) => {
+export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) => {
   const [user, setUser] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
@@ -41,15 +39,17 @@ export const Navigationinner = ({ title }) => {
   const togglePopup = () => setShowPopup(!showPopup);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm">
-      <div className="flex justify-between items-center px-6 py-3 min-h-[56px]">
-        {/* Logo */}
-        <div className="flex items-center space-x-3">
-          <img src={mainlogo} alt="CareerDev Logo" className="h-8 rounded-lg" />
-          <span className="text-2xl font-extrabold text-gray-900 font-display tracking-tight">
-            NOVARD-AI
-          </span>
-        </div>
+    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? 'ml-64' : ''}`}>
+      <div className="flex justify-between items-center px-6 h-14">
+        {/* Logo - conditionally rendered */}
+        {!hideLogo && (
+          <div className="flex items-center space-x-3">
+            <img src={mainlogo} alt="CareerDev Logo" className="h-8 rounded-lg" />
+            <span className="text-2xl font-extrabold text-gray-900 font-display tracking-tight">
+              NOVARD-AI
+            </span>
+          </div>
+        )}
 
         {/* Title */}
         <div className="text-xl font-semibold text-gray-700">
@@ -81,7 +81,7 @@ export const Navigationinner = ({ title }) => {
         {/* Popup */}
         {showPopup && user && (
           <div className="absolute top-16 right-6 w-80 p-8 bg-white/97 backdrop-blur-lg border border-gray-200 
-                       rounded-3xl shadow-hard z-50 animate-slide-down text-center">
+                       rounded-3xl shadow-hard z-[60] animate-slide-down text-center">
             {/* Close Button */}
             <button
               className="absolute top-3 right-5 w-8 h-8 flex items-center justify-center rounded-full 

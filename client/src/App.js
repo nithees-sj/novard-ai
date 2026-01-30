@@ -6,7 +6,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import axios from "axios";
 import Landing from "./pages/Landing";
 import HomePage from "./pages/HomePage";
-import UserProfile from "./components/UserProfile";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import Roadmap from "./pages/Roadmap";
 import Skills from "./pages/Skills";
 import ProjectsPage from "./pages/Projects";
@@ -78,7 +79,13 @@ export default function App() {
       <Route
         path="/profile"
         element={
-          user ? <UserProfile /> : <Navigate to="/" replace />
+            user ? <Profile /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            user ? <Settings /> : <Navigate to="/" replace />
         }
       />
       <Route

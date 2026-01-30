@@ -1,43 +1,61 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
+import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 
-const features = [
+const careerTools = [
   {
-    title: 'Roadmap',
-    description: 'Get a customized career roadmap with milestones and actionable strategies.',
-    icon: '🗺️',
-    route: '/roadmap',
-    color: 'blue'
+    title: 'Smart Roadmap',
+    description: 'Personalized AI paths to reach your dream role in record time.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    buttonColor: 'text-blue-600',
+    route: '/roadmap'
   },
   {
-    title: 'Skills Required',
-    description: 'Discover essential skills needed to improve your qualifications.',
-    icon: '💪',
-    route: '/skills-required',
-    color: 'green'
+    title: 'Skill Gap Analysis',
+    description: 'Identify and bridge technical gaps with targeted learning recommendations.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    iconBg: 'bg-purple-50',
+    iconColor: 'text-purple-600',
+    buttonColor: 'text-purple-600',
+    route: '/skills-required'
   },
   {
-    title: 'Project Ideas',
-    description: 'Find project ideas that align with your career ambitions.',
-    icon: '💡',
-    route: '/project-ideas',
-    color: 'yellow'
+    title: 'Project Portfolio',
+    description: 'Build real-world AI projects to showcase your expertise to recruiters.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+    ),
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-600',
+    buttonColor: 'text-green-600',
+    route: '/project-ideas'
   },
   {
-    title: 'Resume Builder',
-    description: 'Create professional resumes that stand out in the job market.',
-    icon: '📄',
-    route: '/resume-build',
-    color: 'purple'
-  },
-  {
-    title: 'Skill Unlocker',
-    description: 'Master any skill with personalized day-wise learning plans.',
-    icon: '🔓',
-    route: '/skill-unlocker',
-    color: 'indigo'
+    title: 'AI Resume Builder',
+    description: 'Optimized resumes that bypass ATS and highlight your AI skills.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+    buttonColor: 'text-orange-600',
+    route: '/resume-build'
   },
 ];
 
@@ -46,54 +64,99 @@ const Career = () => {
 
   return (
     <>
-      <Navigationinner title={"CAREER"} />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Navigationinner title={"CAREER"} hideLogo={true} hasSidebar={true} />
+      <div className="flex bg-gray-50 min-h-screen pt-14">
+        <Sidebar />
+        <div className="ml-64 flex-1 p-8">
+
+          {/* Breadcrumb */}
+          <div className="flex items-center text-sm text-gray-500 mb-6">
+            <span>Dashboard</span>
+            <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-gray-900 font-medium">Career Tools</span>
+          </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Career Development Tools
             </h1>
-            <p className="text-sm text-gray-600">
-              Build your career with our comprehensive resources
+            <p className="text-gray-600">
+              Empower your professional journey with our AI-driven toolkit designed for modern tech careers.
             </p>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map((feature, index) => (
+          {/* Tools Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {careerTools.map((tool, index) => (
               <div
                 key={index}
-                onClick={() => navigate(feature.route)}
-                className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-lg 
-                         transition-all duration-200 cursor-pointer group"
+                onClick={() => navigate(tool.route)}
+                className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl 
+                         transition-all duration-300 cursor-pointer group"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center">
-                    <span className="text-3xl mr-2">{feature.icon}</span>
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {feature.title}
-                    </h3>
-                  </div>
+                {/* Icon */}
+                <div className={`w-14 h-14 ${tool.iconBg} rounded-xl flex items-center justify-center mb-4
+                              group-hover:scale-110 transition-transform duration-200`}>
+                  <span className={tool.iconColor}>{tool.icon}</span>
                 </div>
 
-                <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                  {feature.description}
+                {/* Title */}
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {tool.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                  {tool.description}
                 </p>
 
-                <button 
-                  className={`w-full py-2 px-4 bg-${feature.color}-600 hover:bg-${feature.color}-700 
-                           text-white text-sm font-medium rounded-md transition-colors duration-200`}
-                >
+                {/* Button */}
+                <button className={`${tool.buttonColor} font-medium text-sm flex items-center 
+                                   group-hover:gap-2 transition-all`}>
                   Get Started
+                  <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
                 </button>
               </div>
             ))}
           </div>
 
+          {/* Practice with AI Mentors Section */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-10 shadow-xl">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+              <div className="flex-1">
+                <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">
+                  🎯 NOW LIVE: MOCK INTERVIEWS
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-3">
+                  Practice with AI Mentors
+                </h2>
+                <p className="text-gray-300 max-w-2xl">
+                  Prepare for your next big interview with our industry-specific AI simulation tool.
+                  Real-time feedback on your performance.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/mock-interview')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold 
+                         flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl 
+                         whitespace-nowrap"
+              >
+                <span>Start Mock Interview</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <ChatbotButton />
         </div>
-        <ChatbotButton />
       </div>
     </>
   );

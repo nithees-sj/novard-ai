@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navigationinner } from "../components/navigationinner";
+import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import axios from 'axios';
 import { MdDeleteOutline, MdAdd } from "react-icons/md";
@@ -332,10 +333,11 @@ const SkillUnlocker = () => {
 
   return (
     <>
-      <Navigationinner title={"SKILL UNLOCKER"} />
-      <div className="flex h-[calc(100vh-64px)] bg-gray-50">
+      <Navigationinner title={"SKILL UNLOCKER"} hideLogo={true} hasSidebar={false} />
+      <div className="flex bg-gray-50 pt-14" style={{ height: 'calc(100vh - 56px)' }}>
+        <Sidebar isHoverMode={true} />
         
-        {/* Sidebar */}
+        {/* Skills Custom Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10">
             <div className="p-5 border-b border-gray-100">
                 <button 

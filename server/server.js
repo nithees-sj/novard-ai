@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const connectDB = require('./connect');
-const { saveUser,getUserByEmail } = require('./controllers/userController');
+const { saveUser, getUserByEmail, getUserProfile, updateUserProfile } = require('./controllers/userController');
 const { processSkillsPrompt, getSkillsByCareer } = require('./controllers/skillsController');  
 const { processProjectPrompt, getProjectsByCareer } = require('./controllers/projectsController');  
 const { getCareerIds } = require('./controllers/skillsController');
@@ -108,7 +108,9 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 connectDB();
 
 app.post('/saveUser', saveUser); 
-app.get('/getUser/:email', getUserByEmail);  
+app.get('/getUser/:email', getUserByEmail);
+app.get('/getUserProfile', getUserProfile);
+app.post('/updateUserProfile', updateUserProfile);  
 
 app.get('/api/careerIds', getCareerIds);
 app.get('/api/projects/careerIds', getProjectCareerIds);

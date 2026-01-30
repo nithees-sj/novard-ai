@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
+import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 
 const features = [
@@ -25,9 +26,9 @@ const Doubts = () => {
 
   return (
     <>
-      <Navigationinner title={"DOUBTS"} />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Navigationinner title={"DOUBTS"} hideLogo={false} hasSidebar={false} />
+      <div className="flex bg-gray-50 min-h-screen pt-14">
+        <div className="flex-1 p-8">
 
           {/* Header */}
           <div className="mb-8">
@@ -71,8 +72,8 @@ const Doubts = () => {
             ))}
           </div>
 
+          <ChatbotButton />
         </div>
-        <ChatbotButton />
       </div>
     </>
   );

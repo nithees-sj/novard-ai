@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navigationinner } from "../components/navigationinner";
+import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import IssueForm from '../components/IssueForm';
 import IssueList from '../components/IssueList';
@@ -66,8 +67,8 @@ const Forum = () => {
 
   return (
     <>
-      <Navigationinner title={"AI FORUM"} />
-      <div className="flex min-h-screen bg-gray-50">
+      <Navigationinner title={"AI FORUM"} hideLogo={false} hasSidebar={false} />
+      <div className="flex min-h-screen bg-gray-50 pt-14">
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
