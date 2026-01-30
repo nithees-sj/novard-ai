@@ -64,6 +64,16 @@ const TeacherGuidance = () => {
     }
   };
 
+  const convertDriveLink = (driveLink) => {
+    if (driveLink && driveLink.includes('drive.google.com/file/d/')) {
+      const fileId = driveLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+      if (fileId) {
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+      }
+    }
+    return driveLink;
+  };
+
   const handleQuizStart = (quizId) => {
     const quiz = quizzes.find(q => q.id === quizId);
     if (quiz) {
@@ -247,15 +257,20 @@ const TeacherGuidance = () => {
               </button>
             </div>
             <div className="p-4">
-              {selectedVideo.videoUrl && (
+              {selectedVideo.driveLink && (
                 <div className="aspect-video mb-4">
                   <iframe
-                    src={selectedVideo.videoUrl}
+                    src={convertDriveLink(selectedVideo.driveLink)}
                     title={selectedVideo.title}
                     className="w-full h-full rounded-lg"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+                </div>
+              )}
+              {!selectedVideo.driveLink && (
+                <div className="aspect-video mb-4 bg-gray-100 flex items-center justify-center">
+                  <p className="text-gray-500">No video link available</p>
                 </div>
               )}
               <p className="text-sm text-gray-700">{selectedVideo.description}</p>
