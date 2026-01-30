@@ -98,6 +98,10 @@ const {
   deletePlan,
   refreshVideo
 } = require('./controllers/skillUnlockerController');
+const {
+  getUserAnalytics
+} = require('./controllers/analyticsController');
+
 
 
 const app = express();
@@ -232,6 +236,9 @@ app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
 app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
 app.delete('/api/skill-unlocker/plans/:planId', deletePlan);
 app.post('/api/skill-unlocker/refresh-video', refreshVideo);
+
+// Analytics routes
+app.get('/api/analytics/:userId', getUserAnalytics);
 
 const PORT = 5001;
 app.listen(PORT, () => {
