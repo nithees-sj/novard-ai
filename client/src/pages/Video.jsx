@@ -4,10 +4,11 @@ import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import VideoLibraryInlineView from '../components/VideoLibraryInlineView';
 import VideoSummarizerInlineView from '../components/VideoSummarizerInlineView';
+import TeacherGuidanceInlineView from '../components/TeacherGuidanceInlineView';
 
 const Video = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('landing'); // 'landing', 'videoLibrary', 'videoSummarizer'
+  const [activeView, setActiveView] = useState('landing'); // 'landing', 'videoLibrary', 'videoSummarizer', 'teacherGuidance'
 
   const features = [
     {
@@ -48,7 +49,7 @@ const Video = () => {
       ),
       bgColor: 'bg-green-100',
       iconColor: 'text-green-600',
-      route: '/teacher-guidance'
+      route: 'inline'
     }
   ];
 
@@ -89,6 +90,14 @@ const Video = () => {
                 <span className="text-gray-900 font-medium">Video Summarizer</span>
               </>
             )}
+            {activeView === 'teacherGuidance' && (
+              <>
+                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-gray-900 font-medium">Teacher Guidance</span>
+              </>
+            )}
           </div>
 
           {/* Landing View */}
@@ -117,6 +126,8 @@ const Video = () => {
                           setActiveView('videoLibrary');
                         } else if (feature.id === 'summarizer') {
                           setActiveView('videoSummarizer');
+                        } else if (feature.id === 'guidance') {
+                          setActiveView('teacherGuidance');
                         }
                       } else {
                         navigate(feature.route);
@@ -229,6 +240,24 @@ const Video = () => {
               </button>
 
               <VideoSummarizerInlineView />
+            </div>
+          )}
+
+          {/* Teacher Guidance Inline View */}
+          {activeView === 'teacherGuidance' && (
+            <div>
+              {/* Back Button */}
+              <button
+                onClick={() => setActiveView('landing')}
+                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium">Back to Video Sessions</span>
+              </button>
+
+              <TeacherGuidanceInlineView />
             </div>
           )}
         </div>
