@@ -63,8 +63,8 @@ const ResumePage = () => {
 
   return (
     <>
-      <Navigationinner title="RESUME" />
-      <div className="flex min-h-screen bg-gray-50">
+      <Navigationinner title={"RESUME"} hideLogo={true} hasSidebar={false} />
+      <div className="flex min-h-screen bg-gray-50 pt-14">
         {/* Main Content */}
         <div className="flex-1 overflow-auto p-6">
           {selectedCareerId && skillsData ? (

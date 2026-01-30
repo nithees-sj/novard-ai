@@ -48,8 +48,8 @@ const Roadmap = () => {
 
   return (
     <>
-      <Navigationinner title={"ROADMAP"} />
-      <div className="flex min-h-screen bg-gray-50">
+      <Navigationinner title={"ROADMAP"} hideLogo={true} hasSidebar={false} />
+      <div className="flex min-h-screen bg-gray-50 pt-14">
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
           {selectedItem && selectedImage ? (
