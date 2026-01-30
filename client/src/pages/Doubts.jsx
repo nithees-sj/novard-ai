@@ -4,20 +4,32 @@ import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 
-const features = [
+const learningModules = [
   {
     title: 'Notes & Quiz',
-    description: 'Access comprehensive notes, practice Q&A sessions, and test your knowledge.',
-    icon: '📚',
-    route: '/notes',
-    color: 'bg-blue-600 hover:bg-blue-700'
+    description: 'Access comprehensive notes, practice Q&A sessions, and test your knowledge with interactive quizzes.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    route: '/notes'
   },
   {
     title: 'Doubt Clearance',
-    description: 'Get personalized doubt clearance and quiz-based learning support.',
-    icon: '❓',
-    route: '/doubt-clearance',
-    color: 'bg-purple-600 hover:bg-purple-700'
+    description: 'Get personalized doubt clearance and quiz-based learning support from our AI-driven system.',
+    icon: (
+      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    iconBg: 'bg-purple-50',
+    iconColor: 'text-purple-600',
+    buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    route: '/doubt-clearance'
   },
 ];
 
@@ -26,50 +38,94 @@ const Doubts = () => {
 
   return (
     <>
-      <Navigationinner title={"DOUBTS"} hideLogo={false} hasSidebar={false} />
+      <Navigationinner title={"DOUBTS & LEARNING"} hideLogo={true} hasSidebar={true} />
       <div className="flex bg-gray-50 min-h-screen pt-14">
-        <div className="flex-1 p-8">
+        <Sidebar />
+        <div className="ml-64 flex-1 p-8">
+
+          {/* Breadcrumb */}
+          <div className="flex items-center text-sm text-gray-500 mb-6">
+            <span>Dashboard</span>
+            <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-gray-900 font-medium">Doubts & Learning</span>
+          </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Doubts & Learning
             </h1>
-            <p className="text-sm text-gray-600">
-              Clear your doubts and enhance your knowledge
+            <p className="text-gray-600">
+              Clear your doubts and enhance your knowledge with our specialized learning modules.
             </p>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
-            {features.map((feature, index) => (
+          {/* Learning Modules Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mb-10">
+            {learningModules.map((module, index) => (
               <div
                 key={index}
-                onClick={() => navigate(feature.route)}
-                className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-lg 
-                         transition-all duration-200 cursor-pointer group"
+                onClick={() => navigate(module.route)}
+                className="bg-white rounded-2xl border border-gray-100 p-8 hover:shadow-xl 
+                         transition-all duration-300 cursor-pointer group"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center">
-                    <span className="text-3xl mr-2">{feature.icon}</span>
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {feature.title}
-                    </h3>
-                  </div>
+                {/* Icon */}
+                <div className={`w-14 h-14 ${module.iconBg} rounded-xl flex items-center justify-center mb-5
+                              group-hover:scale-110 transition-transform duration-200`}>
+                  <span className={module.iconColor}>{module.icon}</span>
                 </div>
 
-                <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                  {feature.description}
+                {/* Title */}
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  {module.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                  {module.description}
                 </p>
 
-                <button 
-                  className={`w-full py-2 px-4 ${feature.color} text-white text-sm font-medium 
-                           rounded-md transition-colors duration-200`}
-                >
+                {/* Button */}
+                <button className={`w-full ${module.buttonColor} text-white px-6 py-3 
+                                   rounded-lg font-semibold transition-all duration-200 
+                                   flex items-center justify-center gap-2 shadow-md hover:shadow-lg`}>
                   Start Learning
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Expand Your Expertise Section */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-10 shadow-xl max-w-4xl">
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+              <div className="flex-1">
+                <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">
+                  📚 NEW CONTENT AVAILABLE
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-3">
+                  Expand Your Expertise
+                </h2>
+                <p className="text-gray-300 max-w-2xl">
+                  Our AI models have been updated with the latest industry documentation and interview patterns.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/explore-topics')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-lg font-semibold 
+                         flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl 
+                         whitespace-nowrap"
+              >
+                <span>Explore New Topics</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <ChatbotButton />
