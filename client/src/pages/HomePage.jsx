@@ -16,16 +16,6 @@ const features = [
     buttonColor: 'bg-purple-600 hover:bg-purple-700'
   },
   {
-    title: 'AI Forum',
-    description: 'Connect with experts and peers in the global AI network.',
-    icon: '💬',
-    route: '/forum',
-    buttonText: 'Join Discussion',
-    iconBg: 'bg-green-50',
-    iconColor: 'text-green-600',
-    buttonColor: 'bg-green-600 hover:bg-green-700'
-  },
-  {
     title: 'Video Sessions',
     description: 'Curated masterclasses with automated AI transcriptions.',
     icon: '🎥',
@@ -68,7 +58,7 @@ const HomePage = () => {
               </p>
 
               {/* Features Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                 {features.map((feature, index) => (
                   <div
                     key={index}

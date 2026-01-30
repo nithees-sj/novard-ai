@@ -171,8 +171,23 @@ const IssueDetail = ({ issue, onBack }) => {
     );
   }
 
+  const hideScrollbarStyle = {
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    WebkitOverflowScrolling: 'touch',
+  };
+
   return (
-    <div className="w-full h-full flex flex-col bg-gray-50 overflow-auto">
+    <>
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .smooth-scroll {
+          scroll-behavior: smooth;
+        }
+      `}</style>
+      <div className="w-full h-full flex flex-col bg-gray-50 hide-scrollbar smooth-scroll" style={hideScrollbarStyle}>
       <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
         <button
           onClick={onBack}
@@ -182,71 +197,68 @@ const IssueDetail = ({ issue, onBack }) => {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg p-6 m-4 shadow-md flex-shrink-0">
-        <div className="flex justify-between items-start mb-3">
-          <h1 className="text-2xl font-bold text-gray-900 flex-1 mr-4">{issue.title}</h1>
-          <span className={`px-6 py-2 rounded-full text-sm font-semibold text-white uppercase ${getStatusColor(issue.status)}`}>
-            {issue.status}
-          </span>
-        </div>
-
-        <p className="text-sm text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">{issue.description}</p>
-
-        {issue.tags && issue.tags.length > 0 && (
-          <div className="flex gap-2 flex-wrap mb-4">
-            {issue.tags.map((tag, index) => (
-              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-2xl text-xs">
-                {tag}
+        {/* Sleeker Header - No Description/Tags */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+          {/* Single-line Header: Badge, Issue #, Metadata, Buttons */}
+          <div className="flex justify-between items-center mb-3">
+            {/* Left Side: Badge + Issue # + Metadata */}
+            <div className="flex items-center gap-3">
+              {/* OPEN Badge */}
+              <span className={`px-3 py-1 rounded-md text-xs font-bold text-white uppercase ${getStatusColor(issue.status)}`}>
+                {issue.status}
               </span>
-            ))}
-          </div>
-        )}
 
-        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
-              {issue.userName.charAt(0).toUpperCase()}
+              {/* Issue Number */}
+              <span className="text-sm font-semibold text-gray-600">
+                Issue #{issue.issueId || '4002'}
+              </span>
+
+              {/* Bullet Separator */}
+              <span className="text-gray-400">•</span>
+
+              {/* Opened by metadata */}
+              <span className="text-sm text-gray-600">
+                Opened by <span className="font-semibold text-gray-900">{issue.userName}</span> • {formatDate(issue.createdAt)}
+              </span>
             </div>
-            <div>
-              <div className="font-semibold text-sm text-gray-900">{issue.userName}</div>
-              <div className="text-xs text-gray-500">{issue.userEmail}</div>
+
+            {/* Right Side: Action Buttons */}
+            <div className="flex items-center gap-3">
+              {issue.status === 'open' && (
+                <>
+                  <button
+                    onClick={() => handleStatusUpdate('resolved')}
+                    disabled={updatingStatus}
+                    className="px-5 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 disabled:opacity-60 transition-colors"
+                  >
+                    {updatingStatus ? 'Updating...' : 'Resolve'}
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate('closed')}
+                    disabled={updatingStatus}
+                    className="px-5 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-60 transition-colors"
+                  >
+                    {updatingStatus ? 'Updating...' : 'Close'}
+                  </button>
+                </>
+              )}
+              {(issue.status === 'resolved' || issue.status === 'closed') && (
+                <button
+                  onClick={() => handleStatusUpdate('open')}
+                  disabled={updatingStatus}
+                  className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                >
+                  {updatingStatus ? 'Updating...' : 'Reopen'}
+                </button>
+              )}
             </div>
           </div>
-          <div className="text-xs text-gray-500">{formatDate(issue.createdAt)}</div>
+
+          {/* Title - Large and Bold */}
+          <h1 className="text-2xl font-bold text-gray-900">{issue.title}</h1>
         </div>
 
-        <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
-          {issue.status === 'open' && (
-            <>
-              <button
-                onClick={() => handleStatusUpdate('resolved')}
-                disabled={updatingStatus}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700 disabled:opacity-60"
-              >
-                {updatingStatus ? 'Updating...' : '✓ Mark as Resolved'}
-              </button>
-              <button
-                onClick={() => handleStatusUpdate('closed')}
-                disabled={updatingStatus}
-                className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-60"
-              >
-                {updatingStatus ? 'Updating...' : '✕ Close Issue'}
-              </button>
-            </>
-          )}
-          {(issue.status === 'resolved' || issue.status === 'closed') && (
-            <button
-              onClick={() => handleStatusUpdate('open')}
-              disabled={updatingStatus}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
-            >
-              {updatingStatus ? 'Updating...' : '↻ Reopen Issue'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col p-4 min-h-0">
+        <div className="flex-1 flex flex-col p-4 overflow-hidden">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-bold text-gray-900">Comments ({comments.length})</h3>
           <button
@@ -258,15 +270,53 @@ const IssueDetail = ({ issue, onBack }) => {
           </button>
         </div>
 
-        <div className="flex-1 mb-4 min-h-0">
+          <div className="flex-1 overflow-y-auto mb-4 hide-scrollbar smooth-scroll" style={hideScrollbarStyle}>
           {loading ? (
             <div className="p-8 text-center text-gray-500 text-sm">Loading comments...</div>
           ) : error ? (
               <div className="p-8 text-center text-red-600 text-sm">{error}</div>
-          ) : comments.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">No comments yet. Be the first to comment!</div>
-          ) : (
-            comments.map((comment) => (
+              ) : (
+                // Always show initial issue as first comment
+                [
+                  // Initial Issue Comment
+                  <div
+                    key={`initial-${issue.issueId}`}
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600"
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold text-white">
+                          {issue.userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-semibold text-sm text-gray-900">{issue.userName}</div>
+                            <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-bold rounded">ISSUE OPENER</span>
+                          </div>
+                          <div className="text-xs text-gray-500">{issue.userEmail}</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">{formatDate(issue.createdAt)}</div>
+                    </div>
+                    <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-3">
+                      {issue.description}
+                    </div>
+                    {/* Tags in initial comment */}
+                    {issue.tags && issue.tags.length > 0 && (
+                      <div className="flex gap-2 flex-wrap pt-3 border-t border-blue-200">
+                        {issue.tags.map((tag, index) => (
+                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>,
+                  // Regular comments
+                  ...(comments.length === 0 ? (
+                    [<div key="no-replies" className="p-8 text-center text-gray-500 text-sm">No replies yet. Be the first to reply!</div>]
+                  ) : (
+                    comments.map((comment) => (
               <div
                 key={comment._id}
                 className={`bg-white rounded-lg p-4 mb-3 shadow-md ${comment.isAI ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}
@@ -306,29 +356,43 @@ const IssueDetail = ({ issue, onBack }) => {
                 </div>
               </div>
             ))
+                    ))
+                  ]
           )}
         </div>
 
-        <div className="bg-white rounded-lg p-4 shadow-lg flex-shrink-0">
-          <form onSubmit={handleSubmitComment}>
+          {/* Minimal Comment Input - Clean & Sleek */}
+          <div className="bg-white border-t border-gray-200 px-4 py-4">
+            <form onSubmit={handleSubmitComment} className="flex gap-3 items-end">
+              {/* Simple Text Area */}
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="w-full px-3 py-3 text-sm border border-gray-300 rounded-md min-h-[100px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600 mb-3"
+                placeholder="Write a response..."
+                className="flex-1 px-4 py-3 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                         min-h-[60px] max-h-[120px] hide-scrollbar smooth-scroll transition-all"
+                style={hideScrollbarStyle}
               required
             />
-            <button
-              type="submit"
-              disabled={submittingComment}
-              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
-            >
-              {submittingComment ? 'Posting...' : 'Post Comment'}
-            </button>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submittingComment || !newComment.trim()}
+                className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 h-fit"
+              >
+                {submittingComment ? 'Posting...' : 'Post Comment'}
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+              </button>
           </form>
         </div>
+
       </div>
     </div>
+    </>
   );
 };
 

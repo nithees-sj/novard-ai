@@ -3,7 +3,7 @@ import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import IssueForm from '../components/IssueForm';
-import IssueList from '../components/IssueList';
+import ForumGrid from '../components/ForumGrid';
 import IssueDetail from '../components/IssueDetail';
 import Notification from '../components/Notification';
 
@@ -67,46 +67,24 @@ const Forum = () => {
 
   return (
     <>
-      <Navigationinner title={"AI FORUM"} hideLogo={false} hasSidebar={false} />
-      <div className="flex min-h-screen bg-gray-50 pt-14">
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {selectedIssue ? (
-              <IssueDetail 
-                issue={selectedIssue} 
-                onBack={handleBackToList}
-              />
-            ) : (
-                <div className="text-center py-16">
-                  <div className="max-w-lg mx-auto">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                      AI Forum
-                    </h1>
-                    <p className="text-sm text-gray-600 mb-6">
-                      Connect with peers, share experiences, and learn from the community about
-                      career development and professional growth.
-                  </p>
-                  <button 
-                    onClick={handleCreateIssue}
-                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm 
-                             font-medium rounded-md transition-colors duration-200"
-                  >
-                      Create New Issue
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <Navigationinner title={"AI FORUM"} hideLogo={true} hasSidebar={true} />
+      <div className="flex bg-gray-50 min-h-screen pt-14">
+        {/* Main Navigation Sidebar - LEFT */}
+        <Sidebar />
 
-        {/* Sidebar - Issue List */}
-        <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
-          <IssueList
-            onIssueSelect={handleIssueSelect}
-            selectedIssueId={selectedIssue?.issueId}
-            onCreateIssue={handleCreateIssue}
-          />
+        {/* Main Content Area - Full Width */}
+        <div className="ml-64 flex-1" style={{ height: 'calc(100vh - 56px)' }}>
+          {selectedIssue ? (
+            <IssueDetail
+              issue={selectedIssue}
+              onBack={handleBackToList}
+            />
+          ) : (
+              <ForumGrid
+                onIssueSelect={handleIssueSelect}
+                onCreateIssue={handleCreateIssue}
+              />
+          )}
         </div>
         
         <ChatbotButton />
