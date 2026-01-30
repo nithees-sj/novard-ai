@@ -566,7 +566,6 @@ const DoubtClearance = () => {
                           className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200"
                         >
                           <h4 className="font-semibold text-sm text-gray-900 mb-1">{video.title}</h4>
-                          <p className="text-xs text-gray-600">{video.description}</p>
                         </a>
                       ))}
                       </div>

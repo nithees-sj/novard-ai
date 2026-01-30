@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
+import VideoLibraryInlineView from '../components/VideoLibraryInlineView';
+import VideoSummarizerInlineView from '../components/VideoSummarizerInlineView';
 
 const Video = () => {
   const navigate = useNavigate();
+  const [activeView, setActiveView] = useState('landing'); // 'landing', 'videoLibrary', 'videoSummarizer'
 
   const features = [
     {
@@ -18,7 +21,7 @@ const Video = () => {
       ),
       bgColor: 'bg-blue-100',
       iconColor: 'text-blue-600',
-      route: '/youtube-videos'
+      route: 'inline' // Changed to trigger inline view
     },
     {
       id: 'summarizer',
@@ -32,7 +35,7 @@ const Video = () => {
       ),
       bgColor: 'bg-purple-100',
       iconColor: 'text-purple-600',
-      route: '/youtube-video-summarizer'
+      route: 'inline' // Changed to trigger inline view
     },
     {
       id: 'guidance',
@@ -64,98 +67,170 @@ const Video = () => {
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-gray-900 font-medium">Video Sessions</span>
-          </div>
-
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Video Sessions & Learning
-            </h1>
-            <p className="text-gray-600">
-              Access videos and AI-powered tools for enhanced learning.
-            </p>
-          </div>
-
-          {/* Feature Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {features.map((feature) => (
-              <div
-                key={feature.id}
-                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-xl 
-                         transition-all duration-300 cursor-pointer group hover:-translate-y-1"
-                onClick={() => navigate(feature.route)}
-              >
-                {/* Icon */}
-                <div className={`w-16 h-16 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4 
-                              group-hover:scale-110 transition-transform duration-300`}>
-                  <div className={feature.iconColor}>
-                    {feature.icon}
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {feature.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 leading-relaxed mb-5">
-                  {feature.description}
-                </p>
-
-                {/* Explore Button */}
-                <button className="w-full py-3 px-4 bg-blue-600 text-white text-sm font-semibold rounded-lg 
-                                 hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2">
-                  Explore
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Promotional Banner */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-10 relative overflow-hidden max-w-4xl">
-            {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
-              <div className="flex-1 mb-6 md:mb-0">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 bg-opacity-20 
-                              border border-blue-500 rounded-full text-blue-400 text-xs font-semibold mb-4">
-                  <span className="text-lg">🎬</span>
-                  NEW VIDEO TUTORIALS AVAILABLE
-                </div>
-
-                {/* Heading */}
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-                  Master New Skills with Video
-                </h2>
-
-                {/* Description */}
-                <p className="text-gray-300 text-base max-w-2xl">
-                  Our video library is constantly updated with new masterclasses from top-tier industry professionals.
-                </p>
-              </div>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => navigate('/youtube-videos')}
-                className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg 
-                         hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 
-                         shadow-xl hover:shadow-2xl hover:scale-105"
-              >
-                Watch Now
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+            <span
+              className={`cursor-pointer hover:text-blue-600 ${activeView === 'landing' ? 'text-gray-900 font-medium' : ''}`}
+              onClick={() => setActiveView('landing')}
+            >
+              Video Sessions
+            </span>
+            {activeView === 'videoLibrary' && (
+              <>
+                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </button>
-            </div>
+                <span className="text-gray-900 font-medium">Video Library</span>
+              </>
+            )}
+            {activeView === 'videoSummarizer' && (
+              <>
+                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-gray-900 font-medium">Video Summarizer</span>
+              </>
+            )}
           </div>
+
+          {/* Landing View */}
+          {activeView === 'landing' && (
+            <>
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Video Sessions & Learning
+                </h1>
+                <p className="text-gray-600">
+                  Access videos and AI-powered tools for enhanced learning.
+                </p>
+              </div>
+
+              {/* Feature Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                {features.map((feature) => (
+                  <div
+                    key={feature.id}
+                    className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-xl 
+                             transition-all duration-300 cursor-pointer group hover:-translate-y-1"
+                    onClick={() => {
+                      if (feature.route === 'inline') {
+                        if (feature.id === 'library') {
+                          setActiveView('videoLibrary');
+                        } else if (feature.id === 'summarizer') {
+                          setActiveView('videoSummarizer');
+                        }
+                      } else {
+                        navigate(feature.route);
+                      }
+                    }}
+                  >
+                    {/* Icon */}
+                    <div className={`w-16 h-16 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4 
+                                  group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={feature.iconColor}>
+                        {feature.icon}
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      {feature.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-sm text-gray-600 leading-relaxed mb-5">
+                      {feature.description}
+                    </p>
+
+                    {/* Explore Button */}
+                    <button className="w-full py-3 px-4 bg-blue-600 text-white text-sm font-semibold rounded-lg 
+                                     hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2">
+                      Explore
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Promotional Banner */}
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-10 relative overflow-hidden max-w-4xl">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
+                  <div className="flex-1 mb-6 md:mb-0">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 bg-opacity-20 
+                                  border border-blue-500 rounded-full text-blue-400 text-xs font-semibold mb-4">
+                      <span className="text-lg">🎬</span>
+                      NEW VIDEO TUTORIALS AVAILABLE
+                    </div>
+
+                    {/* Heading */}
+                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                      Master New Skills with Video
+                    </h2>
+
+                    {/* Description */}
+                    <p className="text-gray-300 text-base max-w-2xl">
+                      Our video library is constantly updated with new masterclasses from top-tier industry professionals.
+                    </p>
+                  </div>
+
+                  {/* CTA Button */}
+                  <button
+                    onClick={() => setActiveView('videoLibrary')}
+                    className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg 
+                             hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 
+                             shadow-xl hover:shadow-2xl hover:scale-105"
+                  >
+                    Watch Now
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Video Library Inline View */}
+          {activeView === 'videoLibrary' && (
+            <div>
+              {/* Back Button */}
+              <button
+                onClick={() => setActiveView('landing')}
+                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium">Back to Video Sessions</span>
+              </button>
+
+              <VideoLibraryInlineView />
+            </div>
+          )}
+
+          {/* Video Summarizer Inline View */}
+          {activeView === 'videoSummarizer' && (
+            <div>
+              {/* Back Button */}
+              <button
+                onClick={() => setActiveView('landing')}
+                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium">Back to Video Sessions</span>
+              </button>
+
+              <VideoSummarizerInlineView />
+            </div>
+          )}
         </div>
       </div>
     </>

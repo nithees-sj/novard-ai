@@ -31,4 +31,16 @@
   .dropdown-content li {
     @apply py-2 cursor-pointer hover:text-primary-600 transition-colors;
   }
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
+}
 }

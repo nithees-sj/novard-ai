@@ -16,10 +16,7 @@ const EducationalVideos = () => {
   const [videoCache, setVideoCache] = useState({});
 
   const platforms = {
-    youtube: { name: 'YouTube', icon: '📺', color: '#FF0000' },
-    udemy: { name: 'Udemy', icon: '🎓', color: '#A435F0' },
-    coursera: { name: 'Coursera', icon: '🎓', color: '#0056D3' },
-    edureka: { name: 'Edureka', icon: '🎓', color: '#FF6B35' },
+    youtube: { name: 'YouTube', icon: '📺', color: '#FF0000' }
   };
 
   const showToast = (message, type) => {
@@ -131,7 +128,7 @@ const EducationalVideos = () => {
 
   return (
     <>
-      <Navigationinner title={"EDUCATIONAL VIDEOS"} />
+      {/* <Navigationinner title={"EDUCATIONAL VIDEOS"} /> */}
       <div className="flex min-h-screen bg-gray-50">
         {/* Main Content */}
         <div className="flex-1 overflow-auto p-6">

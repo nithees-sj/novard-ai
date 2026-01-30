@@ -236,7 +236,7 @@ const YouTubeVideoSummarizer = () => {
 
   return (
     <>
-      <Navigationinner title={"YOUTUBE VIDEO SUMMARIZER"} />
+      {/* <Navigationinner title={"YOUTUBE VIDEO SUMMARIZER"} /> */}
       <div className="flex min-h-screen bg-gray-50">
         {/* Main Content */}
         <div className="flex-1 p-6">
