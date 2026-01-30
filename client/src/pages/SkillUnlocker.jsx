@@ -333,12 +333,12 @@ const SkillUnlocker = () => {
 
   return (
     <>
-      <Navigationinner title={"SKILL UNLOCKER"} hideLogo={true} hasSidebar={false} />
+      <Navigationinner title={"SKILL UNLOCKER"} hideLogo={true} hasSidebar={true} />
       <div className="flex bg-gray-50 pt-14" style={{ height: 'calc(100vh - 56px)' }}>
-        <Sidebar isHoverMode={true} />
+        <Sidebar />
         
         {/* Skills Custom Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10">
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10 ml-64">
             <div className="p-5 border-b border-gray-100">
                 <button 
                   onClick={handleAddNewSkill}

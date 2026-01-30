@@ -1,8 +1,7 @@
-const User = require('../models/User');
 const YoutubeVideo = require('../models/youtubeVideo');
 const EducationalVideo = require('../models/educationalVideo');
 const DoubtClearance = require('../models/doubtClearance');
-const SkillUnlocker = require('../models/skillUnlocker');
+const SkillPlan = require('../models/skillPlan');
 
 /**
  * Get comprehensive analytics for a user
@@ -20,7 +19,7 @@ const getUserAnalytics = async (req, res) => {
     const youtubeVideos = await YoutubeVideo.find({ userId }) || [];
     const educationalVideos = await EducationalVideo.find({ userId }) || [];
     const doubtClearances = await DoubtClearance.find({ userId }) || [];
-    const skillPlans = await SkillUnlocker.find({ userId }) || [];
+    const skillPlans = await SkillPlan.find({ userId }) || [];
 
     // 1. Calculate Skill Score (0-10000 scale, display as 1,250 format)
     const skillScore = calculateSkillScore(youtubeVideos, educationalVideos, doubtClearances, skillPlans);
