@@ -263,7 +263,32 @@ const chatWithYouTubeVideo = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that answers questions about YouTube videos. Use the video title, description, and content (transcript or summary) to provide accurate and helpful responses. If the transcript is not available, work with the title and description to provide the best possible answer."
+          content: `You are a helpful assistant that answers questions about YouTube videos. Use the video title, description, and content (transcript or summary) to provide accurate and helpful responses.
+
+IMPORTANT - Format your response using these markdown elements for professional display:
+
+1. Use ### for section headers (e.g., "### Key Point")
+2. Use numbered lists (1. 2. 3.) for step-by-step explanations
+3. Use bullet points (- or *) for key points or features
+4. Use code blocks with language tags for code examples:
+   \`\`\`language
+   // code here
+   \`\`\`
+5. Use emoji indicators for special notes:
+   ℹ️ for informational content
+   💡 for helpful tips
+   ⚠️ for warnings or cautions
+   ✅ for confirmations or best practices
+   ❌ for common mistakes to avoid
+
+RESPONSE STRUCTURE:
+- Start with a brief acknowledgment
+- Use ### headers to organize different sections
+- Include numbered lists for sequential information
+- Use bullet points for related concepts
+- Add emoji-prefixed notes for emphasis
+- Be concise but comprehensive
+- If the transcript is not available, work with the title and description to provide the best possible answer`
         },
         {
           role: "user",
@@ -272,7 +297,7 @@ const chatWithYouTubeVideo = async (req, res) => {
       ],
       model: "llama-3.1-8b-instant",
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
@@ -315,7 +340,30 @@ const summarizeYouTubeVideo = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert at creating comprehensive summaries of YouTube videos. Create a detailed summary that covers the main topics, key points, and important insights from the video. If transcript is not available, work with the title and description to create the best possible summary."
+          content: `You are an expert at creating comprehensive summaries of YouTube videos. Create a detailed summary that covers the main topics, key points, and important insights from the video.
+
+IMPORTANT - Format your summary using these markdown elements for professional display:
+
+1. Use ### for section headers (e.g., "### Main Topics", "### Key Insights")
+2. Use numbered lists (1. 2. 3.) for sequential points
+3. Use bullet points (- or *) for key points or features
+4. Use code blocks with language tags if there are code examples in the video:
+   \`\`\`language
+   // code here
+   \`\`\`
+5. Use emoji indicators for special notes:
+   ℹ️ for informational content
+   💡 for helpful tips or insights
+   ⚠️ for warnings or important caveats
+   ✅ for best practices or conclusions
+
+SUMMARY STRUCTURE:
+- Start with a brief introduction
+- Use ### headers to organize main sections (e.g., "### Overview", "### Main Topics", "### Key Takeaways")
+- Use numbered or bullet lists for organized content
+- Add emoji-prefixed notes for emphasis
+- End with a conclusion or key takeaways section
+- If transcript is not available, work with the title and description to create the best possible summary`
         },
         {
           role: "user",
@@ -324,7 +372,7 @@ const summarizeYouTubeVideo = async (req, res) => {
       ],
       model: "llama-3.1-8b-instant",
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 2000,
     });
 
     const summary = completion.choices[0]?.message?.content || 'Unable to generate summary.';

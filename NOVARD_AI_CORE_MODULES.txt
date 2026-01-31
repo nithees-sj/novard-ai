@@ -1,0 +1,491 @@
+================================================================================
+                    NOVARD-AI PLATFORM - MODULE DESCRIPTIONS
+================================================================================
+
+Project: Novard-AI - Personalized Career Development & Learning Platform
+Architecture: MERN Stack (MongoDB, Express.js, React, Node.js)
+AI Integration: Groq AI API
+
+================================================================================
+                            CORE MODULES OVERVIEW
+================================================================================
+
+Total Core Modules: 11 Feature Modules
+Total Controllers: 17 Backend Controllers
+Total Database Collections: 14 Collections
+Total API Endpoints: 60+ Endpoints
+
+================================================================================
+                        DETAILED MODULE DESCRIPTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+MODULE 1: AUTHENTICATION & USER MANAGEMENT
+--------------------------------------------------------------------------------
+
+Description:
+    Handles user authentication, registration, and profile management using 
+    Firebase Google Sign-In. Manages user sessions and profile data.
+
+Key Features:
+    • Google OAuth 2.0 authentication via Firebase
+    • User profile creation and management
+    • User data persistence in MongoDB
+    • Session management
+    • Profile photo and display name updates
+
+Technologies:
+    • Firebase Authentication (Frontend)
+    • Firebase Admin SDK (Backend)
+    • MongoDB User Collection
+
+API Endpoints:
+    • POST /saveUser - Save/update user after authentication
+    • GET /getUser/:email - Retrieve user by email
+    • GET /getUserProfile - Get current user profile
+    • POST /updateUserProfile - Update user information
+
+Files Involved:
+    • Frontend: Firebase.js, LoginButton.jsx, UserProfile.jsx
+    • Backend: userController.js
+    • Database: user.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 2: SKILLS PLANNING
+--------------------------------------------------------------------------------
+
+Description:
+    AI-powered career skills analysis and recommendation system. Generates 
+    personalized skill requirements based on user's desired career path using 
+    Groq AI.
+
+Key Features:
+    • Career-based skill recommendations
+    • AI-generated skill roadmaps
+    • Skill categorization (technical, soft skills, tools)
+    • Learning resource suggestions
+    • Progress tracking
+
+Technologies:
+    • Groq AI for skill generation
+    • MongoDB for skill storage
+    • React for UI display
+
+API Endpoints:
+    • POST /api/skills - Generate skills for a career
+    • GET /api/skills/:careerId - Retrieve skills by career ID
+    • GET /api/careerIds - Get all career IDs
+    • DELETE /api/skills/delete/:careerId - Delete skills
+
+Files Involved:
+    • Frontend: Skills.jsx, SkillsInlineView.jsx
+    • Backend: skillsController.js
+    • Database: skills.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 3: PROJECTS GENERATION
+--------------------------------------------------------------------------------
+
+Description:
+    AI-powered project idea generator that suggests relevant projects based on 
+    user's career goals and skill level. Helps build portfolio.
+
+Key Features:
+    • Career-specific project ideas
+    • Difficulty-level categorization
+    • Project descriptions and requirements
+    • Technology stack recommendations
+    • Implementation guidance
+
+Technologies:
+    • Groq AI for project generation
+    • MongoDB for project storage
+
+API Endpoints:
+    • POST /api/projects/process - Generate project ideas
+    • GET /api/projects/:careerId - Get projects by career
+    • GET /api/projects/careerIds - Get all project career IDs
+    • DELETE /api/projects/delete/:careerId - Delete projects
+
+Files Involved:
+    • Frontend: Projects.jsx, ProjectsInlineView.jsx
+    • Backend: projectsController.js
+    • Database: projects.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 4: RESUME BUILDER
+--------------------------------------------------------------------------------
+
+Description:
+    AI-powered resume template generator that creates customized resume formats 
+    based on career paths and experience levels.
+
+Key Features:
+    • Career-specific resume templates
+    • ATS-friendly format suggestions
+    • Section recommendations
+    • Skill highlighting
+    • Experience format guidance
+
+Technologies:
+    • Groq AI for resume generation
+    • MongoDB for resume storage
+
+API Endpoints:
+    • POST /api/resumes/process - Generate resume template
+    • GET /api/resumes/:careerId - Get resume by career
+    • GET /api/resumes/career/careerIds - Get resume career IDs
+    • DELETE /api/resumes/delete/:careerId - Delete resume
+
+Files Involved:
+    • Frontend: Resumes.jsx, ResumesInlineView.jsx
+    • Backend: resumeController.js
+    • Database: resumes.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 5: SKILL UNLOCKER (ADVANCED LEARNING PATH)
+--------------------------------------------------------------------------------
+
+Description:
+    Comprehensive AI-powered learning path creator that generates personalized 
+    day-by-day skill development plans with assessments, videos, and progress 
+    tracking.
+
+Key Features:
+    • Custom duration learning plans (e.g., 30-day, 60-day)
+    • Daily learning objectives
+    • Pre-assessment quizzes to unlock each day
+    • YouTube video recommendations for each topic
+    • Progress tracking and completion status
+    • Video refresh functionality
+    • Quiz score-based advancement
+    • Adaptive difficulty levels
+
+Technologies:
+    • Groq AI for plan generation and quiz creation
+    • YouTube Data API for video recommendations
+    • MongoDB for skill plan storage
+
+API Endpoints:
+    • POST /api/skill-unlocker/generate-plan - Create learning plan
+    • POST /api/skill-unlocker/generate-quiz - Generate daily quiz
+    • GET /api/skill-unlocker/plans/:userId - Get user's plans
+    • POST /api/skill-unlocker/save-quiz-result - Save quiz scores
+    • POST /api/skill-unlocker/toggle-day-completion - Mark day complete
+    • POST /api/skill-unlocker/refresh-video - Get new video
+    • DELETE /api/skill-unlocker/plans/:planId - Delete plan
+
+Files Involved:
+    • Frontend: SkillUnlocker.jsx
+    • Backend: skillUnlockerController.js
+    • Database: skillPlan.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 6: NOTES MANAGEMENT
+--------------------------------------------------------------------------------
+
+Description:
+    AI-powered PDF document management system with chat, summarization, and 
+    quiz generation capabilities using vector embeddings.
+
+Key Features:
+    • PDF upload and storage
+    • AI-powered chat with document content
+    • Automatic summarization
+    • Quiz generation from document content
+    • Vector embeddings for semantic search
+    • Quiz results tracking
+    • Document deletion
+
+Technologies:
+    • Multer for file upload
+    • PDF parsing libraries
+    • Langchain for vector embeddings
+    • Groq AI for chat and quiz generation
+    • File system storage
+
+API Endpoints:
+    • POST /upload-notes - Upload PDF document
+    • POST /chat-with-notes - Chat with notes using AI
+    • POST /summarize-notes - Generate document summary
+    • POST /generate-quiz - Create quiz from notes
+    • GET /notes/:userId - Get user's notes
+    • DELETE /notes/:noteId - Delete note
+    • POST /save-quiz-results - Save quiz scores
+
+Files Involved:
+    • Frontend: Notes.jsx, NotesInlineView.jsx
+    • Backend: notesController.js
+    • Database: notes.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 7: VIDEO LIBRARY & MANAGEMENT
+--------------------------------------------------------------------------------
+
+Description:
+    Comprehensive video management system with AI-powered recommendations 
+    based on user's learning needs and interests.
+
+Key Features:
+    • Video request creation
+    • AI-powered video recommendations
+    • YouTube integration
+    • Video metadata storage
+    • Request management (create, view, delete)
+
+Technologies:
+    • Groq AI for video recommendations
+    • MongoDB for request storage
+
+API Endpoints:
+    • GET /video-requests/:userId - Get user's video requests
+    • POST /video-requests - Create video request
+    • DELETE /video-requests/:videoRequestId - Delete request
+    • POST /recommend-videos - Get AI video recommendations
+
+Files Involved:
+    • Frontend: Video.jsx, VideoLibraryInlineView.jsx
+    • Backend: videosController.js
+    • Database: video.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 8: YOUTUBE VIDEO SUMMARIZER
+--------------------------------------------------------------------------------
+
+Description:
+    Advanced YouTube video processing system with transcript extraction, 
+    AI chat, summarization, and quiz generation features.
+
+Key Features:
+    • YouTube URL processing
+    • Local video upload support
+    • Transcript extraction
+    • AI-powered video summarization
+    • Interactive chat with video content
+    • Quiz generation from video
+    • YouTube search integration
+    • Video library management
+
+Technologies:
+    • YouTube Data API for search
+    • Transcript extraction libraries
+    • Groq AI for processing
+    • Multer for video uploads
+    • MongoDB for storage
+
+API Endpoints:
+    • POST /youtube-videos - Add YouTube video
+    • POST /upload-video - Upload local video
+    • GET /youtube-videos/:userId - Get user's videos
+    • POST /chat-with-youtube-video - Chat with video
+    • POST /summarize-youtube-video - Summarize video
+    • POST /generate-youtube-quiz - Create quiz
+    • POST /youtube/search - Search YouTube
+    • DELETE /youtube-videos/:videoId - Delete video
+    • POST /save-youtube-quiz-results - Save quiz scores
+
+Files Involved:
+    • Frontend: YouTubeVideoSummarizer.jsx, VideoSummarizerInlineView.jsx
+    • Backend: youtubeVideoController.js
+    • Database: youtubeVideo.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 9: EDUCATIONAL VIDEO MODULE
+--------------------------------------------------------------------------------
+
+Description:
+    Similar to YouTube Summarizer but focused on uploaded educational content 
+    with enhanced processing for learning materials.
+
+Key Features:
+    • Educational video uploads
+    • Transcript generation
+    • AI chat with video content
+    • Summarization
+    • Quiz generation
+    • Learning analytics
+
+Technologies:
+    • Video processing libraries
+    • Groq AI for content analysis
+    • MongoDB for storage
+
+API Endpoints:
+    • POST /educational-videos - Create educational video
+    • GET /educational-videos/:userId - Get user's videos
+    • POST /chat-with-educational-video - Chat with video
+    • POST /summarize-educational-video - Summarize video
+    • POST /generate-educational-quiz - Generate quiz
+    • POST /save-educational-quiz-results - Save results
+    • DELETE /educational-videos/:videoId - Delete video
+
+Files Involved:
+    • Backend: educationalVideoController.js
+    • Database: educationalVideo.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 10: DOUBT CLEARANCE
+--------------------------------------------------------------------------------
+
+Description:
+    AI-powered doubt resolution system that provides instant answers, 
+    explanations, and learning resources for student questions.
+
+Key Features:
+    • Question submission and storage
+    • AI-powered explanations
+    • Interactive chat for follow-ups
+    • Doubt summarization
+    • YouTube video recommendations for topics
+    • Practice quiz generation
+    • Chat history tracking
+    • Quiz results storage
+
+Technologies:
+    • Groq AI for doubt resolution
+    • YouTube Data API for recommendations
+    • MongoDB for storage
+
+API Endpoints:
+    • POST /doubt-clearances - Create doubt
+    • GET /doubt-clearances/:userId - Get user's doubts
+    • DELETE /doubt-clearances/:doubtId - Delete doubt
+    • POST /chat-with-doubt-clearance - Chat about doubt
+    • POST /summarize-doubt-clearance - Summarize discussion
+    • POST /generate-doubt-quiz - Generate practice quiz
+    • POST /save-doubt-quiz-results - Save quiz scores
+    • POST /get-youtube-recommendations - Get related videos
+
+Files Involved:
+    • Frontend: DoubtClearance.jsx, DoubtClearanceInlineView.jsx
+    • Backend: doubtClearanceController.js
+    • Database: doubtClearance.js (model)
+
+
+--------------------------------------------------------------------------------
+MODULE 11: COMMUNITY FORUM
+--------------------------------------------------------------------------------
+
+Description:
+    Stack Overflow-style community forum where students can post questions, 
+    get answers from peers, and receive AI-generated suggestions.
+
+Key Features:
+    • Issue/question posting
+    • Community comments and responses
+    • Upvote/downvote system for issues and comments
+    • AI-generated response suggestions
+    • Issue status management (open, solved, closed)
+    • Category and tag-based organization
+    • Search functionality
+    • User reputation through votes
+
+Technologies:
+    • MongoDB for issues and comments
+    • Groq AI for AI-generated responses
+
+API Endpoints:
+    • POST /api/forum/issues - Create issue
+    • GET /api/forum/issues - Get all issues
+    • GET /api/forum/issues/:issueId - Get issue details
+    • GET /api/forum/issues/:issueId/comments - Get comments
+    • POST /api/forum/comments - Add comment
+    • PUT /api/forum/issues/:issueId/status - Update status
+    • POST /api/forum/issues/:issueId/vote - Vote on issue
+    • POST /api/forum/comments/:commentId/vote - Vote on comment
+    • GET /api/forum/search - Search issues
+    • POST /api/forum/ai-response - Get AI response
+    • POST /api/forum/comments/:commentId/ai-response - Generate AI reply
+
+Files Involved:
+    • Frontend: Forum.jsx, ForumGrid.jsx, IssueList.jsx, IssueDetail.jsx, 
+                IssueForm.jsx, IssueCard.jsx
+    • Backend: forumController.js, forumAIController.js
+    • Database: forumIssue.js, forumComment.js (models)
+
+
+================================================================================
+                            EXTERNAL INTEGRATIONS
+================================================================================
+
+1. Firebase Authentication
+    Purpose: Google OAuth 2.0 authentication
+    Usage: User sign-in and session management
+
+2. Groq AI API
+    Purpose: AI-powered content generation and processing
+    Usage: Skills, projects, resumes, chat, summarization, quiz generation
+
+3. YouTube Data API v3
+    Purpose: YouTube video search and metadata
+    Usage: Video recommendations and search functionality
+
+4. MongoDB Atlas
+    Purpose: Cloud database
+    Usage: All data storage and retrieval
+
+5. File Storage System
+    Purpose: Local file storage
+    Usage: PDF uploads, video uploads (in /uploads directory)
+
+================================================================================
+                            TECHNOLOGY STACK SUMMARY
+================================================================================
+
+Frontend:
+    • React 18+
+    • React Router v6
+    • Axios (HTTP client)
+    • CSS Modules
+    • Firebase SDK
+    • Chart.js / Recharts
+
+Backend:
+    • Node.js
+    • Express.js
+    • Mongoose ODM
+    • Groq SDK
+    • Multer (file uploads)
+    • PDF parsing libraries
+    • Langchain (vector embeddings)
+
+Database:
+    • MongoDB (with Mongoose)
+    • 14 Collections
+    • Vector storage for embeddings
+
+External Services:
+    • Firebase (Authentication)
+    • Groq AI (AI Processing)
+    • YouTube Data API (Video data)
+
+Development Tools:
+    • nodemon (server auto-reload)
+    • create-react-app (React setup)
+    • npm (package management)
+
+================================================================================
+                            MODULE STATISTICS
+================================================================================
+
+Total Core Modules: 11
+Total API Endpoints: 60+
+Total Frontend Pages: 22
+Total Frontend Components: 35+
+Total Backend Controllers: 17
+Total Database Models: 14
+
+================================================================================
+                                END OF DOCUMENT
+================================================================================
+
+Last Updated: January 31, 2026

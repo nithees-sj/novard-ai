@@ -129,7 +129,7 @@ const chatWithDoubtClearance = async (req, res) => {
 
     doubtClearance.chatHistory.push(userMessage);
 
-    // Generate AI response using Groq
+    // Generate AI response using Groq with structured output formatting
     const completion = await groq.chat.completions.create({
       messages: [
         {
@@ -139,10 +139,32 @@ const chatWithDoubtClearance = async (req, res) => {
           Title: "${doubtClearance.title}"
           Description: "${doubtClearance.description}"
           
-          Please provide a helpful, educational response to help clear their doubt. 
-          Be encouraging, clear, and provide examples when possible. 
-          If the doubt is complex, break it down into simpler parts.
-          Keep your response concise but comprehensive.`
+          IMPORTANT - Format your response using these markdown elements for professional display:
+          
+          1. Use ### for section headers (e.g., "### Understanding the Concept")
+          2. Use numbered lists (1. 2. 3.) for step-by-step explanations
+          3. Use bullet points (- or *) for key points or features
+          4. Use code blocks with language tags for code examples:
+             \`\`\`javascript
+             // code here
+             \`\`\`
+          5. Use emoji indicators for special notes:
+             ℹ️ for informational content
+             💡 for helpful tips
+             ⚠️ for warnings or cautions
+             ✅ for confirmations or best practices
+             ❌ for common mistakes to avoid
+          
+          RESPONSE STRUCTURE:
+          - Start with a brief greeting or acknowledgment
+          - Use ### headers to organize different sections
+          - Include code examples in proper code blocks when relevant
+          - Use numbered lists for sequential steps
+          - Use bullet points for related concepts
+          - Add emoji-prefixed notes for emphasis
+          - End with encouragement
+          
+          Be clear, educational, and provide practical examples. Break complex topics into digestible sections.`
         },
         ...doubtClearance.chatHistory.map(msg => ({
           role: msg.role,
@@ -151,7 +173,7 @@ const chatWithDoubtClearance = async (req, res) => {
       ],
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1500
     });
 
     const aiResponse = completion.choices[0]?.message?.content;

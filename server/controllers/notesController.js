@@ -153,8 +153,29 @@ const chatWithNotes = async (req, res) => {
 Notes content:
 ${relevantChunk}
 
-Instructions:
-- Answer questions based only on the information in the notes
+IMPORTANT - Format your response using these markdown elements for professional display:
+
+1. Use ### for section headers (e.g., "### Key Concept")
+2. Use numbered lists (1. 2. 3.) for step-by-step explanations
+3. Use bullet points (- or *) for key points or features
+4. Use code blocks with language tags for code examples:
+   \`\`\`language
+   // code here
+   \`\`\`
+5. Use emoji indicators for special notes:
+   ℹ️ for informational content
+   💡 for helpful tips
+   ⚠️ for warnings or cautions
+   ✅ for confirmations or best practices
+   ❌ for common mistakes to avoid
+
+RESPONSE STRUCTURE:
+- Start with a brief acknowledgment
+- Use ### headers to organize different sections
+- Include code examples in proper code blocks when relevant
+- Use numbered lists for sequential information
+- Use bullet points for related concepts
+- Add emoji-prefixed notes for emphasis
 - Be concise but comprehensive
 - If asked about something not in the notes, politely explain that the information is not available in the provided notes
 - Maintain a helpful and educational tone`;
