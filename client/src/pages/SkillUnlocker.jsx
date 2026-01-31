@@ -72,7 +72,7 @@ const SkillUnlocker = () => {
   });
   const [customQuestionCount, setCustomQuestionCount] = useState('');
 
-  const userId = localStorage.getItem('userId') || 'demo-user';
+  const userId = localStorage.getItem('email') || 'demo-user';
 
   const fetchPlans = useCallback(async () => {
     try {

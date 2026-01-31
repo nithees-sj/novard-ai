@@ -42,7 +42,7 @@ const Notes = () => {
 
   const loadUserNotes = async () => {
     try {
-      const userId = localStorage.getItem('userId') || 'temp-user-id';
+      const userId = localStorage.getItem('email') || 'temp-user-id';
       const response = await axios.get(`${apiUrl}/notes/${userId}`);
       const notesData = Array.isArray(response.data) ? response.data : [];
       setNotes(notesData);
@@ -87,7 +87,7 @@ const Notes = () => {
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('title', file.name);
-    formData.append('userId', localStorage.getItem('userId') || 'temp-user-id');
+    formData.append('userId', localStorage.getItem('email') || 'temp-user-id');
     try {
       setIsLoading(true);
       const response = await axios.post(`${apiUrl}/upload-notes`, formData, {

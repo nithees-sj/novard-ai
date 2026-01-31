@@ -31,7 +31,7 @@ const DoubtClearanceInlineView = () => {
 
   const loadUserDoubts = async () => {
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       const response = await axios.get(`${apiUrl}/doubt-clearances/${userId}`);
       const doubtsData = Array.isArray(response.data) ? response.data : [];
       setDoubts(doubtsData);
@@ -65,7 +65,7 @@ const DoubtClearanceInlineView = () => {
     }
     setIsAddingDoubt(true);
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       await axios.post(`${apiUrl}/doubt-clearances`, {
         title: newDoubt.title,
         description: newDoubt.description,
@@ -95,12 +95,12 @@ const DoubtClearanceInlineView = () => {
       const response = await axios.post(`${apiUrl}/chat-with-doubt-clearance`, {
         doubtId: selectedDoubt._id,
         message: userMessage,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
       await loadUserDoubts();
-      const updatedDoubts = await axios.get(`${apiUrl}/doubt-clearances/${localStorage.getItem('userId') || 'demo-user'}`);
+      const updatedDoubts = await axios.get(`${apiUrl}/doubt-clearances/${localStorage.getItem('email') || 'demo-user'}`);
       const updatedDoubt = updatedDoubts.data.find(d => d._id === selectedDoubt._id);
       if (updatedDoubt) {
         setSelectedDoubt(updatedDoubt);
@@ -128,7 +128,7 @@ const DoubtClearanceInlineView = () => {
     try {
       const response = await axios.post(`${apiUrl}/summarize-doubt-clearance`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       setSummary(response.data.summary);
       setActiveTab('summary');
@@ -147,7 +147,7 @@ const DoubtClearanceInlineView = () => {
     try {
       const response = await axios.post(`${apiUrl}/generate-doubt-quiz`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
@@ -170,7 +170,7 @@ const DoubtClearanceInlineView = () => {
     try {
       const response = await axios.post(`${apiUrl}/get-youtube-recommendations`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       setYoutubeRecommendations(response.data.recommendations);
       setActiveTab('recommendations');
@@ -198,7 +198,7 @@ const DoubtClearanceInlineView = () => {
         doubtId: selectedDoubt._id,
         quizIndex: currentQuizId,
         score,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       await loadUserDoubts();
     } catch (error) {
@@ -212,7 +212,7 @@ const DoubtClearanceInlineView = () => {
     }
     try {
       await axios.delete(`${apiUrl}/doubt-clearances/${doubtId}`, {
-        data: { userId: localStorage.getItem('userId') || 'demo-user' }
+        data: { userId: localStorage.getItem('email') || 'demo-user' }
       });
       await loadUserDoubts();
       if (selectedDoubt && selectedDoubt._id === doubtId) {

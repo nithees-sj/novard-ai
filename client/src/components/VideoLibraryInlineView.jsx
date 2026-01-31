@@ -29,7 +29,7 @@ const VideoLibraryInlineView = () => {
 
   const loadUserVideoRequests = async () => {
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
       const videoRequestsData = Array.isArray(response.data) ? response.data : [];
       setVideoRequests(videoRequestsData);
@@ -83,7 +83,7 @@ const VideoLibraryInlineView = () => {
 
     setIsLoading(true);
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       await axios.post(`${apiUrl}/educational-video-requests`, {
         ...newVideoRequest,
         userId: userId

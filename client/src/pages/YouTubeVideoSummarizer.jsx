@@ -32,7 +32,7 @@ const YouTubeVideoSummarizer = () => {
 
   const loadUserVideos = async () => {
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       const response = await axios.get(`${apiUrl}/youtube-videos/${userId}`);
       const videosData = Array.isArray(response.data) ? response.data : [];
       setVideos(videosData);
@@ -75,7 +75,7 @@ const YouTubeVideoSummarizer = () => {
     }
     setIsAddingVideo(true);
     try {
-      const userId = localStorage.getItem('userId') || 'demo-user';
+      const userId = localStorage.getItem('email') || 'demo-user';
       await axios.post(`${apiUrl}/youtube-videos`, {
         title: newVideo.title,
         videoUrl: newVideo.videoUrl,
@@ -104,12 +104,12 @@ const YouTubeVideoSummarizer = () => {
       const response = await axios.post(`${apiUrl}/chat-with-youtube-video`, {
         videoId: selectedVideo._id,
         message: userMessage,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
       await loadUserVideos();
-      const updatedVideos = await axios.get(`${apiUrl}/youtube-videos/${localStorage.getItem('userId') || 'demo-user'}`);
+      const updatedVideos = await axios.get(`${apiUrl}/youtube-videos/${localStorage.getItem('email') || 'demo-user'}`);
       const updatedVideo = updatedVideos.data.find(v => v._id === selectedVideo._id);
       if (updatedVideo) {
         setSelectedVideo(updatedVideo);
@@ -137,7 +137,7 @@ const YouTubeVideoSummarizer = () => {
     try {
       const response = await axios.post(`${apiUrl}/summarize-youtube-video`, {
         videoId: selectedVideo._id,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       setSummary(response.data.summary);
       setActiveTab('summary');
@@ -161,7 +161,7 @@ const YouTubeVideoSummarizer = () => {
     try {
       const response = await axios.post(`${apiUrl}/generate-youtube-quiz`, {
         videoId: selectedVideo._id,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
@@ -193,7 +193,7 @@ const YouTubeVideoSummarizer = () => {
         videoId: selectedVideo._id,
         quizIndex: currentQuizId,
         score,
-        userId: localStorage.getItem('userId') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user'
       });
       await loadUserVideos();
     } catch (error) {
@@ -207,7 +207,7 @@ const YouTubeVideoSummarizer = () => {
     }
     try {
       await axios.delete(`${apiUrl}/youtube-videos/${videoId}`, {
-        data: { userId: localStorage.getItem('userId') || 'demo-user' }
+        data: { userId: localStorage.getItem('email') || 'demo-user' }
       });
       await loadUserVideos();
       if (selectedVideo && selectedVideo._id === videoId) {
