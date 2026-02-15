@@ -24,6 +24,39 @@
 
 ---
 
+### 🧩 Kiro IDE Integration (Master Steering)
+
+> [!TIP]
+> This section acts as a **Steering File** for Kiro IDE agents, providing critical project context.
+
+#### 🎯 Product Steering
+- **Mission**: Empower individuals to navigate their careers using AI-driven insights.
+- **Core Value**: Personalized, adaptive, and highly interactive learning experiences.
+
+#### 💻 Tech Steering
+- **Stack**: Standard MERN (MongoDB, Express, React, Node) architecture.
+- **Core AI**: Leverages **Groq** for high-speed chat and **Google Gemini** for deep analysis.
+- **Auth**: Hybrid approach using **Firebase** and **Auth0**.
+
+#### 📏 Conventions Steering
+- **Clean Code**: Prioritize functional React components and modular Express controllers.
+- **Styling**: Consistent use of **Tailwind CSS** utilities and **MUI** components for complex UI.
+- **State**: React state hooks for local state; centralized API calls in the `/services` layer.
+
+---
+
+### 📋 Project Specifications (Kiro Specs)
+
+*These files guide development and maintain project integrity.*
+
+| Spec File | Description |
+| :--- | :--- |
+| 📌 [Requirements](.kiro/specs/requirements.md) | Business logic and user story mappings. |
+| 🎨 [Design](.kiro/specs/design.md) | Architectural diagrams and UI components. |
+| ✅ [Tasks](.kiro/specs/tasks.md) | Real-time development roadmap. |
+
+---
+
 ### 🛠️ Tech Stack
 
 | Frontend | Backend | AI & Auth |
