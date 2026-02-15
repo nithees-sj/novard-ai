@@ -1,8 +1,3 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Novard--AI-v1.0.0-blue?style=for-the-badge&logo=rocket" alt="Novard-AI Version">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Tech-React_%7C_Node_%7C_AI-orange?style=for-the-badge" alt="Tech Stack">
-</p>
 
 <h1 align="center">🚀 Novard-AI</h1>
 
