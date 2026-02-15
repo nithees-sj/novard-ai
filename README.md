@@ -1,97 +1,92 @@
-# CareerDev 
+<p align="center">
+  <img src="https://img.shields.io/badge/Novard--AI-v1.0.0-blue?style=for-the-badge&logo=rocket" alt="Novard-AI Version">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/Tech-React_%7C_Node_%7C_AI-orange?style=for-the-badge" alt="Tech Stack">
+</p>
 
-Welcome to the Personalised Career Development Platform, a web application designed to help users navigate their career paths by providing personalized insights, skills requirements, project ideas, and resume templates tailored to specific career roles.
+<h1 align="center">🚀 Novard-AI</h1>
 
-## Features
+<p align="center">
+  <strong>Your Personalised AI-Driven Career Development & Learning Hub</strong><br>
+  Elevate your professional journey with intelligent insights, personalized roadmaps, and powerful AI tools.
+</p>
 
-- **Chatbot**             : An interactive chatbot that assists users with various queries related to career development.
-- **Skill Requirements**  : Get personalized insights on essential skills needed for different career paths.
-- **Project Ideas**       : Discover project ideas that align with your career ambitions to enhance your portfolio.
-- **Resume Builder**      : Create professional resumes tailored for specific job roles.
-- **User  Profiles**      : Manage user profiles and save user data for a personalized experience.
+---
 
-## Technologies Used
+### 🌟 Features at a Glance
 
-- **Frontend**             : React, React Router, Axios, CSS
-- **Backend**              : Node.js, Express, MongoDB
-- **Authentication**       : Firebase Authentication
-- **Chatbot Integration**  : Groq SDK for AI-driven responses
+> [!NOTE]
+> Novard-AI is more than just a platform; it's your 24/7 career companion.
 
-## Installation
+- 🔓 **Skill Unlocker** | Gamified skill assessments & adaptive learning paths.
+- 🤖 **AI Career Mentor** | Real-time career guidance and doubt clearance.
+- 🛣️ **Smart Roadmaps** | Professional paths tailored to your dream roles.
+- 📑 **Resume Builder** | AI-optimized resumes that actually get past ATS.
+- 🎥 **Video Summarizer** | Instant AI-generated insights from any YouTube video.
+- 💡 **Project Hub** | Curated project ideas to boost your portfolio.
+- 📋 **Integrated Notes** | Capture thoughts directly as you learn.
+- 🏫 **Teacher Dashboard** | Advanced analytics and guidance tools for mentors.
 
-To get started with the project, follow these steps:
+---
 
-1. **Clone the repository**:
+### 🛠️ Tech Stack
 
-   ```bash
-   git clone https://github.com/yourusername/CareerDev.git
-   cd CareerDev
-   ```
+| Frontend | Backend | AI & Auth |
+| :--- | :--- | :--- |
+| **Framework:** React + Vite | **Server:** Node.js + Express | **GenAI:** Google Gemini + Groq |
+| **UI:** Tailwind CSS + MUI | **Database:** MongoDB | **Auth:** Firebase + Auth0 |
 
-2. **Install dependencies**:
-   
-   For the client-side:
+---
 
-   ```bash
-   cd client
-   npm install
-   ```
-   For the server-side:
+### ⚙️ Quick Start
 
-   ```bash
-   cd server
-   node server.js
-   ```
+#### 1️⃣ Environment Setup
+Create a `.env` in both `/client` and `/server` directories.
 
-3. **Set up environment variables**:
+**Client (`/client/.env`):**
+```bash
+VITE_FIREBASE_API_KEY=your_key
+VITE_AUTH_DOMAIN=your_domain
+VITE_API_BASE_URL=http://localhost:5000
+```
 
-   Create a .env file in the client and server directories and add the following variables:
-   
-   For the client:
+**Server (`/server/.env`):**
+```bash
+MONGO_URI=your_mongodb_uri
+GROQ_API_KEY=your_groq_key
+GEMINI_API_KEY=your_gemini_key
+```
 
-   ```bash
-   REACT_APP_API_ENDPOINT        = http://localhost:5000
-   REACT_APP_FIREBASE_API_KEY    = <your_firebase_api_key>
-   REACT_APP_AUTH_DOMAIN         = <your_auth_domain>
-   REACT_APP_PROJECT_ID          = <your_project_id>
-   REACT_APP_STORAGE_BUCKET      = <your_storage_bucket>
-   REACT_APP_MESSAGING_SENDER_ID = <your_messaging_sender_id>
-   REACT_APP_APP_ID              = <your_app_id>
-   ```
-   For the server:
+#### 2️⃣ Running the Engine
 
-   ```bash
-   MONGO_URI    = <your_mongodb_connection_string>
-   GROQ_API_KEY = <your_groq_api>
-   ```
-   
-4. **Run the Application**:
-   
-   For the server-side:
+**Start Backend:**
+```bash
+cd server
+npm install
+npm start
+```
 
-   ```bash
-   cd server
-   node server.js
-   ```
-   For the client-side:
+**Start Frontend:**
+```bash
+cd client
+npm install
+npm run dev
+```
 
-   ```bash
-   cd client
-   npm start
-   ```
-5. Open your browser and navigate to http://localhost:3000 to access the application.
+---
 
-   
-## Usage
-**Authentication**   : Users can sign in using Google or through Auth0.
-**Chatbot**          : Users can interact with the chatbot for guidance on career-related questions.
-**Explore Features** : Navigate through the different features such as Skills, Projects, and Resume Builder.
+### 🤝 Join the Journey
 
-## Contributing
-Contributions are welcome! If you have suggestions for improvements or new features, feel free to fork the repository and submit a pull request.
+We welcome contributions! 
+1. **Fork** the project
+2. **Create** your feature branch (`git checkout -b feature/NewAwesomeFeature`)
+3. **Commit** your changes (`git commit -m 'Add some feature'`)
+4. **Push** to the branch (`git push origin feature/NewAwesomeFeature`)
+5. **Open** a Pull Request
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
 
-## Acknowledgements
-Thanks to the developers of the libraries and frameworks used in this project
+<p align="center">
+  Built with ❤️ by the Novard-AI Team<br>
+  <i>Transforming careers, one prompt at a time.</i>
+</p>
