@@ -19,179 +19,254 @@ const Landing = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-blue-50 via-white to-gray-50 min-h-screen">
+    <div className="bg-white min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
       {/* Navigation - Keep as is */}
       <Navigation />
 
-      {/* Hero Section - More spacing from navbar */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative pt-28 pb-24 px-4 overflow-hidden" style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left: Hero Content */}
-            <div className="space-y-6">
+            <div className="space-y-7">
               <div className="inline-block">
-                <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
-                  🎯 NEXT GEN AI LEARNING
+                <span
+                  className="text-xs font-bold tracking-widest uppercase flex items-center gap-2"
+                  style={{
+                    color: '#3b82f6',
+                    background: '#eff6ff',
+                    padding: '8px 18px',
+                    borderRadius: '999px',
+                    border: '1px solid #dbeafe',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                  </svg>
+                  NEXT GEN AI LEARNING
                 </span>
               </div>
 
-              <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
-                Architect Your{" "}
+              <h1
+                className="font-extrabold leading-tight"
+                style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', color: '#111827', letterSpacing: '-0.02em' }}
+              >
+                Architect Your
                 <br />
-                <span className="text-blue-600">Future with AI</span>
+                <span style={{ color: '#3b82f6' }}>Future with AI</span>
               </h1>
 
-              <p className="text-lg text-gray-600 leading-relaxed max-w-xl">
+              <p className="leading-relaxed" style={{ fontSize: '1.075rem', color: '#6b7280', maxWidth: '480px', lineHeight: 1.75 }}>
                 Master the world's most transformative technologies with a
                 personalized, data-driven learning path designed by industry
                 experts and powered by neural intelligence.
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-4 pt-4">
+              <div className="flex flex-wrap items-center gap-5 pt-2">
                 <button
                   onClick={handleSignIn}
-                  className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg 
-                           hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl 
-                           flex items-center gap-2 group"
+                  className="group"
+                  style={{
+                    padding: '14px 32px',
+                    background: '#3b82f6',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    borderRadius: '999px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.45)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#3b82f6'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(59, 130, 246, 0.35)'; }}
                 >
                   Get Started
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </button>
-
               </div>
             </div>
 
-            {/* Right: Analytics Dashboard Preview */}
+            {/* Right: Dashboard Cards - 2x2 Bento Grid */}
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 transform hover:scale-105 transition-transform duration-300">
-                {/* Dashboard Header */}
-                <div className="mb-6">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">ANALYTICS DASHBOARD</p>
-                  <h3 className="text-xl font-bold text-gray-900">Alex Johnson</h3>
-                  <div className="flex gap-2 mt-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1.15fr 0.85fr',
+                  gridTemplateRows: 'auto auto',
+                  gap: '16px',
+                }}
+              >
+                {/* Card 1: Skill Score */}
+                <div
+                  style={{
+                    background: '#fff',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
+                    border: '1px solid #f1f5f9',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '150px',
+                  }}
+                >
+                  <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Skill Score
+                  </p>
+                  <p style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827', lineHeight: 1.1, marginBottom: '16px' }}>
+                    1,250
+                  </p>
+                  {/* Progress bar */}
+                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: '75%', background: 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '999px' }}></div>
                   </div>
                 </div>
 
-                {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 uppercase mb-1">Skill Score</p>
-                    <p className="text-2xl font-bold text-gray-900">1,250</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 uppercase mb-1">Complete</p>
-                    <p className="text-2xl font-bold text-gray-900">85%</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 uppercase mb-1">Streak</p>
-                    <p className="text-2xl font-bold text-gray-900">12</p>
+                {/* Card 2: Complete */}
+                <div
+                  style={{
+                    background: '#fff',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
+                    border: '1px solid #f1f5f9',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '150px',
+                  }}
+                >
+                  <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Complete
+                  </p>
+                  <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#111827', lineHeight: 1.1, marginBottom: '12px' }}>
+                    85%
+                  </p>
+                  {/* Bar chart icon */}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '36px' }}>
+                    {[50, 75, 60, 90, 70].map((h, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: '6px',
+                          height: `${h}%`,
+                          background: i === 3 ? '#3b82f6' : '#c7d2fe',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
 
-                {/* Chart */}
-                <div className="flex items-end justify-between h-32 gap-3 mb-6">
-                  {[60, 85, 75, 95, 80].map((height, idx) => (
-                    <div key={idx} className="flex-1 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg"
-                      style={{ height: `${height}%` }}></div>
-                  ))}
+                {/* Card 3: Daily Streak */}
+                <div
+                  style={{
+                    background: '#fff',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
+                    border: '1px solid #f1f5f9',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '140px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        background: '#f1f5f9',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#22c55e', background: '#f0fdf4', padding: '3px 8px', borderRadius: '999px' }}>
+                      +12%
+                    </span>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                      Daily Streak
+                    </p>
+                    <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827', lineHeight: 1.1 }}>
+                      12 Days
+                    </p>
+                  </div>
                 </div>
 
-                {/* Hexagon Icon */}
-                <div className="flex justify-center">
-                  <div className="w-20 h-20 relative">
-                    <svg viewBox="0 0 100 100" className="text-blue-200">
-                      <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="currentColor" stroke="#2563eb" strokeWidth="2" />
-                    </svg>
+                {/* Card 4: Analytics Dashboard */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    boxShadow: '0 4px 20px rgba(59, 130, 246, 0.25)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '140px',
+                  }}
+                >
+                  <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Analytics Dashboard
+                  </p>
+                  <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>
+                    Alex Johnson
+                  </p>
+                  {/* Avatar circles */}
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd'].map((bg, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: bg,
+                          border: '2px solid #2563eb',
+                          marginLeft: i === 0 ? 0 : '-8px',
+                        }}
+                      />
+                    ))}
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.2)',
+                        border: '2px solid #2563eb',
+                        marginLeft: '-8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        color: '#fff',
+                      }}
+                    >
+                      +5
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistics Section - Glowing Containers */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-6">
-            {/* Stat 1 */}
-            <div className="bg-white rounded-xl p-8 text-center border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-400"
-              style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
-              <div className="text-gray-600 font-medium">Active Learners</div>
-            </div>
-
-            {/* Stat 2 */}
-            <div className="bg-white rounded-xl p-8 text-center border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-400"
-              style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
-              <div className="text-gray-600 font-medium">AI-Curated Courses</div>
-            </div>
-
-            {/* Stat 3 */}
-            <div className="bg-white rounded-xl p-8 text-center border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-400"
-              style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">95%</div>
-              <div className="text-gray-600 font-medium">Success Rate</div>
-            </div>
-
-            {/* Stat 4 */}
-            <div className="bg-white rounded-xl p-8 text-center border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-400"
-              style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">24/7</div>
-              <div className="text-gray-600 font-medium">AI Mentorship</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trusted By Section */}
-      <section className="py-16 bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="text-center text-sm text-gray-500 uppercase tracking-wider mb-8">
-            TRUSTED BY ENGINEERING TEAMS AT
-          </p>
-
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-              </svg>
-              <span className="text-gray-600 font-semibold">TechCore</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h5a1 1 0 000-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3z" />
-              </svg>
-              <span className="text-gray-600 font-semibold">NebulaSystems</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-600 font-semibold">BlockGraph</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
-              </svg>
-              <span className="text-gray-600 font-semibold">Infinia</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-600 font-semibold">Silico</span>
             </div>
           </div>
         </div>

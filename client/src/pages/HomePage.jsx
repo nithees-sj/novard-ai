@@ -128,18 +128,16 @@ const HomePage = () => {
                         iconColor="text-orange-600"
                       />
                     </div>
-
+                    
                     {/* Weekly Learning Hours */}
-                    <div className="mb-8">
-                      <WeeklyLearningChart data={analytics?.weeklyHours || []} />
-                  </div>
+
 
                     {/* Skill Proficiency & Strengths */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <SkillProficiencyRadar skills={analytics?.skillProficiency || []} />
                       <StrengthsWeaknesses strengths={analytics?.strengthsWeaknesses || []} />
                     </div>
-                  </div>
+                  </div> 
 
                   {/* Adaptive Learning Paths Section */}
                   <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 text-white shadow-xl">
