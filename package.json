@@ -1,0 +1,7 @@
+{
+  "name": "novard-ai-root",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix client && npm run build --prefix client"
+  }
+}

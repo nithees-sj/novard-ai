@@ -92,13 +92,13 @@ FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 
 Create `.env` in the `client` directory:
 ```env
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_AUTH_DOMAIN=your_firebase_auth_domain
-VITE_PROJECT_ID=your_firebase_project_id
-VITE_STORAGE_BUCKET=your_firebase_storage_bucket
-VITE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-VITE_APP_ID=your_firebase_app_id
-VITE_API_BASE_URL=http://localhost:5000
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_AUTH_DOMAIN=your_firebase_auth_domain
+REACT_APP_PROJECT_ID=your_firebase_project_id
+REACT_APP_STORAGE_BUCKET=your_firebase_storage_bucket
+REACT_APP_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+REACT_APP_APP_ID=your_firebase_app_id
+REACT_APP_API_ENDPOINT=http://localhost:5000
 ```
 
 4. **Start the application**
