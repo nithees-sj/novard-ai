@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import AnalyticsCard from '../components/analytics/AnalyticsCard';
-import WeeklyLearningChart from '../components/analytics/WeeklyLearningChart';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 
@@ -16,11 +15,7 @@ const HomePage = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       // Use email as userId
       const response = await fetch(`${process.env.REACT_APP_API_ENDPOINT}/api/analytics/${userEmail}`);
@@ -60,7 +55,11 @@ const HomePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userEmail]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   return (
     <>

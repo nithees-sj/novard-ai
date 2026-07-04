@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Navigationinner } from "../components/navigationinner";
+import React, { useState, useEffect, useCallback } from 'react';
 import ChatbotButton from '../components/ChatbotButton';
 import axios from 'axios';
 
@@ -24,28 +23,7 @@ const EducationalVideos = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  useEffect(() => {
-    loadUserVideoRequests();
-  }, []);
-
-  const loadUserVideoRequests = async () => {
-    try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
-      const videoRequestsData = Array.isArray(response.data) ? response.data : [];
-      setVideoRequests(videoRequestsData);
-
-      if (videoRequestsData.length > 0 && !selectedVideoRequest) {
-        setSelectedVideoRequest(videoRequestsData[0]);
-        getRecommendedVideos(videoRequestsData[0], false);
-      }
-    } catch (error) {
-      console.error('Error loading video requests:', error);
-      setVideoRequests([]);
-    }
-  };
-
-  const getRecommendedVideos = async (videoRequest, forceRefresh = false) => {
+  const getRecommendedVideos = useCallback(async (videoRequest, forceRefresh = false) => {
     if (!videoRequest) return;
     
     const requestId = videoRequest._id || videoRequest.id;
@@ -72,7 +50,30 @@ const EducationalVideos = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [videoCache]);
+
+  const loadUserVideoRequests = useCallback(async () => {
+    try {
+      const userId = localStorage.getItem('email') || 'demo-user';
+      const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
+      const videoRequestsData = Array.isArray(response.data) ? response.data : [];
+      setVideoRequests(videoRequestsData);
+
+      if (videoRequestsData.length > 0 && !selectedVideoRequest) {
+        setSelectedVideoRequest(videoRequestsData[0]);
+        getRecommendedVideos(videoRequestsData[0], false);
+      }
+    } catch (error) {
+      console.error('Error loading video requests:', error);
+      setVideoRequests([]);
+    }
+  }, [getRecommendedVideos, selectedVideoRequest]);
+
+  useEffect(() => {
+    loadUserVideoRequests();
+  }, [loadUserVideoRequests]);
+
+  
 
   const handleAddVideoRequest = async (e) => {
     e.preventDefault();

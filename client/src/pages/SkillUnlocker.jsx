@@ -903,12 +903,13 @@ const SkillUnlocker = () => {
 
                                     {/* Click Handler Overlay */}
                                     <a 
-                                        href={day.youtubeVideo.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        onClick={() => handleVideoClick(day.day)}
-                                        className="absolute inset-0 z-0"
-                                    ></a>
+                                      href={day.youtubeVideo.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={() => handleVideoClick(day.day)}
+                                      className="absolute inset-0 z-0"
+                                      aria-label={`Open recommended video: ${day.youtubeVideo.title}`}
+                                    />
                                 </div>
                             </div>
                         )}

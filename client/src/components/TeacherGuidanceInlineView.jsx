@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const TeacherGuidanceInlineView = () => {
   const [courses, setCourses] = useState([]);
@@ -25,29 +25,7 @@ const TeacherGuidanceInlineView = () => {
     loadCourses();
   }, []);
 
-  useEffect(() => {
-    if (selectedCourse) {
-      loadQuizzes(selectedCourse._id || selectedCourse.id);
-    }
-  }, [selectedCourse]);
-
-  const loadCourses = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_ENDPOINT}/api/courses`);
-      if (response.ok) {
-        const data = await response.json();
-        setCourses(data);
-      }
-    } catch (error) {
-      console.error('Error loading courses:', error);
-      const savedCourses = localStorage.getItem('teacherCourses');
-      if (savedCourses) {
-        setCourses(JSON.parse(savedCourses));
-      }
-    }
-  };
-
-  const loadQuizzes = (courseId) => {
+  const loadQuizzes = useCallback((courseId) => {
     if (selectedCourse && selectedCourse.videos) {
       const videoQuizzes = [];
       selectedCourse.videos.forEach((video) => {
@@ -67,7 +45,29 @@ const TeacherGuidanceInlineView = () => {
       });
       setQuizzes(videoQuizzes);
     }
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    loadQuizzes();
+  }, [loadQuizzes]);
+
+  const loadCourses = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_ENDPOINT}/api/courses`);
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data);
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      const savedCourses = localStorage.getItem('teacherCourses');
+      if (savedCourses) {
+        setCourses(JSON.parse(savedCourses));
+      }
+    }
   };
+
+  
 
   const convertDriveLink = (driveLink) => {
     if (driveLink && driveLink.includes('drive.google.com/file/d/')) {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Navigationinner } from "../components/navigationinner";
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -21,7 +20,6 @@ const YouTubeVideoSummarizer = () => {
   const [showAddVideoForm, setShowAddVideoForm] = useState(false);
   const [toast, setToast] = useState(null);
   const [showQuizConfirm, setShowQuizConfirm] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState('videos');
   const [newVideo, setNewVideo] = useState({ title: '', videoUrl: '' });
   const [isAddingVideo, setIsAddingVideo] = useState(false);
 

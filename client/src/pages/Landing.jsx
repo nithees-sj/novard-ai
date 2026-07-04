@@ -470,9 +470,9 @@ const Landing = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Roadmap</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><button type="button" className="hover:text-white transition-colors">Features</button></li>
+                <li><button type="button" className="hover:text-white transition-colors">Roadmap</button></li>
+                <li><button type="button" className="hover:text-white transition-colors">Pricing</button></li>
               </ul>
             </div>
 
@@ -480,9 +480,9 @@ const Landing = () => {
             <div>
               <h4 className="text-white font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><button type="button" className="hover:text-white transition-colors">About Us</button></li>
+                <li><button type="button" className="hover:text-white transition-colors">Careers</button></li>
+                <li><button type="button" className="hover:text-white transition-colors">Contact</button></li>
               </ul>
             </div>
           </div>
@@ -491,9 +491,9 @@ const Landing = () => {
           <div className="border-t border-gray-800 pt-8 flex flex-wrap justify-between items-center text-sm text-gray-500">
             <p>© 2024 Novard-AI Technologies Inc. Built for the future.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Security</a>
+              <button type="button" className="hover:text-white transition-colors">Privacy Policy</button>
+              <button type="button" className="hover:text-white transition-colors">Terms of Service</button>
+              <button type="button" className="hover:text-white transition-colors">Security</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import selectJobRoleImage from '../images/select-job-image.jpg';
 import { Navigationinner } from '../components/navigationinner';
 import ChatbotButton from '../components/ChatbotButton';
@@ -33,7 +32,7 @@ const roadmapItems = [
 ];
 
 const Roadmap = () => {
-  const navigate = useNavigate();
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
