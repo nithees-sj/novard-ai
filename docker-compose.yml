@@ -1,0 +1,29 @@
+services:
+  server:
+    build:
+      context: ./server
+    container_name: novard-ai-server
+    env_file:
+      - ./server/.env
+    environment:
+      - PORT=5001
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./server/uploads:/app/uploads
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+    container_name: novard-ai-client
+    environment:
+      - REACT_APP_API_ENDPOINT=http://localhost:5001
+      - HOST=0.0.0.0
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+    restart: unless-stopped

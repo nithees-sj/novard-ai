@@ -240,7 +240,7 @@ app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 // Analytics routes
 app.get('/api/analytics/:userId', getUserAnalytics);
 
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
