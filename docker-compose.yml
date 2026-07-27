@@ -3,7 +3,7 @@ services:
     image: mongo:7.0
     container_name: novard-ai-mongo
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
