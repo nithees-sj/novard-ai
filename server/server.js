@@ -111,6 +111,9 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 connectDB();
 
+app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
+app.get('/', (req, res) => res.status(200).send('NOVARD-AI API is running'));
+
 app.post('/saveUser', saveUser); 
 app.get('/getUser/:email', getUserByEmail);
 app.get('/getUserProfile', getUserProfile);

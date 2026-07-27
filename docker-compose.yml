@@ -1,4 +1,19 @@
 services:
+  mongo:
+    image: mongo:7.0
+    container_name: novard-ai-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   server:
     build:
       context: ./server
@@ -7,23 +22,39 @@ services:
       - ./server/.env
     environment:
       - PORT=5001
+      - NODE_ENV=production
+      # Fallback to containerized mongo or host.docker.internal if MONGO_URI in .env points to localhost
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/novard-ai}
     ports:
       - "5001:5001"
     volumes:
       - ./server/uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   client:
     build:
       context: ./client
+      args:
+        - REACT_APP_API_ENDPOINT=http://localhost:5001
+        - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
     container_name: novard-ai-client
-    environment:
-      - REACT_APP_API_ENDPOINT=http://localhost:5001
-      - HOST=0.0.0.0
-      - CHOKIDAR_USEPOLLING=true
-      - WDS_SOCKET_PORT=0
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  mongodb_data:

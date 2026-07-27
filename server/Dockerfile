@@ -7,6 +7,9 @@ RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY . .
 
+# Create uploads directory
+RUN mkdir -p /app/uploads
+
 EXPOSE 5001
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

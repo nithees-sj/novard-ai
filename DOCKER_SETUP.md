@@ -1,9 +1,9 @@
-# Docker Setup for Beginners
+# Docker Setup for Novard-AI
 
 This project runs as 2 containers:
 
-- `server` (Node + Express) on port `5001`
-- `client` (React app) on port `3000`
+- `server` — Node.js + Express API on port `5001`
+- `client` — React app built and served via Nginx on port `3000`
 
 ## 1) Install Docker
 
@@ -16,28 +16,39 @@ docker --version
 docker compose version
 ```
 
-## 2) Create Environment File
+## 2) Configure Environment Variables
 
-Create this file before starting containers:
+### Server (`server/.env`)
 
-- `server/.env`
-
-Minimum required keys:
+Create `server/.env` with:
 
 ```env
 MONGO_URI=your_mongodb_connection_string
 GROQ_API_KEY=your_groq_api_key
-YOUTUBE_API_KEY=your_youtube_api_key
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_PRIVATE_KEY=your_firebase_private_key
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+GOOGLE_API_KEY=your_google_ai_api_key
+PORT=5001
+NODE_ENV=production
 ```
 
-For frontend Firebase keys, this setup uses values from `client/.env` if you already use one locally.
+### Client (Google OAuth)
 
-## 3) Build and Start Containers
+Set your Google OAuth Client ID as a shell environment variable before building:
 
-From project root:
+```bash
+export REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+Or create a `.env` file in the **project root** (not `client/`):
+
+```env
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+Docker Compose reads this automatically and passes it as a build arg to the client container.
+
+## 3) Build and Start
+
+From the project root:
 
 ```bash
 docker compose up --build
@@ -45,10 +56,10 @@ docker compose up --build
 
 Open:
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:5001
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5001
 
-## 4) Useful Docker Commands
+## 4) Useful Commands
 
 Start in background:
 
@@ -68,7 +79,7 @@ Stop containers:
 docker compose down
 ```
 
-Stop and delete volumes/networks created by compose:
+Stop and delete volumes/networks:
 
 ```bash
 docker compose down -v
@@ -80,18 +91,41 @@ Rebuild after code/config changes:
 docker compose up --build
 ```
 
-## 5) Common Beginner Issues
+## 5) Architecture
 
-1. Port already in use
-- If `3000` or `5001` is busy, stop local processes or change port mapping in `docker-compose.yml`.
+```
+┌─────────────────────────────┐
+│   Client Container          │
+│   Nginx (port 80 → 3000)   │
+│   Serves React build        │
+│   SPA routing via nginx     │
+└─────────┬───────────────────┘
+          │ API calls to http://localhost:5001
+┌─────────▼───────────────────┐
+│   Server Container          │
+│   Node.js (port 5001)       │
+│   Express API + CORS        │
+│   Connects to MongoDB       │
+└─────────────────────────────┘
+```
 
-2. MongoDB connection fails
-- Check `MONGO_URI` in `server/.env`.
-- Ensure your MongoDB Atlas network access allows your IP.
+## 6) Common Issues
 
-3. Frontend cannot call backend
-- Ensure backend is running and mapped to `5001`.
-- `REACT_APP_API_ENDPOINT` in `docker-compose.yml` must match reachable host URL.
+1. **Port already in use**
+   - Stop local processes or change port mapping in `docker-compose.yml`.
 
-4. File upload not visible after restart
-- Uploads are persisted with host mapping: `./server/uploads:/app/uploads`.
+2. **MongoDB connection fails**
+   - Check `MONGO_URI` in `server/.env`.
+   - For Docker: use a MongoDB Atlas connection string (not `localhost`).
+   - Ensure your MongoDB Atlas network access allows your IP (or `0.0.0.0/0`).
+
+3. **Frontend cannot call backend**
+   - Ensure the server container is healthy before the client starts.
+   - `REACT_APP_API_ENDPOINT` is set to `http://localhost:5001` in `docker-compose.yml`.
+
+4. **Google OAuth not working**
+   - Ensure `REACT_APP_GOOGLE_CLIENT_ID` is set before running `docker compose up --build`.
+   - Add `http://localhost:3000` as an Authorized JavaScript Origin in Google Cloud Console.
+
+5. **File uploads not visible after restart**
+   - Uploads are persisted via host mapping: `./server/uploads:/app/uploads`.
