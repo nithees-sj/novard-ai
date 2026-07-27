@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { auth } from "./Firebase"; 
-import { onAuthStateChanged } from "firebase/auth";
+import { AuthProvider, useAuth } from "./AuthContext";
 
-import axios from "axios";
 import Landing from "./pages/Landing";
 import HomePage from "./pages/HomePage";
 import Profile from "./pages/Profile";
@@ -26,48 +24,18 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import CourseVideos from "./pages/CourseVideos";
 import TeacherGuidance from "./pages/TeacherGuidance";
 import SkillUnlocker from "./pages/SkillUnlocker";
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
+function AppRoutes() {
+  const { user, loading } = useAuth();
 
-export default function App() {
-  const [user, setUser] = useState(null); // State to manage logged-in user
-  const [loading, setLoading] = useState(true); 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        const userData = {
-          name: currentUser.displayName,
-          email: currentUser.email,
-          picture: currentUser.photoURL,
-        };
-        setUser(userData);
-
-        // Save user to backend 
-        try {
-          const response = await axios.post(`${apiUrl}/saveUser`, userData);
-          console.log("User data saved:", response.data);
-        } catch (error) {
-          console.error("Error saving user data:", error);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false); 
-    });
-
-    return () => unsubscribe(); // Cleanup listener on unmount
-  }, []);
-
-  
   if (loading) {
     return <div>Loading...</div>; 
   }
 
   return (
-    <BrowserRouter>
     <Routes>
       {/* Public route */}
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={user ? <Navigate to="/home" replace /> : <Landing />} />
 
       {/* Protected routes */}
       <Route
@@ -191,6 +159,15 @@ export default function App() {
         }
       />
     </Routes>
-  </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

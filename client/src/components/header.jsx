@@ -1,9 +1,9 @@
 import React from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../AuthContext';
 import LoginButton from './LoginButton';
 
 export const Header = (props) => {
-  const { isAuthenticated } = useAuth0();
+  const { user } = useAuth();
 
   return (
     <header id="header" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
@@ -19,7 +19,7 @@ export const Header = (props) => {
           <p className="text-xl sm:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto font-body leading-relaxed">
             {props.data ? props.data.paragraph : "Loading"}
           </p>
-          {!isAuthenticated && (
+          {!user && (
             <div className="animate-slide-up">
               <LoginButton />
             </div>

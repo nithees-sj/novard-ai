@@ -1,19 +1,15 @@
 import React from "react";
-import { signInWithGoogle } from "../Firebase";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 
 function LoginButton() {
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSignIn = async () => {
     try {
-      const user = await signInWithGoogle();
-      if (user) {
-        navigate("/home");
-      }
+      signIn();
     } catch (error) {
       console.error("Login error:", error);
-      alert("Failed to log in. Please try again.");
+      alert("Failed to sign in. Please try again.");
     }
   };
 

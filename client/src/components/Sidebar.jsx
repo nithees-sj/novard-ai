@@ -1,32 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../Firebase';
+import { useAuth } from '../AuthContext';
 import mainlogo from '../images/mainlogo.png';
 
 const Sidebar = ({ isHoverMode = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   // Sidebar visibility state - starts hidden if in hover mode
   const [showSidebar, setShowSidebar] = useState(!isHoverMode);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        const userWithPhoto = {
-          ...currentUser,
-          photoURL: currentUser.photoURL || localStorage.getItem('profilePic') || null,
-          displayName: currentUser.displayName || localStorage.getItem('name') || 'User'
-        };
-        setUser(userWithPhoto);
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   // Update sidebar visibility when isHoverMode prop changes
   useEffect(() => {
@@ -174,7 +156,7 @@ const Sidebar = ({ isHoverMode = false }) => {
           <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                onClick={() => navigate('/profile')}>
             <img
-              src={user.photoURL || '/img/team/user.jpeg'}
+              src={user.photoURL || user.picture || '/img/team/user.jpeg'}
               alt="Profile"
               className="w-10 h-10 rounded-full border-2 border-gray-300"
               onError={(e) => {
@@ -183,7 +165,7 @@ const Sidebar = ({ isHoverMode = false }) => {
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user.displayName}
+                {user.displayName || user.name}
               </p>
             </div>
           </div>
@@ -194,4 +176,3 @@ const Sidebar = ({ isHoverMode = false }) => {
 };
 
 export default Sidebar;
-

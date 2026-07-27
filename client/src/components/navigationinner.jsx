@@ -1,39 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../Firebase";
+import React, { useState } from "react";
+import { useAuth } from "../AuthContext";
 import mainlogo from "../images/mainlogo.png";
 
 export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) => {
-  const [user, setUser] = useState(null);
+  const { user, signOut } = useAuth();
   const [showPopup, setShowPopup] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        const userWithPhoto = {
-          ...currentUser,
-          photoURL: currentUser.photoURL || localStorage.getItem("profilePic") || null,
-          displayName: currentUser.displayName || localStorage.getItem("name") || "User"
-        };
-        setUser(userWithPhoto);
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      localStorage.removeItem("name");
-      localStorage.removeItem("email");
-      localStorage.removeItem("profilePic");
-      setUser(null);
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+  const handleLogout = () => {
+    signOut();
   };
 
   const togglePopup = () => setShowPopup(!showPopup);
@@ -65,9 +39,9 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
         >
           {user && (
             <>
-              <span className="text-gray-700 font-semibold">{user.displayName}</span>
+              <span className="text-gray-700 font-semibold">{user.displayName || user.name}</span>
               <img
-                src={user.photoURL || "/img/team/user.jpeg"}
+                src={user.photoURL || user.picture || "/img/team/user.jpeg"}
                 alt="Profile"
                 className="w-8 h-8 rounded-full border-2 border-gray-300"
                 onError={(e) => {
@@ -93,7 +67,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
 
             {/* Profile Picture */}
             <img
-              src={user.photoURL || "/img/team/user.jpeg"}
+              src={user.photoURL || user.picture || "/img/team/user.jpeg"}
               alt="Profile"
               className="w-24 h-24 rounded-full mx-auto mb-4 border-3 border-gray-300"
               onError={(e) => {
@@ -103,7 +77,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
 
             {/* User Info */}
             <h4 className="text-xl font-semibold text-gray-800 mb-1">
-              {user.displayName}
+              {user.displayName || user.name}
             </h4>
             <p className="text-sm text-gray-600 mb-5">
               {user.email}
@@ -124,5 +98,3 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
     </nav>
   );
 };
-
-

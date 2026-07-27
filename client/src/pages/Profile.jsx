@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Navigationinner } from '../components/navigationinner';
 import Sidebar from '../components/Sidebar';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../Firebase';
+import { useAuth } from '../AuthContext';
 import axios from 'axios';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -18,16 +17,15 @@ const Profile = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setEmail(currentUser.email);
-        setUsername(currentUser.displayName || localStorage.getItem('name') || '');
-        
-        // Fetch additional profile data from backend
+    if (authUser) {
+      setEmail(authUser.email);
+      setUsername(authUser.displayName || authUser.name || localStorage.getItem('name') || '');
+      
+      // Fetch additional profile data from backend
+      const fetchProfile = async () => {
         try {
           const response = await axios.get(`${apiUrl}/getUserProfile`, {
-            params: { email: currentUser.email }
+            params: { email: authUser.email }
           });
           if (response.data) {
             setMobile(response.data.mobile || '');
@@ -37,11 +35,10 @@ const Profile = () => {
           console.error('Error fetching profile:', error);
         }
         setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+      };
+      fetchProfile();
+    }
+  }, [authUser]);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -100,7 +97,7 @@ const Profile = () => {
               {/* Profile Picture Section */}
               <div className="flex items-center mb-8 pb-8 border-b border-gray-200">
                 <img
-                  src={user?.photoURL || '/img/team/user.jpeg'}
+                  src={authUser?.photoURL || authUser?.picture || '/img/team/user.jpeg'}
                   alt="Profile"
                   className="w-24 h-24 rounded-full border-4 border-gray-200"
                   onError={(e) => {

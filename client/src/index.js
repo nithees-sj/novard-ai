@@ -1,21 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { Auth0Provider } from '@auth0/auth0-react';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <Auth0Provider
-    domain="dev-ud1v4jvtt06vmvho.us.auth0.com" 
-    clientId="vW5v7e39BJkGkvM9cGk33cAgpm2uVklJ" 
-    redirectUri={window.location.origin}
-  >
-    <React.StrictMode>
+  <React.StrictMode>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <App />
-    </React.StrictMode>
-  </Auth0Provider>
+    </GoogleOAuthProvider>
+  </React.StrictMode>
 );
 
 reportWebVitals();
