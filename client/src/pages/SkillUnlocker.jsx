@@ -3,6 +3,8 @@ import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import axios from 'axios';
+import QuizSetup from '../components/quiz/QuizSetup';
+import { countCorrect } from '../lib/quiz';
 import { MdDeleteOutline, MdAdd } from "react-icons/md";
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
@@ -66,11 +68,7 @@ const SkillUnlocker = () => {
   const [quiz, setQuiz] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizScore, setQuizScore] = useState(null);
-  const [quizConfig, setQuizConfig] = useState({
-    questionCount: 10,
-    difficulty: 'intermediate'
-  });
-  const [customQuestionCount, setCustomQuestionCount] = useState('');
+  const [quizError, setQuizError] = useState(null);
 
   const userId = localStorage.getItem('email') || 'demo-user';
 
@@ -252,47 +250,39 @@ const SkillUnlocker = () => {
       return;
     }
     setError(null);
+    setQuizError(null);
     setCurrentView('quiz-config');
   };
 
-  const handleGenerateQuiz = async () => {
+  const handleGenerateQuiz = async (settings) => {
     setLoading(true);
-    setError(null);
-
+    setQuizError(null);
     try {
-      const finalQuestionCount = quizConfig.questionCount === 'custom' 
-        ? parseInt(customQuestionCount) || 10
-        : quizConfig.questionCount;
-
       const response = await axios.post(`${apiUrl}/api/skill-unlocker/generate-quiz`, {
         planId: currentPlan.planId || currentPlan._id,
         skillName: currentPlan.skillName,
         userId,
-        questionCount: finalQuestionCount,
-        difficulty: quizConfig.difficulty
+        ...settings
       });
-
       setQuiz(response.data);
+      setQuizAnswers({});
+      setQuizScore(null);
       setCurrentView('quiz');
     } catch (err) {
       console.error('Error generating quiz:', err);
-      setError(err.response?.data?.error || 'Failed to generate quiz. Please try again.');
+      setQuizError(err.response?.data?.error || 'Failed to generate quiz. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleQuizAnswer = (questionIndex, answerIndex) => {
     setQuizAnswers(prev => ({ ...prev, [questionIndex]: answerIndex }));
   };
 
   const handleSubmitQuiz = async () => {
-    let correct = 0;
-    quiz.questions.forEach((question, index) => {
-      if (quizAnswers[index] === question.correctAnswer) {
-        correct++;
-      }
-    });
+    const correct = countCorrect(quiz.questions, quizAnswers);
 
     const score = Math.round((correct / quiz.questions.length) * 100);
     setQuizScore({ percentage: score, correct, total: quiz.questions.length });
@@ -305,7 +295,9 @@ const SkillUnlocker = () => {
         score,
         totalQuestions: quiz.questions.length,
         questionCount: quiz.configuration?.questionCount || quiz.questions.length,
-        difficulty: quiz.configuration?.difficulty || 'intermediate'
+        difficulty: quiz.configuration?.difficulty || 'intermediate',
+        style: quiz.configuration?.style,
+        focus: quiz.configuration?.focus
       });
       fetchPlans();
     } catch (err) {
@@ -604,201 +596,22 @@ const SkillUnlocker = () => {
             )}
 
             {/* QUIZ CONFIGURATION VIEW */}
-            {currentView === 'quiz-config' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto">
-                <div className="space-y-8">
-                  {/* Question Count Section */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-4">
-                      Number of Questions
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[5, 10, 15].map(count => (
-                        <button
-                          key={count}
-                          type="button"
-                          onClick={() => setQuizConfig(prev => ({ ...prev, questionCount: count }))}
-                          className={`p-4 rounded-xl border-2 transition-all text-left ${
-                            quizConfig.questionCount === count
-                              ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                              : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                              quizConfig.questionCount === count
-                                ? 'border-indigo-600 bg-indigo-600'
-                                : 'border-gray-300'
-                            }`}>
-                              {quizConfig.questionCount === count && (
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                              )}
-                            </div>
-                            <span className="font-semibold text-gray-900">{count} Questions</span>
-                          </div>
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setQuizConfig(prev => ({ ...prev, questionCount: 'custom' }))}
-                        className={`p-4 rounded-xl border-2 transition-all text-left ${
-                          quizConfig.questionCount === 'custom'
-                            ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                            : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            quizConfig.questionCount === 'custom'
-                              ? 'border-indigo-600 bg-indigo-600'
-                              : 'border-gray-300'
-                          }`}>
-                            {quizConfig.questionCount === 'custom' && (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            )}
-                          </div>
-                          <span className="font-semibold text-gray-900">Custom</span>
-                        </div>
-                      </button>
-                    </div>
-                    
-                    {quizConfig.questionCount === 'custom' && (
-                      <div className="mt-3">
-                        <input
-                          type="number"
-                          min="5"
-                          max="20"
-                          value={customQuestionCount}
-                          onChange={(e) => setCustomQuestionCount(e.target.value)}
-                          placeholder="Enter number (5-20)"
-                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Difficulty Level Section */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-4">
-                      Difficulty Level
-                    </label>
-                    <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => setQuizConfig(prev => ({ ...prev, difficulty: 'beginner' }))}
-                        className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
-                          quizConfig.difficulty === 'beginner'
-                            ? 'border-green-500 bg-green-50 shadow-sm'
-                            : 'border-gray-200 hover:border-green-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                            quizConfig.difficulty === 'beginner'
-                              ? 'border-green-500 bg-green-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {quizConfig.difficulty === 'beginner' && (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-bold text-gray-900 mb-1">Beginner</div>
-                            <div className="text-sm text-gray-600">Definitions, basic concepts, and concept recognition</div>
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setQuizConfig(prev => ({ ...prev, difficulty: 'intermediate' }))}
-                        className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
-                          quizConfig.difficulty === 'intermediate'
-                            ? 'border-blue-500 bg-blue-50 shadow-sm'
-                            : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                            quizConfig.difficulty === 'intermediate'
-                              ? 'border-blue-500 bg-blue-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {quizConfig.difficulty === 'intermediate' && (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-bold text-gray-900 mb-1">Intermediate</div>
-                            <div className="text-sm text-gray-600">Application, comparisons, and simple problem-solving</div>
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setQuizConfig(prev => ({ ...prev, difficulty: 'advanced' }))}
-                        className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
-                          quizConfig.difficulty === 'advanced'
-                            ? 'border-purple-500 bg-purple-50 shadow-sm'
-                            : 'border-gray-200 hover:border-purple-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
-                            quizConfig.difficulty === 'advanced'
-                              ? 'border-purple-500 bg-purple-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {quizConfig.difficulty === 'advanced' && (
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-bold text-gray-900 mb-1">Advanced</div>
-                            <div className="text-sm text-gray-600">Scenario-based, reasoning, and practical decision questions</div>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Progress Info */}
-                  {currentPlan && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-indigo-700">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          Quiz will only cover the {completedDays.size} day{completedDays.size !== 1 ? 's' : ''} you've completed
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      onClick={() => setCurrentView('planner')}
-                      className="flex-1 px-6 py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleGenerateQuiz}
-                      disabled={loading || (quizConfig.questionCount === 'custom' && (!customQuestionCount || customQuestionCount < 5 || customQuestionCount > 20))}
-                      className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all"
-                    >
-                      {loading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                          Generating...
-                        </span>
-                      ) : '🚀 Generate Quiz'}
-                    </button>
-                  </div>
-                </div>
+            {currentView === 'quiz-config' && currentPlan && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+                <QuizSetup
+                  source="plan"
+                  itemId={currentPlan.planId || currentPlan._id}
+                  topic={currentPlan.skillName}
+                  onStart={handleGenerateQuiz}
+                  starting={loading}
+                  error={quizError}
+                />
+                <button
+                  onClick={() => setCurrentView('planner')}
+                  className="mt-3 w-full max-w-3xl mx-auto block px-6 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
               </div>
             )}
 
@@ -1081,6 +894,12 @@ const SkillUnlocker = () => {
                         className="px-6 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         Retake Quiz
+                      </button>
+                      <button
+                        onClick={() => { setQuizError(null); setCurrentView('quiz-config'); }}
+                        className="px-6 py-2.5 bg-white border border-indigo-200 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-50 transition-colors"
+                      >
+                        All marks · New quiz
                       </button>
                       <button
                         onClick={() => setCurrentView('planner')}

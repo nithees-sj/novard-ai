@@ -14,7 +14,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? 'ml-64' : ''}`}>
-      <div className="relative flex justify-between items-center px-6 h-14">
+      <div className="relative flex justify-between items-center gap-6 px-6 h-14">
         {/* Logo - conditionally rendered */}
         {!hideLogo && (
           <div className="flex items-center space-x-3">

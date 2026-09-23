@@ -59,6 +59,12 @@ const educationalVideoSchema = new mongoose.Schema({
     }],
     totalQuestions: Number,
     score: Number,
+    settings: { // what the student asked for when generating this quiz
+      difficulty: String,
+      questionCount: Number,
+      style: String,
+      focus: String
+    },
     completedAt: Date,
     attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
   }],

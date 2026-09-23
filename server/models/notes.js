@@ -24,8 +24,16 @@ const quizSchema = new mongoose.Schema({
   questions: [{
     question: String,
     options: [String],
-    correctAnswer: String
+    // Index 0-3 for quizzes generated now; older quizzes stored a letter ("C").
+    correctAnswer: mongoose.Schema.Types.Mixed,
+    explanation: String
   }],
+  settings: { // what the student asked for when generating this quiz
+    difficulty: String,
+    questionCount: Number,
+    style: String,
+    focus: String
+  },
   userAnswers: {
     type: Map,
     of: String

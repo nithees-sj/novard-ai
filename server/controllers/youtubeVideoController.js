@@ -7,6 +7,7 @@ const path = require('path');
 const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
+const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -404,7 +405,6 @@ ${MARKDOWN_WITH_FLOWCHART}`
 const generateQuizForYouTubeVideo = async (req, res) => {
   try {
     const { videoId, userId } = req.body;
-    
     if (!videoId || !userId) {
       return res.status(400).json({ error: 'Video ID and user ID are required' });
     }
@@ -414,66 +414,23 @@ const generateQuizForYouTubeVideo = async (req, res) => {
       return res.status(404).json({ error: 'Video not found' });
     }
 
-    // Generate quiz using Groq
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert at creating educational quizzes. Generate 5-7 multiple choice questions based on the video content. IMPORTANT: Return ONLY valid JSON format with this exact structure: {\"questions\": [{\"question\": \"string\", \"options\": [\"string\", \"string\", \"string\", \"string\"], \"correctAnswer\": 0, \"explanation\": \"string\"}]}. Do not include any markdown code blocks, explanations, or additional text. Just return the raw JSON. If transcript is not available, create questions based on the title and description."
-        },
-        {
-          role: "user",
-          content: `Create a quiz based on this YouTube video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${video.transcript}\n\nGenerate 5-7 multiple choice questions that test understanding of the video content.`
-        }
-      ],
-      model: MODELS.FAST,
-      ...GROQ_DEFAULTS,
-      temperature: 0.7,
-      max_tokens: 2000,
+    const options = readQuizOptions(req.body);
+    const questions = await generateQuizQuestions({
+      subject: video.title,
+      content: sampleContent(
+        `Title: ${video.title}\nDescription: ${video.description || ''}\n` +
+        `Summary: ${video.summary || ''}\nTranscript: ${video.transcript || ''}`
+      ),
+      options,
+      model: MODELS.REASONING,
     });
 
-    const quizResponse = completion.choices[0]?.message?.content || '{}';
-    
-    try {
-      // Clean the response by removing markdown code blocks
-      let cleanedResponse = quizResponse.trim();
-      
-      // Remove ```json and ``` markers if present
-      if (cleanedResponse.startsWith('```json')) {
-        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanedResponse.startsWith('```')) {
-        cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      // Try to extract JSON from the response if it's wrapped in other text
-      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanedResponse = jsonMatch[0];
-      }
-      
-      console.log('Cleaned quiz response:', cleanedResponse);
-      const quizData = parseModelJson(cleanedResponse, { context: 'quiz' });
-      
-      // Validate quiz structure
-      if (!quizData.questions || !Array.isArray(quizData.questions)) {
-        throw new Error('Invalid quiz format');
-      }
-
-      // Add quiz to video
-      video.quizzes.push({
-        questions: quizData.questions,
-        totalQuestions: quizData.questions.length
-      });
-
-      await video.save();
-      res.json({ quiz: quizData.questions, quizIndex: video.quizzes.length - 1 });
-    } catch (parseError) {
-      console.error('Error parsing quiz response:', parseError);
-      res.status(500).json({ error: 'Error generating quiz format' });
-    }
+    video.quizzes.push({ questions, totalQuestions: questions.length, settings: options });
+    await video.save();
+    res.json({ quiz: questions, quizIndex: video.quizzes.length - 1, settings: options });
   } catch (error) {
     console.error('Error generating quiz for YouTube video:', error);
-    res.status(500).json({ error: 'Error generating quiz' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Error generating quiz' });
   }
 };
 

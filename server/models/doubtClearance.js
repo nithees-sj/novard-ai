@@ -44,8 +44,15 @@ const doubtClearanceSchema = new mongoose.Schema({
     questions: [{
       question: String,
       options: [String],
-      correctAnswer: Number
+      correctAnswer: Number,
+      explanation: String
     }],
+    settings: { // what the student asked for when generating this quiz
+      difficulty: String,
+      questionCount: Number,
+      style: String,
+      focus: String
+    },
     score: Number,
     totalQuestions: Number,
     completedAt: {

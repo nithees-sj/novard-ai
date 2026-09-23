@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Navigationinner } from "../components/navigationinner";
 import MarkdownView from '../components/MarkdownView';
 import SummaryHeader from '../components/SummaryHeader';
+import QuizSetup from '../components/quiz/QuizSetup';
+import { countCorrect } from '../lib/quiz';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -14,6 +16,7 @@ const DoubtClearance = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState(null);
   const [isGettingRecommendations, setIsGettingRecommendations] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const [summary, setSummary] = useState('');
@@ -144,13 +147,24 @@ const DoubtClearance = () => {
     }
   };
 
-  const handleGenerateQuiz = async () => {
+  // "Quiz" opens the setup screen: previous marks on this topic + quiz options.
+  const handleGenerateQuiz = () => {
     if (!selectedDoubt) return;
+    setActiveTab('quiz');
+    setCurrentQuiz(null);
+    setQuizScore(null);
+    setQuizAnswers({});
+    setQuizError(null);
+  };
+
+  const startQuiz = async (settings) => {
     setIsGeneratingQuiz(true);
+    setQuizError(null);
     try {
       const response = await axios.post(`${apiUrl}/generate-doubt-quiz`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user',
+        ...settings
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
@@ -165,7 +179,7 @@ const DoubtClearance = () => {
       await loadUserDoubts();
     } catch (error) {
       console.error('Error generating quiz:', error);
-      showToast(error.response?.data?.error || 'Error generating quiz', 'error');
+      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -192,13 +206,8 @@ const DoubtClearance = () => {
 
   const handleSubmitQuiz = async () => {
     if (!currentQuiz || !selectedDoubt) return;
-    let score = 0;
     const totalQuestions = currentQuiz.length;
-    currentQuiz.forEach((question, index) => {
-      if (quizAnswers[index] === question.correctAnswer) {
-        score++;
-      }
-    });
+    const score = countCorrect(currentQuiz, quizAnswers);
     setQuizScore({ score, totalQuestions });
     try {
       await axios.post(`${apiUrl}/save-doubt-quiz-results`, {
@@ -249,8 +258,8 @@ const DoubtClearance = () => {
 
   return (
     <>
-      <Navigationinner title={"DOUBT CLEARANCE"} />
-      <div className="flex min-h-screen bg-gray-50">
+      <Navigationinner title={"DOUBT CLEARANCE"} hasSidebar={false} />
+      <div className="flex min-h-screen bg-gray-50 pt-14">
         {/* Main Content */}
         <div className="flex-1 p-6">
           {selectedDoubt ? (
@@ -374,14 +383,7 @@ const DoubtClearance = () => {
               {/* Quiz Tab */}
               {activeTab === 'quiz' && (
                 <div className="bg-white rounded-lg shadow-md p-6 h-[calc(100vh-300px)] overflow-y-auto">
-                  {isGeneratingQuiz ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <div className="text-4xl mb-4">🧠</div>
-                        <p className="text-sm text-gray-600">Generating quiz...</p>
-                      </div>
-                    </div>
-                  ) : currentQuiz ? (
+                  {currentQuiz ? (
                     quizScore ? (
                       <div className="text-center p-8 bg-blue-50 rounded-lg">
                         <div className="text-5xl mb-4">🎯</div>
@@ -392,6 +394,13 @@ const DoubtClearance = () => {
                         <p className="text-sm text-gray-600">
                           {quizScore.score} out of {quizScore.totalQuestions} correct
                         </p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateQuiz}
+                          className="mt-6 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+                        >
+                          See all your marks · Try another quiz
+                        </button>
                       </div>
                     ) : (
                           <div className="space-y-4">
@@ -422,12 +431,15 @@ const DoubtClearance = () => {
                         </div>
                       )
                     ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="text-4xl mb-4">🧠</div>
-                            <p className="text-sm text-gray-600">Click "Quiz" to generate practice questions.</p>
-                          </div>
-                    </div>
+                    <QuizSetup
+                      source="doubt"
+                      itemId={selectedDoubt._id}
+                      topic={selectedDoubt.title}
+                      onStart={startQuiz}
+                      starting={isGeneratingQuiz}
+                      error={quizError}
+                      blockedReason={Math.max(chatMessages.length, (selectedDoubt.chatHistory || []).length) < 4 ? 'Ask at least two questions in the chat first - the quiz is built from what was explained to you.' : null}
+                    />
                   )}
                 </div>
               )}

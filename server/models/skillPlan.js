@@ -78,6 +78,8 @@ const skillPlanSchema = new mongoose.Schema({
       enum: ['beginner', 'intermediate', 'advanced'],
       default: 'intermediate'
     },
+    style: String,
+    focus: String,
     createdAt: Date
   },
   quizResults: [{
@@ -89,6 +91,8 @@ const skillPlanSchema = new mongoose.Schema({
       type: String,
       enum: ['beginner', 'intermediate', 'advanced']
     },
+    style: String,
+    focus: String,
     completedDaysAtQuiz: Number,
     completedAt: {
       type: Date,

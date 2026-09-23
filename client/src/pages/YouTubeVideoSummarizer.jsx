@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import MarkdownView from '../components/MarkdownView';
 import SummaryHeader from '../components/SummaryHeader';
+import QuizSetup from '../components/quiz/QuizSetup';
+import { countCorrect } from '../lib/quiz';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -13,6 +15,7 @@ const YouTubeVideoSummarizer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState(null);
   const [activeTab, setActiveTab] = useState('chat');
   const [summary, setSummary] = useState('');
   const [currentQuiz, setCurrentQuiz] = useState(null);
@@ -21,7 +24,6 @@ const YouTubeVideoSummarizer = () => {
   const [quizScore, setQuizScore] = useState(null);
   const [showAddVideoForm, setShowAddVideoForm] = useState(false);
   const [toast, setToast] = useState(null);
-  const [showQuizConfirm, setShowQuizConfirm] = useState(false);
   const [newVideo, setNewVideo] = useState({ title: '', videoUrl: '' });
   const [isAddingVideo, setIsAddingVideo] = useState(false);
 
@@ -150,18 +152,24 @@ const YouTubeVideoSummarizer = () => {
     }
   };
 
+  // "Quiz" opens the setup screen: previous marks on this topic + quiz options.
   const handleGenerateQuiz = () => {
     if (!selectedVideo) return;
-    setShowQuizConfirm(true);
+    setActiveTab('quiz');
+    setCurrentQuiz(null);
+    setQuizScore(null);
+    setQuizAnswers({});
+    setQuizError(null);
   };
 
-  const confirmGenerateQuiz = async () => {
-    setShowQuizConfirm(false);
+  const startQuiz = async (settings) => {
     setIsGeneratingQuiz(true);
+    setQuizError(null);
     try {
       const response = await axios.post(`${apiUrl}/generate-youtube-quiz`, {
         videoId: selectedVideo._id,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: localStorage.getItem('email') || 'demo-user',
+        ...settings
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
@@ -176,7 +184,7 @@ const YouTubeVideoSummarizer = () => {
       await loadUserVideos();
     } catch (error) {
       console.error('Error generating quiz:', error);
-      showToast('Error generating quiz', 'error');
+      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -184,13 +192,8 @@ const YouTubeVideoSummarizer = () => {
 
   const handleSubmitQuiz = async () => {
     if (!currentQuiz || !selectedVideo) return;
-    let score = 0;
     const totalQuestions = currentQuiz.length;
-    currentQuiz.forEach((question, index) => {
-      if (quizAnswers[index] === question.correctAnswer) {
-        score++;
-      }
-    });
+    const score = countCorrect(currentQuiz, quizAnswers);
     setQuizScore({ score, totalQuestions });
     try {
       await axios.post(`${apiUrl}/save-youtube-quiz-results`, {
@@ -364,14 +367,7 @@ const YouTubeVideoSummarizer = () => {
               {/* Quiz Tab */}
               {activeTab === 'quiz' && (
                 <div className="bg-white rounded-lg shadow-md p-6 h-[calc(100vh-280px)] overflow-y-auto">
-                  {isGeneratingQuiz ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <div className="text-4xl mb-4">🧠</div>
-                        <p className="text-sm text-gray-600">Generating quiz...</p>
-                      </div>
-                    </div>
-                  ) : currentQuiz ? (
+                  {currentQuiz ? (
                       quizScore ? (
                         <div className="text-center p-8 bg-blue-50 rounded-lg">
                           <div className="text-5xl mb-4">🎯</div>
@@ -382,6 +378,13 @@ const YouTubeVideoSummarizer = () => {
                           <p className="text-sm text-gray-600">
                             {quizScore.score} out of {quizScore.totalQuestions} correct
                           </p>
+                          <button
+                            type="button"
+                            onClick={handleGenerateQuiz}
+                            className="mt-6 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+                          >
+                            See all your marks · Try another quiz
+                          </button>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -412,12 +415,14 @@ const YouTubeVideoSummarizer = () => {
                           </div>
                         )
                   ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="text-4xl mb-4">🧠</div>
-                            <p className="text-sm text-gray-600">Click "Quiz" to generate questions.</p>
-                      </div>
-                    </div>
+                    <QuizSetup
+                      source="youtube"
+                      itemId={selectedVideo._id}
+                      topic={selectedVideo.title}
+                      onStart={startQuiz}
+                      starting={isGeneratingQuiz}
+                      error={quizError}
+                    />
                   )}
                 </div>
               )}
@@ -525,35 +530,6 @@ const YouTubeVideoSummarizer = () => {
         <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg text-sm font-medium z-50 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
           }`}>
           {toast.type === 'success' ? '✅' : '❌'} {toast.message}
-        </div>
-      )}
-
-      {/* Quiz Confirmation */}
-      {showQuizConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🧠</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Generate Quiz?</h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Create a quiz based on "{selectedVideo?.title}"?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmGenerateQuiz}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
-                >
-                  Yes, Generate
-                </button>
-                <button
-                  onClick={() => setShowQuizConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </>

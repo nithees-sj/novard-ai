@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import MarkdownView from './MarkdownView';
 import SummaryHeader from './SummaryHeader';
+import QuizSetup from './quiz/QuizSetup';
+import { countCorrect } from '../lib/quiz';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -21,7 +23,7 @@ const NotesInlineView = () => {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizScore, setQuizScore] = useState(null);
   const [toast, setToast] = useState(null);
-  const [showQuizConfirm, setShowQuizConfirm] = useState(false);
+  const [quizError, setQuizError] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('notes');
   const fileInputRef = useRef(null);
 
@@ -173,29 +175,33 @@ const NotesInlineView = () => {
     }
   };
 
-  const handleGenerateQuiz = async () => {
+  // "Quiz" opens the setup screen: previous marks on this note + quiz options.
+  const handleGenerateQuiz = () => {
     if (!selectedNote) return;
-    setShowQuizConfirm(true);
+    setActiveTab('quiz');
+    setCurrentQuiz(null);
+    setQuizScore(null);
+    setQuizAnswers({});
+    setQuizError(null);
   };
 
-  const confirmGenerateQuiz = async () => {
+  const confirmGenerateQuiz = async (settings) => {
     if (!selectedNote) return;
     try {
       setIsGeneratingQuiz(true);
-      setActiveTab('quiz');
-      setShowQuizConfirm(false);
+      setQuizError(null);
       const response = await axios.post(`${apiUrl}/generate-quiz`, {
-        noteId: selectedNote._id
+        noteId: selectedNote._id,
+        ...settings
       });
       setCurrentQuiz(response.data.quiz);
       setCurrentQuizId(response.data.quizId);
       setQuizAnswers({});
       setQuizScore(null);
       await loadUserNotes();
-      showToast('Quiz generated successfully!', 'success');
     } catch (error) {
       console.error('Error generating quiz:', error);
-      showToast('Error generating quiz. Please try again.');
+      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -207,12 +213,9 @@ const NotesInlineView = () => {
 
   const handleSubmitQuiz = async () => {
     if (!currentQuiz || !currentQuizId) return;
-    let correctAnswers = 0;
-    currentQuiz.forEach((question, index) => {
-      if (quizAnswers[index] === question.correctAnswer) {
-        correctAnswers++;
-      }
-    });
+    // Tolerates old quizzes that stored the answer as a letter; comparing the
+    // chosen index against "C" with === made every Notes quiz score 0%.
+    const correctAnswers = countCorrect(currentQuiz, quizAnswers);
     const score = Math.round((correctAnswers / currentQuiz.length) * 100);
     const scoreData = {
       correct: correctAnswers,
@@ -426,14 +429,7 @@ const NotesInlineView = () => {
             {/* Quiz Tab */}
             {activeTab === 'quiz' && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 h-[calc(100vh-340px)] overflow-y-auto">
-                {isGeneratingQuiz ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">🧠</div>
-                      <p className="text-sm text-gray-600">Generating quiz...</p>
-                    </div>
-                  </div>
-                ) : currentQuiz ? (
+                {currentQuiz ? (
                   <>
                     {quizScore ? (
                       <div className="text-center p-8 bg-blue-50 rounded-lg">
@@ -449,9 +445,9 @@ const NotesInlineView = () => {
                             setQuizAnswers({});
                             setCurrentQuiz(null);
                           }}
-                          className="px-6 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800"
+                          className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
                         >
-                          Try Another Quiz
+                          See all your marks · Try another quiz
                         </button>
                       </div>
                     ) : (
@@ -488,13 +484,14 @@ const NotesInlineView = () => {
                     )}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">🧠</div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Quiz Yet</h3>
-                      <p className="text-sm text-gray-600">Click "Quiz" to generate questions.</p>
-                    </div>
-                  </div>
+                  <QuizSetup
+                    source="notes"
+                    itemId={selectedNote._id}
+                    topic={selectedNote.title}
+                    onStart={confirmGenerateQuiz}
+                    starting={isGeneratingQuiz}
+                    error={quizError}
+                  />
                 )}
               </div>
             )}
@@ -663,35 +660,6 @@ const NotesInlineView = () => {
           toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.type === 'success' ? '✅' : '❌'} {toast.message}
-        </div>
-      )}
-
-      {/* Quiz Confirmation */}
-      {showQuizConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🧠</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Generate Quiz?</h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Do you want to create a quiz based on "{selectedNote?.title}"?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmGenerateQuiz}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
-                >
-                  Yes, Generate
-                </button>
-                <button
-                  onClick={() => setShowQuizConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

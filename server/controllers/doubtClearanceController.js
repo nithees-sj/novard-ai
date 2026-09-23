@@ -4,6 +4,7 @@ const youtubesearchapi = require('youtube-search-api');
 const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
+const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -282,242 +283,48 @@ ${MARKDOWN_WITH_FLOWCHART}`
 const generateDoubtQuiz = async (req, res) => {
   try {
     const { doubtId, userId } = req.body;
-
     if (!doubtId || !userId) {
       return res.status(400).json({ error: 'Doubt ID and userId are required' });
     }
 
-    const doubtClearance = await DoubtClearance.findById(doubtId);
+    const doubtClearance = await DoubtClearance.findOne({ _id: doubtId, userId });
     if (!doubtClearance) {
       return res.status(404).json({ error: 'Doubt clearance not found' });
     }
-
-    // Check if there's enough chat history to generate a quiz
     if (doubtClearance.chatHistory.length < 4) {
       return res.status(400).json({ error: 'Not enough chat history to generate a quiz. Please have at least 4 conversations first.' });
     }
 
-    // Generate quiz using Groq
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert educational quiz generator that creates questions based on actual conversation content.
+    const options = readQuizOptions(req.body);
+    const conversation = doubtClearance.chatHistory
+      .map((m) => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`)
+      .join('\n\n');
 
-          CRITICAL: Generate quiz questions ONLY based on the specific concepts, solutions, and information discussed in the chat history. Do NOT use generic questions.
-
-          Analyze the chat conversation thoroughly and create AT LEAST 8 quiz questions that test understanding of:
-          - Specific concepts explained during the conversation
-          - Solutions provided in the chat
-          - Examples given by the assistant
-          - Technical details discussed
-          - Key insights shared
-          - Step-by-step processes mentioned
-          - Important facts or data shared
-          - Problem-solving approaches discussed
-
-          Return your response as a JSON array with this exact format:
-          [
-            {
-              "question": "Specific question based on chat content",
-              "options": ["Option A", "Option B", "Option C", "Option D"],
-              "correctAnswer": 0,
-              "explanation": "Why this answer is correct based on the conversation"
-            }
-          ]
-
-          Requirements:
-          - Generate MINIMUM 8 questions, preferably 10-12 if the conversation is rich
-          - Questions MUST be based on actual conversation content
-          - Reference specific information shared in the chat
-          - Options should be realistic and test real understanding
-          - correctAnswer is the index (0-3) of the correct option
-          - Explanations should reference the conversation content
-          - Focus on the most important concepts discussed
-          - Cover different aspects of the conversation (technical details, examples, solutions, etc.)`
-        },
-        {
-          role: "user",
-          content: `CHAT CONVERSATION TO ANALYZE FOR QUIZ GENERATION:
-
-          Doubt Title: "${doubtClearance.title}"
-          Doubt Description: "${doubtClearance.description}"
-          
-          FULL CHAT HISTORY (This is the ONLY source for quiz questions):
-          ${doubtClearance.chatHistory.map((msg, index) => `Message ${index + 1} (${msg.role}): ${msg.content}`).join('\n\n')}
-          
-          INSTRUCTIONS:
-          - Analyze the ENTIRE conversation above thoroughly
-          - Extract specific concepts, solutions, examples, and information discussed
-          - Generate AT LEAST 8 quiz questions based on the actual content
-          - Each question should test understanding of specific information shared in the chat
-          - Make questions progressively challenging (basic to advanced concepts)
-          - Cover different aspects: technical details, examples, step-by-step processes, key insights
-          - Ensure each question references actual content from the conversation
-          - Generate 10-12 questions if the conversation is rich with content`
-        }
-      ],
+    // Placeholder questions are no longer substituted when generation fails;
+    // the student gets an error and can retry instead of a meaningless quiz.
+    const questions = await generateQuizQuestions({
+      subject: doubtClearance.title,
+      content: sampleContent(
+        `Doubt: ${doubtClearance.title}\nDetails: ${doubtClearance.description}\n\n` +
+        `Conversation (test what was explained here):\n${conversation}`
+      ),
+      options,
       model: MODELS.REASONING,
-      ...GROQ_DEFAULTS,
-      temperature: 0.7,
-      max_tokens: 3000
     });
 
-    const aiResponse = completion.choices[0]?.message?.content;
-    
-    if (!aiResponse) {
-      throw new Error('No response from Groq AI');
-    }
-
-    // Parse the AI response
-    let quiz;
-    try {
-      // Clean the response by removing markdown code blocks
-      let cleanedResponse = aiResponse.trim();
-      
-      // Remove ```json and ``` markers if present
-      if (cleanedResponse.startsWith('```json')) {
-        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanedResponse.startsWith('```')) {
-        cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      // Try to extract JSON from the response if it's wrapped in other text
-      const jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        cleanedResponse = jsonMatch[0];
-      }
-      
-      console.log('Cleaned quiz response:', cleanedResponse);
-      quiz = parseModelJson(cleanedResponse, { context: 'quiz' });
-      
-      // Validate quiz structure
-      if (!Array.isArray(quiz) || quiz.length === 0) {
-        throw new Error('Invalid quiz format');
-      }
-    } catch (parseError) {
-      console.error('Error parsing quiz response:', parseError);
-      console.log('Raw AI response:', aiResponse);
-      
-      // Create a more dynamic fallback quiz based on chat content
-      const chatContent = doubtClearance.chatHistory.map(msg => msg.content).join(' ');
-      const hasTechnicalContent = chatContent.toLowerCase().includes('code') || 
-                                 chatContent.toLowerCase().includes('function') || 
-                                 chatContent.toLowerCase().includes('algorithm') ||
-                                 chatContent.toLowerCase().includes('programming') ||
-                                 chatContent.toLowerCase().includes('software');
-      
-      const userMessages = doubtClearance.chatHistory.filter(msg => msg.role === 'user');
-      const assistantMessages = doubtClearance.chatHistory.filter(msg => msg.role === 'assistant');
-      
-      quiz = [
-        {
-          question: `What was the main topic of "${doubtClearance.title}"?`,
-          options: [doubtClearance.title, "General question", "Technical issue", "Personal problem"],
-          correctAnswer: 0,
-          explanation: `The main topic was "${doubtClearance.title}" as stated in the doubt.`
-        },
-        {
-          question: "How many messages were exchanged in this conversation?",
-          options: [
-            `${doubtClearance.chatHistory.length} messages`,
-            "Less than 4 messages", 
-            "More than 10 messages", 
-            "Only 1 message"
-          ],
-          correctAnswer: 0,
-          explanation: `The conversation had ${doubtClearance.chatHistory.length} messages in total.`
-        },
-        {
-          question: "How many questions did the user ask?",
-          options: [
-            `${userMessages.length} questions`,
-            "Less than 2 questions",
-            "More than 5 questions", 
-            "No questions asked"
-          ],
-          correctAnswer: 0,
-          explanation: `The user asked ${userMessages.length} questions during the conversation.`
-        },
-        {
-          question: "How many responses did the assistant provide?",
-          options: [
-            `${assistantMessages.length} responses`,
-            "Less than 2 responses",
-            "More than 5 responses", 
-            "No responses provided"
-          ],
-          correctAnswer: 0,
-          explanation: `The assistant provided ${assistantMessages.length} responses during the conversation.`
-        }
-      ];
-      
-      // Add technical questions if the conversation seems technical
-      if (hasTechnicalContent) {
-        quiz.push(
-          {
-            question: "Was this conversation about a technical topic?",
-            options: ["Yes, it involved technical concepts", "No, it was general", "Maybe", "Not sure"],
-            correctAnswer: 0,
-            explanation: "The conversation contained technical terms and concepts based on the chat content."
-          },
-          {
-            question: "What type of technical content was discussed?",
-            options: ["Programming/Code", "General technology", "Hardware", "Not technical"],
-            correctAnswer: 0,
-            explanation: "The conversation contained programming and code-related terms."
-          }
-        );
-      }
-      
-      // Add questions based on conversation length
-      if (doubtClearance.chatHistory.length >= 6) {
-        quiz.push({
-          question: "Was this a detailed conversation?",
-          options: ["Yes, it was extensive", "No, it was brief", "Moderate length", "Very short"],
-          correctAnswer: 0,
-          explanation: `With ${doubtClearance.chatHistory.length} messages, this was a detailed conversation.`
-        });
-      }
-      
-      // Add questions based on content analysis
-      const hasQuestions = chatContent.includes('?');
-      const hasExamples = chatContent.toLowerCase().includes('example') || chatContent.toLowerCase().includes('for instance');
-      
-      if (hasQuestions) {
-        quiz.push({
-          question: "Did the user ask specific questions in the conversation?",
-          options: ["Yes, multiple questions were asked", "No questions", "Only one question", "Not sure"],
-          correctAnswer: 0,
-          explanation: "The conversation contained question marks, indicating specific questions were asked."
-        });
-      }
-      
-      if (hasExamples) {
-        quiz.push({
-          question: "Were examples provided in the conversation?",
-          options: ["Yes, examples were given", "No examples", "Maybe", "Not clear"],
-          correctAnswer: 0,
-          explanation: "The conversation contained words like 'example' or 'for instance', indicating examples were provided."
-        });
-      }
-    }
-
-    // Save quiz to database
-    const newQuiz = {
-      questions: quiz,
+    doubtClearance.quizzes.push({
+      questions,
       score: null,
-      totalQuestions: quiz.length,
-      completedAt: new Date()
-    };
-
-    doubtClearance.quizzes.push(newQuiz);
+      totalQuestions: questions.length,
+      settings: options,
+      completedAt: new Date(),
+    });
     await doubtClearance.save();
 
-    res.json({ quiz, quizIndex: doubtClearance.quizzes.length - 1 });
+    res.json({ quiz: questions, quizIndex: doubtClearance.quizzes.length - 1, settings: options });
   } catch (error) {
     console.error('Error generating doubt quiz:', error);
-    res.status(500).json({ error: 'Failed to generate quiz' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Failed to generate quiz' });
   }
 };
 

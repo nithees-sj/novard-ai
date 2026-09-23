@@ -147,6 +147,32 @@ There is **no server-side auth middleware**: the client passes the user's email 
 
 ---
 
+## Customised quizzes
+
+Every quiz — Notes, Video Summarizer, Doubt Clearance and Skill Unlocker — starts from
+the same setup screen ([QuizSetup.jsx](client/src/components/quiz/QuizSetup.jsx)):
+
+- **Your previous marks on this topic:** attempts, best, average and latest (with the
+  change since the one before), plus each past attempt with its date, score and the
+  settings it used. Only quizzes that were actually submitted count, following the
+  same rules as the dashboard.
+- **Options:** difficulty (Beginner / Intermediate / Advanced), number of questions
+  (5, 10, 15, 20 or any value from 5 to 20), question style (Conceptual / Practical /
+  Mixed), and an optional focus sub-topic. These start from the student's last choices
+  on that topic.
+
+All four sections generate through one service
+([server/services/quizService.js](server/services/quizService.js)). It:
+
+- returns exactly the number of questions asked for, with a follow-up request if the
+  model returns too few;
+- validates every question (4 distinct options, one correct answer, an explanation);
+- shuffles the options, because models put the answer in the first two positions far
+  more often than chance;
+- samples long documents from start to end instead of reading only the first chunk.
+
+Past marks come from `GET /api/quiz-history/:source/:itemId?userId=`.
+
 ## How summaries and chat replies are rendered
 
 Every piece of model output in the app — summaries, chat replies, generated skills,

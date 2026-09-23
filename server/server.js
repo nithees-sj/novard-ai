@@ -106,6 +106,7 @@ const {
 const {
   getUserAnalytics
 } = require('./controllers/analyticsController');
+const { getQuizHistory } = require('./controllers/quizHistoryController');
 
 
 
@@ -263,6 +264,9 @@ app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 
 // Analytics routes
 app.get('/api/analytics/:userId', getUserAnalytics);
+
+// Previous quiz marks for one note / video / doubt / learning plan
+app.get('/api/quiz-history/:source/:itemId', getQuizHistory);
 
 // ── Unmatched routes ──────────────────────────────────────────────────────
 app.use((req, res) => {

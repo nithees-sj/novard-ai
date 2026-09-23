@@ -3,6 +3,7 @@ const Groq = require('groq-sdk');
 const { Innertube } = require('youtubei.js');
 const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
+const { readQuizOptions, generateQuiz: generateQuizQuestions } = require('../services/quizService');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -172,191 +173,57 @@ IMPORTANT: Return ONLY the JSON array, no other text.`;
 
 // Generate quiz based on the learning plan
 exports.generateQuiz = async (req, res) => {
-  const { planId, skillName, userId, questionCount = 10, difficulty = 'intermediate' } = req.body;
+  const { planId, skillName, userId } = req.body;
 
   try {
     if (!planId || !skillName || !userId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate inputs
-    const validQuestionCount = Math.max(5, Math.min(20, parseInt(questionCount)));
-    const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficulty) 
-      ? difficulty 
-      : 'intermediate';
-
-    // Get the plan to extract topics
-    const plan = await SkillPlan.findById(planId);
+    const plan = await SkillPlan.findOne({ _id: planId, userId });
     if (!plan) {
       return res.status(404).json({ error: 'Plan not found' });
     }
 
-    // Filter topics based on completed days only
-    const completedDays = plan.dailyPlan.filter(day => day.completed);
-    
+    // Only test what the student has actually covered.
+    const completedDays = plan.dailyPlan.filter((day) => day.completed);
     if (completedDays.length === 0) {
-      return res.status(400).json({ 
-        error: 'Please complete at least one day of learning before taking the quiz' 
+      return res.status(400).json({
+        error: 'Please complete at least one day of learning before taking the quiz'
       });
     }
 
-    const completedTopics = completedDays.map(day => day.topic).join(', ');
-    const completionPercentage = Math.round((completedDays.length / plan.duration) * 100);
+    const options = readQuizOptions(req.body);
+    const covered = completedDays
+      .map((d) => `Day ${d.day}: ${d.topic} - ${d.objective}`)
+      .join('\n');
 
-    // Build difficulty-specific instructions
-    let difficultyInstructions = '';
-    
-    if (validDifficulty === 'beginner') {
-      difficultyInstructions = `
-Difficulty Level: BEGINNER
-Focus on fundamental understanding and recall:
-- Definitions and basic concepts
-- Terminology and recognition questions
-- Simple true/false or identification questions
-- "What is X?" type questions
-- Basic concept recognition
-
-Example question types:
-- "What is the definition of [concept]?"
-- "Which of these describes [term]?"
-- "What does [term] mean?"
-- "Identify the correct statement about [concept]"`;
-    } else if (validDifficulty === 'intermediate') {
-      difficultyInstructions = `
-Difficulty Level: INTERMEDIATE
-Focus on application and comparison:
-- Practical usage scenarios
-- Comparing different concepts or approaches
-- Simple problem-solving questions
-- "How would you use X?" questions
-- Understanding relationships between concepts
-
-Example question types:
-- "How would you apply [concept] in [scenario]?"
-- "What's the difference between [A] and [B]?"
-- "Which approach is best for [situation]?"
-- "When should you use [technique]?"`;
-    } else if (validDifficulty === 'advanced') {
-      difficultyInstructions = `
-Difficulty Level: ADVANCED
-Focus on reasoning and real-world application:
-- Complex scenario-based questions
-- Decision-making and trade-offs
-- Best practices and optimization
-- Debugging/troubleshooting scenarios
-- Multi-step reasoning
-
-Example question types:
-- "In this scenario [description], what would be the best approach and why?"
-- "How would you debug/optimize/design [complex situation]?"
-- "What are the trade-offs between approaches [A] and [B]?"
-- "Given these constraints [list], which solution is most appropriate?"`;
-    }
-
-    // Adaptive difficulty based on progress (for beginner/intermediate)
-    let progressiveGuidance = '';
-    if (validDifficulty !== 'advanced') {
-      if (completionPercentage <= 30) {
-        progressiveGuidance = '\nStudent has completed less than 30% - focus heavily on foundational topics.';
-      } else if (completionPercentage <= 70) {
-        progressiveGuidance = '\nStudent has completed 30-70% - mix foundational and application questions.';
-      } else {
-        progressiveGuidance = '\nStudent has completed over 70% - include synthesis and integration questions.';
-      }
-    }
-
-    // Create prompt for quiz generation
-    const prompt = `Generate a ${validQuestionCount}-question multiple-choice quiz for assessing knowledge of "${skillName}".
-
-ONLY test on topics the student has completed:
-${completedTopics}
-
-Student Progress: ${completedDays.length} of ${plan.duration} days completed (${completionPercentage}%)
-Learning Level: ${plan.preferences?.level || 'beginner'}
-
-${difficultyInstructions}
-${progressiveGuidance}
-
-CRITICAL REQUIREMENTS:
-- Create EXACTLY ${validQuestionCount} multiple-choice questions
-- Each question MUST have exactly 4 options (A, B, C, D)
-- Questions MUST ONLY cover topics from the completed days listed above
-- All questions MUST match the ${validDifficulty.toUpperCase()} difficulty level
-- Make incorrect options plausible but clearly wrong
-- Ensure correct answers are unambiguous
-
-Format your response as a JSON object like this:
-{
-  "questions": [
-    {
-      "question": "What is...?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0
-    }
-  ]
-}
-
-The correctAnswer should be the index (0-3) of the correct option.
-
-IMPORTANT: Return ONLY the JSON object, no other text.`;
-
-    // Call Groq API
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: "You are an expert quiz creator. Always return valid JSON. Create questions that precisely match the specified difficulty level." },
-        { role: "user", content: prompt },
-      ],
-      model: MODELS.REASONING,
-      ...GROQ_DEFAULTS,
-      temperature: 0.6,
-      max_tokens: 4000,
-      top_p: 1,
-      stream: false,
+    const questions = await generateQuizQuestions({
+      subject: plan.skillName,
+      content:
+        `Skill: ${plan.skillName}\nGoal: ${plan.description}\n` +
+        `Learner level: ${plan.preferences?.level || 'beginner'}\n\n` +
+        `Topics the student has completed (ONLY test these):\n${covered}`,
+      options,
     });
 
-    const content = chatCompletion.choices[0]?.message?.content || "";
-    
-    // Parse the AI response
-    let quizData;
-    try {
-      quizData = parseModelJson(content, { context: 'quiz' });
-    } catch (parseError) {
-      console.error('Error parsing quiz response:', parseError);
-      console.error('AI Response:', content);
-      return res.status(500).json({ error: 'Failed to parse quiz from AI' });
-    }
-
-    // Validate we got the right number of questions
-    if (!quizData.questions || quizData.questions.length !== validQuestionCount) {
-      console.warn(`Expected ${validQuestionCount} questions, got ${quizData.questions?.length || 0}`);
-    }
-
-    // Generate a quiz ID
     const quizId = `quiz_${planId}_${Date.now()}`;
-
-    // Update plan with quiz configuration
     plan.quizId = quizId;
-    plan.quizConfiguration = {
-      questionCount: validQuestionCount,
-      difficulty: validDifficulty,
-      createdAt: new Date()
-    };
+    plan.quizConfiguration = { ...options, createdAt: new Date() };
     await plan.save();
 
     res.status(200).json({
       quizId,
-      questions: quizData.questions || [],
+      questions,
       configuration: {
-        questionCount: validQuestionCount,
-        difficulty: validDifficulty,
+        ...options,
         completedDays: completedDays.length,
         totalDays: plan.duration
       }
     });
-
   } catch (error) {
     console.error('Error generating quiz:', error);
-    res.status(500).json({ error: 'Failed to generate quiz' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Failed to generate quiz' });
   }
 };
 
@@ -396,7 +263,7 @@ exports.getUserPlans = async (req, res) => {
 
 // Save quiz results
 exports.saveQuizResult = async (req, res) => {
-  const { quizId, planId, userId, score, totalQuestions, questionCount, difficulty } = req.body;
+  const { quizId, planId, userId, score, totalQuestions, questionCount, difficulty, style, focus } = req.body;
 
   try {
     if (!quizId || !planId || !userId || score === undefined) {
@@ -424,6 +291,8 @@ exports.saveQuizResult = async (req, res) => {
       correctAnswers,
       totalQuestions,
       questionCount: questionCount || totalQuestions,
+      style,
+      focus,
       difficulty: difficulty || plan.quizConfiguration?.difficulty || 'intermediate',
       completedDaysAtQuiz,
       completedAt: new Date()

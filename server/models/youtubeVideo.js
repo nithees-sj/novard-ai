@@ -15,6 +15,12 @@ const quizSchema = new mongoose.Schema({
   }],
   score: { type: Number, default: 0 },
   totalQuestions: { type: Number, default: 0 },
+  settings: { // what the student asked for when generating this quiz
+    difficulty: String,
+    questionCount: Number,
+    style: String,
+    focus: String
+  },
   completedAt: { type: Date, default: Date.now },
   attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
 });

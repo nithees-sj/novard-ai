@@ -7,6 +7,7 @@ const Notes = require('../models/notes');
 const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
+const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -385,187 +386,33 @@ Combine them into a well-structured, comprehensive summary.`;
 const generateQuiz = async (req, res) => {
   try {
     const { noteId } = req.body;
-
     if (!noteId) {
       return res.status(400).json({ error: 'Note ID is required' });
     }
 
-    // Get the note from database
     const note = await Notes.findById(noteId);
     if (!note) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    // Handle large texts by chunking for quiz generation
-    const noteText = note.extractedText;
-    const chunks = chunkText(noteText, 1600); // Smaller chunks for quiz generation
-    
-    if (chunks.length === 1) {
-      // Single chunk - process normally
-      const systemPrompt = `Based on the following notes, generate a quiz with 5-7 questions. Each question should:
-1. Test understanding of key concepts from the notes
-2. Have 4 multiple choice options (A, B, C, D)
-3. Include the correct answer
-4. Cover different aspects of the content
+    const options = readQuizOptions(req.body);
+    // The whole document is sampled evenly; the old version quizzed only on
+    // the first chunk, so later pages of long notes were never tested.
+    const questions = await generateQuizQuestions({
+      subject: note.title,
+      content: sampleContent(note.extractedText),
+      options,
+    });
 
-Return the quiz in the following JSON format:
-[
-  {
-    "question": "Question text here",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": "Correct option letter"
-  }
-]
+    const quizId = Date.now().toString();
+    note.quizzes.push({ quizId, questions, settings: options, createdAt: new Date() });
+    note.lastAccessed = new Date();
+    await note.save();
 
-Notes content:
-${noteText}`;
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Generate a comprehensive quiz based on these notes.' }
-        ],
-        model: MODELS.FAST,
-        ...GROQ_DEFAULTS,
-        max_tokens: 1500,
-        temperature: 0.7
-      });
-
-      const quizText = completion.choices[0]?.message?.content || "Unable to generate quiz.";
-      
-      try {
-        // Clean up the response to extract JSON
-        let jsonMatch = quizText.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-          jsonMatch = quizText.match(/\{[\s\S]*\}/);
-        }
-        
-        const quiz = parseModelJson(quizText, { context: 'quiz' });
-        const quizData = Array.isArray(quiz) ? quiz : [quiz];
-        
-        // Save quiz to database
-        const quizId = Date.now().toString();
-        note.quizzes.push({
-          quizId: quizId,
-          questions: quizData,
-          createdAt: new Date()
-        });
-        note.lastAccessed = new Date();
-        await note.save();
-        
-        res.json({
-          quiz: quizData,
-          quizId: quizId,
-          noteId: noteId
-        });
-      } catch (parseError) {
-        console.error('Error parsing quiz JSON:', parseError);
-        const fallbackQuiz = [
-          {
-            question: "Based on the notes, what is the main topic discussed?",
-            options: ["Option A", "Option B", "Option C", "Option D"],
-            correctAnswer: "A"
-          }
-        ];
-        
-        res.json({
-          quiz: fallbackQuiz,
-          noteId: noteId,
-          warning: "Quiz generation had formatting issues, showing sample question"
-        });
-      }
-    } else {
-      // Multiple chunks - generate quiz from first chunk only to avoid token limits
-      const firstChunk = chunks[0];
-      const systemPrompt = `Based on the following notes section, generate a quiz with 5-6 questions. Each question should:
-1. Test understanding of key concepts from the notes
-2. Have 4 multiple choice options (A, B, C, D)
-3. Include the correct answer
-4. Cover different aspects of the content
-
-Return the quiz in the following JSON format:
-[
-  {
-    "question": "Question text here",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": "Correct option letter"
-  }
-]
-
-Notes content:
-${firstChunk}`;
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Generate a quiz based on this section of notes.' }
-        ],
-        model: MODELS.FAST,
-        ...GROQ_DEFAULTS,
-        max_tokens: 1200,
-        temperature: 0.7
-      });
-
-      const quizText = completion.choices[0]?.message?.content || "Unable to generate quiz.";
-
-      try {
-        // Clean up the response to extract JSON
-        let jsonMatch = quizText.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-          jsonMatch = quizText.match(/\{[\s\S]*\}/);
-        }
-        
-        const quiz = parseModelJson(quizText, { context: 'quiz' });
-        const quizData = Array.isArray(quiz) ? quiz : [quiz];
-        
-        // Save quiz to database
-        const quizId = Date.now().toString();
-        note.quizzes.push({
-          quizId: quizId,
-          questions: quizData,
-          createdAt: new Date()
-        });
-        note.lastAccessed = new Date();
-        await note.save();
-        
-        res.json({
-          quiz: quizData,
-          quizId: quizId,
-          noteId: noteId,
-          warning: "Quiz generated from first section of notes only"
-        });
-      } catch (parseError) {
-        console.error('Error parsing quiz JSON:', parseError);
-        const fallbackQuiz = [
-          {
-            question: "Based on the notes, what is the main topic discussed?",
-            options: ["Option A", "Option B", "Option C", "Option D"],
-            correctAnswer: "A"
-          }
-        ];
-        
-        // Save fallback quiz to database
-        const quizId = Date.now().toString();
-        note.quizzes.push({
-          quizId: quizId,
-          questions: fallbackQuiz,
-          createdAt: new Date()
-        });
-        note.lastAccessed = new Date();
-        await note.save();
-        
-        res.json({
-          quiz: fallbackQuiz,
-          quizId: quizId,
-          noteId: noteId,
-          warning: "Quiz generation had formatting issues, showing sample question"
-        });
-      }
-    }
-
+    res.json({ quiz: questions, quizId, noteId, settings: options });
   } catch (error) {
     console.error('Error generating quiz:', error);
-    res.status(500).json({ error: 'Error generating quiz' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Error generating quiz' });
   }
 };
 

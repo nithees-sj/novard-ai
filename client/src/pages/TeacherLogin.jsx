@@ -219,7 +219,7 @@ const TeacherLogin = () => {
 
   return (
     <>
-      <Navigationinner title={"TEACHER LOGIN"} />
+      <Navigationinner title={"TEACHER LOGIN"} hasSidebar={false} />
       <div style={styles.container}>
         {/* Background Pattern */}
         <div style={styles.backgroundPattern}></div>

@@ -164,7 +164,7 @@ const styles = {
   return (
     <div style={styles.pageContainer}>
       <div style={styles.navbar}>
-        <Navigationinner title="CHATBOT" />
+        <Navigationinner title="CHATBOT" hasSidebar={false} />
       </div>
 
       <div style={styles.chatbotContainer}>
