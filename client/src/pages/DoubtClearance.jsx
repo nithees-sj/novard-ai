@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Navigationinner } from "../components/navigationinner";
 import MarkdownView from '../components/MarkdownView';
 import SummaryHeader from '../components/SummaryHeader';
+import NewDoubtForm from '../components/NewDoubtForm';
 import QuizSetup from '../components/quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 
@@ -27,7 +28,7 @@ const DoubtClearance = () => {
   const [youtubeRecommendations, setYoutubeRecommendations] = useState([]);
   const [showAddDoubtForm, setShowAddDoubtForm] = useState(false);
   const [toast, setToast] = useState(null);
-  const [newDoubt, setNewDoubt] = useState({ title: '', description: '', imageUrl: '' });
+  const [addDoubtError, setAddDoubtError] = useState(null);
   const [isAddingDoubt, setIsAddingDoubt] = useState(false);
 
   const showToast = (message, type) => {
@@ -63,32 +64,34 @@ const DoubtClearance = () => {
     setYoutubeRecommendations(doubt.youtubeRecommendations || []);
   };
 
-  const handleAddDoubt = async (e) => {
-    e.preventDefault();
-    if (!newDoubt.title.trim() || !newDoubt.description.trim()) {
-      showToast('Please fill in title and description', 'error');
-      return;
-    }
+  // Returns true on success so the form can clear itself.
+  const handleAddDoubt = async ({ title, description, imageUrl }) => {
     setIsAddingDoubt(true);
+    setAddDoubtError(null);
     try {
       const userId = localStorage.getItem('email') || 'demo-user';
-      await axios.post(`${apiUrl}/doubt-clearances`, {
-        title: newDoubt.title,
-        description: newDoubt.description,
-        imageUrl: newDoubt.imageUrl,
+      const { data: created } = await axios.post(`${apiUrl}/doubt-clearances`, {
+        title,
+        description,
+        imageUrl,
         userId
       });
-      setNewDoubt({ title: '', description: '', imageUrl: '' });
-      setShowAddDoubtForm(false);
       await loadUserDoubts();
-      showToast('Doubt added successfully!', 'success');
+      // Open the new doubt in the chat tab so the student can start asking straight away.
+      setSelectedDoubt(created);
+      setActiveTab('chat');
+      setShowAddDoubtForm(false);
+      showToast('Doubt added - ask your first question below.', 'success');
+      return true;
     } catch (error) {
       console.error('Error adding doubt:', error);
-      showToast(error.response?.data?.error || 'Error adding doubt', 'error');
+      setAddDoubtError(error.response?.data?.error || 'Could not add the doubt. Please try again.');
+      return false;
     } finally {
       setIsAddingDoubt(false);
     }
   };
+
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedDoubt) return;
@@ -261,13 +264,18 @@ const DoubtClearance = () => {
       <Navigationinner title={"DOUBT CLEARANCE"} hasSidebar={false} />
       <div className="flex min-h-screen bg-gray-50 pt-14">
         {/* Main Content */}
-        <div className="flex-1 p-6">
-          {selectedDoubt ? (
+        <div className="flex-1 min-w-0 p-6">
+          {selectedDoubt && !showAddDoubtForm ? (
             <>
               {/* Header */}
               <div className="bg-white rounded-lg shadow-md p-4 mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">{selectedDoubt.title}</h2>
-                <p className="text-sm text-gray-600 mb-4">{selectedDoubt.description}</p>
+                <p className="text-sm text-gray-600 mb-4 whitespace-pre-wrap">{selectedDoubt.description}</p>
+                {selectedDoubt.imageUrl && (
+                  <a href={selectedDoubt.imageUrl} target="_blank" rel="noopener noreferrer" className="inline-block mb-4">
+                    <img src={selectedDoubt.imageUrl} alt="Attached to this doubt" className="max-h-40 rounded-lg border border-gray-200 object-contain bg-gray-50" />
+                  </a>
+                )}
                 <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => setActiveTab('chat')}
@@ -480,12 +488,15 @@ const DoubtClearance = () => {
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center h-[calc(100vh-160px)]">
-              <div className="text-center">
-                <div className="text-6xl mb-4">💭</div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">No Doubt Selected</h2>
-                <p className="text-sm text-gray-600">Select or add a doubt to get started.</p>
-              </div>
+            <div className="h-[calc(100vh-128px)] bg-white rounded-lg shadow-md">
+              <NewDoubtForm
+                onSubmit={handleAddDoubt}
+                // Cancel only makes sense when there is a doubt to go back to.
+                onCancel={selectedDoubt ? () => { setShowAddDoubtForm(false); setAddDoubtError(null); } : undefined}
+                submitting={isAddingDoubt}
+                error={addDoubtError}
+                isFirstDoubt={doubts.length === 0}
+              />
             </div>
           )}
         </div>
@@ -496,54 +507,14 @@ const DoubtClearance = () => {
             <h3 className="text-lg font-bold text-gray-900">Your Doubts</h3>
           </div>
           <button
-            onClick={() => setShowAddDoubtForm(!showAddDoubtForm)}
-            className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 mb-4"
+            onClick={() => { setShowAddDoubtForm(true); setAddDoubtError(null); }}
+            aria-pressed={showAddDoubtForm || !selectedDoubt}
+            className={`w-full px-4 py-2  text-sm font-medium rounded-md  mb-4 ${
+              showAddDoubtForm || !selectedDoubt ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            + Add Doubt
+            {showAddDoubtForm || !selectedDoubt ? 'Writing a new doubt…' : '+ Add Doubt'}
           </button>
-
-          {/* Add Doubt Form */}
-          {showAddDoubtForm && (
-            <form onSubmit={handleAddDoubt} className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <input
-                type="text"
-                value={newDoubt.title}
-                onChange={(e) => setNewDoubt({ ...newDoubt, title: e.target.value })}
-                placeholder="Doubt title"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-              <textarea
-                value={newDoubt.description}
-                onChange={(e) => setNewDoubt({ ...newDoubt, description: e.target.value })}
-                placeholder="Describe your doubt..."
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-600"
-                rows="3"
-              />
-              <input
-                type="text"
-                value={newDoubt.imageUrl}
-                onChange={(e) => setNewDoubt({ ...newDoubt, imageUrl: e.target.value })}
-                placeholder="Image URL (optional)"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isAddingDoubt}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {isAddingDoubt ? 'Adding...' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddDoubtForm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
 
           {/* Doubts List */}
           {doubts.length > 0 ? (
@@ -551,8 +522,8 @@ const DoubtClearance = () => {
               {doubts.map((doubt) => (
                 <div
                   key={doubt._id}
-                  onClick={() => setSelectedDoubt(doubt)}
-                  className={`relative p-3 rounded-lg cursor-pointer border ${selectedDoubt?._id === doubt._id
+                  onClick={() => { setSelectedDoubt(doubt); setShowAddDoubtForm(false); }}
+                  className={`relative p-3 rounded-lg cursor-pointer border ${selectedDoubt?._id === doubt._id && !showAddDoubtForm
                     ? 'bg-gray-900 text-white border-gray-900'
                     : 'bg-gray-50 text-gray-900 border-gray-200 hover:border-gray-300'
                     }`}
@@ -578,7 +549,7 @@ const DoubtClearance = () => {
             <div className="text-center py-8">
               <div className="text-4xl mb-3">💭</div>
               <p className="text-sm font-semibold text-gray-900 mb-1">No doubts yet</p>
-              <p className="text-xs text-gray-600">Click "+ Add Doubt" to get started</p>
+              <p className="text-xs text-gray-600">Fill in the form to add your first one</p>
             </div>
           )}
         </div>

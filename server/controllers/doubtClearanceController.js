@@ -69,14 +69,31 @@ const createDoubtClearance = async (req, res) => {
   try {
     const { title, description, imageUrl, userId } = req.body;
 
-    if (!title || !description || !userId) {
+    if (!title?.trim() || !description?.trim() || !userId) {
       return res.status(400).json({ error: 'Title, description, and userId are required' });
+    }
+    // Same limits as the schema, reported clearly instead of as a generic 500.
+    if (title.trim().length > 200) {
+      return res.status(400).json({ error: 'The title must be 200 characters or fewer.' });
+    }
+    if (description.trim().length > 2000) {
+      return res.status(400).json({ error: 'The description must be 2000 characters or fewer.' });
+    }
+    let image = null;
+    if (imageUrl && String(imageUrl).trim()) {
+      try {
+        const url = new URL(String(imageUrl).trim());
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('bad scheme');
+        image = url.toString();
+      } catch {
+        return res.status(400).json({ error: 'The image link must be a full http:// or https:// URL.' });
+      }
     }
 
     const doubtClearance = new DoubtClearance({
       title: title.trim(),
       description: description.trim(),
-      imageUrl: imageUrl || null,
+      imageUrl: image,
       userId,
       chatHistory: [],
       summary: '',

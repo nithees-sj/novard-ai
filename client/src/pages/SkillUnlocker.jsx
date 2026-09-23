@@ -41,7 +41,8 @@ const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
 
 const SkillUnlocker = () => {
   const [plans, setPlans] = useState([]);
-  const [currentView, setCurrentView] = useState('welcome'); // 'welcome', 'form', 'planner', 'quiz', 'quiz-config'
+  // Opens on the create-plan form; 'form' | 'planner' | 'quiz-config' | 'quiz'
+  const [currentView, setCurrentView] = useState('form');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshingVideo, setRefreshingVideo] = useState(null); // dayNumber being refreshed
@@ -326,83 +327,16 @@ const SkillUnlocker = () => {
   return (
     <>
       <Navigationinner title={"SKILL UNLOCKER"} hideLogo={true} hasSidebar={true} />
-      <div className="flex bg-gray-50 pt-14" style={{ height: 'calc(100vh - 56px)' }}>
+      {/* Full viewport height: pt-14 already clears the 56px top bar (border-box). */}
+      <div className="flex bg-gray-50 pt-14 h-screen">
         <Sidebar />
         
-        {/* Skills Custom Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10 ml-64">
-            <div className="p-5 border-b border-gray-100">
-                <button 
-                  onClick={handleAddNewSkill}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors shadow-sm"
-                >
-                    <MdAdd size={20} />
-                    <span>Add New Skill</span>
-                </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {plans.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400">
-                        <p className="text-sm">No skills yet.</p>
-                        <p className="text-xs mt-1">Add one to get started!</p>
-                    </div>
-                ) : (
-                    plans.map((plan) => (
-                        <div 
-                          key={plan.planId || plan._id}
-                          onClick={() => handleSelectPlan(plan)}
-                          className={`group relative p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
-                              (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
-                              ? 'bg-blue-50/50 border-blue-200 shadow-sm border-l-4 border-l-blue-600' 
-                              : 'bg-white border-gray-100 hover:border-gray-200 border-l-4 border-l-transparent'
-                          }`}
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                    <h3 className={`font-semibold text-sm truncate pr-2 ${
-                                         (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
-                                         ? 'text-blue-800'
-                                         : 'text-gray-800'
-                                    }`}>
-                                        {plan.skillName}
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-1.5">
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                            {plan.duration} days
-                                        </span>
-                                        {plan.quizCompleted && (
-                                            <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-100">
-                                                ★ Quiz Done
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-center gap-2">
-                                     <CircularProgress value={plan.progress} size={36} strokeWidth={3} />
-                                     <span className="text-[10px] font-medium text-gray-500">{plan.progress}%</span>
-                                </div>
-                            </div>
-                            
-                            <button
-                                onClick={(e) => handleDeletePlan(e, plan.planId || plan._id)}
-                                className="absolute -top-2 -right-2 bg-white text-gray-400 hover:text-red-500 p-1.5 rounded-full shadow-sm border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Delete Plan"
-                            >
-                                <MdDeleteOutline size={16} />
-                            </button>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
-
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 min-w-0 ml-64 overflow-y-auto p-6 md:p-8">
           <div className="max-w-5xl mx-auto">
             
             {/* Header */}
-            {currentView !== 'welcome' && (
+            {(
                 <div className="mb-8 pl-1">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
                     {currentView === 'form' && 'Create New Skill Plan'}
@@ -425,39 +359,6 @@ const SkillUnlocker = () => {
                  <span>❌</span> {error}
               </div>
             )}
-
-            {/* WELCOME VIEW */}
-            {currentView === 'welcome' && plans.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                        <span className="text-4xl">🚀</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Skill Unlocker</h2>
-                    <p className="text-gray-500 max-w-md mb-8">
-                        Start your journey by adding a skill you want to master. We'll create a personalized day-by-day plan for you.
-                    </p>
-                    <button 
-                        onClick={() => setCurrentView('form')}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
-                        Create Your First Plan
-                    </button>
-                </div>
-            )}
-             
-             {/* WELCOME VIEW (With existing plans) */}
-            {currentView === 'welcome' && plans.length > 0 && (
-                <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome Back!</h2>
-                    <p className="text-gray-500 max-w-md mb-8">
-                        Select a skill from the sidebar to continue learning or create a new one.
-                    </p>
-                     <div className="w-64 h-64 bg-gray-100 rounded-full flex items-center justify-center opacity-50">
-                        <span className="text-6xl grayscale">📚</span>
-                    </div>
-                </div>
-            )}
-
 
             {/* FORM VIEW */}
             {currentView === 'form' && (
@@ -915,6 +816,86 @@ const SkillUnlocker = () => {
 
           </div>
         </div>
+
+        {/* Your skills - right-hand panel */}
+        <aside className="w-80 shrink-0 bg-white border-l border-gray-200 flex flex-col h-full z-10" aria-label="Your skills">
+            <div className="p-5 border-b border-gray-100">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Your Skills</h3>
+                <button
+                  onClick={handleAddNewSkill}
+                  aria-pressed={currentView === 'form'}
+                  className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-colors ${
+                    currentView === 'form'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  }`}
+                >
+                    {currentView === 'form' ? (
+                      <span>Creating a new skill…</span>
+                    ) : (
+                      <>
+                        <MdAdd size={20} />
+                        <span>Add New Skill</span>
+                      </>
+                    )}
+                </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {plans.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400">
+                        <p className="text-sm">No skills yet.</p>
+                        <p className="text-xs mt-1">Fill in the form to create your first plan.</p>
+                    </div>
+                ) : (
+                    plans.map((plan) => (
+                        <div 
+                          key={plan.planId || plan._id}
+                          onClick={() => handleSelectPlan(plan)}
+                          className={`group relative p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
+                              (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
+                              ? 'bg-blue-50/50 border-blue-200 shadow-sm border-l-4 border-l-blue-600' 
+                              : 'bg-white border-gray-100 hover:border-gray-200 border-l-4 border-l-transparent'
+                          }`}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                    <h3 className={`font-semibold text-sm truncate pr-2 ${
+                                         (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
+                                         ? 'text-blue-800'
+                                         : 'text-gray-800'
+                                    }`}>
+                                        {plan.skillName}
+                                    </h3>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                            {plan.duration} days
+                                        </span>
+                                        {plan.quizCompleted && (
+                                            <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-100">
+                                                ★ Quiz Done
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                     <CircularProgress value={plan.progress} size={36} strokeWidth={3} />
+                                     <span className="text-[10px] font-medium text-gray-500">{plan.progress}%</span>
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={(e) => handleDeletePlan(e, plan.planId || plan._id)}
+                                className="absolute -top-2 -right-2 bg-white text-gray-400 hover:text-red-500 p-1.5 rounded-full shadow-sm border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete Plan"
+                            >
+                                <MdDeleteOutline size={16} />
+                            </button>
+                        </div>
+                    ))
+                )}
+            </div>
+        </aside>
       </div>
       <ChatbotButton />
     </>
