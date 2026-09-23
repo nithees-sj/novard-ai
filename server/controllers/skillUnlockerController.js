@@ -1,6 +1,8 @@
 const SkillPlan = require('../models/skillPlan');
 const Groq = require('groq-sdk');
 const { Innertube } = require('youtubei.js');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -61,7 +63,8 @@ IMPORTANT: Return ONLY the JSON array, no other text.`;
         { role: "system", content: "You are an expert learning curriculum designer. Always return valid JSON arrays." },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 4096,
       top_p: 1,
@@ -73,9 +76,7 @@ IMPORTANT: Return ONLY the JSON array, no other text.`;
     // Parse the AI response
     let dailyPlanData;
     try {
-      // Remove markdown code blocks if present
-      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      dailyPlanData = JSON.parse(cleanContent);
+      dailyPlanData = parseModelJson(content, { context: 'learning plan' });
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       console.error('AI Response:', content);
@@ -305,7 +306,8 @@ IMPORTANT: Return ONLY the JSON object, no other text.`;
         { role: "system", content: "You are an expert quiz creator. Always return valid JSON. Create questions that precisely match the specified difficulty level." },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.6,
       max_tokens: 4000,
       top_p: 1,
@@ -317,8 +319,7 @@ IMPORTANT: Return ONLY the JSON object, no other text.`;
     // Parse the AI response
     let quizData;
     try {
-      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      quizData = JSON.parse(cleanContent);
+      quizData = parseModelJson(content, { context: 'quiz' });
     } catch (parseError) {
       console.error('Error parsing quiz response:', parseError);
       console.error('AI Response:', content);

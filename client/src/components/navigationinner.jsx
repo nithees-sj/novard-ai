@@ -14,7 +14,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? 'ml-64' : ''}`}>
-      <div className="flex justify-between items-center px-6 h-14">
+      <div className="relative flex justify-between items-center px-6 h-14">
         {/* Logo - conditionally rendered */}
         {!hideLogo && (
           <div className="flex items-center space-x-3">
@@ -26,7 +26,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
         )}
 
         {/* Title */}
-        <div className="text-xl font-semibold text-gray-700">
+        <div className="flex-1 text-xl font-semibold text-gray-700 truncate">
           {title}
         </div>
 
@@ -69,7 +69,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
             <img
               src={user.photoURL || user.picture || "/img/team/user.jpeg"}
               alt="Profile"
-              className="w-24 h-24 rounded-full mx-auto mb-4 border-3 border-gray-300"
+              className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-gray-300"
               onError={(e) => {
                 e.target.src = "/img/team/user.jpeg";
               }}

@@ -37,6 +37,14 @@ const forumIssueSchema = new mongoose.Schema({
     enum: ['open', 'closed', 'resolved'],
     default: 'open'
   },
+  // What kind of post this is. Separate from status: a tutorial can be open or
+  // resolved. Posts created before this field existed read as 'general'.
+  category: {
+    type: String,
+    enum: ['general', 'tutorial', 'urgent', 'ideation', 'showcase'],
+    default: 'general',
+    index: true
+  },
   tags: [{
     type: String
   }],

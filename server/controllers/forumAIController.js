@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -9,7 +10,15 @@ const generateAICommentForIssue = async (issue) => {
     
     const prompt = `A user has created a new forum issue with the title "${issue.title}" and description "${issue.description}". 
     As an AI assistant, provide a helpful initial response to welcome them and offer some initial thoughts or suggestions. 
-    Keep it conversational and helpful, around 2-3 sentences. Be specific to their issue and provide actionable advice if possible.`;
+    Give a genuinely useful answer, not a holding reply. Structure it with:
+    - a one-line statement of what is most likely going on
+    - ### Why this happens - the underlying cause, explained
+    - ### How to fix it - concrete numbered steps, with commands or code in fenced blocks where they apply
+    - ### How to confirm it worked
+    - ### If that does not help - the next thing to check
+
+    Be specific to their issue rather than generic. Name real tools, flags and
+    APIs. Return GitHub-flavoured Markdown. Never emit raw HTML.`;
 
     console.log('AI Prompt for issue:', prompt);
 
@@ -21,9 +30,10 @@ const generateAICommentForIssue = async (issue) => {
         },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 200,
+      max_tokens: 1800,
       top_p: 1,
       stream: false,
     });
@@ -74,7 +84,11 @@ As an AI assistant, provide a helpful response that:
 4. Is conversational and encouraging
 5. Addresses their specific point or question
 
-Keep it 2-4 sentences and be specific to their comment and the overall discussion.`;
+Answer their comment properly: address the specific point they raised, explain
+the reasoning behind your answer, and include a concrete example, command or
+code snippet where one helps. Use ### headings if the answer covers more than
+one thing. Be specific to this discussion rather than generic.
+Return GitHub-flavoured Markdown. Never emit raw HTML.`;
 
     console.log('AI Prompt for comment:', prompt);
 
@@ -86,9 +100,10 @@ Keep it 2-4 sentences and be specific to their comment and the overall discussio
         },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 400,
+      max_tokens: 1800,
       top_p: 1,
       stream: false,
     });
@@ -109,13 +124,14 @@ const generateAIForumResponse = async (prompt) => {
       messages: [
         { 
           role: "system", 
-          content: "You are a helpful AI assistant in a tech forum. You provide constructive, specific, and actionable advice to users' technical questions and issues. Always be encouraging and professional. Keep responses concise but helpful." 
+          content: "You are a helpful AI assistant in a tech forum. You give constructive, specific, actionable answers to technical questions. Explain the reasoning, not just the conclusion, and include concrete commands, code or configuration where they help. Use GitHub-flavoured Markdown with ### headings and fenced code blocks. Never emit raw HTML. Be thorough rather than terse, and always encouraging and professional." 
         },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 300,
+      max_tokens: 1800,
       top_p: 1,
       stream: false,
     });

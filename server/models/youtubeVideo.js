@@ -15,7 +15,8 @@ const quizSchema = new mongoose.Schema({
   }],
   score: { type: Number, default: 0 },
   totalQuestions: { type: Number, default: 0 },
-  completedAt: { type: Date, default: Date.now }
+  completedAt: { type: Date, default: Date.now },
+  attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
 });
 
 const youtubeVideoSchema = new mongoose.Schema({

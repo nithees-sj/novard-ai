@@ -15,27 +15,26 @@ const Sidebar = ({ isHoverMode = false }) => {
     setShowSidebar(!isHoverMode);
   }, [isHoverMode]);
 
-  // Hover detection for left edge
+  // Hover detection for left edge. Registered once per mode - reading the
+  // current value through the state updater keeps showSidebar out of the deps,
+  // which previously tore down and re-attached the listener on every toggle.
   useEffect(() => {
     if (!isHoverMode) {
       setShowSidebar(true);
-      return;
+      return undefined;
     }
 
     const handleMouseMove = (e) => {
-      // Show sidebar when mouse is within 20px of left edge
       if (e.clientX < 20) {
         setShowSidebar(true);
-      }
-      // Hide sidebar when mouse moves beyond sidebar width + 20px buffer
-      else if (e.clientX > 284 && showSidebar) {
-        setShowSidebar(false);
+      } else if (e.clientX > 284) {
+        setShowSidebar((visible) => (visible ? false : visible));
       }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isHoverMode, showSidebar]);
+  }, [isHoverMode]);
 
   const menuItems = [
     {
@@ -123,7 +122,7 @@ const Sidebar = ({ isHoverMode = false }) => {
         }`}
     >
       {/* Logo Section */}
-      <div className="p-6 border-r border-gray-200 h-14 flex items-center">
+      <div className="px-4 border-b border-gray-200 h-14 flex items-center shrink-0">
         <div className="flex items-center space-x-2">
           <img src={mainlogo} alt="NOVARD-AI" className="h-8 w-8 rounded-lg" />
           <span className="text-xl font-bold text-gray-900">NOVARD-AI</span>
@@ -131,10 +130,12 @@ const Sidebar = ({ isHoverMode = false }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {menuItems.map((item, index) => (
+      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
+        {menuItems.map((item) => (
           <button
-            key={index}
+            key={item.route}
+            type="button"
+            aria-current={isActive(item.route) ? 'page' : undefined}
             onClick={() => navigate(item.route)}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
               isActive(item.route)

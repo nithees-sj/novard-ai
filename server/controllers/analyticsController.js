@@ -1,326 +1,549 @@
-const YoutubeVideo = require('../models/youtubeVideo');
+const Notes = require('../models/notes');
+const YouTubeVideo = require('../models/youtubeVideo');
 const EducationalVideo = require('../models/educationalVideo');
 const DoubtClearance = require('../models/doubtClearance');
 const SkillPlan = require('../models/skillPlan');
+const Course = require('../models/course');
+const ForumIssue = require('../models/forumIssue');
+const ForumComment = require('../models/forumComment');
 
 /**
- * Get comprehensive analytics for a user
- * Calculates AI-powered metrics based on user activity
+ * Learning analytics for the student dashboard.
+ *
+ * Everything here is derived from what the student has actually done - quiz
+ * answers, skill-plan days completed, questions asked, material studied - and
+ * is deterministic: the same data always produces the same numbers. (The
+ * previous version read fields that do not exist on the models, so quiz scores
+ * and plan progress were always zero, and filled the skill radar with
+ * Math.random() values that changed on every refresh.)
+ *
+ * The app does not record time-on-task, so study time is an estimate built
+ * from a fixed effort per action (EFFORT_MINUTES). It is labelled as an
+ * estimate wherever it is shown.
  */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Estimated minutes of study behind each kind of recorded action. */
+const EFFORT_MINUTES = {
+  materialAdded: 5,      // uploading notes, adding a video, opening a doubt
+  question: 3,           // one question asked in any AI chat (plus reading the answer)
+  quizQuestion: 1.5,     // per quiz question answered
+  planDay: 25,           // one skill-plan day completed (tutorial + objective)
+  forumPost: 5,
+  forumComment: 3,
+};
+
+/** Quiz results count for less as they age: a result from 30 days ago weighs half as much. */
+const RECENCY_HALF_LIFE_DAYS = 30;
+
+/**
+ * Below this many answered questions a topic gets no level and is not listed as
+ * a strength or weakness - one lucky guess is not mastery. A single threshold,
+ * so a listed topic can never carry a "Not enough data" badge.
+ */
+const MIN_QUESTIONS_FOR_LEVEL = 5;
+const MIN_QUESTIONS_FOR_TOPIC = MIN_QUESTIONS_FOR_LEVEL;
+
+/**
+ * Subject domains for the proficiency chart, matched on whole words so that
+ * e.g. "ai" does not match "maintain" or "explain" (the old substring check
+ * put nearly every student into AI & ML).
+ */
+const DOMAINS = [
+  { name: 'AI & ML', terms: ['ai', 'artificial intelligence', 'machine learning', 'ml', 'deep learning', 'neural', 'neural network', 'llm', 'llms', 'nlp', 'generative', 'genai', 'gpt', 'transformer', 'transformers', 'tensorflow', 'pytorch', 'computer vision', 'prompt engineering'] },
+  { name: 'Web Dev', terms: ['web', 'frontend', 'front end', 'front-end', 'html', 'css', 'javascript', 'js', 'typescript', 'react', 'reactjs', 'hooks', 'vue', 'angular', 'next.js', 'nextjs', 'tailwind', 'dom', 'ui', 'ux'] },
+  { name: 'Backend', terms: ['backend', 'back end', 'back-end', 'node', 'nodejs', 'node.js', 'express', 'api', 'apis', 'rest', 'graphql', 'django', 'flask', 'fastapi', 'spring', 'microservice', 'microservices', 'server'] },
+  { name: 'DevOps & Cloud', terms: ['devops', 'docker', 'container', 'containers', 'kubernetes', 'k8s', 'pod', 'pods', 'ci', 'cd', 'ci/cd', 'jenkins', 'github actions', 'terraform', 'ansible', 'aws', 'azure', 'gcp', 'cloud', 'linux', 'deployment', 'nginx'] },
+  { name: 'Data Science', terms: ['data science', 'data analysis', 'data analyst', 'analytics', 'pandas', 'numpy', 'statistics', 'visualization', 'matplotlib', 'tableau', 'power bi', 'excel', 'regression'] },
+  { name: 'Databases', terms: ['database', 'databases', 'sql', 'mysql', 'postgres', 'postgresql', 'mongodb', 'mongo', 'nosql', 'redis', 'dbms', 'query', 'queries', 'indexing'] },
+  { name: 'Networking', terms: ['network', 'networks', 'networking', 'osi', 'tcp', 'udp', 'ip', 'ipv4', 'ipv6', 'dns', 'subnet', 'subnetting', 'routing', 'router', 'http', 'https', 'protocol', 'protocols', 'lan', 'wan'] },
+  { name: 'Security', terms: ['security', 'cybersecurity', 'cyber', 'encryption', 'cryptography', 'vulnerability', 'vulnerabilities', 'owasp', 'penetration', 'firewall', 'malware', 'authentication', 'xss'] },
+  { name: 'Mobile', terms: ['mobile', 'android', 'ios', 'swift', 'kotlin', 'flutter', 'react native', 'dart'] },
+  { name: 'Programming', terms: ['programming', 'coding', 'python', 'java', 'c++', 'c#', 'golang', 'rust', 'algorithm', 'algorithms', 'data structure', 'data structures', 'dsa', 'oop', 'recursion'] },
+];
+const FALLBACK_DOMAIN = 'General';
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const DOMAIN_MATCHERS = DOMAINS.map((d) => ({
+  name: d.name,
+  patterns: d.terms.map((t) => new RegExp(`(^|[^a-z0-9+#])${escapeRegex(t)}($|[^a-z0-9+#])`, 'i')),
+}));
+
+function classifyDomain(text) {
+  const haystack = String(text || '').toLowerCase();
+  if (!haystack.trim()) return FALLBACK_DOMAIN;
+  let best = FALLBACK_DOMAIN;
+  let bestHits = 0;
+  for (const domain of DOMAIN_MATCHERS) {
+    const hits = domain.patterns.reduce((n, re) => n + (re.test(haystack) ? 1 : 0), 0);
+    if (hits > bestHits) {
+      best = domain.name;
+      bestHits = hits;
+    }
+  }
+  return best;
+}
+
+// ── small helpers ──────────────────────────────────────────────────────────
+
+const toDate = (v) => {
+  if (!v) return null;
+  const d = v instanceof Date ? v : new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const round1 = (n) => Math.round(n * 10) / 10;
+const formatNumber = (num) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Calendar-day key in the *student's* timezone. The client sends its
+ * getTimezoneOffset(); without it "today" would follow the server's clock and
+ * a late-evening session could be booked to the wrong day, breaking streaks.
+ */
+function makeDayKey(tzOffsetMinutes) {
+  return (date) => new Date(date.getTime() - tzOffsetMinutes * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function levelFor(accuracy, questions) {
+  if (accuracy === null || questions < MIN_QUESTIONS_FOR_LEVEL) return 'Not enough data';
+  if (accuracy >= 85) return 'Expert';
+  if (accuracy >= 70) return 'Advanced';
+  if (accuracy >= 50) return 'Intermediate';
+  return 'Beginner';
+}
+
+/** Question-weighted, recency-weighted mean accuracy. null when there are no results. */
+function weightedAccuracy(attempts, asOf) {
+  let weightSum = 0;
+  let total = 0;
+  for (const a of attempts) {
+    const ageDays = Math.max(0, (asOf - a.at) / DAY_MS);
+    const w = a.questions * Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
+    weightSum += w;
+    total += w * a.percentage;
+  }
+  return weightSum > 0 ? total / weightSum : null;
+}
+
+// ── collection: turn stored documents into events and quiz attempts ────────
+
+/**
+ * A quiz counts only once the student has actually submitted it. New results
+ * carry attemptedAt; for records saved before that field existed, the Video
+ * and Doubt quizzes are created with score 0 / null at generation time, so a
+ * missing attemptedAt plus a zero/null score means "generated, never taken".
+ */
+function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments }, userId) {
+  const events = [];      // { at, minutes, kind }
+  const attempts = [];    // { at, percentage, questions, correct, topic, domain }
+  const items = [];       // { key, title, domain } - distinct things studied
+
+  const addEvent = (at, kind, minutes) => {
+    const d = toDate(at);
+    if (d) events.push({ at: d, kind, minutes });
+  };
+
+  const addAttempt = (at, correct, total, topic, domainText) => {
+    const d = toDate(at);
+    const questions = Number(total) || 0;
+    if (!d || questions <= 0) return;
+    const right = clamp(Number(correct) || 0, 0, questions);
+    attempts.push({
+      at: d,
+      questions,
+      correct: right,
+      percentage: (right / questions) * 100,
+      topic: topic || 'Untitled',
+      domain: classifyDomain(domainText || topic),
+    });
+    events.push({ at: d, kind: 'quiz', minutes: questions * EFFORT_MINUTES.quizQuestion });
+  };
+
+  const addChat = (history) => {
+    (history || []).forEach((m) => {
+      if (m && m.role === 'user') addEvent(m.timestamp, 'question', EFFORT_MINUTES.question);
+    });
+  };
+
+  // Notes: score is { correct, total, percentage }.
+  notes.forEach((n) => {
+    const text = `${n.title || ''} ${n.fileName || ''}`;
+    items.push({ key: `note:${n._id}`, title: n.title, domain: classifyDomain(text), at: toDate(n.uploadedAt) });
+    addEvent(n.uploadedAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+    addChat(n.chatHistory);
+    (n.quizzes || []).forEach((q) => {
+      const s = q.score || {};
+      const total = Number(s.total) || 0;
+      if (total <= 0) return; // generated but not submitted
+      const correct = s.correct !== undefined ? s.correct : Math.round(((Number(s.percentage) || 0) / 100) * total);
+      addAttempt(q.attemptedAt || q.createdAt, correct, total, n.title, text);
+    });
+  });
+
+  // YouTube + educational videos: score is the number of correct answers.
+  const collectVideo = (v, kind) => {
+    const text = `${v.title || ''} ${v.description || ''}`.slice(0, 600);
+    items.push({ key: `${kind}:${v._id}`, title: v.title, domain: classifyDomain(text), at: toDate(v.createdAt) });
+    addEvent(v.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+    addChat(v.chatHistory);
+    (v.quizzes || []).forEach((q) => {
+      const legacyTaken = !q.attemptedAt && Number(q.score) > 0;
+      if (!q.attemptedAt && !legacyTaken) return;
+      const total = Number(q.totalQuestions) || (q.questions || []).length;
+      addAttempt(q.attemptedAt || q.completedAt, q.score, total, v.title, text);
+    });
+  };
+  ytVideos.forEach((v) => collectVideo(v, 'youtube'));
+  eduVideos.forEach((v) => collectVideo(v, 'educational'));
+
+  // Doubts: score is the number correct; it is null until submitted.
+  doubts.forEach((d) => {
+    const text = `${d.title || ''} ${d.description || ''}`;
+    items.push({ key: `doubt:${d._id}`, title: d.title, domain: classifyDomain(text), at: toDate(d.createdAt) });
+    addEvent(d.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+    addChat(d.chatHistory);
+    (d.quizzes || []).forEach((q) => {
+      if (!q.attemptedAt && (q.score === null || q.score === undefined)) return;
+      const total = Number(q.totalQuestions) || (q.questions || []).length;
+      addAttempt(q.attemptedAt || q.completedAt, q.score, total, d.title, text);
+    });
+  });
+
+  // Skill plans: day completion and plan quizzes (score is a percentage).
+  let totalDays = 0;
+  let completedDays = 0;
+  let activePlans = 0;
+  let finishedPlans = 0;
+  plans.forEach((p) => {
+    const text = `${p.skillName || ''} ${p.description || ''} ${(p.preferences?.focusAreas || []).join(' ')}`;
+    items.push({ key: `plan:${p._id}`, title: p.skillName, domain: classifyDomain(text), at: toDate(p.createdAt) });
+    addEvent(p.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+
+    const days = p.dailyPlan || [];
+    const done = days.filter((d) => d.completed);
+    totalDays += days.length;
+    completedDays += done.length;
+    if (days.length > 0 && done.length === days.length) finishedPlans += 1;
+    else if (days.length > 0) activePlans += 1;
+    done.forEach((d) => addEvent(d.completedAt, 'planDay', EFFORT_MINUTES.planDay));
+
+    (p.quizResults || []).forEach((r) => {
+      const total = Number(r.totalQuestions) || Number(r.questionCount) || 0;
+      const correct = r.correctAnswers !== undefined ? r.correctAnswers : Math.round(((Number(r.score) || 0) / 100) * total);
+      addAttempt(r.completedAt, correct, total, p.skillName, text);
+    });
+  });
+
+  // Teacher courses: only this student's results.
+  courses.forEach((c) => {
+    (c.videos || []).forEach((v) => {
+      (v.quizResults || []).forEach((r) => {
+        if (r.userEmail !== userId) return;
+        const text = `${c.title || ''} ${v.title || ''} ${v.description || ''}`;
+        items.push({ key: `course:${c._id}:${v._id}`, title: v.title, domain: classifyDomain(text), at: toDate(r.completedAt) });
+        addAttempt(r.completedAt, r.correctAnswers, r.totalQuestions, v.title, text);
+      });
+    });
+  });
+
+  forumIssues.forEach((i) => addEvent(i.createdAt, 'forumPost', EFFORT_MINUTES.forumPost));
+  forumComments.forEach((c) => addEvent(c.createdAt, 'forumComment', EFFORT_MINUTES.forumComment));
+
+  return { events, attempts, items, plan: { totalDays, completedDays, activePlans, finishedPlans, total: plans.length } };
+}
+
+// ── metrics ────────────────────────────────────────────────────────────────
+
+/**
+ * Skill score, 0-1000, built from four parts that each reflect something the
+ * student controls:
+ *   mastery      400  quiz accuracy, scaled by how much has been assessed
+ *   progress     250  skill-plan days completed (30 days = full marks)
+ *   consistency  200  active days in the trailing 30 (20 days = full marks)
+ *   breadth      150  distinct materials studied (10 = full marks)
+ * It is evaluated "as of" a date so the trend can compare against a week ago.
+ */
+function computeSkillScore(data, asOf, dayKey) {
+  const attempts = data.attempts.filter((a) => a.at <= asOf);
+  const events = data.events.filter((e) => e.at <= asOf);
+
+  const answered = attempts.reduce((n, a) => n + a.questions, 0);
+  const accuracy = weightedAccuracy(attempts, asOf);
+  const mastery = accuracy === null ? 0 : (accuracy / 100) * 400 * Math.min(1, answered / 20);
+
+  const planDaysDone = events.filter((e) => e.kind === 'planDay').length;
+  const progress = Math.min(1, planDaysDone / 30) * 250;
+
+  const windowStart = new Date(asOf.getTime() - 30 * DAY_MS);
+  const activeDays = new Set(events.filter((e) => e.at > windowStart).map((e) => dayKey(e.at))).size;
+  const consistency = Math.min(1, activeDays / 20) * 200;
+
+  const itemsSoFar = data.items.filter((i) => !i.at || i.at <= asOf).length;
+  const breadth = Math.min(1, itemsSoFar / 10) * 150;
+
+  return {
+    total: Math.round(mastery + progress + consistency + breadth),
+    breakdown: {
+      mastery: Math.round(mastery),
+      progress: Math.round(progress),
+      consistency: Math.round(consistency),
+      breadth: Math.round(breadth),
+    },
+  };
+}
+
+function computeStreak(activeDayKeys, now, dayKey) {
+  const has = (d) => activeDayKeys.has(dayKey(d));
+  const todayActive = has(now);
+  const yesterday = new Date(now.getTime() - DAY_MS);
+
+  let current = 0;
+  let cursor = todayActive ? new Date(now) : has(yesterday) ? yesterday : null;
+  while (cursor && has(cursor)) {
+    current += 1;
+    cursor = new Date(cursor.getTime() - DAY_MS);
+  }
+
+  // Longest run over the whole history.
+  const sorted = [...activeDayKeys].sort();
+  let longest = 0;
+  let run = 0;
+  let prev = null;
+  sorted.forEach((key) => {
+    const t = Date.parse(`${key}T00:00:00Z`);
+    run = prev !== null && t - prev === DAY_MS ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    prev = t;
+  });
+
+  let status = 'inactive';
+  let message = 'Study today to start a streak';
+  if (current > 0 && todayActive) {
+    status = 'active';
+    message = current >= 7 ? 'Outstanding consistency' : current >= 3 ? 'Keep it going' : 'Good start - come back tomorrow';
+  } else if (current > 0) {
+    status = 'at-risk';
+    message = 'Study today to keep your streak';
+  } else if (longest > 0) {
+    message = `Best so far: ${longest} day${longest === 1 ? '' : 's'}`;
+  }
+
+  return { days: current, longest: Math.max(longest, current), status, message, activeToday: todayActive };
+}
+
+function computeWeekly(data, now, dayKey) {
+  const buckets = new Map();
+  const order = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const d = new Date(now.getTime() - i * DAY_MS);
+    const key = dayKey(d);
+    const weekday = WEEKDAYS[new Date(`${key}T00:00:00Z`).getUTCDay()];
+    buckets.set(key, { date: key, day: weekday, minutes: 0, activities: 0, quizzes: 0 });
+    order.push(key);
+  }
+
+  let previousTotal = 0;
+  const prevStart = dayKey(new Date(now.getTime() - 13 * DAY_MS));
+  const prevEnd = dayKey(new Date(now.getTime() - 7 * DAY_MS));
+
+  data.events.forEach((e) => {
+    const key = dayKey(e.at);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.minutes += e.minutes;
+      bucket.activities += 1;
+      if (e.kind === 'quiz') bucket.quizzes += 1;
+    } else if (key >= prevStart && key <= prevEnd) {
+      previousTotal += e.minutes;
+    }
+  });
+
+  const days = order.map((k) => {
+    const b = buckets.get(k);
+    return { ...b, minutes: Math.round(b.minutes), hours: round1(b.minutes / 60) };
+  });
+  const totalMinutes = days.reduce((n, d) => n + d.minutes, 0);
+
+  return {
+    days,
+    totalMinutes,
+    previousTotalMinutes: Math.round(previousTotal),
+    activeDays: days.filter((d) => d.activities > 0).length,
+    estimated: true,
+  };
+}
+
+function computeProficiency(data, now) {
+  const byDomain = new Map();
+  const bucket = (name) => {
+    if (!byDomain.has(name)) byDomain.set(name, { name, attempts: [], items: 0 });
+    return byDomain.get(name);
+  };
+  data.items.forEach((i) => { bucket(i.domain).items += 1; });
+  data.attempts.forEach((a) => { bucket(a.domain).attempts.push(a); });
+
+  return [...byDomain.values()]
+    .map((d) => {
+      const questions = d.attempts.reduce((n, a) => n + a.questions, 0);
+      const raw = weightedAccuracy(d.attempts, now);
+      // Level from the same rounded value that is displayed: the weighted mean
+      // of an exact 50% can come out as 49.999..., which would show "50%"
+      // next to a "Beginner" badge.
+      const accuracy = raw === null ? null : Math.round(raw);
+      return {
+        name: d.name,
+        score: accuracy,
+        questions,
+        attempts: d.attempts.length,
+        items: d.items,
+        level: levelFor(accuracy, questions),
+      };
+    })
+    // Most-studied first; the chart shows the student's own subjects, not a fixed list.
+    .sort((a, b) => (b.items + b.attempts) - (a.items + a.attempts) || (b.score ?? -1) - (a.score ?? -1))
+    .slice(0, 6);
+}
+
+function computeStrengthsAndFocus(data, now) {
+  const byTopic = new Map();
+  data.attempts.forEach((a) => {
+    const key = `${a.domain}::${a.topic}`;
+    if (!byTopic.has(key)) byTopic.set(key, { name: a.topic, domain: a.domain, attempts: [] });
+    byTopic.get(key).attempts.push(a);
+  });
+
+  const topics = [...byTopic.values()].map((t) => {
+    const questions = t.attempts.reduce((n, a) => n + a.questions, 0);
+    const accuracy = Math.round(weightedAccuracy(t.attempts, now));
+    const latest = t.attempts.reduce((m, a) => (a.at > m ? a.at : m), t.attempts[0].at);
+    return {
+      name: t.name,
+      domain: t.domain,
+      percentage: accuracy,
+      formattedPercentage: `${accuracy}%`,
+      questions,
+      attempts: t.attempts.length,
+      level: levelFor(accuracy, questions),
+      lastAttemptAt: latest,
+    };
+  });
+
+  const assessed = topics.filter((t) => t.questions >= MIN_QUESTIONS_FOR_TOPIC);
+  const strengths = assessed
+    .filter((t) => t.percentage >= 70)
+    .sort((a, b) => b.percentage - a.percentage || b.questions - a.questions)
+    .slice(0, 3);
+  const focusAreas = assessed
+    .filter((t) => t.percentage < 70)
+    .sort((a, b) => a.percentage - b.percentage || b.questions - a.questions)
+    .slice(0, 3);
+
+  return {
+    strengths,
+    focusAreas,
+    assessedTopics: assessed.length,
+    pendingTopics: topics.length - assessed.length,
+  };
+}
+
+// ── handler ────────────────────────────────────────────────────────────────
+
 const getUserAnalytics = async (req, res) => {
   try {
     const { userId } = req.params;
-
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Fetch user activity data
-    const youtubeVideos = await YoutubeVideo.find({ userId }) || [];
-    const educationalVideos = await EducationalVideo.find({ userId }) || [];
-    const doubtClearances = await DoubtClearance.find({ userId }) || [];
-    const skillPlans = await SkillPlan.find({ userId }) || [];
+    const tz = Number.parseInt(req.query.tzOffset, 10);
+    const tzOffset = Number.isFinite(tz) && Math.abs(tz) <= 14 * 60 ? tz : 0;
+    const dayKey = makeDayKey(tzOffset);
+    const now = new Date();
 
-    // 1. Calculate Skill Score (0-10000 scale, display as 1,250 format)
-    const skillScore = calculateSkillScore(youtubeVideos, educationalVideos, doubtClearances, skillPlans);
+    const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments] = await Promise.all([
+      Notes.find({ userId }).select('title fileName uploadedAt chatHistory quizzes').lean(),
+      YouTubeVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+      EducationalVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+      DoubtClearance.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+      SkillPlan.find({ userId }).lean(),
+      Course.find({ 'videos.quizResults.userEmail': userId }).lean(),
+      ForumIssue.find({ userEmail: userId }).select('createdAt').lean(),
+      ForumComment.find({ userEmail: userId, isAI: { $ne: true } }).select('createdAt').lean(),
+    ]);
 
-    // 2. Calculate Course Completion Percentage
-    const courseCompletion = calculateCourseCompletion(skillPlans);
+    const data = collectActivity(
+      { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments },
+      userId
+    );
 
-    // 3. Calculate Study Streak
-    const studyStreak = calculateStudyStreak(youtubeVideos, educationalVideos, doubtClearances, skillPlans);
+    const activeDayKeys = new Set([...data.events.map((e) => dayKey(e.at))]);
 
-    // 4. Calculate Weekly Learning Hours
-    const weeklyHours = calculateWeeklyHours(youtubeVideos, educationalVideos, doubtClearances);
+    const current = computeSkillScore(data, now, dayKey);
+    const weekAgo = computeSkillScore(data, new Date(now.getTime() - 7 * DAY_MS), dayKey);
+    const delta = current.total - weekAgo.total;
 
-    // 5. Calculate Skill Proficiency (for radar chart)
-    const skillProficiency = calculateSkillProficiency(youtubeVideos, educationalVideos, skillPlans);
+    const answered = data.attempts.reduce((n, a) => n + a.questions, 0);
+    const correct = data.attempts.reduce((n, a) => n + a.correct, 0);
+    const overallAccuracy = weightedAccuracy(data.attempts, now);
 
-    // 6. Calculate Strengths & Weaknesses
-    const strengthsWeaknesses = calculateStrengthsWeaknesses(skillProficiency);
+    const plan = data.plan;
+    const completionPct = plan.totalDays > 0 ? Math.round((plan.completedDays / plan.totalDays) * 100) : 0;
+    const planSummary = plan.total === 0
+      ? 'No learning plans yet'
+      : `${plan.activePlans} active · ${plan.finishedPlans} finished`;
 
-    const analytics = {
-      skillScore,
-      courseCompletion,
-      studyStreak,
-      weeklyHours,
-      skillProficiency,
-      strengthsWeaknesses,
-      lastUpdated: new Date()
-    };
+    const lastActive = data.events.reduce((m, e) => (!m || e.at > m ? e.at : m), null);
 
-    res.json(analytics);
+    res.json({
+      generatedAt: now,
+      hasActivity: data.events.length > 0,
+      lastActiveAt: lastActive,
+
+      skillScore: {
+        value: current.total,
+        max: 1000,
+        formattedValue: formatNumber(current.total),
+        breakdown: current.breakdown,
+        change: delta,
+        trend: delta === 0 ? 'No change' : `${delta > 0 ? '+' : ''}${delta} pts`,
+        trendDirection: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat',
+        trendLabel: 'vs last week',
+      },
+
+      quizPerformance: {
+        accuracy: overallAccuracy === null ? null : Math.round(overallAccuracy),
+        quizzesTaken: data.attempts.length,
+        questionsAnswered: answered,
+        correctAnswers: correct,
+      },
+
+      courseCompletion: {
+        percentage: completionPct,
+        formattedPercentage: `${completionPct}%`,
+        completedDays: plan.completedDays,
+        totalDays: plan.totalDays,
+        active: plan.activePlans,
+        finished: plan.finishedPlans,
+        total: plan.total,
+        summary: planSummary,
+      },
+
+      studyStreak: computeStreak(activeDayKeys, now, dayKey),
+      weeklyActivity: computeWeekly(data, now, dayKey),
+      skillProficiency: computeProficiency(data, now),
+      strengthsWeaknesses: computeStrengthsAndFocus(data, now),
+    });
   } catch (error) {
     console.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 };
 
-/**
- * Calculate skill score based on various activities
- * Formula: (video_completion * 0.4) + (quiz_performance * 0.3) + (doubt_activity * 0.2) + (streak_bonus * 0.1)
- */
-function calculateSkillScore(youtubeVideos, educationalVideos, doubtClearances, skillPlans) {
-  let score = 0;
-  
-  // Video completion component (0-4000 points)
-  const totalVideos = youtubeVideos.length + educationalVideos.length;
-  const videoScore = Math.min(totalVideos * 40, 4000);
-  
-  // Quiz performance component (0-3000 points)
-  let totalQuizScore = 0;
-  let quizCount = 0;
-  
-  [...youtubeVideos, ...educationalVideos].forEach(video => {
-    if (video.quizResults && video.quizResults.length > 0) {
-      const avgScore = video.quizResults.reduce((sum, q) => sum + (q.score || 0), 0) / video.quizResults.length;
-      totalQuizScore += avgScore;
-      quizCount++;
-    }
-  });
-  
-  const quizScore = quizCount > 0 ? (totalQuizScore / quizCount) * 30 : 0;
-  
-  // Doubt activity component (0-2000 points)
-  const doubtScore = Math.min(doubtClearances.length * 50, 2000);
-  
-  // Skill unlocker streak bonus (0-1000 points)
-  const streakScore = Math.min(skillPlans.length * 100, 1000);
-  
-  score = Math.round(videoScore + quizScore + doubtScore + streakScore);
-  
-  // Calculate trend (mock for now - in real scenario, compare with previous week)
-  const trend = score > 800 ? '+2%' : '+1%';
-  
-  return {
-    value: score,
-    trend: trend,
-    formattedValue: formatNumber(score)
-  };
-}
-
-/**
- * Calculate course completion percentage
- */
-function calculateCourseCompletion(skillPlans) {
-  if (skillPlans.length === 0) {
-    return {
-      percentage: 0,
-      active: 0,
-      total: 0,
-      formattedPercentage: '0%'
-    };
-  }
-  
-  let totalDays = 0;
-  let completedDays = 0;
-  
-  skillPlans.forEach(plan => {
-    if (plan.weekPlan && Array.isArray(plan.weekPlan)) {
-      plan.weekPlan.forEach(day => {
-        totalDays++;
-        if (day.completed) completedDays++;
-      });
-    }
-  });
-  
-  const percentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-  
-  return {
-    percentage: percentage,
-    active: skillPlans.filter(p => p.weekPlan && p.weekPlan.some(d => !d.completed)).length,
-    total: skillPlans.length,
-    formattedPercentage: `${percentage}%`
-  };
-}
-
-/**
- * Calculate study streak (consecutive days)
- */
-function calculateStudyStreak(youtubeVideos, educationalVideos, doubtClearances, skillPlans) {
-  const allActivities = [
-    ...youtubeVideos.map(v => v.createdAt),
-    ...educationalVideos.map(v => v.createdAt),
-    ...doubtClearances.map(d => d.createdAt)
-  ].filter(Boolean).map(date => new Date(date));
-  
-  if (allActivities.length === 0) {
-    return {
-      days: 0,
-      message: 'Start your journey!',
-      status: 'inactive'
-    };
-  }
-  
-  // Sort dates in descending order
-  allActivities.sort((a, b) => b - a);
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  let streak = 0;
-  let checkDate = new Date(today);
-  
-  // Group activities by date
-  const dateSet = new Set(allActivities.map(d => {
-    const date = new Date(d);
-    date.setHours(0, 0, 0, 0);
-    return date.getTime();
-  }));
-  
-  // Calculate streak
-  while (dateSet.has(checkDate.getTime())) {
-    streak++;
-    checkDate.setDate(checkDate.getDate() - 1);
-  }
-  
-  // If no activity today but yesterday, check from yesterday
-  if (streak === 0) {
-    checkDate = new Date(today);
-    checkDate.setDate(checkDate.getDate() - 1);
-    while (dateSet.has(checkDate.getTime())) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    }
-  }
-  
-  const message = streak >= 7 ? 'Amazing streak!' : streak >= 3 ? 'Keep it up!' : 'Start building!';
-  
-  return {
-    days: streak,
-    message: message,
-    status: streak > 0 ? 'active' : 'inactive'
-  };
-}
-
-/**
- * Calculate weekly learning hours (last 7 days)
- */
-function calculateWeeklyHours(youtubeVideos, educationalVideos, doubtClearances) {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const last7Days = [];
-  const today = new Date();
-  
-  // Initialize 7 days
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    date.setHours(0, 0, 0, 0);
-    
-    last7Days.push({
-      day: days[date.getDay() === 0 ? 6 : date.getDay() - 1],
-      date: date,
-      hours: 0
-    });
-  }
-  
-  // Calculate hours per day (estimate: 10 min per video, 5 min per doubt)
-  const allActivities = [
-    ...youtubeVideos.map(v => ({ date: new Date(v.createdAt), minutes: 10 })),
-    ...educationalVideos.map(v => ({ date: new Date(v.createdAt), minutes: 10 })),
-    ...doubtClearances.map(d => ({ date: new Date(d.createdAt), minutes: 5 }))
-  ];
-  
-  allActivities.forEach(activity => {
-    const activityDate = new Date(activity.date);
-    activityDate.setHours(0, 0, 0, 0);
-    
-    const dayIndex = last7Days.findIndex(d => d.date.getTime() === activityDate.getTime());
-    if (dayIndex !== -1) {
-      last7Days[dayIndex].hours += activity.minutes / 60;
-    }
-  });
-  
-  return last7Days.map(d => ({
-    day: d.day,
-    hours: Math.round(d.hours * 10) / 10
-  }));
-}
-
-/**
- * Calculate skill proficiency for radar chart
- */
-function calculateSkillProficiency(youtubeVideos, educationalVideos, skillPlans) {
-  const skills = {
-    'AI & ML': 0,
-    'WEB DEV': 0,
-    'DEVOPS': 0,
-    'DATA SCI': 0,
-    'MOBILE': 0
-  };
-  
-  // Analyze video topics and skill plans
-  const allContent = [
-    ...youtubeVideos.map(v => v.title + ' ' + (v.summary || '')),
-    ...educationalVideos.map(v => v.title + ' ' + (v.summary || '')),
-    ...skillPlans.map(p => p.skill || '')
-  ].join(' ').toLowerCase();
-  
-  // Simple keyword matching
-  if (allContent.includes('ai') || allContent.includes('machine learning') || allContent.includes('neural')) {
-    skills['AI & ML'] = 75 + Math.floor(Math.random() * 15);
-  }
-  
-  if (allContent.includes('web') || allContent.includes('react') || allContent.includes('frontend') || allContent.includes('html')) {
-    skills['WEB DEV'] = 70 + Math.floor(Math.random() * 20);
-  }
-  
-  if (allContent.includes('devops') || allContent.includes('docker') || allContent.includes('kubernetes')) {
-    skills['DEVOPS'] = 60 + Math.floor(Math.random() * 15);
-  }
-  
-  if (allContent.includes('data') || allContent.includes('python') || allContent.includes('analytics')) {
-    skills['DATA SCI'] = 65 + Math.floor(Math.random() * 20);
-  }
-  
-  if (allContent.includes('mobile') || allContent.includes('android') || allContent.includes('ios')) {
-    skills['MOBILE'] = 50 + Math.floor(Math.random() * 20);
-  }
-  
-  // Ensure at least some baseline skills
-  Object.keys(skills).forEach(key => {
-    if (skills[key] === 0) {
-      skills[key] = 30 + Math.floor(Math.random() * 30);
-    }
-  });
-  
-  return Object.keys(skills).map(name => ({
-    name,
-    score: skills[name]
-  }));
-}
-
-/**
- * Calculate top strengths and weaknesses
- */
-function calculateStrengthsWeaknesses(skillProficiency) {
-  const sorted = [...skillProficiency].sort((a, b) => b.score - a.score);
-  
-  const getLevel = (score) => {
-    if (score >= 85) return 'Expert';
-    if (score >= 70) return 'Advanced';
-    if (score >= 50) return 'Intermediate';
-    return 'Beginner';
-  };
-  
-  return sorted.slice(0, 3).map(skill => ({
-    name: skill.name === 'AI & ML' ? 'Generative AI Concepts' : 
-          skill.name === 'WEB DEV' ? 'React & Frontend' :
-          skill.name === 'DATA SCI' ? 'Python Scripting' :
-          skill.name,
-    percentage: skill.score,
-    level: getLevel(skill.score),
-    formattedPercentage: `${skill.score}%`
-  }));
-}
-
-/**
- * Format number with comma separator
- */
-function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
 module.exports = {
-  getUserAnalytics
+  getUserAnalytics,
+  // exported for testing
+  _internal: { classifyDomain, collectActivity, computeSkillScore, computeStreak, computeWeekly, weightedAccuracy, makeDayKey },
 };

@@ -22,3 +22,6 @@
 npm-debug.log*
 yarn-debug.log
 yarn-error.log*
+
+# Local-only copies of the pre-compression roadmap artwork
+src/images/roadmaps/.originals/

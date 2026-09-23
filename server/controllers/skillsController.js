@@ -1,5 +1,6 @@
 const Skills = require('../models/skills');
 const Groq = require('groq-sdk');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -8,19 +9,27 @@ exports.processSkillsPrompt = async (req, res) => {
   console.log(req.body);
 
   try {
-    const prompt = `Give me ${count} top technical skills required for a ${career} engineer. Each skill should include:
-    - Skill name
-    - A short description in 2 lines
-    Note: Provide the output in Markdown format.`;
+    const prompt = `Give me the ${count} most important technical skills required for a ${career} engineer.
+
+For each skill, use a ### heading with the skill name, then cover:
+- **What it is** - a clear two to three sentence explanation
+- **Why it matters for this role** - the concrete problems it solves day to day
+- **What "good" looks like** - the specific capabilities expected at a hireable level
+- **How to learn it** - the practical path, and roughly how long it takes
+- **Tools and technologies** - the specific ones used in industry
+
+Be specific and concrete. Name real tools, real versions, real practices rather
+than generic advice. Return GitHub-flavoured Markdown. Never emit raw HTML.`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.5,
-      max_tokens: 1024,
+      max_tokens: 3500,
       top_p: 1,
       stream: false,
     });
@@ -84,10 +93,6 @@ exports.deleteSkillsByCareer = async (req, res) => {
 exports.getCareerIds = async (req, res) => {
   try {
     const careers = await Skills.find({}, { careerId: 1, _id: 0 });  // Only fetch careerId, exclude _id
-
-    if (careers.length === 0) {
-      return res.status(404).json({ message: 'No career IDs found' });
-    }
 
     const careerIds = careers.map(career => career.careerId); // Extract the careerId field
 

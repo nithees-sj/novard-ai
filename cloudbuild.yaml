@@ -1,0 +1,90 @@
+steps:
+  # ── Build server image ──
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_AR_REPO}/novard-server:$COMMIT_SHA'
+      - '-t'
+      - '${_AR_REPO}/novard-server:latest'
+      - './server'
+    id: 'build-server'
+
+  # ── Build client image ──
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'REACT_APP_API_ENDPOINT=${_SERVER_URL}'
+      - '--build-arg'
+      - 'REACT_APP_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}'
+      - '-t'
+      - '${_AR_REPO}/novard-client:$COMMIT_SHA'
+      - '-t'
+      - '${_AR_REPO}/novard-client:latest'
+      - './client'
+    id: 'build-client'
+
+  # ── Push server image ──
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_AR_REPO}/novard-server']
+    id: 'push-server'
+    waitFor: ['build-server']
+
+  # ── Push client image ──
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_AR_REPO}/novard-client']
+    id: 'push-client'
+    waitFor: ['build-client']
+
+  # ── Deploy server to Cloud Run ──
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'novard-server'
+      - '--image=${_AR_REPO}/novard-server:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--set-env-vars=NODE_ENV=production'
+    id: 'deploy-server'
+    waitFor: ['push-server']
+
+  # ── Deploy client to Cloud Run ──
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'novard-client'
+      - '--image=${_AR_REPO}/novard-client:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=256Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=5'
+    id: 'deploy-client'
+    waitFor: ['push-client']
+
+substitutions:
+  _REGION: 'asia-south1'
+  _AR_REPO: 'asia-south1-docker.pkg.dev/${PROJECT_ID}/novard-ai'
+  _SERVER_URL: 'https://novard-server-CHANGE_ME.run.app'
+  _GOOGLE_CLIENT_ID: '821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com'
+
+images:
+  - '${_AR_REPO}/novard-server:$COMMIT_SHA'
+  - '${_AR_REPO}/novard-server:latest'
+  - '${_AR_REPO}/novard-client:$COMMIT_SHA'
+  - '${_AR_REPO}/novard-client:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

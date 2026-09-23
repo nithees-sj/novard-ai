@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
@@ -6,6 +6,7 @@ import ChatbotButton from '../components/ChatbotButton';
 import AnalyticsCard from '../components/analytics/AnalyticsCard';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
+import WeeklyActivityChart from '../components/analytics/WeeklyActivityChart';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -14,52 +15,66 @@ const HomePage = () => {
 
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const inFlight = useRef(false);
 
-  const loadAnalytics = useCallback(async () => {
+  // Previously a failed request silently rendered hard-coded numbers (a skill
+  // score of 850, a 3-day streak, 92% in "Generative AI Concepts") - showing a
+  // student performance they never achieved. Errors are now shown as errors.
+  const loadAnalytics = useCallback(async ({ background = false } = {}) => {
+    if (!userEmail || inFlight.current) return;
+    inFlight.current = true;
+    if (background) setRefreshing(true);
     try {
-      // Use email as userId
-      const response = await fetch(`${process.env.REACT_APP_API_ENDPOINT}/api/analytics/${userEmail}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAnalytics(data);
-      }
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      // Set default mock data for fallback
-      setAnalytics({
-        skillScore: { value: 850, trend: '+2%', formattedValue: '850' },
-        courseCompletion: { percentage: 65, active: 2, total: 3, formattedPercentage: '65%' },
-        studyStreak: { days: 3, message: 'Keep it up!', status: 'active' },
-        weeklyHours: [
-          { day: 'Mon', hours: 4.5 },
-          { day: 'Tue', hours: 7.2 },
-          { day: 'Wed', hours: 5.8 },
-          { day: 'Thu', hours: 8.5 },
-          { day: 'Fri', hours: 9.2 },
-          { day: 'Sat', hours: 3.1 },
-          { day: 'Sun', hours: 4.7 }
-        ],
-        skillProficiency: [
-          { name: 'AI & ML', score: 82 },
-          { name: 'WEB DEV', score: 75 },
-          { name: 'DEVOPS', score: 62 },
-          { name: 'DATA SCI', score: 71 },
-          { name: 'MOBILE', score: 58 }
-        ],
-        strengthsWeaknesses: [
-          { name: 'Generative AI Concepts', percentage: 92, level: 'Expert', formattedPercentage: '92%' },
-          { name: 'React & Frontend', percentage: 78, level: 'Advanced', formattedPercentage: '78%' },
-          { name: 'Python Scripting', percentage: 65, level: 'Intermediate', formattedPercentage: '65%' }
-        ]
-      });
+      // getTimezoneOffset lets the server bucket days in the student's local
+      // time, so streaks and "today" match the student's calendar.
+      const tzOffset = new Date().getTimezoneOffset();
+      const response = await fetch(
+        `${process.env.REACT_APP_API_ENDPOINT}/api/analytics/${encodeURIComponent(userEmail)}?tzOffset=${tzOffset}`
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+      setAnalytics(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading analytics:', err);
+      setError(err.message || 'Could not load your analytics');
     } finally {
+      inFlight.current = false;
       setLoading(false);
+      setRefreshing(false);
     }
   }, [userEmail]);
 
   useEffect(() => {
     loadAnalytics();
   }, [loadAnalytics]);
+
+  // Keep the dashboard current: refetch when the student comes back to this
+  // tab (e.g. after finishing a quiz elsewhere), keeping the old numbers on
+  // screen while the new ones load.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadAnalytics({ background: true });
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [loadAnalytics]);
+
+  const score = analytics?.skillScore;
+  const quiz = analytics?.quizPerformance;
+  const completion = analytics?.courseCompletion;
+  const streak = analytics?.studyStreak;
+  const breakdown = score?.breakdown;
+  const streakTrend = { active: 'Active today', 'at-risk': 'At risk', inactive: '' }[streak?.status] || '';
+  const updatedAt = analytics?.generatedAt
+    ? new Date(analytics.generatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    : null;
 
   return (
     <>
@@ -83,60 +98,115 @@ const HomePage = () => {
             {loading ? (
               <div className="flex items-center justify-center h-96">
                 <div className="text-center">
-                  <div className="text-5xl mb-4">📊</div>
+                  <div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-gray-200 border-t-primary-600 animate-spin" />
                   <p className="text-gray-600">Loading your analytics...</p>
+                </div>
+              </div>
+            ) : error && !analytics ? (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center max-w-md">
+                  <div className="text-5xl mb-4">📊</div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Your analytics could not be loaded</h2>
+                  <p className="text-sm text-gray-600 mb-6">{error}</p>
+                  <button
+                    type="button"
+                    onClick={() => { setLoading(true); loadAnalytics(); }}
+                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    Try again
+                  </button>
                 </div>
               </div>
             ) : (
               <>
                 {/* Analytics Overview Section */}
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">Analytics Overview</h2>
-                  <p className="text-sm text-gray-600 mb-6">
-                      Detailed performance tracking and skill development metrics.
-                    </p>
-
-                    {/* Metrics Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                      <AnalyticsCard
-                        title="SKILL SCORE"
-                        value={analytics?.skillScore?.formattedValue || '0'}
-                        subtitle={`Based on your activities`}
-                        icon="⚡"
-                        trend={analytics?.skillScore?.trend}
-                        trendColor="text-green-600"
-                        iconBg="bg-blue-50"
-                        iconColor="text-blue-600"
-                      />
-                      <AnalyticsCard
-                        title="COURSE COMPLETION"
-                        value={analytics?.courseCompletion?.formattedPercentage || '0%'}
-                        subtitle={`${analytics?.courseCompletion?.active || 0}/${analytics?.courseCompletion?.total || 0} Active`}
-                        icon="✓"
-                        iconBg="bg-green-50"
-                        iconColor="text-green-600"
-                      />
-                      <AnalyticsCard
-                        title="STUDY STREAK"
-                        value={`${analytics?.studyStreak?.days || 0} days`}
-                        subtitle={analytics?.studyStreak?.message || 'Start learning!'}
-                        icon="🔥"
-                        trend={analytics?.studyStreak?.status === 'active' ? 'Active' : ''}
-                        trendColor="text-orange-600"
-                        iconBg="bg-orange-50"
-                        iconColor="text-orange-600"
-                      />
+                <div className={`mb-8 transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
+                  <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900 mb-1">Analytics Overview</h2>
+                      <p className="text-sm text-gray-600">
+                        Calculated from your quizzes, learning plans and study activity.
+                      </p>
                     </div>
-                    
-                    {/* Weekly Learning Hours */}
-
-
-                    {/* Skill Proficiency & Strengths */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <SkillProficiencyRadar skills={analytics?.skillProficiency || []} />
-                      <StrengthsWeaknesses strengths={analytics?.strengthsWeaknesses || []} />
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      {error && <span className="text-red-600">Refresh failed · showing last loaded data</span>}
+                      {updatedAt && <span>Updated {updatedAt}</span>}
+                      <button
+                        type="button"
+                        onClick={() => loadAnalytics({ background: true })}
+                        disabled={refreshing}
+                        className="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {refreshing ? 'Refreshing…' : 'Refresh'}
+                      </button>
                     </div>
-                  </div> 
+                  </div>
+
+                  {!analytics?.hasActivity && (
+                    <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
+                      No learning activity yet. Upload notes, add a video, ask a doubt or start a learning plan -
+                      then take a quiz, and these numbers will start reflecting your progress.
+                    </div>
+                  )}
+
+                  {/* Metrics Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                    <AnalyticsCard
+                      title="SKILL SCORE"
+                      value={score?.formattedValue || '0'}
+                      subtitle="out of 1,000"
+                      icon="⚡"
+                      trend={score?.trend}
+                      trendDirection={score?.trendDirection}
+                      trendLabel={score?.trendLabel}
+                      detail={breakdown && `Mastery ${breakdown.mastery} · Progress ${breakdown.progress} · Consistency ${breakdown.consistency} · Breadth ${breakdown.breadth}`}
+                      iconBg="bg-blue-50"
+                      iconColor="text-blue-600"
+                    />
+                    <AnalyticsCard
+                      title="QUIZ ACCURACY"
+                      value={quiz?.accuracy === null || quiz?.accuracy === undefined ? '—' : `${quiz.accuracy}%`}
+                      subtitle={quiz?.questionsAnswered
+                        ? `${quiz.correctAnswers}/${quiz.questionsAnswered} correct`
+                        : 'No quizzes taken yet'}
+                      icon="🎯"
+                      detail={quiz?.quizzesTaken ? `${quiz.quizzesTaken} ${quiz.quizzesTaken === 1 ? 'quiz' : 'quizzes'} taken · recent results weigh more` : undefined}
+                      iconBg="bg-purple-50"
+                      iconColor="text-purple-600"
+                    />
+                    <AnalyticsCard
+                      title="COURSE COMPLETION"
+                      value={completion?.formattedPercentage || '0%'}
+                      subtitle={completion?.summary || 'No learning plans yet'}
+                      icon="✓"
+                      detail={completion?.totalDays ? `${completion.completedDays} of ${completion.totalDays} plan days completed` : undefined}
+                      iconBg="bg-green-50"
+                      iconColor="text-green-600"
+                    />
+                    <AnalyticsCard
+                      title="STUDY STREAK"
+                      value={`${streak?.days || 0} ${streak?.days === 1 ? 'day' : 'days'}`}
+                      subtitle={streak?.message || 'Study today to start a streak'}
+                      icon="🔥"
+                      trend={streakTrend}
+                      trendColor={streak?.status === 'at-risk' ? 'text-amber-600' : 'text-orange-600'}
+                      detail={streak?.longest ? `Best streak: ${streak.longest} ${streak.longest === 1 ? 'day' : 'days'}` : undefined}
+                      iconBg="bg-orange-50"
+                      iconColor="text-orange-600"
+                    />
+                  </div>
+
+                  {/* Weekly Learning Hours */}
+                  <div className="mb-8">
+                    <WeeklyActivityChart weekly={analytics?.weeklyActivity} />
+                  </div>
+
+                  {/* Skill Proficiency & Strengths */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                    <SkillProficiencyRadar skills={analytics?.skillProficiency || []} />
+                    <StrengthsWeaknesses data={analytics?.strengthsWeaknesses} />
+                  </div>
+                </div>
 
                   {/* Adaptive Learning Paths Section */}
                   <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 text-white shadow-xl">

@@ -1,5 +1,6 @@
 const Resume = require('../models/resumes');
 const Groq = require('groq-sdk');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -8,24 +9,33 @@ exports.processResumePrompt = async (req, res) => {
   console.log(req.body);
 
   try {
-    const prompt = `Create a professional resume template tailored for a ${career} engineer. The template in md format should include:
-    - Header (Name, Contact Information, LinkedIn, GitHub)
-    - Summary (A brief summary highlighting skills and career goals)
-    - Skills (List of technical and soft skills)
-    - Work Experience (Format: Title, Company, Duration, Achievements)
-    - Education (Degrees, Certifications)
-    - Projects (Briefly list relevant projects with a one-line description)
-    - Additional Sections (e.g., Hobbies, Languages, Awards, or Volunteering)
-     Note : Dont add any values give the suggestions that can make a good aligned resume`;
+    const prompt = `Create a professional, ATS-friendly resume template tailored for a ${career} engineer.
+
+Use a ### heading per section: Header, Professional Summary, Skills, Work
+Experience, Projects, Education, Certifications, and Additional Sections.
+
+For every section give:
+- **What to include** - the specific fields and their order
+- **How to phrase it** - the wording pattern that works, with a filled-in example line written as a placeholder (e.g. "Reduced API p95 latency by 40% by adding a Redis cache layer")
+- **What ATS parsers expect** - formatting that survives automated screening
+- **Common mistakes** - what gets this section rejected
+
+Close with a ### Formatting checklist covering length, fonts, margins, file
+format and file naming.
+
+Use placeholders rather than invented personal details. Be specific about
+phrasing and structure rather than giving generic advice.
+Return GitHub-flavoured Markdown. Never emit raw HTML.`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.5,
-      max_tokens: 1024,
+      max_tokens: 4500,
       top_p: 1,
       stream: false,
     });
@@ -84,10 +94,6 @@ exports.deleteResumeByCareer = async (req, res) => {
 exports.getResumeCareerIds = async (req, res) => {
   try {
     const careers = await Resume.find({}, { careerId: 1, _id: 0 });
-
-    if (careers.length === 0) {
-      return res.status(404).json({ message: 'No career IDs found' });
-    }
 
     const careerIds = careers.map(career => career.careerId);
 

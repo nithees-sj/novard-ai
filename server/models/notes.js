@@ -38,7 +38,8 @@ const quizSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
 });
 
 const notesSchema = new mongoose.Schema({

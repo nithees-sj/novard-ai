@@ -13,6 +13,8 @@ const Forum = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [notification, setNotification] = useState(null);
+  // Bumped whenever the list may be stale (new post, deletion, returning from a thread).
+  const [listVersion, setListVersion] = useState(0);
 
   const handleIssueSelect = (issue) => {
     setSelectedIssue(issue);
@@ -20,6 +22,13 @@ const Forum = () => {
 
   const handleBackToList = () => {
     setSelectedIssue(null);
+    setListVersion((v) => v + 1); // reply counts and status may have changed
+  };
+
+  const handleIssueDeleted = (issue) => {
+    setSelectedIssue(null);
+    setListVersion((v) => v + 1);
+    setNotification({ message: `Deleted "${issue.title}".`, type: 'success' });
   };
 
   const handleCreateIssue = () => {
@@ -42,6 +51,7 @@ const Forum = () => {
 
       const newIssue = await response.json();
       setSelectedIssue(newIssue);
+      setListVersion((v) => v + 1);
       setShowIssueForm(false);
       setNotification({
         message: 'Issue created successfully!',
@@ -78,11 +88,13 @@ const Forum = () => {
             <IssueDetail
               issue={selectedIssue}
               onBack={handleBackToList}
+              onDeleted={handleIssueDeleted}
             />
           ) : (
               <ForumGrid
                 onIssueSelect={handleIssueSelect}
                 onCreateIssue={handleCreateIssue}
+                refreshKey={listVersion}
               />
           )}
         </div>

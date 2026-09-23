@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Navigationinner } from "../components/navigationinner";
 import ChatbotButton from '../components/ChatbotButton';
 import axios from 'axios';
+import MarkdownView from '../components/MarkdownView';
+import SummaryHeader from '../components/SummaryHeader';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -303,14 +305,16 @@ const Notes = () => {
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[70%] px-4 py-3 rounded-lg text-sm ${message.role === 'user'
+                          className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${message.role === 'user'
                               ? 'bg-gray-900 text-white'
                               : 'bg-gray-100 text-gray-900 border border-gray-200'
                             }`}
                         >
-                          <div className="whitespace-pre-wrap break-words">
-                            {message.content}
-                          </div>
+                          {message.role === 'user' ? (
+                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                          ) : (
+                            <MarkdownView content={message.content} />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -360,9 +364,10 @@ const Notes = () => {
                       </div>
                     </div>
                   ) : summary ? (
-                      <div className="prose max-w-none text-sm">
-                        {summary}
-                    </div>
+                      <div>
+                        <SummaryHeader title="Summary Overview" subtitle={selectedNote.title} />
+                        <MarkdownView content={summary} size="base" />
+                      </div>
                   ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">

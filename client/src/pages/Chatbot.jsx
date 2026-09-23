@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MdSend } from 'react-icons/md';
 import { Navigationinner } from '../components/navigationinner';
-import ReactMarkdown from 'react-markdown';
+import MarkdownView from '../components/MarkdownView';
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
-
-console.log(process.env.API_ENDPOINT);
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -17,38 +16,47 @@ const Chatbot = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isSending]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    const prompt = input.trim();
+    if (!prompt || isSending) return;
 
-    const userMessage = { type: 'user', content: input };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
-
+    setMessages((prevMessages) => [...prevMessages, { type: 'user', content: prompt }]);
     setInput('');
+    setIsSending(true);
 
     try {
       const response = await fetch(`${apiUrl}/api/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ prompt }),
       });
 
-      const data = await response.json();
-      const aiMessage = {
-        type: 'ai',
-        content: data.response || 'No response received.',
-      };
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'ai', content: data.response || 'No response received.' },
+      ]);
     } catch (error) {
       console.error('Error interacting with chatbot:', error);
-      const errorMessage = { type: 'ai', content: 'Error processing your request.' };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'ai', content: `Sorry — ${error.message}. Please try again.` },
+      ]);
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSend();
     }
   };
@@ -97,7 +105,8 @@ const styles = {
     padding: '14px 24px',
     borderRadius: '16px',
     marginBottom: '18px',
-    maxWidth: '75%',
+    maxWidth: '85%',
+    minWidth: 0,
     display: 'inline-block',
     wordBreak: 'break-word',
     fontSize: '1.1rem',
@@ -108,7 +117,8 @@ const styles = {
   userMessage: {
     backgroundColor: '#111827',
     color: '#fff',
-    textAlign: 'right',
+    textAlign: 'left',
+    whiteSpace: 'pre-wrap',
     alignSelf: 'flex-end',
   },
   aiMessage: {
@@ -169,12 +179,20 @@ const styles = {
                 }}
               >
                 {message.type === 'ai' ? (
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                  <MarkdownView content={message.content} size="base" />
                 ) : (
                   message.content
                 )}
               </div>
             ))}
+            {isSending && (
+              <div style={{ ...styles.message, ...styles.aiMessage }}>
+                <span className="inline-flex items-center gap-2 text-gray-500">
+                  <span className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
+                  Thinking&hellip;
+                </span>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -183,13 +201,20 @@ const styles = {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              style={styles.inputBox}
+              onKeyDown={handleKeyDown}
+              disabled={isSending}
+              placeholder={isSending ? 'Waiting for a reply\u2026' : 'Type your message...'}
+              style={{ ...styles.inputBox, opacity: isSending ? 0.6 : 1 }}
             />
             <button
               onClick={handleSend}
-              style={styles.sendButton}
+              disabled={isSending || !input.trim()}
+              aria-label="Send message"
+              style={{
+                ...styles.sendButton,
+                opacity: isSending || !input.trim() ? 0.5 : 1,
+                cursor: isSending || !input.trim() ? 'not-allowed' : 'pointer',
+              }}
               onMouseOver={(e) => (e.target.style.backgroundColor = styles.sendButtonHover.backgroundColor)}
               onMouseOut={(e) => (e.target.style.backgroundColor = styles.sendButton.backgroundColor)}
             >

@@ -1,21 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const Notification = ({ message, type = 'info', duration = 3000, onClose }) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  // Parents pass a fresh arrow function on every render. Holding it in a ref
+  // keeps it out of the effect deps, so the dismiss timer is not restarted
+  // each time the parent re-renders (which could leave the toast up forever).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // A new message reuses the same mounted component, so reset visibility.
+  useEffect(() => {
+    setIsVisible(true);
+  }, [message, type]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      if (onClose) onClose();
+      if (onCloseRef.current) onCloseRef.current();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
+  }, [duration, message, type]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
-    if (onClose) onClose();
-  };
+    if (onCloseRef.current) onCloseRef.current();
+  }, []);
 
   if (!isVisible) return null;
 
@@ -53,9 +66,9 @@ const Notification = ({ message, type = 'info', duration = 3000, onClose }) => {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} role="status" aria-live="polite">
       <div style={styles.message}>{message}</div>
-      <button style={styles.closeButton} onClick={handleClose}>
+      <button style={styles.closeButton} onClick={handleClose} aria-label="Dismiss notification">
         ×
       </button>
     </div>

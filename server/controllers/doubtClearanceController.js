@@ -1,6 +1,9 @@
 const DoubtClearance = require('../models/doubtClearance');
 const Groq = require('groq-sdk');
 const youtubesearchapi = require('youtube-search-api');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
+const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -140,6 +143,8 @@ const chatWithDoubtClearance = async (req, res) => {
           Description: "${doubtClearance.description}"
           
           IMPORTANT - Format your response using these markdown elements for professional display:
+
+0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
           
           1. Use ### for section headers (e.g., "### Understanding the Concept")
           2. Use numbered lists (1. 2. 3.) for step-by-step explanations
@@ -157,6 +162,9 @@ const chatWithDoubtClearance = async (req, res) => {
           
           RESPONSE STRUCTURE:
           - Start with a brief greeting or acknowledgment
+          - Answer in depth: explain the concept, why it works that way, and how it is applied,
+            with a concrete example or code snippet where one helps. Prefer a complete answer
+            over a short one, but do not pad it with repetition
           - Use ### headers to organize different sections
           - Include code examples in proper code blocks when relevant
           - Use numbered lists for sequential steps
@@ -171,9 +179,10 @@ const chatWithDoubtClearance = async (req, res) => {
           content: msg.content
         }))
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 1500
+      max_tokens: 3200
     });
 
     const aiResponse = completion.choices[0]?.message?.content;
@@ -231,7 +240,9 @@ const summarizeDoubtClearance = async (req, res) => {
           3. Main solutions or explanations provided
           4. Important takeaways
           
-          Make it educational and easy to understand.`
+          Make it educational and easy to understand.
+
+${MARKDOWN_WITH_FLOWCHART}`
         },
         {
           role: "user",
@@ -244,9 +255,10 @@ const summarizeDoubtClearance = async (req, res) => {
           Please create a comprehensive summary of this doubt clearance session.`
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.5,
-      max_tokens: 1500
+      max_tokens: 3000
     });
 
     const summary = completion.choices[0]?.message?.content;
@@ -345,7 +357,8 @@ const generateDoubtQuiz = async (req, res) => {
           - Generate 10-12 questions if the conversation is rich with content`
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 3000
     });
@@ -376,7 +389,7 @@ const generateDoubtQuiz = async (req, res) => {
       }
       
       console.log('Cleaned quiz response:', cleanedResponse);
-      quiz = JSON.parse(cleanedResponse);
+      quiz = parseModelJson(cleanedResponse, { context: 'quiz' });
       
       // Validate quiz structure
       if (!Array.isArray(quiz) || quiz.length === 0) {
@@ -501,7 +514,7 @@ const generateDoubtQuiz = async (req, res) => {
     doubtClearance.quizzes.push(newQuiz);
     await doubtClearance.save();
 
-    res.json({ quiz });
+    res.json({ quiz, quizIndex: doubtClearance.quizzes.length - 1 });
   } catch (error) {
     console.error('Error generating doubt quiz:', error);
     res.status(500).json({ error: 'Failed to generate quiz' });
@@ -525,6 +538,7 @@ const saveDoubtQuizResults = async (req, res) => {
     if (doubtClearance.quizzes[quizIndex]) {
       doubtClearance.quizzes[quizIndex].score = score;
       doubtClearance.quizzes[quizIndex].completedAt = new Date();
+      doubtClearance.quizzes[quizIndex].attemptedAt = new Date();
       await doubtClearance.save();
     }
 
@@ -587,7 +601,8 @@ const getYouTubeRecommendations = async (req, res) => {
           Based on the actual conversation above, extract 6-7 educational keywords that would help find relevant YouTube videos for the topics discussed in the chat.`
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 400
     });
@@ -601,10 +616,8 @@ const getYouTubeRecommendations = async (req, res) => {
     // Parse keywords
     let keywords;
     try {
-      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        keywords = JSON.parse(jsonMatch[0]);
-      } else {
+      keywords = parseModelJson(aiResponse, { context: 'search keywords' });
+      if (!Array.isArray(keywords) || keywords.length === 0) {
         // Fallback to doubt title if parsing fails
         keywords = [doubtClearance.title];
       }

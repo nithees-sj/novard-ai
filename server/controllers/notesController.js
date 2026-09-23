@@ -1,9 +1,12 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const Groq = require('groq-sdk');
 const Notes = require('../models/notes');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
+const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -73,9 +76,36 @@ const uploadNotes = async (req, res) => {
     const { title } = req.body;
     const userId = req.body.userId || 'default-user'; // You can get this from auth middleware
 
-    // Extract text from PDF
+    // Extract text from PDF.
+    //
+    // pdf-parse v1 bundled a 2018 build of pdf.js that threw "bad XRef entry"
+    // on ordinary modern PDFs (anything LibreOffice or Word produces), so
+    // uploads failed for most real files. v2 uses a current pdf.js.
     const pdfBuffer = fs.readFileSync(req.file.path);
-    const pdfData = await pdfParse(pdfBuffer);
+    let extractedText = '';
+    let parser;
+    try {
+      parser = new PDFParse({ data: new Uint8Array(pdfBuffer) });
+      const pdfData = await parser.getText();
+      extractedText = (pdfData.text || '').trim();
+    } catch (pdfError) {
+      console.error('PDF extraction failed:', pdfError);
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({
+        error: 'Could not read text from that PDF. If it is a scanned document it has no text layer to extract.',
+      });
+    } finally {
+      if (parser && typeof parser.destroy === 'function') {
+        await parser.destroy().catch(() => {});
+      }
+    }
+
+    if (!extractedText) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(422).json({
+        error: 'That PDF contains no extractable text (it is most likely a scan or images only).',
+      });
+    }
 
     // Save to database
     const note = new Notes({
@@ -83,7 +113,7 @@ const uploadNotes = async (req, res) => {
       title: title || req.file.originalname,
       fileName: req.file.originalname,
       filePath: req.file.path,
-      extractedText: pdfData.text
+      extractedText
     });
 
     await note.save();
@@ -155,6 +185,8 @@ ${relevantChunk}
 
 IMPORTANT - Format your response using these markdown elements for professional display:
 
+0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
+
 1. Use ### for section headers (e.g., "### Key Concept")
 2. Use numbered lists (1. 2. 3.) for step-by-step explanations
 3. Use bullet points (- or *) for key points or features
@@ -176,15 +208,19 @@ RESPONSE STRUCTURE:
 - Use numbered lists for sequential information
 - Use bullet points for related concepts
 - Add emoji-prefixed notes for emphasis
-- Be concise but comprehensive
+- Answer in depth: explain the concept, why it works that way, and how it is applied,
+  with a concrete example or code snippet where one helps. Prefer a complete answer
+  over a short one, but do not pad it with repetition
 - If asked about something not in the notes, politely explain that the information is not available in the provided notes
 - Maintain a helpful and educational tone`;
 
-    // Clean chatHistory to remove MongoDB _id fields and ensure proper format
-    const cleanedChatHistory = chatHistory.slice(-5).map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
+    // Clean chatHistory to remove MongoDB _id fields and ensure proper format.
+    // chatHistory is optional in the request body, so it must not be assumed
+    // to be an array - an omitted field used to throw and return a 500.
+    const cleanedChatHistory = (Array.isArray(chatHistory) ? chatHistory : [])
+      .slice(-5)
+      .filter((msg) => msg && (msg.role === 'user' || msg.role === 'assistant') && msg.content)
+      .map((msg) => ({ role: msg.role, content: msg.content }));
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -194,8 +230,9 @@ RESPONSE STRUCTURE:
 
     const completion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama-3.1-8b-instant",
-      max_tokens: 800, // Reduced to stay within limits
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
+      max_tokens: 2500,
       temperature: 0.7
     });
 
@@ -248,10 +285,12 @@ const summarizeNotes = async (req, res) => {
     if (chunks.length === 1) {
       // Single chunk - process normally
       const systemPrompt = `Please provide a comprehensive summary of the following notes. The summary should:
-1. Highlight the main topics and key concepts
-2. Include important details and supporting information
-3. Be well-structured and easy to read
-4. Capture the essential information from the notes
+1. Cover every topic in the notes, each under its own heading - do not merge or skip any
+2. For each topic: explain the concept, the detail behind it, and why it matters
+3. Preserve specifics from the notes (names, numbers, commands, distinctions) rather than generalising them
+4. Expand on terms the notes only mention in passing, so the summary stands on its own
+
+${MARKDOWN_WITH_FLOWCHART}
 
 Notes content:
 ${noteText}`;
@@ -261,8 +300,9 @@ ${noteText}`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Please summarize these notes comprehensively.' }
         ],
-        model: "llama-3.1-8b-instant",
-        max_tokens: 1200,
+        model: MODELS.FAST,
+        ...GROQ_DEFAULTS,
+        max_tokens: 3000,
         temperature: 0.5
       });
 
@@ -282,17 +322,18 @@ ${noteText}`;
       const chunkSummaries = [];
       
       for (let i = 0; i < Math.min(chunks.length, 3); i++) { // Limit to 3 chunks to avoid token limits
-        const chunkPrompt = `Please provide a concise summary of the following text section. Focus on the main points:
+        const chunkPrompt = `Summarise the following text section in detail. Keep every distinct topic, definition, example, number and distinction it contains - this summary will be merged with others, so anything dropped here is lost for good:
 
 ${chunks[i]}`;
 
         const completion = await groq.chat.completions.create({
           messages: [
-            { role: 'system', content: 'You are a helpful assistant that creates concise summaries.' },
+            { role: 'system', content: 'You are a helpful assistant that creates detailed, faithful summaries that preserve specifics.' },
             { role: 'user', content: chunkPrompt }
           ],
-          model: "llama-3.1-8b-instant",
-          max_tokens: 400,
+          model: MODELS.FAST,
+          ...GROQ_DEFAULTS,
+          max_tokens: 900,
           temperature: 0.5
         });
 
@@ -315,8 +356,9 @@ Combine them into a well-structured, comprehensive summary.`;
           { role: 'system', content: 'You are a helpful assistant that creates comprehensive summaries.' },
           { role: 'user', content: finalPrompt }
         ],
-        model: "llama-3.1-8b-instant",
-        max_tokens: 800,
+        model: MODELS.FAST,
+        ...GROQ_DEFAULTS,
+        max_tokens: 3000,
         temperature: 0.5
       });
 
@@ -383,7 +425,8 @@ ${noteText}`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Generate a comprehensive quiz based on these notes.' }
         ],
-        model: "llama-3.1-8b-instant",
+        model: MODELS.FAST,
+        ...GROQ_DEFAULTS,
         max_tokens: 1500,
         temperature: 0.7
       });
@@ -397,7 +440,7 @@ ${noteText}`;
           jsonMatch = quizText.match(/\{[\s\S]*\}/);
         }
         
-        const quiz = JSON.parse(jsonMatch ? jsonMatch[0] : quizText);
+        const quiz = parseModelJson(quizText, { context: 'quiz' });
         const quizData = Array.isArray(quiz) ? quiz : [quiz];
         
         // Save quiz to database
@@ -457,7 +500,8 @@ ${firstChunk}`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Generate a quiz based on this section of notes.' }
         ],
-        model: "llama-3.1-8b-instant",
+        model: MODELS.FAST,
+        ...GROQ_DEFAULTS,
         max_tokens: 1200,
         temperature: 0.7
       });
@@ -471,7 +515,7 @@ ${firstChunk}`;
           jsonMatch = quizText.match(/\{[\s\S]*\}/);
         }
         
-        const quiz = JSON.parse(jsonMatch ? jsonMatch[0] : quizText);
+        const quiz = parseModelJson(quizText, { context: 'quiz' });
         const quizData = Array.isArray(quiz) ? quiz : [quiz];
         
         // Save quiz to database
@@ -596,6 +640,7 @@ const saveQuizResults = async (req, res) => {
 
     note.quizzes[quizIndex].userAnswers = userAnswers;
     note.quizzes[quizIndex].score = score;
+    note.quizzes[quizIndex].attemptedAt = new Date();
     note.lastAccessed = new Date();
 
     await note.save();

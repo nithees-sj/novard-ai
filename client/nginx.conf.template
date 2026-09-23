@@ -1,0 +1,23 @@
+server {
+    listen ${PORT};
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # SPA routing — serve index.html for all non-file routes
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location /static/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Disable caching for index.html so users always get latest build
+    location = /index.html {
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+}

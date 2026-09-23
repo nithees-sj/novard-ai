@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
+import useViewportWidth from '../hooks/useViewportWidth';
 
 const TeacherLogin = () => {
   const navigate = useNavigate();
+  const viewportWidth = useViewportWidth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -31,8 +33,8 @@ const TeacherLogin = () => {
   };
 
   const getResponsiveStyles = () => {
-    const isMobile = window.innerWidth < 768;
-    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+    const isMobile = viewportWidth < 768;
+    const isTablet = viewportWidth >= 768 && viewportWidth < 1024;
     
     return {
       container: {

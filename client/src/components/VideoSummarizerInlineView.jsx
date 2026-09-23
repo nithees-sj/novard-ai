@@ -1,190 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import MarkdownView from './MarkdownView';
+import SummaryHeader from './SummaryHeader';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
-// Component to render structured AI responses
-const StructuredMessageRenderer = ({ content, role }) => {
-  if (role === 'user') {
-    return <div>{content}</div>;
-  }
-
-  // Helper function to render inline markdown (bold text)
-  const renderInlineMarkdown = (text) => {
-    const parts = [];
-    let lastIndex = 0;
-    const boldRegex = /\*\*(.+?)\*\*/g;
-    let match;
-
-    while ((match = boldRegex.exec(text)) !== null) {
-      // Add text before the bold part
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-      // Add the bold part
-      parts.push(<strong key={match.index} className="font-semibold">{match[1]}</strong>);
-      lastIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
-  };
-
-  // Parse structured content
-  const parseStructuredContent = (text) => {
-    const elements = [];
-    const lines = text.split('\n');
-    let i = 0;
-
-    while (i < lines.length) {
-      const line = lines[i];
-
-      // Header detection (### or **)
-      if (line.match(/^###\s+(.+)/) || line.match(/^\*\*(.+)\*\*$/)) {
-        const headerText = line.replace(/^###\s+/, '').replace(/^\*\*|\*\*$/g, '').replace(/[:]/g, '').trim();
-        elements.push({ type: 'header', content: headerText });
-        i++;
-      }
-      // Code block detection
-      else if (line.startsWith('```')) {
-        const codeLines = [];
-        const lang = line.replace('```', '').trim() || 'text';
-        i++;
-        while (i < lines.length && !lines[i].startsWith('```')) {
-          codeLines.push(lines[i]);
-          i++;
-        }
-        elements.push({ type: 'code', content: codeLines.join('\n'), language: lang });
-        i++;
-      }
-      // Bullet list detection
-      else if (line.match(/^[-•*]\s+(.+)/)) {
-        const listItems = [];
-        while (i < lines.length && lines[i].match(/^[-•*]\s+(.+)/)) {
-          listItems.push(lines[i].replace(/^[-•*]\s+/, ''));
-          i++;
-        }
-        elements.push({ type: 'bullet_list', items: listItems });
-      }
-      // Numbered list detection
-      else if (line.match(/^\d+\.\s+(.+)/)) {
-        const listItems = [];
-        while (i < lines.length && lines[i].match(/^\d+\.\s+(.+)/)) {
-          listItems.push(lines[i].replace(/^\d+\.\s+/, ''));
-          i++;
-        }
-        elements.push({ type: 'numbered_list', items: listItems });
-      }
-      // Info/Note box detection
-      else if (line.match(/^(ℹ️|💡|⚠️|✅|❌)\s+(.+)/)) {
-        const match = line.match(/^(ℹ️|💡|⚠️|✅|❌)\s+(.+)/);
-        const icon = match[1];
-        const noteContent = match[2];
-        elements.push({ type: 'note', icon, content: noteContent });
-        i++;
-      }
-      // Regular paragraph
-      else if (line.trim().length > 0) {
-        elements.push({ type: 'paragraph', content: line });
-        i++;
-      }
-      else {
-        i++;
-      }
-    }
-
-    return elements;
-  };
-
-  const elements = parseStructuredContent(content);
-
-  return (
-    <div className="space-y-3">
-      {elements.map((element, idx) => {
-        switch (element.type) {
-          case 'header':
-            return (
-              <div key={idx} className="flex items-center gap-2 mt-4 mb-2 pb-2 border-b border-gray-200">
-                <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                <h4 className="text-sm font-bold text-gray-900">{element.content}</h4>
-              </div>
-            );
-
-          case 'code':
-            return (
-              <div key={idx} className="my-3">
-                <div className="flex items-center justify-between bg-gray-800 px-3 py-1.5 rounded-t-md">
-                  <span className="text-xs text-gray-300 font-mono">{element.language}</span>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(element.content)}
-                    className="text-xs text-gray-400 hover:text-white transition-colors"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-b-md overflow-x-auto text-xs font-mono">
-                  <code>{element.content}</code>
-                </pre>
-              </div>
-            );
-
-          case 'bullet_list':
-            return (
-              <ul key={idx} className="space-y-1.5 ml-2">
-                {element.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="text-blue-600 mt-1.5 flex-shrink-0">•</span>
-                    <span className="flex-1">{renderInlineMarkdown(item)}</span>
-                  </li>
-                ))}
-              </ul>
-            );
-
-          case 'numbered_list':
-            return (
-              <ol key={idx} className="space-y-1.5 ml-2">
-                {element.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="text-blue-600 font-semibold mt-0.5 flex-shrink-0">{itemIdx + 1}.</span>
-                    <span className="flex-1">{renderInlineMarkdown(item)}</span>
-                  </li>
-                ))}
-              </ol>
-            );
-
-          case 'note':
-            const noteColors = {
-              'ℹ️': 'bg-blue-50 border-blue-200 text-blue-800',
-              '💡': 'bg-yellow-50 border-yellow-200 text-yellow-800',
-              '⚠️': 'bg-orange-50 border-orange-200 text-orange-800',
-              '✅': 'bg-green-50 border-green-200 text-green-800',
-              '❌': 'bg-red-50 border-red-200 text-red-800'
-            };
-            return (
-              <div key={idx} className={`flex items-start gap-2 p-3 rounded-md border ${noteColors[element.icon] || 'bg-gray-50 border-gray-200 text-gray-800'}`}>
-                <span className="text-lg flex-shrink-0">{element.icon}</span>
-                <p className="text-sm flex-1">{renderInlineMarkdown(element.content)}</p>
-              </div>
-            );
-
-          case 'paragraph':
-            return (
-              <p key={idx} className="text-sm text-gray-700 leading-relaxed">
-                {renderInlineMarkdown(element.content)}
-              </p>
-            );
-
-          default:
-            return null;
-        }
-      })}
-    </div>
-  );
-};
 
 const VideoSummarizerInlineView = () => {
   const [videos, setVideos] = useState([]);
@@ -347,7 +167,13 @@ const VideoSummarizerInlineView = () => {
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
-      setCurrentQuizId(selectedVideo.quizzes ? selectedVideo.quizzes.length : 0);
+      // The server reports which slot it stored the quiz in; the local count
+      // can be stale if selectedVideo was not refreshed after an earlier quiz.
+      setCurrentQuizId(
+        Number.isInteger(response.data.quizIndex)
+          ? response.data.quizIndex
+          : (selectedVideo.quizzes ? selectedVideo.quizzes.length : 0)
+      );
       setQuizAnswers({});
       setQuizScore(null);
       await loadUserVideos();
@@ -465,14 +291,14 @@ const VideoSummarizerInlineView = () => {
                 <div className="flex-1 overflow-y-auto scroll-smooth scrollbar-hide p-4 space-y-3">
                   {chatMessages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] px-4 py-3 rounded-lg text-sm ${message.role === 'user'
+                      <div className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${message.role === 'user'
                           ? 'bg-gray-900 text-white'
                         : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                         }`}>
                         {message.role === 'user' ? (
                           message.content
                         ) : (
-                          <StructuredMessageRenderer content={message.content} role={message.role} />
+                          <MarkdownView content={message.content} />
                         )}
                       </div>
                     </div>
@@ -521,8 +347,9 @@ const VideoSummarizerInlineView = () => {
                     </div>
                   </div>
                 ) : summary ? (
-                    <div className="prose max-w-none">
-                      <StructuredMessageRenderer content={summary} role="assistant" />
+                    <div>
+                      <SummaryHeader title="Video Summary" subtitle={selectedVideo.title} icon="video" />
+                      <MarkdownView content={summary} size="base" />
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-full">

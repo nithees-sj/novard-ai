@@ -59,7 +59,8 @@ const educationalVideoSchema = new mongoose.Schema({
     }],
     totalQuestions: Number,
     score: Number,
-    completedAt: Date
+    completedAt: Date,
+    attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
   }],
   userId: {
     type: String,

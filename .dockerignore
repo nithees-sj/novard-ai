@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vscode
+node_modules
+*.md
+*.png
+docker-compose*.yml
+cloudbuild.yaml
+deploy.sh
+vercel.json

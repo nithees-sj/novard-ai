@@ -51,7 +51,8 @@ const doubtClearanceSchema = new mongoose.Schema({
     completedAt: {
       type: Date,
       default: Date.now
-    }
+    },
+    attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
   }],
   youtubeRecommendations: [{
     title: String,

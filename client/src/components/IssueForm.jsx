@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { FORUM_CATEGORIES } from '../lib/forum';
 
 const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    tags: ''
+    tags: '',
+    category: 'general'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,9 +22,10 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.description.trim()) {
-      alert('Please fill in both title and description');
+      setFormError('Please fill in both the title and the description.');
       return;
     }
+    setFormError(null);
 
     setIsSubmitting(true);
     try {
@@ -43,11 +47,12 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
       setFormData({
         title: '',
         description: '',
-        tags: ''
+        tags: '',
+        category: 'general'
       });
     } catch (error) {
       console.error('Error submitting issue:', error);
-      alert('Failed to create issue. Please try again.');
+      setFormError('Could not create the discussion. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -65,7 +70,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
         className="bg-white rounded-lg p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Create New Issue</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Start a Discussion</h2>
           <button
             onClick={onCancel}
             className="text-gray-500 hover:text-gray-700 text-2xl p-1"
@@ -107,6 +112,27 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
           </div>
 
           <div className="flex flex-col gap-2">
+            <span className="font-semibold text-sm text-gray-700">Category</span>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Category">
+              {FORUM_CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={formData.category === c.value}
+                  onClick={() => setFormData((prev) => ({ ...prev, category: c.value }))}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    formData.category === c.value
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
             <label htmlFor="tags" className="font-semibold text-sm text-gray-700">
               Tags (optional)
             </label>
@@ -121,6 +147,9 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
             />
           </div>
 
+          {formError && (
+            <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{formError}</p>
+          )}
           <div className="flex gap-3 justify-end mt-2">
             <button
               type="button"

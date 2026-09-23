@@ -1,190 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import MarkdownView from './MarkdownView';
+import SummaryHeader from './SummaryHeader';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT || 'http://localhost:5001';
+const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
-// Component to render structured AI responses
-const StructuredMessageRenderer = ({ content, role }) => {
-  if (role === 'user') {
-    return <div>{content}</div>;
-  }
-
-  // Helper function to render inline markdown (bold text)
-  const renderInlineMarkdown = (text) => {
-    const parts = [];
-    let lastIndex = 0;
-    const boldRegex = /\*\*(.+?)\*\*/g;
-    let match;
-
-    while ((match = boldRegex.exec(text)) !== null) {
-      // Add text before the bold part
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-      // Add the bold part
-      parts.push(<strong key={match.index} className="font-semibold">{match[1]}</strong>);
-      lastIndex = match.index + match[0].length;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
-  };
-
-  // Parse structured content
-  const parseStructuredContent = (text) => {
-    const elements = [];
-    const lines = text.split('\n');
-    let i = 0;
-
-    while (i < lines.length) {
-      const line = lines[i];
-
-      // Header detection (### or **)
-      if (line.match(/^###\s+(.+)/) || line.match(/^\*\*(.+)\*\*$/)) {
-        const headerText = line.replace(/^###\s+/, '').replace(/^\*\*|\*\*$/g, '').replace(/[:]/g, '').trim();
-        elements.push({ type: 'header', content: headerText });
-        i++;
-      }
-      // Code block detection
-      else if (line.startsWith('```')) {
-        const codeLines = [];
-        const lang = line.replace('```', '').trim() || 'text';
-        i++;
-        while (i < lines.length && !lines[i].startsWith('```')) {
-          codeLines.push(lines[i]);
-          i++;
-        }
-        elements.push({ type: 'code', content: codeLines.join('\n'), language: lang });
-        i++;
-      }
-      // Bullet list detection
-      else if (line.match(/^[-•*]\s+(.+)/)) {
-        const listItems = [];
-        while (i < lines.length && lines[i].match(/^[-•*]\s+(.+)/)) {
-          listItems.push(lines[i].replace(/^[-•*]\s+/, ''));
-          i++;
-        }
-        elements.push({ type: 'bullet_list', items: listItems });
-      }
-      // Numbered list detection
-      else if (line.match(/^\d+\.\s+(.+)/)) {
-        const listItems = [];
-        while (i < lines.length && lines[i].match(/^\d+\.\s+(.+)/)) {
-          listItems.push(lines[i].replace(/^\d+\.\s+/, ''));
-          i++;
-        }
-        elements.push({ type: 'numbered_list', items: listItems });
-      }
-      // Info/Note box detection
-      else if (line.match(/^(ℹ️|💡|⚠️|✅|❌)\s+(.+)/)) {
-        const match = line.match(/^(ℹ️|💡|⚠️|✅|❌)\s+(.+)/);
-        const icon = match[1];
-        const noteContent = match[2];
-        elements.push({ type: 'note', icon, content: noteContent });
-        i++;
-      }
-      // Regular paragraph
-      else if (line.trim().length > 0) {
-        elements.push({ type: 'paragraph', content: line });
-        i++;
-      }
-      else {
-        i++;
-      }
-    }
-
-    return elements;
-  };
-
-  const elements = parseStructuredContent(content);
-
-  return (
-    <div className="space-y-3">
-      {elements.map((element, idx) => {
-        switch (element.type) {
-          case 'header':
-            return (
-              <div key={idx} className="flex items-center gap-2 mt-4 mb-2 pb-2 border-b border-gray-200">
-                <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                <h4 className="text-sm font-bold text-gray-900">{element.content}</h4>
-              </div>
-            );
-
-          case 'code':
-            return (
-              <div key={idx} className="my-3">
-                <div className="flex items-center justify-between bg-gray-800 px-3 py-1.5 rounded-t-md">
-                  <span className="text-xs text-gray-300 font-mono">{element.language}</span>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(element.content)}
-                    className="text-xs text-gray-400 hover:text-white transition-colors"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                <pre className="bg-gray-900 text-gray-100 p-3 rounded-b-md overflow-x-auto text-xs font-mono">
-                  <code>{element.content}</code>
-                </pre>
-              </div>
-            );
-
-          case 'bullet_list':
-            return (
-              <ul key={idx} className="space-y-1.5 ml-2">
-                {element.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="text-blue-600 mt-1.5 flex-shrink-0">•</span>
-                    <span className="flex-1">{renderInlineMarkdown(item)}</span>
-                  </li>
-                ))}
-              </ul>
-            );
-
-          case 'numbered_list':
-            return (
-              <ol key={idx} className="space-y-1.5 ml-2">
-                {element.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="text-blue-600 font-semibold mt-0.5 flex-shrink-0">{itemIdx + 1}.</span>
-                    <span className="flex-1">{renderInlineMarkdown(item)}</span>
-                  </li>
-                ))}
-              </ol>
-            );
-
-          case 'note':
-            const noteColors = {
-              'ℹ️': 'bg-blue-50 border-blue-200 text-blue-800',
-              '💡': 'bg-yellow-50 border-yellow-200 text-yellow-800',
-              '⚠️': 'bg-orange-50 border-orange-200 text-orange-800',
-              '✅': 'bg-green-50 border-green-200 text-green-800',
-              '❌': 'bg-red-50 border-red-200 text-red-800'
-            };
-            return (
-              <div key={idx} className={`flex items-start gap-2 p-3 rounded-md border ${noteColors[element.icon] || 'bg-gray-50 border-gray-200 text-gray-800'}`}>
-                <span className="text-lg flex-shrink-0">{element.icon}</span>
-                <p className="text-sm flex-1">{renderInlineMarkdown(element.content)}</p>
-              </div>
-            );
-
-          case 'paragraph':
-            return (
-              <p key={idx} className="text-sm text-gray-700 leading-relaxed">
-                {renderInlineMarkdown(element.content)}
-              </p>
-            );
-
-          default:
-            return null;
-        }
-      })}
-    </div>
-  );
-};
 
 const DoubtClearanceInlineView = () => {
   const [doubts, setDoubts] = useState([]);
@@ -335,7 +155,13 @@ const DoubtClearanceInlineView = () => {
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
-      setCurrentQuizId(selectedDoubt.quizzes ? selectedDoubt.quizzes.length : 0);
+      // The server reports which slot it stored the quiz in; the local count
+      // can be stale if selectedDoubt was not refreshed after an earlier quiz.
+      setCurrentQuizId(
+        Number.isInteger(response.data.quizIndex)
+          ? response.data.quizIndex
+          : (selectedDoubt.quizzes ? selectedDoubt.quizzes.length : 0)
+      );
       setQuizAnswers({});
       setQuizScore(null);
       await loadUserDoubts();
@@ -478,7 +304,7 @@ const DoubtClearanceInlineView = () => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {chatMessages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] px-4 py-3 rounded-lg text-sm ${
+                      <div className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${
                         message.role === 'user'
                           ? 'bg-gray-900 text-white'
                         : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
@@ -486,7 +312,7 @@ const DoubtClearanceInlineView = () => {
                         {message.role === 'user' ? (
                           message.content
                         ) : (
-                          <StructuredMessageRenderer content={message.content} role={message.role} />
+                          <MarkdownView content={message.content} />
                         )}
                       </div>
                     </div>
@@ -536,122 +362,8 @@ const DoubtClearanceInlineView = () => {
                   </div>
                 ) : summary ? (
                   <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">Solution Overview</h3>
-                        <p className="text-xs text-gray-500">{selectedDoubt.title}</p>
-                      </div>
-                    </div>
-
-                    {/* Parse and display summary in structured format */}
-                    {(() => {
-                      const sentences = summary.split(/\.(?=\s|$)/).filter(s => s.trim().length > 0);
-                      const sections = [];
-                      let currentSection = { title: 'Solution', content: [] };
-                      
-                      sentences.forEach((sentence) => {
-                        const trimmed = sentence.trim();
-                        const headerMatch = trimmed.match(/\*\*([^*]+)\*\*/);
-                        if (headerMatch) {
-                          if (currentSection.content.length > 0) {
-                            sections.push(currentSection);
-                          }
-                          currentSection = {
-                            title: headerMatch[1].replace(/[:]/g, '').trim(),
-                            content: [trimmed.replace(/\*\*[^*]+\*\*/, '').trim()]
-                          };
-                        } else {
-                          currentSection.content.push(trimmed);
-                        }
-                      });
-                      
-                      if (currentSection.content.length > 0) {
-                        sections.push(currentSection);
-                      }
-                      
-                      if (sections.length === 0) {
-                        sections.push({
-                          title: 'Solution',
-                          content: sentences
-                        });
-                      }
-                      
-                      return (
-                        <>
-                          {sections.map((section, idx) => (
-                            <div key={idx} className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 mt-1">
-                                  {idx === 0 ? (
-                                    <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                                      <span className="text-lg">✅</span>
-                                    </div>
-                                  ) : (
-                                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                                      <span className="text-lg">💡</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                    {section.title}
-                                    {idx === 0 && (
-                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
-                                        Primary
-                                      </span>
-                                    )}
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {section.content.map((item, itemIdx) => {
-                                      const cleanItem = item.trim();
-                                      if (!cleanItem || cleanItem.length < 3) return null;
-                                      
-                                      return (
-                                        <div key={itemIdx} className="flex items-start gap-2">
-                                          <div className="flex-shrink-0 mt-1.5">
-                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                                          </div>
-                                          <p className="text-sm text-gray-700 leading-relaxed">
-                                            {cleanItem}{cleanItem.endsWith('.') ? '' : '.'}
-                                          </p>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Summary Stats Footer */}
-                          <div className="mt-6 pt-4 border-t border-gray-200">
-                            <div className="flex items-center justify-between text-xs text-gray-500">
-                              <div className="flex items-center gap-4">
-                                <span className="flex items-center gap-1">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                  </svg>
-                                  {sections.length} {sections.length === 1 ? 'section' : 'sections'}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {sentences.length} key points
-                                </span>
-                              </div>
-                              <span className="text-green-600 font-medium">✓ Solution Ready</span>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
+                    <SummaryHeader title="Solution Overview" subtitle={selectedDoubt.title} icon="check" tone="green" />
+                    <MarkdownView content={summary} size="base" />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">

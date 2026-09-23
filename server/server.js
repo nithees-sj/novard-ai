@@ -1,6 +1,10 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const mongoose = require('mongoose');
 const connectDB = require('./connect');
 const { saveUser, getUserByEmail, getUserProfile, updateUserProfile } = require('./controllers/userController');
 const { processSkillsPrompt, getSkillsByCareer } = require('./controllers/skillsController');  
@@ -65,6 +69,7 @@ const {
   getIssueComments,
   addComment,
   updateIssueStatus,
+  deleteIssue,
   voteOnIssue,
   voteOnComment,
   searchIssues,
@@ -103,6 +108,22 @@ const {
 } = require('./controllers/analyticsController');
 
 
+
+const REQUIRED_ENV = ['MONGO_URI', 'GROQ_API_KEY'];
+const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(
+    `\nMissing required environment variable(s): ${missingEnv.join(', ')}\n` +
+    `Add them to server/.env before starting the server.\n`
+  );
+  process.exit(1);
+}
+
+if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+  console.warn(
+    'Neither GEMINI_API_KEY nor GOOGLE_API_KEY is set - Udemy/Coursera/edureka course discovery will return no results.'
+  );
+}
 
 const app = express();
 app.use(cors());
@@ -196,6 +217,7 @@ app.get('/api/forum/issues/:issueId', getIssueById);
 app.get('/api/forum/issues/:issueId/comments', getIssueComments);
 app.post('/api/forum/comments', addComment);
 app.put('/api/forum/issues/:issueId/status', updateIssueStatus);
+app.delete('/api/forum/issues/:issueId', deleteIssue);
 app.post('/api/forum/issues/:issueId/vote', voteOnIssue);
 app.post('/api/forum/comments/:commentId/vote', voteOnComment);
 app.get('/api/forum/search', searchIssues);
@@ -236,14 +258,72 @@ app.post('/api/skill-unlocker/generate-quiz', generateSkillQuiz);
 app.get('/api/skill-unlocker/plans/:userId', getUserPlans);
 app.post('/api/skill-unlocker/save-quiz-result', saveQuizResult);
 app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
-app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
 app.delete('/api/skill-unlocker/plans/:planId', deletePlan);
 app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 
 // Analytics routes
 app.get('/api/analytics/:userId', getUserAnalytics);
 
+// ── Unmatched routes ──────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: `Not found: ${req.method} ${req.originalUrl}` });
+});
+
+// ── Central error handler ─────────────────────────────────────────────────
+// Without this, Express replies to upload failures and thrown errors with an
+// HTML stack trace, which the client's response.json() then chokes on.
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  console.error('Unhandled error:', err);
+
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'File is too large.'
+        : `Upload failed: ${err.message}`;
+    return res.status(413).json({ error: message });
+  }
+
+  if (err && /Only (PDF|video) files are allowed/i.test(err.message || '')) {
+    return res.status(415).json({ error: err.message });
+  }
+
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request body is too large.' });
+  }
+
+  return res.status(err.status || 500).json({
+    error: err.expose ? err.message : 'Internal server error',
+  });
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the other process or set PORT in server/.env.`);
+    process.exit(1);
+  }
+  throw err;
+});
+
+// Keep the process alive on a stray rejection rather than dying mid-request,
+// but make it loud so the cause is visible in the log.
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+const shutdown = (signal) => () => {
+  console.log(`\n${signal} received - shutting down.`);
+  server.close(() => {
+    mongoose.connection.close(false).finally(() => process.exit(0));
+  });
+  setTimeout(() => process.exit(1), 10000).unref();
+};
+
+process.on('SIGINT', shutdown('SIGINT'));
+process.on('SIGTERM', shutdown('SIGTERM'));

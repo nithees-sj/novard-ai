@@ -4,6 +4,9 @@ const { Innertube } = require('youtubei.js');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
+const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -107,7 +110,8 @@ const generateVideoContent = async (originalFileName = 'uploaded video') => {
           content: `Based on this video filename: "${originalFileName}", create a realistic educational transcript. The video appears to be about: ${originalFileName.replace(/[^a-zA-Z0-9\s]/g, ' ').trim()}. Please create a comprehensive transcript that covers the main topics that would typically be discussed in such a video. Make it detailed and educational.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 2000,
     });
@@ -267,6 +271,8 @@ const chatWithYouTubeVideo = async (req, res) => {
 
 IMPORTANT - Format your response using these markdown elements for professional display:
 
+0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
+
 1. Use ### for section headers (e.g., "### Key Point")
 2. Use numbered lists (1. 2. 3.) for step-by-step explanations
 3. Use bullet points (- or *) for key points or features
@@ -287,7 +293,9 @@ RESPONSE STRUCTURE:
 - Include numbered lists for sequential information
 - Use bullet points for related concepts
 - Add emoji-prefixed notes for emphasis
-- Be concise but comprehensive
+- Answer in depth: explain the concept, why it works that way, and how it is applied,
+  with a concrete example or code snippet where one helps. Prefer a complete answer
+  over a short one, but do not pad it with repetition
 - If the transcript is not available, work with the title and description to provide the best possible answer`
         },
         {
@@ -295,9 +303,10 @@ RESPONSE STRUCTURE:
           content: `Video Information:\n${context}\n\nUser Question: ${message}\n\nPlease provide a helpful answer based on the video content.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 2500,
     });
 
     const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
@@ -363,16 +372,19 @@ SUMMARY STRUCTURE:
 - Use numbered or bullet lists for organized content
 - Add emoji-prefixed notes for emphasis
 - End with a conclusion or key takeaways section
-- If transcript is not available, work with the title and description to create the best possible summary`
+- If transcript is not available, work with the title and description to create the best possible summary
+
+${MARKDOWN_WITH_FLOWCHART}`
         },
         {
           role: "user",
           content: `Please create a comprehensive summary of this YouTube video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${video.transcript}\n\nProvide a well-structured summary with main topics, key points, and important insights.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 3200,
     });
 
     const summary = completion.choices[0]?.message?.content || 'Unable to generate summary.';
@@ -414,7 +426,8 @@ const generateQuizForYouTubeVideo = async (req, res) => {
           content: `Create a quiz based on this YouTube video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${video.transcript}\n\nGenerate 5-7 multiple choice questions that test understanding of the video content.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 2000,
     });
@@ -439,7 +452,7 @@ const generateQuizForYouTubeVideo = async (req, res) => {
       }
       
       console.log('Cleaned quiz response:', cleanedResponse);
-      const quizData = JSON.parse(cleanedResponse);
+      const quizData = parseModelJson(cleanedResponse, { context: 'quiz' });
       
       // Validate quiz structure
       if (!quizData.questions || !Array.isArray(quizData.questions)) {
@@ -453,7 +466,7 @@ const generateQuizForYouTubeVideo = async (req, res) => {
       });
 
       await video.save();
-      res.json({ quiz: quizData.questions });
+      res.json({ quiz: quizData.questions, quizIndex: video.quizzes.length - 1 });
     } catch (parseError) {
       console.error('Error parsing quiz response:', parseError);
       res.status(500).json({ error: 'Error generating quiz format' });
@@ -481,6 +494,7 @@ const saveQuizResults = async (req, res) => {
     if (video.quizzes[quizIndex]) {
       video.quizzes[quizIndex].score = score;
       video.quizzes[quizIndex].completedAt = new Date();
+      video.quizzes[quizIndex].attemptedAt = new Date();
       await video.save();
     }
 

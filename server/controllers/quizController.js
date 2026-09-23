@@ -1,5 +1,7 @@
 const Course = require('../models/course');
 const Groq = require('groq-sdk');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
@@ -68,9 +70,10 @@ const generateQuizForVideo = async (req, res) => {
           content: prompt
         }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 2000
+      max_tokens: 3000
     });
 
     const quizContent = completion.choices[0]?.message?.content;
@@ -98,7 +101,7 @@ const generateQuizForVideo = async (req, res) => {
     // Parse the JSON response
     let quizData;
     try {
-      quizData = JSON.parse(jsonString);
+      quizData = parseModelJson(quizContent, { context: 'quiz' });
     } catch (parseError) {
       console.error('Error parsing quiz JSON:', parseError);
       console.error('Raw content:', quizContent);

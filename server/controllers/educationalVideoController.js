@@ -2,17 +2,24 @@ const EducationalVideo = require('../models/educationalVideo');
 const Groq = require('groq-sdk');
 const { Innertube } = require('youtubei.js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
+const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Accept either name: the code has always read GEMINI_API_KEY while the
+// Docker/Cloud Run configs pass GOOGLE_API_KEY, which silently disabled
+// Gemini-backed course discovery in containers.
+const googleApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const genAI = new GoogleGenerativeAI(googleApiKey);
 
 // Function to get real course information using Gemini AI
 const getRealCourseInfo = async (videoId, platform) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: MODELS.GEMINI });
     
     const prompt = `Find detailed information about a ${platform} course with ID "${videoId}". Return ONLY a JSON object with this exact format:
     {"title": "Course Title", "description": "Detailed course description", "instructor": "Instructor Name", "rating": "4.5", "price": "$89.99", "enrollments": 50000, "transcript": "Course content overview and key topics covered"}
@@ -40,7 +47,7 @@ const getRealCourseInfo = async (videoId, platform) => {
     
     console.log(`Gemini course info for ${platform} - ${videoId}:`, cleanedText);
     
-    const courseInfo = JSON.parse(cleanedText);
+    const courseInfo = parseModelJson(cleanedText, { context: 'course details' });
     
     return {
       title: courseInfo.title,
@@ -60,6 +67,13 @@ const getRealCourseInfo = async (videoId, platform) => {
 };
 
 // Helper function to extract video ID from various platform URLs
+/** Clip a value to a schema maxlength, leaving a marker when it was cut. */
+const truncate = (value, limit) => {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 1)}\u2026`;
+};
+
 const extractVideoId = (url, platform) => {
   switch (platform) {
     case 'youtube':
@@ -179,12 +193,17 @@ const createEducationalVideo = async (req, res) => {
     console.log('Video Info:', videoInfo);
     console.log('Transcript length:', transcript.length);
 
+    // The schema caps title at 200 and description at 2000 characters, but
+    // real YouTube descriptions routinely run far longer. Saving them raw made
+    // Mongoose reject every genuine video with a validation error, surfaced to
+    // the user as a generic 500. Truncate to fit; the transcript (uncapped)
+    // still carries the full content used for summaries and quizzes.
     const educationalVideo = new EducationalVideo({
-      title: title || videoInfo.title,
+      title: truncate(title || videoInfo.title, 200),
       videoUrl,
       videoId,
       platform,
-      description: videoInfo.description,
+      description: truncate(videoInfo.description, 2000),
       transcript,
       userId
     });
@@ -244,9 +263,10 @@ const chatWithEducationalVideo = async (req, res) => {
           content: `Video Information:\n${context}\n\nUser Question: ${message}\n\nPlease provide a helpful answer based on the video content.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 2500,
     });
 
     const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
@@ -289,16 +309,19 @@ const summarizeEducationalVideo = async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are an expert at creating comprehensive summaries of educational videos from various platforms. Create a detailed summary that covers the main topics, key points, and important insights from the video. If transcript is not available, work with the title and description to create the best possible summary.`
+          content: `You are an expert at creating comprehensive summaries of educational videos from various platforms. Create a detailed summary that covers the main topics, key points, and important insights from the video. If transcript is not available, work with the title and description to create the best possible summary.
+
+${MARKDOWN_WITH_FLOWCHART}`
         },
         {
           role: "user",
           content: `Please create a comprehensive summary of this ${video.platform} video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${video.transcript}\n\nProvide a well-structured summary with main topics, key points, and important insights.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 3200,
     });
 
     const summary = completion.choices[0]?.message?.content || 'Unable to generate summary.';
@@ -340,9 +363,10 @@ const generateEducationalQuiz = async (req, res) => {
           content: `Create a quiz based on this ${video.platform} video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${video.transcript}\n\nGenerate 5-7 multiple choice questions that test understanding of the video content.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 3000,
     });
 
     const quizResponse = completion.choices[0]?.message?.content || '{}';
@@ -365,7 +389,7 @@ const generateEducationalQuiz = async (req, res) => {
       }
       
       console.log('Cleaned quiz response:', cleanedResponse);
-      const quizData = JSON.parse(cleanedResponse);
+      const quizData = parseModelJson(cleanedResponse, { context: 'quiz' });
       
       // Validate quiz structure
       if (!quizData.questions || !Array.isArray(quizData.questions)) {
@@ -379,7 +403,7 @@ const generateEducationalQuiz = async (req, res) => {
       });
 
       await video.save();
-      res.json({ quiz: quizData.questions });
+      res.json({ quiz: quizData.questions, quizIndex: video.quizzes.length - 1 });
     } catch (parseError) {
       console.error('Error parsing quiz response:', parseError);
       res.status(500).json({ error: 'Error generating quiz format' });
@@ -407,6 +431,7 @@ const saveEducationalQuizResults = async (req, res) => {
     if (video.quizzes[quizIndex]) {
       video.quizzes[quizIndex].score = score;
       video.quizzes[quizIndex].completedAt = new Date();
+      video.quizzes[quizIndex].attemptedAt = new Date();
       await video.save();
     }
 

@@ -19,11 +19,19 @@ RUN npm run build
 # ── Stage 2: Serve with nginx ──
 FROM nginx:alpine
 
-# Custom nginx config for SPA routing
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
+# Copy the nginx config template (uses $PORT variable)
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Copy the built React app
 COPY --from=build /app/build /usr/share/nginx/html
 
-EXPOSE 80
+# Cloud Run injects PORT env var; default to 8080
+ENV PORT=8080
+EXPOSE $PORT
 
+# nginx:alpine image auto-processes /etc/nginx/templates/*.template
+# files using envsubst on startup, outputting to /etc/nginx/conf.d/
 CMD ["nginx", "-g", "daemon off;"]

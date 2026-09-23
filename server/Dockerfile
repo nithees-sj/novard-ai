@@ -10,6 +10,8 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
-EXPOSE 5001
+# Cloud Run injects PORT env var; default to 8080
+ENV PORT=8080
+EXPOSE $PORT
 
 CMD ["node", "server.js"]

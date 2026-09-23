@@ -1,164 +1,78 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./AuthContext";
+import RouteFallback from "./components/RouteFallback";
 
-import Landing from "./pages/Landing";
-import HomePage from "./pages/HomePage";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Roadmap from "./pages/Roadmap";
-import Skills from "./pages/Skills";
-import ProjectsPage from "./pages/Projects";
-import ResumePage from "./pages/Resumes";
-import Chatbot from "./pages/Chatbot";
-import Career from "./pages/Career";
-import Doubts from "./pages/Doubts";
-import Forum from "./pages/Forum";
-import Video from "./pages/Video";
-import YouTubeVideos from "./pages/YouTubeVideos";
-import Notes from "./pages/Notes";
-import YouTubeVideoSummarizer from "./pages/YouTubeVideoSummarizer";
-import DoubtClearance from "./pages/DoubtClearance";
-import TeacherLogin from "./pages/TeacherLogin";
-import TeacherDashboard from "./pages/TeacherDashboard";
-import CourseVideos from "./pages/CourseVideos";
-import TeacherGuidance from "./pages/TeacherGuidance";
-import SkillUnlocker from "./pages/SkillUnlocker";
+// Routes are code-split: the entry bundle previously contained every page,
+// so the landing screen paid the download cost of the whole application.
+const Landing = lazy(() => import("./pages/Landing"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Roadmap = lazy(() => import("./pages/Roadmap"));
+const Skills = lazy(() => import("./pages/Skills"));
+const ProjectsPage = lazy(() => import("./pages/Projects"));
+const ResumePage = lazy(() => import("./pages/Resumes"));
+const Chatbot = lazy(() => import("./pages/Chatbot"));
+const Career = lazy(() => import("./pages/Career"));
+const Doubts = lazy(() => import("./pages/Doubts"));
+const Forum = lazy(() => import("./pages/Forum"));
+const Video = lazy(() => import("./pages/Video"));
+const YouTubeVideos = lazy(() => import("./pages/YouTubeVideos"));
+const Notes = lazy(() => import("./pages/Notes"));
+const YouTubeVideoSummarizer = lazy(() => import("./pages/YouTubeVideoSummarizer"));
+const DoubtClearance = lazy(() => import("./pages/DoubtClearance"));
+const TeacherLogin = lazy(() => import("./pages/TeacherLogin"));
+const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
+const CourseVideos = lazy(() => import("./pages/CourseVideos"));
+const TeacherGuidance = lazy(() => import("./pages/TeacherGuidance"));
+const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
 
 function AppRoutes() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; 
+    return <RouteFallback />;
   }
 
-  return (
-    <Routes>
-      {/* Public route */}
-      <Route path="/" element={user ? <Navigate to="/home" replace /> : <Landing />} />
+  // Wraps a page that requires an authenticated user.
+  const protectedRoute = (element) => (user ? element : <Navigate to="/" replace />);
 
-      {/* Protected routes */}
-      <Route
-        path="/home"
-        element={
-          user ? <HomePage /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-            user ? <Profile /> : <Navigate to="/" replace />
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            user ? <Settings /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/roadmap"
-        element={
-          user ? <Roadmap /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/skills-required"
-        element={
-          user ? <Skills /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/project-ideas"
-        element={
-          user ? <ProjectsPage /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/resume-build"
-        element={
-          user ? <ResumePage /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/chatbot"
-        element={
-          user ? <Chatbot /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/career"
-        element={
-          user ? <Career /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-          path="/skill-unlocker"
-          element={
-            user ? <SkillUnlocker /> : <Navigate to="/" replace />
-          }
-        />
-        <Route
-        path="/doubts"
-        element={
-          user ? <Doubts /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/forum"
-        element={
-          user ? <Forum /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/video"
-        element={
-          user ? <Video /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/notes"
-        element={
-          user ? <Notes /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/youtube-videos"
-        element={
-          user ? <YouTubeVideos /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/youtube-video-summarizer"
-        element={
-          user ? <YouTubeVideoSummarizer /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/doubt-clearance"
-        element={
-          user ? <DoubtClearance /> : <Navigate to="/" replace />
-        }
-      />
-      <Route
-        path="/teacher-login"
-        element={<TeacherLogin />}
-      />
-      <Route
-        path="/teacher-dashboard"
-        element={<TeacherDashboard />}
-      />
-      <Route
-        path="/course-videos/:courseId"
-        element={<CourseVideos />}
-      />
-      <Route
-        path="/teacher-guidance"
-        element={
-          user ? <TeacherGuidance /> : <Navigate to="/" replace />
-        }
-      />
-    </Routes>
+  return (
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        {/* Public route */}
+        <Route path="/" element={user ? <Navigate to="/home" replace /> : <Landing />} />
+
+        {/* Protected routes */}
+        <Route path="/home" element={protectedRoute(<HomePage />)} />
+        <Route path="/profile" element={protectedRoute(<Profile />)} />
+        <Route path="/settings" element={protectedRoute(<Settings />)} />
+        <Route path="/roadmap" element={protectedRoute(<Roadmap />)} />
+        <Route path="/skills-required" element={protectedRoute(<Skills />)} />
+        <Route path="/project-ideas" element={protectedRoute(<ProjectsPage />)} />
+        <Route path="/resume-build" element={protectedRoute(<ResumePage />)} />
+        <Route path="/chatbot" element={protectedRoute(<Chatbot />)} />
+        <Route path="/career" element={protectedRoute(<Career />)} />
+        <Route path="/skill-unlocker" element={protectedRoute(<SkillUnlocker />)} />
+        <Route path="/doubts" element={protectedRoute(<Doubts />)} />
+        <Route path="/forum" element={protectedRoute(<Forum />)} />
+        <Route path="/video" element={protectedRoute(<Video />)} />
+        <Route path="/notes" element={protectedRoute(<Notes />)} />
+        <Route path="/youtube-videos" element={protectedRoute(<YouTubeVideos />)} />
+        <Route path="/youtube-video-summarizer" element={protectedRoute(<YouTubeVideoSummarizer />)} />
+        <Route path="/doubt-clearance" element={protectedRoute(<DoubtClearance />)} />
+        <Route path="/teacher-guidance" element={protectedRoute(<TeacherGuidance />)} />
+
+        {/* Teacher routes (separate credential check) */}
+        <Route path="/teacher-login" element={<TeacherLogin />} />
+        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+        <Route path="/course-videos/:courseId" element={<CourseVideos />} />
+
+        {/* Anything else */}
+        <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

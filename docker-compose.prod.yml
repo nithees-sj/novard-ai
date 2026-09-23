@@ -1,0 +1,45 @@
+# Production Docker Compose — for testing prod images locally
+# Does NOT include MongoDB (uses external MongoDB Atlas)
+#
+# Usage:
+#   export MONGO_URI="mongodb+srv://user:pass@cluster.mongodb.net/novard-ai"
+#   export GROQ_API_KEY="your_key"
+#   export GOOGLE_API_KEY="your_key"
+#   docker compose -f docker-compose.prod.yml up --build
+
+services:
+  server:
+    build:
+      context: ./server
+    container_name: novard-ai-server-prod
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - MONGO_URI=${MONGO_URI}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  client:
+    build:
+      context: ./client
+      args:
+        - REACT_APP_API_ENDPOINT=http://localhost:8080
+        - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
+    container_name: novard-ai-client-prod
+    environment:
+      - PORT=8081
+    ports:
+      - "3000:8081"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped

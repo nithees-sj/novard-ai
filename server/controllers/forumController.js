@@ -1,82 +1,188 @@
 const ForumIssue = require('../models/forumIssue');
 const ForumComment = require('../models/forumComment');
-const { 
-  generateAICommentForIssue, 
-  generateAIResponseToComment 
+const {
+  generateAICommentForIssue,
+  generateAIResponseToComment
 } = require('./forumAIController');
 
-// Generate unique issue ID
-const generateIssueId = () => {
-  return 'ISSUE_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-};
+const CATEGORIES = ['general', 'tutorial', 'urgent', 'ideation', 'showcase'];
+const STATUSES = ['open', 'resolved', 'closed'];
 
-// Create a new forum issue
+/**
+ * Sort options offered by the forum UI. Whitelisted: the old code passed
+ * req.query.sortBy straight into Mongo's sort, and "Title" sorted Z to A.
+ */
+const SORTS = {
+  newest: { createdAt: -1 },
+  oldest: { createdAt: 1 },
+  popular: { netVotes: -1, commentsCount: -1, createdAt: -1 },
+  discussed: { commentsCount: -1, createdAt: -1 },
+  title: { titleLower: 1, createdAt: -1 },
+};
+// Values the previous client sent, so an old tab keeps working.
+const LEGACY_SORTS = { createdAt: 'newest', upvotes: 'popular' };
+
+const AI_AUTHOR = { userEmail: 'ai@novard.com', userName: 'AI Assistant', isAI: true };
+
+const generateIssueId = () => 'ISSUE_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+
+/** User input is matched literally. `new RegExp(q)` used to 500 on "C++" or "(". */
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const normaliseEmail = (e) => String(e || '').trim().toLowerCase();
+
+/**
+ * Only the person who opened a discussion may change its status or delete it.
+ *
+ * The app has no server-side session, so identity is the email the client
+ * sends - the same trust model every other feature uses. This stops the
+ * ordinary case (anyone clicking Resolve on anyone's post) but is not a
+ * defence against a deliberately forged request; that needs real auth.
+ */
+function assertOwner(issue, requesterEmail, res) {
+  if (!requesterEmail) {
+    res.status(401).json({ error: 'Sign in to manage this discussion.' });
+    return false;
+  }
+  if (normaliseEmail(issue.userEmail) !== normaliseEmail(requesterEmail)) {
+    res.status(403).json({ error: 'Only the person who started this discussion can do that.' });
+    return false;
+  }
+  return true;
+}
+
+/** Fire-and-forget AI reply: the request that triggered it has already been answered. */
+function replyWithAI(issue, parentComment = null) {
+  const generate = parentComment
+    ? generateAIResponseToComment(parentComment, issue)
+    : generateAICommentForIssue(issue);
+
+  generate
+    .then((content) =>
+      new ForumComment({
+        ...AI_AUTHOR,
+        issueId: issue.issueId,
+        content,
+        parentCommentId: parentComment ? parentComment._id.toString() : null,
+      }).save()
+    )
+    .catch((error) => console.error('Error generating AI reply:', error));
+}
+
+// ── issues ────────────────────────────────────────────────────────────────
+
 const createIssue = async (req, res) => {
   try {
-    const { title, description, userEmail, userName, tags = [] } = req.body;
+    const { title, description, userEmail, userName, tags = [], category = 'general' } = req.body;
 
-    if (!title || !description || !userEmail || !userName) {
+    if (!title?.trim() || !description?.trim() || !userEmail || !userName) {
       return res.status(400).json({ error: 'Title, description, user email, and user name are required' });
     }
-
-    const issueId = generateIssueId();
-    
-    const newIssue = new ForumIssue({
-      title,
-      description,
-      userEmail,
-      userName,
-      issueId,
-      tags
-    });
-
-    const savedIssue = await newIssue.save();
-
-    // Generate AI comment for the new issue
-    try {
-      const aiResponse = await generateAICommentForIssue(savedIssue);
-      const aiComment = new ForumComment({
-        issueId: savedIssue.issueId,
-        content: aiResponse,
-        userEmail: 'ai@novard.com',
-        userName: 'AI Assistant',
-        isAI: true
-      });
-      await aiComment.save();
-    } catch (aiError) {
-      console.error('Error generating AI comment:', aiError);
-      // Continue even if AI comment fails
+    if (!CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: `Category must be one of: ${CATEGORIES.join(', ')}` });
     }
 
-    res.status(201).json(savedIssue);
+    const cleanTags = [...new Set((Array.isArray(tags) ? tags : [])
+      .map((t) => String(t).trim().toLowerCase())
+      .filter(Boolean))].slice(0, 8);
+
+    const savedIssue = await new ForumIssue({
+      title: title.trim(),
+      description: description.trim(),
+      userEmail,
+      userName,
+      category,
+      tags: cleanTags,
+      issueId: generateIssueId(),
+    }).save();
+
+    // Respond straight away; the AI's first reply arrives via the thread's poll.
+    res.status(201).json({ ...savedIssue.toObject(), commentsCount: 0, netVotes: 0 });
+    replyWithAI(savedIssue);
   } catch (error) {
     console.error('Error creating issue:', error);
     res.status(500).json({ error: 'Failed to create issue' });
   }
 };
 
-// Get all forum issues
+/**
+ * List discussions. Category, status, search and sort all apply together -
+ * previously "All Categories" silently meant "open only", the category options
+ * were sent as a *status* (so Tutorial/Urgent/Ideation/Showcase always came back
+ * empty), and searching ignored every other filter.
+ *
+ * Query: category=all|<category>  status=all|open|resolved|closed
+ *        q=<text>  sort=newest|oldest|popular|discussed|title  page  limit
+ */
 const getAllIssues = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status = 'open', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-    
-    const query = status === 'all' ? {} : { status };
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    const category = String(req.query.category || 'all');
+    const status = String(req.query.status || 'all');
+    const q = String(req.query.q || '').trim();
+    const sortKey = SORTS[req.query.sort] ? req.query.sort
+      : LEGACY_SORTS[req.query.sortBy] || 'newest';
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 12));
 
-    const issues = await ForumIssue.find(query)
-      .sort(sortOptions)
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
+    if (category !== 'all' && !CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: `Unknown category "${category}"` });
+    }
+    if (status !== 'all' && !STATUSES.includes(status)) {
+      return res.status(400).json({ error: `Unknown status "${status}"` });
+    }
 
-    const total = await ForumIssue.countDocuments(query);
+    const match = {};
+    if (status !== 'all') match.status = status;
+    if (category === 'general') {
+      // Posts from before categories existed have no field; they are general.
+      match.$or = [{ category: 'general' }, { category: { $exists: false } }];
+    } else if (category !== 'all') {
+      match.category = category;
+    }
+    if (q) {
+      const rx = new RegExp(escapeRegex(q), 'i');
+      const text = { $or: [{ title: rx }, { description: rx }, { tags: rx }] };
+      Object.assign(match, match.$or ? { $and: [{ $or: match.$or }, text] } : text);
+      if (match.$and) delete match.$or;
+    }
 
+    const [result] = await ForumIssue.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: ForumComment.collection.name,
+          localField: 'issueId',
+          foreignField: 'issueId',
+          as: 'replies',
+          pipeline: [{ $project: { _id: 1 } }],
+        },
+      },
+      {
+        $addFields: {
+          category: { $ifNull: ['$category', 'general'] },
+          commentsCount: { $size: '$replies' },
+          netVotes: { $subtract: [{ $ifNull: ['$upvotes', 0] }, { $ifNull: ['$downvotes', 0] }] },
+          titleLower: { $toLower: '$title' },
+        },
+      },
+      { $project: { replies: 0 } },
+      {
+        $facet: {
+          issues: [{ $sort: SORTS[sortKey] }, { $skip: (page - 1) * limit }, { $limit: limit }, { $project: { titleLower: 0 } }],
+          total: [{ $count: 'n' }],
+        },
+      },
+    ]);
+
+    const total = result.total[0]?.n || 0;
     res.json({
-      issues,
+      issues: result.issues,
+      total,
+      page,
+      limit,
       totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
+      hasMore: page * limit < total,
+      filters: { category, status, q, sort: sortKey },
     });
   } catch (error) {
     console.error('Error fetching issues:', error);
@@ -84,119 +190,35 @@ const getAllIssues = async (req, res) => {
   }
 };
 
-// Get a specific issue by ID
+/** Kept for existing callers; search is now just the list endpoint with q=. */
+const searchIssues = (req, res) => getAllIssues(req, res);
+
 const getIssueById = async (req, res) => {
   try {
-    const { issueId } = req.params;
-    
-    const issue = await ForumIssue.findOne({ issueId });
-    if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
-
-    res.json(issue);
+    const issue = await ForumIssue.findOne({ issueId: req.params.issueId }).lean();
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+    res.json({ ...issue, category: issue.category || 'general' });
   } catch (error) {
     console.error('Error fetching issue:', error);
     res.status(500).json({ error: 'Failed to fetch issue' });
   }
 };
 
-// Get comments for a specific issue
-const getIssueComments = async (req, res) => {
-  try {
-    const { issueId } = req.params;
-    const { page = 1, limit = 20 } = req.query;
-
-    const comments = await ForumComment.find({ issueId })
-      .sort({ createdAt: 1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
-
-    const total = await ForumComment.countDocuments({ issueId });
-
-    res.json({
-      comments,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    res.status(500).json({ error: 'Failed to fetch comments' });
-  }
-};
-
-// Add a comment to an issue
-const addComment = async (req, res) => {
-  try {
-    const { issueId, content, userEmail, userName, parentCommentId = null } = req.body;
-
-    if (!issueId || !content || !userEmail || !userName) {
-      return res.status(400).json({ error: 'Issue ID, content, user email, and user name are required' });
-    }
-
-    // Check if issue exists
-    const issue = await ForumIssue.findOne({ issueId });
-    if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
-
-    const newComment = new ForumComment({
-      issueId,
-      content,
-      userEmail,
-      userName,
-      parentCommentId
-    });
-
-    const savedComment = await newComment.save();
-
-    // Generate AI response to the comment
-    try {
-      const aiResponse = await generateAIResponseToComment(savedComment, issue);
-      const aiComment = new ForumComment({
-        issueId: issue.issueId,
-        content: aiResponse,
-        userEmail: 'ai@novard.com',
-        userName: 'AI Assistant',
-        isAI: true,
-        parentCommentId: savedComment._id.toString()
-      });
-      await aiComment.save();
-    } catch (aiError) {
-      console.error('Error generating AI response:', aiError);
-      // Continue even if AI response fails
-    }
-
-    res.status(201).json(savedComment);
-  } catch (error) {
-    console.error('Error adding comment:', error);
-    res.status(500).json({ error: 'Failed to add comment' });
-  }
-};
-
-
-// Update issue status
 const updateIssueStatus = async (req, res) => {
   try {
     const { issueId } = req.params;
-    const { status } = req.body;
+    const { status, userEmail } = req.body;
 
-    if (!['open', 'closed', 'resolved'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be open, closed, or resolved' });
+    if (!STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be open, resolved, or closed' });
     }
 
-    const issue = await ForumIssue.findOneAndUpdate(
-      { issueId },
-      { status, updatedAt: Date.now() },
-      { new: true }
-    );
+    const issue = await ForumIssue.findOne({ issueId });
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+    if (!assertOwner(issue, userEmail, res)) return;
 
-    if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
-
+    issue.status = status;
+    await issue.save();
     res.json(issue);
   } catch (error) {
     console.error('Error updating issue status:', error);
@@ -204,28 +226,35 @@ const updateIssueStatus = async (req, res) => {
   }
 };
 
-// Vote on an issue
+/** Owner-only. Removes the discussion and every reply in it. */
+const deleteIssue = async (req, res) => {
+  try {
+    const { issueId } = req.params;
+    const userEmail = req.body?.userEmail || req.query.userEmail;
+
+    const issue = await ForumIssue.findOne({ issueId });
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+    if (!assertOwner(issue, userEmail, res)) return;
+
+    const { deletedCount } = await ForumComment.deleteMany({ issueId });
+    await issue.deleteOne();
+    res.json({ success: true, issueId, deletedComments: deletedCount });
+  } catch (error) {
+    console.error('Error deleting issue:', error);
+    res.status(500).json({ error: 'Failed to delete issue' });
+  }
+};
+
 const voteOnIssue = async (req, res) => {
   try {
     const { issueId } = req.params;
-    const { voteType } = req.body; // 'upvote' or 'downvote'
-
+    const { voteType } = req.body;
     if (!['upvote', 'downvote'].includes(voteType)) {
       return res.status(400).json({ error: 'Invalid vote type' });
     }
-
-    const updateField = voteType === 'upvote' ? 'upvotes' : 'downvotes';
-    
-    const issue = await ForumIssue.findOneAndUpdate(
-      { issueId },
-      { $inc: { [updateField]: 1 } },
-      { new: true }
-    );
-
-    if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
-
+    const field = voteType === 'upvote' ? 'upvotes' : 'downvotes';
+    const issue = await ForumIssue.findOneAndUpdate({ issueId }, { $inc: { [field]: 1 } }, { new: true });
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
     res.json(issue);
   } catch (error) {
     console.error('Error voting on issue:', error);
@@ -233,28 +262,65 @@ const voteOnIssue = async (req, res) => {
   }
 };
 
-// Vote on a comment
+// ── comments ──────────────────────────────────────────────────────────────
+
+/**
+ * All replies in a thread, oldest first. The old default page size of 20 was
+ * never paged by the client, and since every comment also gets an AI reply,
+ * threads lost their newest messages after about ten user comments.
+ */
+const getIssueComments = async (req, res) => {
+  try {
+    const { issueId } = req.params;
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit, 10) || 1000));
+    const comments = await ForumComment.find({ issueId }).sort({ createdAt: 1 }).limit(limit).lean();
+    res.json({ comments, total: comments.length });
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+};
+
+const addComment = async (req, res) => {
+  try {
+    const { issueId, content, userEmail, userName, parentCommentId = null } = req.body;
+    if (!issueId || !content?.trim() || !userEmail || !userName) {
+      return res.status(400).json({ error: 'Issue ID, content, user email, and user name are required' });
+    }
+
+    const issue = await ForumIssue.findOne({ issueId });
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+    if (issue.status === 'closed') {
+      return res.status(409).json({ error: 'This discussion is closed. The author can reopen it.' });
+    }
+
+    const saved = await new ForumComment({
+      issueId,
+      content: content.trim(),
+      userEmail,
+      userName,
+      parentCommentId,
+    }).save();
+
+    // Respond now; the AI reply is threaded under this comment when it lands.
+    res.status(201).json(saved);
+    replyWithAI(issue, saved);
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
+};
+
 const voteOnComment = async (req, res) => {
   try {
     const { commentId } = req.params;
-    const { voteType } = req.body; // 'upvote' or 'downvote'
-
+    const { voteType } = req.body;
     if (!['upvote', 'downvote'].includes(voteType)) {
       return res.status(400).json({ error: 'Invalid vote type' });
     }
-
-    const updateField = voteType === 'upvote' ? 'upvotes' : 'downvotes';
-    
-    const comment = await ForumComment.findByIdAndUpdate(
-      commentId,
-      { $inc: { [updateField]: 1 } },
-      { new: true }
-    );
-
-    if (!comment) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
+    const field = voteType === 'upvote' ? 'upvotes' : 'downvotes';
+    const comment = await ForumComment.findByIdAndUpdate(commentId, { $inc: { [field]: 1 } }, { new: true });
+    if (!comment) return res.status(404).json({ error: 'Comment not found' });
     res.json(comment);
   } catch (error) {
     console.error('Error voting on comment:', error);
@@ -262,79 +328,23 @@ const voteOnComment = async (req, res) => {
   }
 };
 
-// Search issues
-const searchIssues = async (req, res) => {
-  try {
-    const { q, page = 1, limit = 10 } = req.query;
-
-    if (!q) {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-
-    const searchRegex = new RegExp(q, 'i');
-    
-    const issues = await ForumIssue.find({
-      $or: [
-        { title: searchRegex },
-        { description: searchRegex },
-        { tags: { $in: [searchRegex] } }
-      ]
-    })
-    .sort({ createdAt: -1 })
-    .limit(limit * 1)
-    .skip((page - 1) * limit)
-    .exec();
-
-    const total = await ForumIssue.countDocuments({
-      $or: [
-        { title: searchRegex },
-        { description: searchRegex },
-        { tags: { $in: [searchRegex] } }
-      ]
-    });
-
-    res.json({
-      issues,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
-  } catch (error) {
-    console.error('Error searching issues:', error);
-    res.status(500).json({ error: 'Failed to search issues' });
-  }
-};
-
-// Generate AI response for a specific comment
+/** On-demand AI reply to a specific comment (the "Get AI response" button). */
 const generateAIResponseForComment = async (req, res) => {
   try {
-    const { commentId } = req.params;
-
-    const comment = await ForumComment.findById(commentId);
-    if (!comment) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
+    const comment = await ForumComment.findById(req.params.commentId);
+    if (!comment) return res.status(404).json({ error: 'Comment not found' });
 
     const issue = await ForumIssue.findOne({ issueId: comment.issueId });
-    if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
 
-    // Generate AI response
-    const aiResponse = await generateAIResponseToComment(comment, issue);
-    
-    // Create and save AI comment
-    const aiComment = new ForumComment({
+    const content = await generateAIResponseToComment(comment, issue);
+    const saved = await new ForumComment({
+      ...AI_AUTHOR,
       issueId: issue.issueId,
-      content: aiResponse,
-      userEmail: 'ai@novard.com',
-      userName: 'AI Assistant',
-      isAI: true,
-      parentCommentId: comment._id.toString()
-    });
-
-    const savedAIComment = await aiComment.save();
-    res.json(savedAIComment);
+      content,
+      parentCommentId: comment._id.toString(),
+    }).save();
+    res.json(saved);
   } catch (error) {
     console.error('Error generating AI response for comment:', error);
     res.status(500).json({ error: 'Failed to generate AI response' });
@@ -342,12 +352,14 @@ const generateAIResponseForComment = async (req, res) => {
 };
 
 module.exports = {
+  CATEGORIES,
   createIssue,
   getAllIssues,
   getIssueById,
   getIssueComments,
   addComment,
   updateIssueStatus,
+  deleteIssue,
   voteOnIssue,
   voteOnComment,
   searchIssues,

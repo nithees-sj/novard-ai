@@ -2,17 +2,23 @@ const Video = require('../models/video');
 const Groq = require('groq-sdk');
 const youtubesearchapi = require('youtube-search-api');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { parseModelJson } = require('../utils/parseModelJson');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Accept either name: the code has always read GEMINI_API_KEY while the
+// Docker/Cloud Run configs pass GOOGLE_API_KEY, which silently disabled
+// Gemini-backed course discovery in containers.
+const googleApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const genAI = new GoogleGenerativeAI(googleApiKey);
 
 // Function to get real course links using Gemini AI
 const getRealCourseLinks = async (platform, keyword, maxVideos) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: MODELS.GEMINI });
     
     const platformPrompts = {
       udemy: `Find ${maxVideos} popular, currently available Udemy courses related to "${keyword}". Return ONLY a JSON array with this exact format:
@@ -134,7 +140,7 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
     
     let courses;
     try {
-      courses = JSON.parse(cleanedText);
+      courses = parseModelJson(cleanedText, { context: 'course list' });
     } catch (parseError) {
       console.error('Error parsing Gemini JSON response:', parseError);
       console.log('Raw response:', cleanedText);
@@ -286,7 +292,8 @@ const recommendVideos = async (req, res) => {
           content: `Request Title: "${title}"\n\nRequest Description: "${description}"\n\nPlatform: ${platformNames[selectedPlatform]}\n\nGenerate search keywords for finding relevant educational content on ${platformNames[selectedPlatform]}.`
         }
       ],
-      model: "llama-3.1-8b-instant",
+      model: MODELS.FAST,
+      ...GROQ_DEFAULTS,
       temperature: 0.7,
       max_tokens: 500
     });
@@ -295,12 +302,9 @@ const recommendVideos = async (req, res) => {
     let searchKeywords = [];
     
     try {
-      // Extract JSON from the response
-      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        searchKeywords = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in response');
+      searchKeywords = parseModelJson(aiResponse, { context: 'search keywords' });
+      if (!Array.isArray(searchKeywords) || searchKeywords.length === 0) {
+        throw new Error('Model returned no search keywords');
       }
     } catch (parseError) {
       console.error('Error parsing AI keywords response:', parseError);

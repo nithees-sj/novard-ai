@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import MarkdownView from '../components/MarkdownView';
+import SummaryHeader from '../components/SummaryHeader';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
@@ -163,7 +165,11 @@ const YouTubeVideoSummarizer = () => {
       });
       const newQuiz = response.data.quiz;
       setCurrentQuiz(newQuiz);
-      setCurrentQuizId(selectedVideo.quizzes ? selectedVideo.quizzes.length : 0);
+      setCurrentQuizId(
+        Number.isInteger(response.data.quizIndex)
+          ? response.data.quizIndex
+          : (selectedVideo.quizzes ? selectedVideo.quizzes.length : 0)
+      );
       setQuizAnswers({});
       setQuizScore(null);
       setActiveTab('quiz');
@@ -284,11 +290,15 @@ const YouTubeVideoSummarizer = () => {
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {chatMessages.map((message, index) => (
                       <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[70%] px-4 py-3 rounded-lg text-sm ${message.role === 'user'
+                        <div className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${message.role === 'user'
                             ? 'bg-gray-900 text-white'
                             : 'bg-gray-100 text-gray-900 border border-gray-200'
                           }`}>
-                          {message.content}
+                          {message.role === 'user' ? (
+                            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                          ) : (
+                            <MarkdownView content={message.content} />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -336,7 +346,10 @@ const YouTubeVideoSummarizer = () => {
                       </div>
                     </div>
                   ) : summary ? (
-                    <div className="prose max-w-none text-sm">{summary}</div>
+                    <div>
+                      <SummaryHeader title="Video Summary" subtitle={selectedVideo.title} icon="video" />
+                      <MarkdownView content={summary} size="base" />
+                    </div>
                   ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">

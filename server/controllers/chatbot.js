@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -17,9 +18,10 @@ exports.processChatbotPrompt = async (req, res) => {
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: prompt },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: MODELS.REASONING,
+      ...GROQ_DEFAULTS,
       temperature: 0.5,
-      max_tokens: 1024,
+      max_tokens: 2500,
       top_p: 1,
       stream: false,
     });

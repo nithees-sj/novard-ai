@@ -30,6 +30,9 @@ const TeacherGuidanceInlineView = () => {
       const videoQuizzes = [];
       selectedCourse.videos.forEach((video) => {
         if (video.quiz && video.quiz.questions && video.quiz.questions.length > 0) {
+          const myResult = (video.quizResults || []).find(
+            (r) => r.userEmail === localStorage.getItem('email')
+          );
           videoQuizzes.push({
             id: `video-${video._id || video.id}`,
             videoId: video._id || video.id,
@@ -37,8 +40,9 @@ const TeacherGuidanceInlineView = () => {
             title: video.quiz.title || `${video.title} Quiz`,
             description: video.quiz.description || `Test your understanding of ${video.title}`,
             questions: video.quiz.questions.length,
-            completed: false,
-            score: null,
+            // Reflect this student's saved result, if any.
+            completed: Boolean(myResult),
+            score: myResult ? myResult.score : null,
             quiz: video.quiz
           });
         }
@@ -94,7 +98,7 @@ const TeacherGuidanceInlineView = () => {
     setQuizAnswers(prev => ({ ...prev, [questionIndex]: answerIndex }));
   };
 
-  const handleQuizSubmit = () => {
+  const handleQuizSubmit = async () => {
     if (!selectedQuiz) return;
     let correctAnswers = 0;
     selectedQuiz.quiz.questions.forEach((question, index) => {
@@ -105,6 +109,31 @@ const TeacherGuidanceInlineView = () => {
     const score = Math.round((correctAnswers / selectedQuiz.quiz.questions.length) * 100);
     setQuizScore({ percentage: score, correct: correctAnswers, total: selectedQuiz.quiz.questions.length });
     setQuizSubmitted(true);
+
+    // Store the attempt server-side (the server re-scores it) so it counts
+    // towards the student's analytics and shows as completed next time.
+    const courseId = selectedCourse?._id;
+    const userEmail = localStorage.getItem('email');
+    if (!courseId || !selectedQuiz.videoId || !userEmail) return;
+    try {
+      const answers = selectedQuiz.quiz.questions.map((_, index) =>
+        quizAnswers[index] === undefined ? -1 : quizAnswers[index]
+      );
+      const response = await fetch(
+        `${process.env.REACT_APP_API_ENDPOINT}/api/courses/${courseId}/videos/${selectedQuiz.videoId}/quiz/submit`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers, userEmail }),
+        }
+      );
+      if (!response.ok) throw new Error(`Save failed (${response.status})`);
+      setQuizzes((prev) => prev.map((q) =>
+        q.id === selectedQuiz.id ? { ...q, completed: true, score } : q
+      ));
+    } catch (error) {
+      console.error('Error saving quiz result:', error);
+    }
   };
 
   const getDifficultyBadge = (level) => {
