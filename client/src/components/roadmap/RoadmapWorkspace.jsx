@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
+import { readOpenParam, clearOpenParam } from '../../lib/openParam';
 import RoadmapForm from './RoadmapForm';
 import RoadmapView from './RoadmapView';
 import { REFERENCE_ROADMAPS } from '../../lib/referenceRoadmaps';
@@ -52,6 +53,15 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
       setLoadingId(null);
     }
   };
+
+  // Opened from the Novard Agent's "Open roadmap" link.
+  useEffect(() => {
+    const id = readOpenParam();
+    if (id) {
+      openRoadmap(id);
+      clearOpenParam();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = async (values) => {
     setGenerating(true);

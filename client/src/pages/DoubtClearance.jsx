@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { readOpenParam, clearOpenParam } from '../lib/openParam';
 import axios from 'axios';
 import { Navigationinner } from "../components/navigationinner";
 import MarkdownView from '../components/MarkdownView';
@@ -10,6 +11,7 @@ import { countCorrect } from '../lib/quiz';
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const DoubtClearance = () => {
+  const [openId] = useState(readOpenParam); // ?open=<id> from the Novard Agent
   const [doubts, setDoubts] = useState([]);
   const [selectedDoubt, setSelectedDoubt] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -42,7 +44,12 @@ const DoubtClearance = () => {
       const response = await axios.get(`${apiUrl}/doubt-clearances/${userId}`);
       const doubtsData = Array.isArray(response.data) ? response.data : [];
       setDoubts(doubtsData);
-      if (doubtsData.length > 0 && !selectedDoubt) {
+      const target = openId && doubtsData.find((d) => d._id === openId);
+      if (target) {
+        setSelectedDoubt(target);
+        loadDoubtData(target);
+        clearOpenParam();
+      } else if (doubtsData.length > 0 && !selectedDoubt) {
         setSelectedDoubt(doubtsData[0]);
         loadDoubtData(doubtsData[0]);
       }

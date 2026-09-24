@@ -10,7 +10,7 @@ const { saveUser, getUserByEmail, getUserProfile, updateUserProfile } = require(
 const { processSkillsPrompt, getSkillsByCareer } = require('./controllers/skillsController');  
 const { getCareerIds } = require('./controllers/skillsController');
 const { deleteSkillsByCareer } = require('./controllers/skillsController');
-const { processChatbotPrompt, listConversations, getConversation, deleteConversation } = require('./controllers/chatbot');
+const agent = require('./controllers/chatbot');
 const { 
   upload, 
   uploadNotes, 
@@ -104,6 +104,7 @@ const {
 } = require('./controllers/analyticsController');
 const { getQuizHistory } = require('./controllers/quizHistoryController');
 const { getProfileOverview } = require('./controllers/profileController');
+const { recordUsage } = require('./controllers/usageController');
 const roadmaps = require('./controllers/roadmapController');
 const skillGap = require('./controllers/skillGapController');
 
@@ -143,10 +144,13 @@ app.post('/api/skills', processSkillsPrompt);
 app.get('/api/skills/:careerId', getSkillsByCareer);  
 app.delete('/api/skills/delete/:careerId', deleteSkillsByCareer);
 
-app.post('/api/chatbot', processChatbotPrompt);
-app.get('/api/chatbot/conversations/user/:userId', listConversations);
-app.get('/api/chatbot/conversations/:id', getConversation);
-app.delete('/api/chatbot/conversations/:id', deleteConversation);
+// Novard Agent: streaming chat (SSE), action cards, chat history
+app.post('/api/agent/chat', agent.chat);
+app.post('/api/agent/conversations/:id/actions/:actionId', agent.decideAction);
+app.get('/api/agent/conversations/user/:userId', agent.listConversations);
+app.get('/api/agent/conversations/:id', agent.getConversation);
+app.patch('/api/agent/conversations/:id', agent.renameConversation);
+app.delete('/api/agent/conversations/:id', agent.deleteConversation);
 
 // Notes routes
 app.post('/upload-notes', upload.single('pdf'), uploadNotes);
@@ -252,6 +256,9 @@ app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 
 // Analytics routes
 app.get('/api/analytics/:userId', getUserAnalytics);
+
+// Study-time tracker heartbeat (navigator.sendBeacon posts text/plain)
+app.post('/api/usage/heartbeat', bodyParser.text({ type: 'text/plain', limit: '2kb' }), recordUsage);
 
 // Profile page: account details, goal, tests, learning paths and activity
 app.get('/api/profile/:userId/overview', getProfileOverview);

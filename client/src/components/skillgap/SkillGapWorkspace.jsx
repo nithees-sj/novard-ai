@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
+import { readOpenParam, clearOpenParam } from '../../lib/openParam';
 import SkillGapIntake from './SkillGapIntake';
 import SkillGapChat from './SkillGapChat';
 
@@ -102,6 +103,15 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
       setDeleting(false);
     }
   };
+
+  // Opened from the Novard Agent's "Open analysis" link.
+  useEffect(() => {
+    const id = readOpenParam();
+    if (id) {
+      open(id);
+      clearOpenParam();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const newAnalysis = (values = null) => {
     setPreset(values);

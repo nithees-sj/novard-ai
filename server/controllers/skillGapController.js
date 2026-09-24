@@ -7,23 +7,26 @@ const fail = (res, error, fallback) => {
   res.status(error.status || 500).json({ error: error.status ? error.message : fallback });
 };
 
+/** Analyse a profile and save a new coaching session. Shared by the Skill Gap page and the Novard Agent. */
+async function startSession(userId, body) {
+  if (!userId) throw Object.assign(new Error('userId is required'), { status: 400 });
+  const profile = readProfile(body);
+  if (profile.targetRole.length < 2) {
+    throw Object.assign(new Error('Tell the coach which role you are aiming for.'), { status: 400 });
+  }
+  const analysis = await analyse(profile);
+  return SkillGapSession.create({
+    userId,
+    profile,
+    analysis,
+    messages: [{ role: 'assistant', content: openingMessage(profile, analysis) }],
+  });
+}
+
 /** Start a coaching session: analyse the profile and open the chat with the result. */
 const createSession = async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId is required' });
-    const profile = readProfile(req.body);
-    if (profile.targetRole.length < 2) {
-      return res.status(400).json({ error: 'Tell the coach which role you are aiming for.' });
-    }
-
-    const analysis = await analyse(profile);
-    const session = await SkillGapSession.create({
-      userId,
-      profile,
-      analysis,
-      messages: [{ role: 'assistant', content: openingMessage(profile, analysis) }],
-    });
+    const session = await startSession(req.body.userId, req.body);
     res.status(201).json(session);
   } catch (error) {
     fail(res, error, 'Failed to analyse your skills');
@@ -101,4 +104,4 @@ const deleteSession = async (req, res) => {
   }
 };
 
-module.exports = { createSession, listSessions, getSession, sendMessage, deleteSession };
+module.exports = { startSession, createSession, listSessions, getSession, sendMessage, deleteSession };

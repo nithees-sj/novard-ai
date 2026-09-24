@@ -4,6 +4,8 @@ const SkillGapSession = require('../models/skillGapSession');
 const ChatbotConversation = require('../models/chatbotConversation');
 const {
   loadActivity,
+  dailyStudy,
+  activeDaySet,
   makeDayKey,
   DAY_MS,
   computeSkillScore,
@@ -69,26 +71,24 @@ function groupAccuracy(attempts, keyOf, labelOf, now) {
     .sort((a, b) => b.attempts - a.attempts);
 }
 
-/** Day-by-day activity for the heatmap, starting on a Sunday so columns are whole weeks. */
-function computeHeatmap(events, now, dayKey) {
+/**
+ * Day-by-day activity for the heatmap, starting on a Sunday so columns are
+ * whole weeks. `daily` is analyticsController.dailyStudy(); a day with tracked
+ * time but no saved actions (reading, watching) still shows as active.
+ */
+function computeHeatmap(daily, now, dayKey) {
   const todayKey = dayKey(now);
   const todayWeekday = new Date(`${todayKey}T00:00:00Z`).getUTCDay();
   const totalDays = (HEATMAP_WEEKS - 1) * 7 + todayWeekday + 1;
 
-  const byDay = new Map();
-  events.forEach((e) => {
-    const key = dayKey(e.at);
-    const d = byDay.get(key) || { count: 0, minutes: 0 };
-    d.count += 1;
-    d.minutes += e.minutes;
-    byDay.set(key, d);
-  });
-
   const days = [];
   for (let i = totalDays - 1; i >= 0; i -= 1) {
     const key = dayKey(new Date(now.getTime() - i * DAY_MS));
-    const d = byDay.get(key) || { count: 0, minutes: 0 };
-    days.push({ date: key, count: d.count, minutes: round(d.minutes) });
+    const d = daily.get(key) || { activities: 0, minutes: 0, tracked: false };
+    const minutes = round(d.minutes);
+    // Intensity follows saved actions, or one step per 15 tracked minutes (5+ minutes counts as active).
+    const fromTime = d.tracked && minutes >= 5 ? Math.max(1, Math.floor(minutes / 15)) : 0;
+    days.push({ date: key, count: Math.max(d.activities, fromTime), activities: d.activities, minutes, tracked: d.tracked });
   }
   return {
     weeks: HEATMAP_WEEKS,
@@ -219,7 +219,7 @@ const getProfileOverview = async (req, res) => {
     const dayKey = makeDayKey(Number.isFinite(tz) && Math.abs(tz) <= 14 * 60 ? tz : 0);
     const now = new Date();
 
-    const [user, { raw, data }, roadmaps, sessions, chats] = await Promise.all([
+    const [user, { raw, data, usage }, roadmaps, sessions, chats] = await Promise.all([
       User.findOne({ email: userId }).lean(),
       loadActivity(userId),
       Roadmap.find({ userId }).sort({ createdAt: -1 }).select('role inputs stages totalWeeks createdAt').lean(),
@@ -232,17 +232,18 @@ const getProfileOverview = async (req, res) => {
     const correct = attempts.reduce((n, a) => n + a.correct, 0);
     const accuracy = weightedAccuracy(attempts, now);
     const score = computeSkillScore(data, now, dayKey);
-    const activeDayKeys = new Set(data.events.map((e) => dayKey(e.at)));
-    const totalMinutes = data.events.reduce((n, e) => n + e.minutes, 0);
+    const activeDayKeys = activeDaySet(data.events, usage, dayKey);
+    const daily = dailyStudy(data.events, usage, dayKey);
+    const totalMinutes = [...daily.values()].reduce((n, d) => n + d.minutes, 0);
+    const trackedMinutes = [...daily.values()].reduce((n, d) => n + (d.tracked ? d.minutes : 0), 0);
     const lastActive = data.events.reduce((m, e) => (!m || e.at > m ? e.at : m), null);
     const firstActive = data.events.reduce((m, e) => (!m || e.at < m ? e.at : m), null);
 
     // Accounts have no createdAt; the ObjectId carries the creation time.
     const memberSince = user?._id?.getTimestamp?.() || firstActive || null;
 
-    const chatbotQuestions = chats.reduce((n, c) => n + (c.messages || []).filter((m) => m.role === 'user').length, 0);
-    const coachQuestions = sessions.reduce((n, s) => n + (s.messages || []).filter((m) => m.role === 'user').length, 0);
-    const studyQuestions = data.events.filter((e) => e.kind === 'question').length;
+    // Every AI chat (notes, videos, doubts, coach, Novard Agent) is already an event.
+    const questionsAsked = data.events.filter((e) => e.kind === 'question').length;
 
     res.json({
       generatedAt: now,
@@ -265,8 +266,9 @@ const getProfileOverview = async (req, res) => {
         questionsAnswered: answered,
         correctAnswers: correct,
         studyMinutes: round(totalMinutes),
+        trackedMinutes: round(trackedMinutes),
         activeDays: activeDayKeys.size,
-        questionsAsked: studyQuestions + chatbotQuestions + coachQuestions,
+        questionsAsked,
         streak: computeStreak(activeDayKeys, now, dayKey),
       },
 
@@ -295,7 +297,7 @@ const getProfileOverview = async (req, res) => {
       },
 
       activity: {
-        heatmap: computeHeatmap(data.events, now, dayKey),
+        heatmap: computeHeatmap(daily, now, dayKey),
         scoreTrend: computeScoreTrend(data, now, dayKey),
         mix: computeMix(data.events),
         library: {

@@ -66,46 +66,46 @@ const getUserDoubtClearances = async (req, res) => {
   }
 };
 
+const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
+
+/** Validate and save a new doubt. Shared by the Doubt Clearance page and the Novard Agent. */
+const createDoubt = async ({ title, description, imageUrl, userId }) => {
+  if (!title?.trim() || !description?.trim() || !userId) {
+    throw badRequest('Title, description, and userId are required');
+  }
+  // Same limits as the schema, reported clearly instead of as a generic 500.
+  if (title.trim().length > 200) throw badRequest('The title must be 200 characters or fewer.');
+  if (description.trim().length > 2000) throw badRequest('The description must be 2000 characters or fewer.');
+  let image = null;
+  if (imageUrl && String(imageUrl).trim()) {
+    try {
+      const url = new URL(String(imageUrl).trim());
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('bad scheme');
+      image = url.toString();
+    } catch {
+      throw badRequest('The image link must be a full http:// or https:// URL.');
+    }
+  }
+
+  return new DoubtClearance({
+    title: title.trim(),
+    description: description.trim(),
+    imageUrl: image,
+    userId,
+    chatHistory: [],
+    summary: '',
+    quizzes: [],
+    youtubeRecommendations: []
+  }).save();
+};
+
 // Create a new doubt clearance
 const createDoubtClearance = async (req, res) => {
   try {
-    const { title, description, imageUrl, userId } = req.body;
-
-    if (!title?.trim() || !description?.trim() || !userId) {
-      return res.status(400).json({ error: 'Title, description, and userId are required' });
-    }
-    // Same limits as the schema, reported clearly instead of as a generic 500.
-    if (title.trim().length > 200) {
-      return res.status(400).json({ error: 'The title must be 200 characters or fewer.' });
-    }
-    if (description.trim().length > 2000) {
-      return res.status(400).json({ error: 'The description must be 2000 characters or fewer.' });
-    }
-    let image = null;
-    if (imageUrl && String(imageUrl).trim()) {
-      try {
-        const url = new URL(String(imageUrl).trim());
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('bad scheme');
-        image = url.toString();
-      } catch {
-        return res.status(400).json({ error: 'The image link must be a full http:// or https:// URL.' });
-      }
-    }
-
-    const doubtClearance = new DoubtClearance({
-      title: title.trim(),
-      description: description.trim(),
-      imageUrl: image,
-      userId,
-      chatHistory: [],
-      summary: '',
-      quizzes: [],
-      youtubeRecommendations: []
-    });
-
-    const savedDoubtClearance = await doubtClearance.save();
-    res.status(201).json(savedDoubtClearance);
+    const saved = await createDoubt(req.body);
+    res.status(201).json(saved);
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
     console.error('Error creating doubt clearance:', error);
     res.status(500).json({ error: 'Failed to create doubt clearance' });
   }
@@ -481,6 +481,7 @@ const getYouTubeRecommendations = async (req, res) => {
 };
 
 module.exports = {
+  createDoubt,
   getUserDoubtClearances,
   createDoubtClearance,
   deleteDoubtClearance,

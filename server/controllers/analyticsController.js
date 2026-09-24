@@ -6,6 +6,10 @@ const SkillPlan = require('../models/skillPlan');
 const Course = require('../models/course');
 const ForumIssue = require('../models/forumIssue');
 const ForumComment = require('../models/forumComment');
+const Roadmap = require('../models/roadmap');
+const SkillGapSession = require('../models/skillGapSession');
+const ChatbotConversation = require('../models/chatbotConversation');
+const { usageByDay } = require('./usageController');
 
 /**
  * Learning analytics for the student dashboard.
@@ -17,9 +21,10 @@ const ForumComment = require('../models/forumComment');
  * and plan progress were always zero, and filled the skill radar with
  * Math.random() values that changed on every refresh.)
  *
- * The app does not record time-on-task, so study time is an estimate built
- * from a fixed effort per action (EFFORT_MINUTES). It is labelled as an
- * estimate wherever it is shown.
+ * Study time is the time actually spent in the app, recorded by the client's
+ * tracker (models/appUsage.js) while the student is active. Days from before
+ * tracking existed fall back to an estimate built from a fixed effort per
+ * action (EFFORT_MINUTES), and are marked as estimated.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -136,7 +141,7 @@ function weightedAccuracy(attempts, asOf) {
  * and Doubt quizzes are created with score 0 / null at generation time, so a
  * missing attemptedAt plus a zero/null score means "generated, never taken".
  */
-function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments }, userId) {
+function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps = [], coachSessions = [], chats = [] }, userId) {
   const events = [];      // { at, minutes, kind }
   const attempts = [];    // { at, percentage, questions, correct, topic, domain }
   const items = [];       // { key, title, domain } - distinct things studied
@@ -251,6 +256,17 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     });
   });
 
+  // Career tools and the assistant: generating a roadmap, and every question to the
+  // skill-gap coach or the Novard Agent (these were not counted at all before).
+  roadmaps.forEach((r) => addEvent(r.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded));
+  coachSessions.forEach((c) => {
+    addEvent(c.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+    (c.messages || []).forEach((m) => { if (m.role === 'user') addEvent(m.createdAt, 'question', EFFORT_MINUTES.question); });
+  });
+  chats.forEach((c) => (c.messages || []).forEach((m) => {
+    if (m.role === 'user') addEvent(m.createdAt, 'question', EFFORT_MINUTES.question);
+  }));
+
   forumIssues.forEach((i) => addEvent(i.createdAt, 'forumPost', EFFORT_MINUTES.forumPost));
   forumComments.forEach((c) => addEvent(c.createdAt, 'forumComment', EFFORT_MINUTES.forumComment));
 
@@ -336,45 +352,76 @@ function computeStreak(activeDayKeys, now, dayKey) {
   return { days: current, longest: Math.max(longest, current), status, message, activeToday: todayActive };
 }
 
-function computeWeekly(data, now, dayKey) {
-  const buckets = new Map();
-  const order = [];
+/**
+ * Study minutes per local day. Tracked time in the app and the activity-based
+ * estimate are both lower bounds on the real time (the tracker ignores idle
+ * reading; the estimate ignores everything but saved actions), so a day gets
+ * whichever is larger. That also keeps the day tracking was switched on from
+ * dropping to a minute. Returns Map(day -> { minutes, tracked, activities, quizzes }).
+ */
+function dailyStudy(events, usage, dayKey) {
+  const days = new Map();
+  const get = (key) => {
+    if (!days.has(key)) days.set(key, { estimate: 0, trackedMinutes: 0, activities: 0, quizzes: 0 });
+    return days.get(key);
+  };
+  events.forEach((e) => {
+    const d = get(dayKey(e.at));
+    d.estimate += e.minutes;
+    d.activities += 1;
+    if (e.kind === 'quiz') d.quizzes += 1;
+  });
+  (usage || new Map()).forEach((minutes, key) => { get(key).trackedMinutes = minutes; });
+
+  const out = new Map();
+  days.forEach((d, key) => {
+    const tracked = d.trackedMinutes >= 1;
+    out.set(key, {
+      minutes: Math.max(d.trackedMinutes, d.estimate),
+      tracked,
+      activities: d.activities,
+      quizzes: d.quizzes,
+    });
+  });
+  return out;
+}
+
+/** Days that count towards streaks: any recorded activity, or at least this much tracked time. */
+const MIN_TRACKED_MINUTES_FOR_ACTIVE_DAY = 5;
+function activeDaySet(events, usage, dayKey) {
+  const keys = new Set(events.map((e) => dayKey(e.at)));
+  (usage || new Map()).forEach((minutes, key) => { if (minutes >= MIN_TRACKED_MINUTES_FOR_ACTIVE_DAY) keys.add(key); });
+  return keys;
+}
+
+function computeWeekly(daily, now, dayKey) {
+  const days = [];
   for (let i = 6; i >= 0; i -= 1) {
-    const d = new Date(now.getTime() - i * DAY_MS);
-    const key = dayKey(d);
-    const weekday = WEEKDAYS[new Date(`${key}T00:00:00Z`).getUTCDay()];
-    buckets.set(key, { date: key, day: weekday, minutes: 0, activities: 0, quizzes: 0 });
-    order.push(key);
+    const key = dayKey(new Date(now.getTime() - i * DAY_MS));
+    const d = daily.get(key) || { minutes: 0, tracked: false, activities: 0, quizzes: 0 };
+    days.push({
+      date: key,
+      day: WEEKDAYS[new Date(`${key}T00:00:00Z`).getUTCDay()],
+      minutes: Math.round(d.minutes),
+      hours: round1(d.minutes / 60),
+      activities: d.activities,
+      quizzes: d.quizzes,
+      tracked: d.tracked,
+    });
   }
 
   let previousTotal = 0;
-  const prevStart = dayKey(new Date(now.getTime() - 13 * DAY_MS));
-  const prevEnd = dayKey(new Date(now.getTime() - 7 * DAY_MS));
-
-  data.events.forEach((e) => {
-    const key = dayKey(e.at);
-    const bucket = buckets.get(key);
-    if (bucket) {
-      bucket.minutes += e.minutes;
-      bucket.activities += 1;
-      if (e.kind === 'quiz') bucket.quizzes += 1;
-    } else if (key >= prevStart && key <= prevEnd) {
-      previousTotal += e.minutes;
-    }
-  });
-
-  const days = order.map((k) => {
-    const b = buckets.get(k);
-    return { ...b, minutes: Math.round(b.minutes), hours: round1(b.minutes / 60) };
-  });
-  const totalMinutes = days.reduce((n, d) => n + d.minutes, 0);
+  for (let i = 13; i >= 7; i -= 1) {
+    previousTotal += (daily.get(dayKey(new Date(now.getTime() - i * DAY_MS))) || { minutes: 0 }).minutes;
+  }
 
   return {
     days,
-    totalMinutes,
+    totalMinutes: days.reduce((n, d) => n + d.minutes, 0),
     previousTotalMinutes: Math.round(previousTotal),
-    activeDays: days.filter((d) => d.activities > 0).length,
-    estimated: true,
+    activeDays: days.filter((d) => d.minutes > 0 || d.activities > 0).length,
+    estimated: days.some((d) => d.minutes > 0 && !d.tracked),
+    tracked: days.some((d) => d.tracked),
   };
 }
 
@@ -455,7 +502,7 @@ function computeStrengthsAndFocus(data, now) {
 
 /** Everything the student has stored, plus the derived events/attempts/items. */
 async function loadActivity(userId) {
-  const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments] = await Promise.all([
+  const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps, coachSessions, chats, usage] = await Promise.all([
     Notes.find({ userId }).select('title fileName uploadedAt chatHistory quizzes').lean(),
     YouTubeVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
     EducationalVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
@@ -464,9 +511,13 @@ async function loadActivity(userId) {
     Course.find({ 'videos.quizResults.userEmail': userId }).lean(),
     ForumIssue.find({ userEmail: userId }).select('createdAt status').lean(),
     ForumComment.find({ userEmail: userId, isAI: { $ne: true } }).select('createdAt').lean(),
+    Roadmap.find({ userId }).select('createdAt').lean(),
+    SkillGapSession.find({ userId }).select('createdAt messages.role messages.createdAt').lean(),
+    ChatbotConversation.find({ userId }).select('messages.role messages.createdAt').lean(),
+    usageByDay(userId),
   ]);
-  const raw = { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments };
-  return { raw, data: collectActivity(raw, userId) };
+  const raw = { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps, coachSessions, chats };
+  return { raw, usage, data: collectActivity(raw, userId) };
 }
 
 // ── handler ────────────────────────────────────────────────────────────────
@@ -483,9 +534,10 @@ const getUserAnalytics = async (req, res) => {
     const dayKey = makeDayKey(tzOffset);
     const now = new Date();
 
-    const { data } = await loadActivity(userId);
+    const { data, usage } = await loadActivity(userId);
 
-    const activeDayKeys = new Set([...data.events.map((e) => dayKey(e.at))]);
+    const activeDayKeys = activeDaySet(data.events, usage, dayKey);
+    const daily = dailyStudy(data.events, usage, dayKey);
 
     const current = computeSkillScore(data, now, dayKey);
     const weekAgo = computeSkillScore(data, new Date(now.getTime() - 7 * DAY_MS), dayKey);
@@ -538,7 +590,7 @@ const getUserAnalytics = async (req, res) => {
       },
 
       studyStreak: computeStreak(activeDayKeys, now, dayKey),
-      weeklyActivity: computeWeekly(data, now, dayKey),
+      weeklyActivity: computeWeekly(daily, now, dayKey),
       skillProficiency: computeProficiency(data, now),
       strengthsWeaknesses: computeStrengthsAndFocus(data, now),
     });
@@ -557,7 +609,9 @@ module.exports = {
   weightedAccuracy,
   // exported for testing
   loadActivity,
+  dailyStudy,
+  activeDaySet,
   makeDayKey,
   DAY_MS,
-  _internal: { classifyDomain, collectActivity, computeSkillScore, computeStreak, computeWeekly, weightedAccuracy, makeDayKey },
+  _internal: { classifyDomain, collectActivity, computeSkillScore, computeStreak, computeWeekly, dailyStudy, weightedAccuracy, makeDayKey },
 };

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
  * round button face; animations live in index.css (.bot-*) and stop for
  * users who prefer reduced motion.
  */
-const BotMark = () => (
+export const BotMark = () => (
   <svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id="novard-bot-bg" cx="50%" cy="50%" r="50%">

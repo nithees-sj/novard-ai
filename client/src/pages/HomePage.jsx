@@ -7,6 +7,7 @@ import AnalyticsCard from '../components/analytics/AnalyticsCard';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import WeeklyActivityChart from '../components/analytics/WeeklyActivityChart';
+import { USAGE_EVENT } from '../hooks/useStudyTimeTracker';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -58,11 +59,15 @@ const HomePage = () => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') loadAnalytics({ background: true });
     };
+    // ...and each time the study-time tracker saves another minute, so today's bar grows while you work.
+    const onUsage = () => loadAnalytics({ background: true });
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
+    window.addEventListener(USAGE_EVENT, onUsage);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
+      window.removeEventListener(USAGE_EVENT, onUsage);
     };
   }, [loadAnalytics]);
 

@@ -7,18 +7,20 @@ const { readQuizOptions, generateQuiz: generateQuizQuestions } = require('../ser
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Generate learning plan
-exports.generatePlan = async (req, res) => {
-  const { skillName, duration, description, preferences, userId } = req.body;
+const planError = (message, status = 500) => Object.assign(new Error(message), { status });
 
-  try {
+/**
+ * Generate a day-by-day plan (with a YouTube video per day) and save it.
+ * Shared by the Skill Unlocker page and the Novard Agent.
+ */
+async function createSkillPlan({ skillName, duration, description, preferences, userId }) {
     // Validate inputs
     if (!skillName || !duration || !description || !userId) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      throw planError('Missing required fields', 400);
     }
 
     if (duration < 10) {
-      return res.status(400).json({ error: 'Duration must be at least 10 days' });
+      throw planError('Duration must be at least 10 days', 400);
     }
 
     // Create prompt for AI to generate learning plan
@@ -81,7 +83,7 @@ IMPORTANT: Return ONLY the JSON array, no other text.`;
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       console.error('AI Response:', content);
-      return res.status(500).json({ error: 'Failed to parse learning plan from AI' });
+      throw planError('Failed to parse learning plan from AI');
     }
 
 
@@ -156,18 +158,25 @@ IMPORTANT: Return ONLY the JSON array, no other text.`;
     });
 
     await skillPlan.save();
+    return skillPlan;
+}
+exports.createSkillPlan = createSkillPlan;
 
+// Generate learning plan
+exports.generatePlan = async (req, res) => {
+  try {
+    const skillPlan = await createSkillPlan(req.body);
     res.status(200).json({
       planId: skillPlan._id,
-      skillName,
-      duration,
-      dailyPlan,
+      skillName: skillPlan.skillName,
+      duration: skillPlan.duration,
+      dailyPlan: skillPlan.dailyPlan,
       createdAt: skillPlan.createdAt
     });
-
   } catch (error) {
+    if (error.status && error.status < 500) return res.status(error.status).json({ error: error.message });
     console.error('Error generating plan:', error);
-    res.status(500).json({ error: 'Failed to generate learning plan' });
+    res.status(500).json({ error: error.message === 'Failed to parse learning plan from AI' ? error.message : 'Failed to generate learning plan' });
   }
 };
 

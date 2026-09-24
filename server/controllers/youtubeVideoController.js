@@ -182,49 +182,44 @@ const uploadVideo = async (req, res) => {
 };
 
 // Create new YouTube video entry
+const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
+
+/**
+ * Add a YouTube video to a student's library (info + transcript).
+ * Shared by the Video Summarizer page and the Novard Agent. With
+ * `returnExisting`, a video already in the library is returned instead of rejected.
+ */
+const addYouTubeVideo = async ({ title, videoUrl, userId }, { returnExisting = false } = {}) => {
+  if (!videoUrl || !userId) throw badRequest('Video URL and user ID are required');
+  const videoId = extractVideoId(videoUrl);
+  if (!videoId) throw badRequest('Invalid YouTube URL');
+
+  const existing = await YouTubeVideo.findOne({ videoId, userId });
+  if (existing) {
+    if (returnExisting) return existing;
+    throw badRequest('This video has already been added');
+  }
+
+  const videoInfo = await getVideoInfo(videoId);
+  const transcript = await getVideoTranscript(videoId);
+  return new YouTubeVideo({
+    title: title || videoInfo.title,
+    videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    videoId,
+    description: videoInfo.description,
+    transcript,
+    userId,
+    videoType: 'youtube'
+  }).save();
+};
+
 const createYouTubeVideo = async (req, res) => {
   try {
-    const { title, videoUrl, userId } = req.body;
-    
-    if (!title || !videoUrl || !userId) {
-      return res.status(400).json({ error: 'Title, video URL, and user ID are required' });
-    }
-
-    const videoId = extractVideoId(videoUrl);
-    if (!videoId) {
-      return res.status(400).json({ error: 'Invalid YouTube URL' });
-    }
-
-    // Check if video already exists for this user
-    const existingVideo = await YouTubeVideo.findOne({ 
-      videoId: videoId, 
-      userId: userId 
-    });
-    
-    if (existingVideo) {
-      return res.status(400).json({ error: 'This video has already been added' });
-    }
-
-    // Get video info and transcript
-    const videoInfo = await getVideoInfo(videoId);
-    const transcript = await getVideoTranscript(videoId);
-    
-    console.log('Video Info:', videoInfo);
-    console.log('Transcript length:', transcript.length);
-
-    const youtubeVideo = new YouTubeVideo({
-      title: title || videoInfo.title,
-      videoUrl,
-      videoId,
-      description: videoInfo.description,
-      transcript,
-      userId,
-      videoType: 'youtube'
-    });
-
-    await youtubeVideo.save();
+    if (!req.body.title) return res.status(400).json({ error: 'Title, video URL, and user ID are required' });
+    const youtubeVideo = await addYouTubeVideo(req.body);
     res.status(201).json(youtubeVideo);
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
     console.error('Error creating YouTube video:', error);
     res.status(500).json({ error: 'Error creating YouTube video' });
   }
@@ -422,30 +417,30 @@ const searchYouTubeVideos = async (req, res) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    console.log('Searching YouTube for:', query);
-
-    const yt = await Innertube.create();
-    const searchResults = await yt.search(query, { type: 'video' });
-
-    // Extract video data from search results
-    const videos = searchResults.videos
-      .slice(0, maxResults)
-      .map(video => ({
-        videoId: video.id,
-        title: video.title.text || video.title,
-        thumbnailUrl: video.thumbnails?.[0]?.url || video.best_thumbnail?.url || '',
-        url: `https://www.youtube.com/watch?v=${video.id}`,
-        duration: video.duration?.text || '',
-        channelName: video.author?.name || ''
-      }));
-
-    console.log(`Found ${videos.length} videos`);
+    const videos = await searchVideos(query, maxResults);
     res.json({ videos });
   } catch (error) {
     console.error('Error searching YouTube:', error);
     res.status(500).json({ error: 'Error searching YouTube videos' });
   }
 };
+
+/** Top YouTube search results for a query: id, title, thumbnail, duration, channel. */
+async function searchVideos(query, maxResults = 3) {
+  const yt = await Innertube.create();
+  const searchResults = await yt.search(String(query), { type: 'video' });
+  return (searchResults.videos || [])
+    .filter((video) => video.id)
+    .slice(0, maxResults)
+    .map((video) => ({
+      videoId: video.id,
+      title: video.title?.text || String(video.title || ''),
+      thumbnailUrl: video.thumbnails?.[0]?.url || video.best_thumbnail?.url || '',
+      url: `https://www.youtube.com/watch?v=${video.id}`,
+      duration: video.duration?.text || '',
+      channelName: video.author?.name || ''
+    }));
+}
 
 // Delete YouTube video
 const deleteYouTubeVideo = async (req, res) => {
@@ -470,6 +465,8 @@ const deleteYouTubeVideo = async (req, res) => {
 };
 
 module.exports = {
+  addYouTubeVideo,
+  searchVideos,
   upload,
   uploadVideo,
   createYouTubeVideo,

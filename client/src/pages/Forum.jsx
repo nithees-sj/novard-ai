@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { readOpenParam, clearOpenParam } from '../lib/openParam';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
@@ -30,6 +31,17 @@ const Forum = () => {
     setListVersion((v) => v + 1);
     setNotification({ message: `Deleted "${issue.title}".`, type: 'success' });
   };
+
+  // Opened from the Novard Agent's "Open discussion" link.
+  useEffect(() => {
+    const id = readOpenParam();
+    if (!id) return;
+    clearOpenParam();
+    fetch(`${apiUrl}/api/forum/issues/${encodeURIComponent(id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((issue) => { if (issue) setSelectedIssue(issue); })
+      .catch(() => {});
+  }, []);
 
   const handleCreateIssue = () => {
     setShowIssueForm(true);

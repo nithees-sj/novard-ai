@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { readOpenParam, clearOpenParam } from '../lib/openParam';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
@@ -171,6 +172,16 @@ const SkillUnlocker = () => {
       }
       setCurrentView('planner');
   };
+
+  // Opened from the Novard Agent's "Open plan" link: select that plan once the list arrives.
+  const openId = useRef(readOpenParam());
+  useEffect(() => {
+    if (!openId.current || !plans?.length) return;
+    const target = plans.find((p) => String(p.planId || p._id) === openId.current);
+    openId.current = null;
+    clearOpenParam();
+    if (target) handleSelectPlan(target);
+  }, [plans]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeletePlan = async (e, planId) => {
     e.stopPropagation();

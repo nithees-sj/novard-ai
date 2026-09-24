@@ -50,6 +50,46 @@ function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6 } =
   });
 }
 
+// ── rate limits ────────────────────────────────────────────────────────────
+// Groq's free tier allows a few thousand tokens per minute per model. When a
+// request is refused with "try again in 12.3s", waiting that long and retrying
+// is almost always enough, and far better than failing the student's message.
+
+const MAX_RATE_LIMIT_WAIT_S = 30;
+const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+/** Seconds to wait before retrying a rate-limited request, or null if it is not one (or the wait is too long). */
+function rateLimitWait(error) {
+  const text = String(error?.message || '');
+  if (error?.status !== 429 && !/rate limit/i.test(text)) return null;
+  const match = text.match(/try again in (?:(\d+)m)?([\d.]+)s/i);
+  const seconds = match ? (Number(match[1] || 0) * 60 + Number(match[2])) : 10;
+  return seconds <= MAX_RATE_LIMIT_WAIT_S ? Math.ceil(seconds) + 1 : null;
+}
+
+/** Run fn, retrying up to `retries` times on a short rate limit. onWait(seconds) is told before each wait. */
+async function withRateLimitRetry(fn, { retries = 2, onWait } = {}) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fn(); // eslint-disable-line no-await-in-loop
+    } catch (error) {
+      const wait = rateLimitWait(error);
+      if (wait === null || attempt >= retries) throw error;
+      onWait?.(wait);
+      await sleep(wait * 1000); // eslint-disable-line no-await-in-loop
+    }
+  }
+}
+
+/** A message safe to show the student for an AI failure; never the raw provider error. */
+function friendlyAIError(error, fallback) {
+  if (rateLimitWait(error) !== null || error?.status === 429 || /rate limit/i.test(String(error?.message))) {
+    return 'The AI is busy right now (usage limit reached). Please try again in a minute.';
+  }
+  const own = error?.status && error.status < 500 && !/^\d{3}\b/.test(String(error.message));
+  return own ? error.message : fallback;
+}
+
 const toLangChain = (m) => (m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content));
 
 /**
@@ -59,20 +99,28 @@ const toLangChain = (m) => (m.role === 'user' ? new HumanMessage(m.content) : ne
  * overwrite each other's messages.
  */
 class MongoChatHistory extends BaseListChatMessageHistory {
-  constructor({ Model, filter, field, timeKey = 'timestamp' }) {
+  /**
+   * `toText(message)` turns a stored message into the text the model sees;
+   * by default its content. The Novard Agent uses it to add the status of the
+   * action cards attached to a message.
+   */
+  constructor({ Model, filter, field, timeKey = 'timestamp', toText = (m) => m.content }) {
     super();
     this.lc_namespace = ['novard', 'memory'];
     this.Model = Model;
     this.filter = filter;
     this.field = field;
     this.timeKey = timeKey;
+    this.toText = toText;
   }
 
   async rawMessages() {
     const doc = await this.Model.findOne(this.filter).select(`${this.field} memory`).lean();
     if (!doc) throw Object.assign(new Error('Conversation not found'), { status: 404 });
     const messages = (doc[this.field] || [])
-      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content);
+      .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
+      .map((m) => ({ ...m, content: this.toText(m) }))
+      .filter((m) => m.content);
     return { messages, memory: doc.memory || {} };
   }
 
@@ -132,7 +180,7 @@ async function summarize(existing, messages) {
     .join('\n\n')
     .slice(0, 60000);
   const llm = chatModel({ tier: 'FAST', maxTokens: 900, temperature: 0.2 });
-  const result = await llm.invoke([
+  const result = await withRateLimitRetry(() => llm.invoke([
     new SystemMessage(
       'You maintain the memory of a tutoring conversation. Update the summary so a tutor could continue ' +
       'the conversation without the original messages. Keep: every question the user asked (in order), the key ' +
@@ -141,7 +189,7 @@ async function summarize(existing, messages) {
       'points; stay under 350 words. Return only the updated summary.'
     ),
     new HumanMessage(`Current summary:\n${existing || '(none yet)'}\n\nNew messages to fold in:\n${transcript}`),
-  ]);
+  ]));
   return String(result.content || existing).trim();
 }
 
@@ -174,10 +222,10 @@ async function converse({ Model, filter, field, timeKey, system, input, tier, ma
     historyMessagesKey: 'history',
   });
 
-  const reply = await chain.invoke(
+  const reply = await withRateLimitRetry(() => chain.invoke(
     { system: `${system}\n${MEMORY_INSTRUCTIONS}`, input },
     { configurable: { sessionId: String(filter._id || JSON.stringify(filter)) } }
-  );
+  ));
 
   const text = String(reply || '').trim();
   if (!text) throw Object.assign(new Error('The assistant did not reply. Please try again.'), { status: 502 });
@@ -192,4 +240,4 @@ const memorySchemaFields = {
   },
 };
 
-module.exports = { converse, chatModel, MongoChatHistory, memorySchemaFields, MEMORY, _internal: { estimateTokens, summarize } };
+module.exports = { converse, chatModel, MongoChatHistory, memorySchemaFields, MEMORY, withRateLimitRetry, rateLimitWait, friendlyAIError, _internal: { estimateTokens, summarize } };

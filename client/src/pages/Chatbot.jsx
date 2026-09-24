@@ -1,338 +1,375 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MdSend } from 'react-icons/md';
-import { Navigationinner } from '../components/navigationinner';
-import MarkdownView from '../components/MarkdownView';
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '../AuthContext';
+import AgentSidebar from '../components/agent/AgentSidebar';
+import AgentMessage from '../components/agent/AgentMessage';
+import { BotMark } from '../components/ChatbotButton';
+import { streamAgentReply, agentApi } from '../lib/agentStream';
 
 const STARTERS = [
-  'How do I prepare for a junior developer interview?',
-  'Explain REST vs GraphQL with an example',
-  'Help me plan 10 hours a week of study',
+  { icon: '💡', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
+  { icon: '🗺️', title: 'Plan my career', text: 'What should I do to become a DevOps engineer? I already know Linux and Git.' },
+  { icon: '🎬', title: 'Find a video', text: 'Find me a good video to learn Docker basics' },
+  { icon: '🗓️', title: 'Build a study plan', text: 'Make me a 14-day plan to learn SQL from scratch' },
 ];
 
+/**
+ * The Novard Agent, laid out like ChatGPT / Claude: chat history on the left,
+ * the conversation in the middle. Replies stream in; when the agent offers to
+ * create something (a doubt, video, roadmap, plan…) it appears as a card the
+ * student confirms or declines. The agent remembers the whole conversation.
+ */
 const Chatbot = () => {
-  const userId = localStorage.getItem('email') || 'anonymous';
-  // The open conversation survives reloads; the server keeps its full history as LangChain memory.
-  const storageKey = `novard:chatbot:${userId}`;
+  const { user } = useAuth();
+  const userId = user?.email || localStorage.getItem('email') || 'anonymous';
+  const userName = user?.name || user?.displayName || localStorage.getItem('name') || '';
+  const firstName = userName.split(' ')[0];
+
+  const [chats, setChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
+  const [activeId, setActiveId] = useState(null);
+  const [title, setTitle] = useState('');
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [conversationId, setConversationId] = useState(() => {
-    try { return localStorage.getItem(storageKey); } catch { return null; }
-  });
-  const [title, setTitle] = useState('New chat');
-  const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [atBottom, setAtBottom] = useState(true);
 
-  const remember = (id) => {
-    setConversationId(id);
-    try { id ? localStorage.setItem(storageKey, id) : localStorage.removeItem(storageKey); } catch { /* storage unavailable */ }
-  };
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
+  const abortRef = useRef(null);
+  const activeRef = useRef(null);
+  activeRef.current = activeId;
 
-  const openConversation = async (id) => {
+  // ── history ────────────────────────────────────────────────
+  const loadChats = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/chatbot/conversations/${id}?userId=${encodeURIComponent(userId)}`);
-      if (!res.ok) throw new Error('not found');
-      const data = await res.json();
-      setMessages(data.messages.map((m) => ({ type: m.role === 'user' ? 'user' : 'ai', content: m.content })));
-      setTitle(data.title || 'Chat');
-      remember(id);
-    } catch {
-      remember(null);
-      setMessages([]);
-      setTitle('New chat');
+      setChats(await agentApi.list(userId));
+    } catch { /* keep the current list */ } finally {
+      setChatsLoading(false);
     }
-    setShowHistory(false);
-  };
+  }, [userId]);
+  useEffect(() => { loadChats(); }, [loadChats]);
 
-  const loadHistory = async () => {
-    try {
-      const res = await fetch(`${apiUrl}/api/chatbot/conversations/user/${encodeURIComponent(userId)}`);
-      setHistory(res.ok ? await res.json() : []);
-    } catch {
-      setHistory([]);
-    }
-  };
-
-  const newChat = () => {
-    remember(null);
+  const newChat = useCallback(() => {
+    abortRef.current?.abort();
+    setActiveId(null);
+    setTitle('');
     setMessages([]);
-    setTitle('New chat');
-    setShowHistory(false);
-  };
-
-  const deleteConversation = async (id) => {
-    await fetch(`${apiUrl}/api/chatbot/conversations/${id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' }).catch(() => {});
-    if (id === conversationId) newChat();
-    loadHistory();
-  };
-
-  // Reopen the last conversation on load.
-  useEffect(() => {
-    if (conversationId) openConversation(conversationId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setError(null);
+    setDraft('');
+    setSidebarOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isSending]);
-
-  const handleSend = async (preset) => {
-    const prompt = (typeof preset === 'string' ? preset : input).trim();
-    if (!prompt || isSending) return;
-
-    setMessages((prevMessages) => [...prevMessages, { type: 'user', content: prompt }]);
-    setInput('');
-    setIsSending(true);
-
+  const openChat = useCallback(async (id) => {
+    if (id === activeRef.current) { setSidebarOpen(false); return; }
+    abortRef.current?.abort();
+    setActiveId(id);
+    setSidebarOpen(false);
+    setLoadingChat(true);
+    setError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/chatbot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, userId, conversationId }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || `Request failed (${response.status})`);
-      }
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { type: 'ai', content: data.response || 'No response received.' },
-      ]);
-      if (data.conversationId && data.conversationId !== conversationId) remember(data.conversationId);
-      if (data.title) setTitle(data.title);
-    } catch (error) {
-      console.error('Error interacting with chatbot:', error);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { type: 'ai', content: `Sorry — ${error.message}. Please try again.` },
-      ]);
+      const doc = await agentApi.get(id, userId);
+      if (activeRef.current !== id) return;
+      setTitle(doc.title);
+      setMessages(doc.messages || []);
+      requestAnimationFrame(() => scrollToBottom('auto'));
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setIsSending(false);
+      setLoadingChat(false);
+    }
+  }, [userId]);
+
+  const renameChat = async (id, next) => {
+    setChats((list) => list.map((c) => (c._id === id ? { ...c, title: next } : c)));
+    if (id === activeId) setTitle(next);
+    try { await agentApi.rename(id, userId, next); } catch { loadChats(); }
+  };
+
+  const deleteChat = async (id) => {
+    setChats((list) => list.filter((c) => c._id !== id));
+    if (id === activeId) newChat();
+    try { await agentApi.remove(id, userId); } catch { loadChats(); }
+  };
+
+  // Ctrl/Cmd + Shift + O starts a new chat, as in ChatGPT.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') { e.preventDefault(); newChat(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [newChat]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  // ── scrolling ──────────────────────────────────────────────
+  const scrollToBottom = (behavior = 'smooth') => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  };
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (el) setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+  };
+  // Follow the reply as it streams, unless the student scrolled up to read.
+  useEffect(() => { if (atBottom) scrollToBottom('auto'); }, [messages, status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── sending ────────────────────────────────────────────────
+  const updateLast = (fn) => setMessages((list) => {
+    const copy = list.slice();
+    copy[copy.length - 1] = fn(copy[copy.length - 1]);
+    return copy;
+  });
+
+  const send = async (textArg) => {
+    const text = (textArg ?? draft).trim();
+    if (!text || streaming) return;
+    setDraft('');
+    if (inputRef.current) inputRef.current.style.height = 'auto';
+    setError(null);
+    setStreaming(true);
+    setStatus('');
+    setAtBottom(true);
+    setMessages((list) => [...list, { role: 'user', content: text, createdAt: new Date().toISOString() }, { role: 'assistant', content: '', actions: [], pending: true }]);
+    requestAnimationFrame(() => scrollToBottom('smooth'));
+
+    // Tokens arrive faster than React should re-render; flush them once per frame.
+    let buffer = '';
+    let frame = null;
+    const flush = () => {
+      frame = null;
+      if (!buffer) return;
+      const chunk = buffer;
+      buffer = '';
+      updateLast((m) => ({ ...m, content: m.content + chunk }));
+    };
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let conversationId = activeId;
+    try {
+      await streamAgentReply({ userId, userName, conversationId, message: text, signal: controller.signal }, {
+        onMeta: (m) => {
+          conversationId = m.conversationId;
+          if (!activeRef.current) {
+            setActiveId(m.conversationId);
+            activeRef.current = m.conversationId;
+            setTitle(m.title);
+          }
+          if (m.isNew) setChats((list) => [{ _id: m.conversationId, title: m.title, updatedAt: new Date().toISOString() }, ...list.filter((c) => c._id !== m.conversationId)]);
+        },
+        onToken: ({ text: t }) => {
+          buffer += t;
+          if (!frame) frame = requestAnimationFrame(flush);
+        },
+        onStatus: ({ text: s }) => setStatus(s),
+        onAction: ({ action }) => updateLast((m) => ({ ...m, actions: [...(m.actions || []), action] })),
+        onTitle: ({ title: t }) => {
+          setChats((list) => list.map((c) => (c._id === conversationId ? { ...c, title: t } : c)));
+          if (activeRef.current === conversationId) setTitle(t);
+        },
+        onDone: ({ message }) => {
+          if (frame) cancelAnimationFrame(frame);
+          buffer = '';
+          if (activeRef.current === conversationId) updateLast(() => message);
+        },
+        onError: ({ error: e }) => { throw new Error(e); },
+      });
+    } catch (err) {
+      if (frame) cancelAnimationFrame(frame);
+      flush();
+      if (controller.signal.aborted) {
+        updateLast((m) => ({ ...m, pending: false, content: m.content ? `${m.content}\n\n*(stopped)*` : '*(stopped)*' }));
+      } else {
+        // Remove the empty reply; keep the student's message and show why.
+        setMessages((list) => (list[list.length - 1]?.content ? list : list.slice(0, -1)));
+        setError(err.message || 'The agent could not reply. Please try again.');
+      }
+    } finally {
+      setStreaming(false);
+      setStatus('');
+      abortRef.current = null;
+      setChats((list) => {
+        const hit = list.find((c) => c._id === conversationId);
+        return hit ? [{ ...hit, updatedAt: new Date().toISOString() }, ...list.filter((c) => c._id !== conversationId)] : list;
+      });
+      inputRef.current?.focus();
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const stop = () => abortRef.current?.abort();
+
+  // ── action cards ───────────────────────────────────────────
+  const setAction = (actionId, patch) => setMessages((list) => list.map((m) => (!m.actions?.some((a) => a.id === actionId) ? m : {
+    ...m,
+    actions: m.actions.map((a) => (a.id === actionId ? { ...a, ...patch } : a)),
+  })));
+
+  const decide = async (action, decision) => {
+    const convId = activeRef.current;
+    if (!convId) return;
+    const before = action.status;
+    setAction(action.id, decision === 'confirm' ? { status: 'running', error: null } : { status: 'dismissed' });
+    try {
+      const { action: updated } = await agentApi.decide(convId, action.id, { userId, userName, decision });
+      if (activeRef.current === convId) setAction(action.id, updated);
+    } catch (err) {
+      if (activeRef.current !== convId) return;
+      if (err.data?.action) setAction(action.id, err.data.action);
+      else setAction(action.id, decision === 'confirm' ? { status: 'failed', error: err.message } : { status: before });
     }
   };
 
-const styles = {
-  pageContainer: {
-    minHeight: '100vh',
-    backgroundColor: '#fff', // White background
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  navbar: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    zIndex: 1000,
-  },
-  chatbotContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-    paddingTop: '80px',
-  },
-  chatbox: {
-    width: '100%',
-    maxWidth: '900px',
-    height: '76vh',
-    backgroundColor: '#fff',
-    borderRadius: '18px',
-    boxShadow: '0 8px 36px rgba(0,0,0,0.12)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  messages: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '32px',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  message: {
-    padding: '14px 24px',
-    borderRadius: '16px',
-    marginBottom: '18px',
-    maxWidth: '85%',
-    minWidth: 0,
-    display: 'inline-block',
-    wordBreak: 'break-word',
-    fontSize: '1.1rem',
-    alignSelf: 'flex-start',
-    background: '#f4f4f4',
-    color: '#1a1a1a',
-  },
-  userMessage: {
-    backgroundColor: '#111827',
-    color: '#fff',
-    textAlign: 'left',
-    whiteSpace: 'pre-wrap',
-    alignSelf: 'flex-end',
-  },
-  aiMessage: {
-    backgroundColor: '#f3f4f6',
-    color: '#232323',
-    textAlign: 'left',
-  },
-  inputContainer: {
-    borderTop: '1.5px solid #e5e7eb',
-    padding: '15px',
-    display: 'flex',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  inputBox: {
-    flex: 1,
-    padding: '14px 22px',
-    borderRadius: '32px',
-    border: '1.5px solid #d1d5db',
-    fontSize: '1.15rem',
-    outline: 'none',
-    background: '#f8fafb',
-  },
-  sendButton: {
-    marginLeft: '12px',
-    backgroundColor: '#111827',
-    color: '#fff',
-    padding: '13px',
-    borderRadius: '50%',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s, box-shadow 0.3s',
-    fontSize: '1.25rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
-  },
-  sendButtonHover: {
-    backgroundColor: '#23272b',
-    boxShadow: '0 6px 22px rgba(0,0,0,0.14)'
-  },
-};
+  // ── render ─────────────────────────────────────────────────
+  const empty = !activeId && messages.length === 0;
 
+  const composer = (
+    <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+      {error && (
+        <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-500 hover:text-red-700" aria-label="Dismiss">✕</button>
+        </div>
+      )}
+      <form
+        onSubmit={(e) => { e.preventDefault(); send(); }}
+        className="relative rounded-3xl border border-gray-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition focus-within:border-gray-300 focus-within:shadow-[0_4px_20px_rgba(37,99,235,0.10)]"
+      >
+        <textarea
+          ref={inputRef}
+          rows={1}
+          value={draft}
+          autoFocus
+          onChange={(e) => {
+            setDraft(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 220)}px`;
+          }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
+          placeholder={empty ? 'Ask anything, or tell me what you want to learn…' : 'Reply to Novard Agent…'}
+          aria-label="Message Novard Agent"
+          maxLength={6000}
+          className="block max-h-56 w-full resize-none rounded-3xl bg-transparent px-5 pt-4 pb-14 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
+        />
+        <div className="absolute inset-x-3 bottom-2.5 flex items-center justify-between">
+          <span className="hidden pl-2 text-[11px] text-gray-400 sm:inline">Enter to send · Shift + Enter for a new line</span>
+          <span className="sm:hidden" />
+          {streaming ? (
+            <button type="button" onClick={stop} className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-white transition hover:bg-gray-700" aria-label="Stop generating" title="Stop">
+              <span className="h-3 w-3 rounded-sm bg-white" />
+            </button>
+          ) : (
+            <button type="submit" disabled={!draft.trim()} className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400" aria-label="Send message" title="Send">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M5 12h14M13 6l6 6-6 6" transform="rotate(-90 12 12)" /></svg>
+            </button>
+          )}
+        </div>
+      </form>
+      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent asks before creating anything, and can make mistakes - check important information.</p>
+    </div>
+  );
 
   return (
-    <div style={styles.pageContainer}>
-      <div style={styles.navbar}>
-        <Navigationinner title="CHATBOT" hasSidebar={false} />
+    <div className="flex h-screen overflow-hidden bg-white">
+      {/* chat history: fixed on desktop, a drawer on small screens */}
+      <div className={`fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <AgentSidebar
+          chats={chats}
+          loading={chatsLoading}
+          activeId={activeId}
+          onNew={newChat}
+          onOpen={openChat}
+          onRename={renameChat}
+          onDelete={deleteChat}
+          user={user}
+          onClose={() => setSidebarOpen(false)}
+        />
       </div>
+      {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
 
-      <div style={styles.chatbotContainer}>
-        <div style={styles.chatbox}>
-          <div className="relative flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-3">
-            <span className="min-w-0 truncate text-sm font-semibold text-gray-800" title={title}>{title}</span>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => { if (!showHistory) loadHistory(); setShowHistory((v) => !v); }}
-                aria-expanded={showHistory}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                History ▾
-              </button>
-              <button type="button" onClick={newChat} className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">
-                + New chat
-              </button>
+      <main className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-4">
+          <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 md:hidden" aria-label="Open chat list">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">{empty ? 'Novard Agent' : title || 'New chat'}</h1>
+          {!empty && (
+            <button type="button" onClick={newChat} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100" title="New chat (Ctrl+Shift+O)">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              <span className="hidden sm:inline">New chat</span>
+            </button>
+          )}
+        </header>
+
+        {empty ? (
+          <div className="flex flex-1 flex-col overflow-y-auto px-4">
+            {/* my-auto centres the welcome when it fits and lets it scroll from the top when it does not. */}
+            <div className="my-auto flex w-full flex-col items-center py-8">
+            <div className="h-20 w-20 shrink-0"><BotMark /></div>
+            <h2 className="mt-5 text-center text-3xl font-semibold tracking-tight text-gray-900">
+              {firstName ? `Hi ${firstName}, how can I help?` : 'How can I help you today?'}
+            </h2>
+            <p className="mt-2 max-w-lg text-center text-sm text-gray-500">
+              Ask me anything about what you're learning. I can also save doubts, add videos, build roadmaps and study plans in the app for you - I'll always ask first.
+            </p>
+            <div className="mt-8 w-full">{composer}</div>
+            <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 px-4 sm:grid-cols-2">
+              {STARTERS.map((s) => (
+                <button
+                  key={s.title}
+                  type="button"
+                  onClick={() => send(s.text)}
+                  className="group rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
+                >
+                  <span className="text-lg" aria-hidden="true">{s.icon}</span>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">{s.title}</p>
+                  <p className="mt-0.5 text-sm text-gray-500 group-hover:text-gray-600">{s.text}</p>
+                </button>
+              ))}
             </div>
-            {showHistory && (
-              <div className="absolute right-4 top-full z-20 mt-2 max-h-80 w-80 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
-                {history.length === 0 ? (
-                  <p className="px-3 py-4 text-center text-sm text-gray-500">No saved chats yet.</p>
-                ) : history.map((h) => (
-                  <div key={h._id} className={`group flex items-center gap-2 rounded-lg px-3 py-2 ${h._id === conversationId ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-                    <button type="button" onClick={() => openConversation(h._id)} className="min-w-0 flex-1 text-left">
-                      <span className="block truncate text-sm font-medium text-gray-900">{h.title}</span>
-                      <span className="block text-xs text-gray-500">{h.messageCount} messages · {new Date(h.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
-                    </button>
-                    <button type="button" onClick={() => deleteConversation(h._id)} aria-label={`Delete ${h.title}`} className="text-gray-400 hover:text-red-600">✕</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div ref={scrollRef} onScroll={onScroll} className="relative flex-1 overflow-y-auto">
+              <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
+                {loadingChat ? (
+                  <div className="space-y-6" aria-label="Loading chat">
+                    {[0, 1].map((i) => (
+                      <div key={i} className="space-y-3">
+                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-3xl bg-gray-100" />
+                        <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+                        <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100" />
+                      </div>
+                    ))}
                   </div>
+                ) : messages.map((m, i) => (
+                  <AgentMessage
+                    key={`${m.createdAt || 'pending'}-${i}`}
+                    message={m}
+                    streaming={streaming && i === messages.length - 1 && m.role === 'assistant'}
+                    status={status}
+                    onDecide={decide}
+                  />
                 ))}
               </div>
-            )}
-          </div>
-          <div style={styles.messages}>
-            {messages.length === 0 && !isSending && (
-              <div className="m-auto max-w-md text-center">
-                <p className="text-lg font-semibold text-gray-900">Ask me anything about learning and careers</p>
-                <p className="mt-1 text-sm text-gray-500">I remember this conversation, so you can ask follow-ups about anything above.</p>
-                <div className="mt-4 flex flex-col gap-2">
-                  {STARTERS.map((q) => (
-                    <button key={q} type="button" onClick={() => handleSend(q)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                      {q}
-                    </button>
-                  ))}
-                </div>
+            </div>
+            {!atBottom && (
+              <div className="pointer-events-none relative">
+                <button type="button" onClick={() => scrollToBottom()} className="pointer-events-auto absolute -top-12 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-md hover:bg-gray-50" aria-label="Jump to latest">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                </button>
               </div>
             )}
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                style={{
-                  ...styles.message,
-                  ...(message.type === 'user' ? styles.userMessage : styles.aiMessage),
-                }}
-              >
-                {message.type === 'ai' ? (
-                  <MarkdownView content={message.content} size="base" />
-                ) : (
-                  message.content
-                )}
-              </div>
-            ))}
-            {isSending && (
-              <div style={{ ...styles.message, ...styles.aiMessage }}>
-                <span className="inline-flex items-center gap-2 text-gray-500">
-                  <span className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
-                  Thinking&hellip;
-                </span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div style={styles.inputContainer}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isSending}
-              placeholder={isSending ? 'Waiting for a reply\u2026' : 'Type your message...'}
-              style={{ ...styles.inputBox, opacity: isSending ? 0.6 : 1 }}
-            />
-            <button
-              onClick={handleSend}
-              disabled={isSending || !input.trim()}
-              aria-label="Send message"
-              style={{
-                ...styles.sendButton,
-                opacity: isSending || !input.trim() ? 0.5 : 1,
-                cursor: isSending || !input.trim() ? 'not-allowed' : 'pointer',
-              }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = styles.sendButtonHover.backgroundColor)}
-              onMouseOut={(e) => (e.target.style.backgroundColor = styles.sendButton.backgroundColor)}
-            >
-              <MdSend size={24} />
-            </button>
-          </div>
-        </div>
-      </div>
+            {composer}
+          </>
+        )}
+      </main>
     </div>
   );
 };

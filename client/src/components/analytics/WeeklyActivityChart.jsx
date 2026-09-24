@@ -24,10 +24,11 @@ function niceScale(maxValue) {
 const PLOT_HEIGHT = 160;
 
 /**
- * Estimated study minutes for the last seven days, one column per day.
- * Single series, so no legend - the title says what is plotted. Every column
- * has a hover/focus tooltip, and the same numbers are in a visually hidden
- * table for screen readers.
+ * Study time for the last seven days, one column per day: the time actually
+ * spent in the app (tracked while the student is active), or - for days from
+ * before tracking existed - an estimate from saved activity, drawn lighter
+ * and labelled as such. Every column has a hover/focus tooltip, and the same
+ * numbers are in a visually hidden table for screen readers.
  */
 const WeeklyActivityChart = ({ weekly }) => {
   const [active, setActive] = useState(null);
@@ -46,8 +47,14 @@ const WeeklyActivityChart = ({ weekly }) => {
         <div>
           <h3 className="text-lg font-bold text-gray-900">Study time this week</h3>
           <p className="text-sm text-gray-500">
-            Estimated from your activity: questions asked, quizzes taken, plan days completed
+            Time you spent active in the app, updated every minute
           </p>
+          {weekly?.estimated && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary-200" aria-hidden="true" />
+              Lighter bars: days before time tracking, estimated from your activity
+            </p>
+          )}
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-gray-900">{formatMinutes(total)}</div>
@@ -68,7 +75,7 @@ const WeeklyActivityChart = ({ weekly }) => {
           No study activity in the last 7 days yet
         </div>
       ) : (
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-2">
           {/* y-axis */}
           <div className="relative w-10 shrink-0" style={{ height: PLOT_HEIGHT }} aria-hidden="true">
             {ticks.map((t) => (
@@ -107,7 +114,7 @@ const WeeklyActivityChart = ({ weekly }) => {
                       onMouseLeave={() => setActive(null)}
                       onFocus={() => setActive(i)}
                       onBlur={() => setActive(null)}
-                      aria-label={`${formatDate(d.date)}: ${formatMinutes(d.minutes)}, ${d.activities} activities, ${d.quizzes} quizzes`}
+                      aria-label={`${formatDate(d.date)}: ${formatMinutes(d.minutes)}${d.tracked ? '' : ' (estimated)'}, ${d.activities} activities, ${d.quizzes} quizzes`}
                     >
                       {/* value on the peak column only - the tooltip carries the rest */}
                       {i === peakIndex && !isActive && (
@@ -120,7 +127,9 @@ const WeeklyActivityChart = ({ weekly }) => {
                       )}
                       <span
                         className={`block w-full max-w-[24px] rounded-t-[4px] transition-colors ${
-                          isActive ? 'bg-primary-700' : 'bg-primary-500 group-hover:bg-primary-600'
+                          d.tracked
+                            ? (isActive ? 'bg-primary-700' : 'bg-primary-500 group-hover:bg-primary-600')
+                            : (isActive ? 'bg-primary-400' : 'bg-primary-200 group-hover:bg-primary-300')
                         } group-focus-visible:ring-2 group-focus-visible:ring-primary-300`}
                         style={{ height: d.minutes > 0 ? `max(${height}%, 3px)` : 0 }}
                       />
@@ -130,7 +139,10 @@ const WeeklyActivityChart = ({ weekly }) => {
                           className="absolute z-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-left shadow-lg pointer-events-none"
                           style={{ bottom: `calc(${height}% + 10px)` }}
                         >
-                          <span className="block text-sm font-bold text-white">{formatMinutes(d.minutes)}</span>
+                          <span className="block text-sm font-bold text-white">
+                            {formatMinutes(d.minutes)}
+                            <span className="ml-1.5 text-[10px] font-medium text-gray-400">{d.tracked ? 'in the app' : 'estimated'}</span>
+                          </span>
                           <span className="block text-[11px] text-gray-300">{formatDate(d.date)}</span>
                           <span className="block text-[11px] text-gray-300">
                             {d.activities} {d.activities === 1 ? 'activity' : 'activities'}
@@ -162,15 +174,16 @@ const WeeklyActivityChart = ({ weekly }) => {
       )}
 
       <table className="sr-only">
-        <caption>Estimated study time per day, last 7 days</caption>
+        <caption>Study time per day, last 7 days (tracked time in the app; earlier days estimated)</caption>
         <thead>
-          <tr><th>Day</th><th>Minutes</th><th>Activities</th><th>Quizzes</th></tr>
+          <tr><th>Day</th><th>Minutes</th><th>Source</th><th>Activities</th><th>Quizzes</th></tr>
         </thead>
         <tbody>
           {days.map((d) => (
             <tr key={d.date}>
               <td>{formatDate(d.date)}</td>
               <td>{d.minutes}</td>
+              <td>{d.tracked ? 'Tracked' : 'Estimated'}</td>
               <td>{d.activities}</td>
               <td>{d.quizzes}</td>
             </tr>

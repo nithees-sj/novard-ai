@@ -65,3 +65,22 @@
 @media (prefers-reduced-motion: reduce) {
   .bot-spin, .bot-spin-reverse, .bot-dash, .bot-pulse, .bot-badge { animation: none; }
 }
+
+/* Novard Agent: a blinking caret after the text while a reply streams in */
+.agent-streaming > .prose > p:last-child::after,
+.agent-streaming > .prose > ul:last-child > li:last-child::after,
+.agent-streaming > .prose > ol:last-child > li:last-child::after {
+  content: '';
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 2px;
+  background: #2563eb;
+  animation: agent-caret 1s steps(2, start) infinite;
+}
+@keyframes agent-caret { to { visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) {
+  .agent-streaming > .prose > p:last-child::after { animation: none; }
+}

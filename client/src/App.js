@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./AuthContext";
 import RouteFallback from "./components/RouteFallback";
+import useStudyTimeTracker from "./hooks/useStudyTimeTracker";
 
 // Routes are code-split: the entry bundle previously contained every page,
 // so the landing screen paid the download cost of the whole application.
@@ -28,6 +29,8 @@ const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
 
 function AppRoutes() {
   const { user, loading } = useAuth();
+  // Records real time-in-app for the study-time charts, on every page, while signed in.
+  useStudyTimeTracker(user?.email);
 
   if (loading) {
     return <RouteFallback />;

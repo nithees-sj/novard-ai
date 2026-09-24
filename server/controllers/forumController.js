@@ -71,35 +71,39 @@ function replyWithAI(issue, parentComment = null) {
 
 // ── issues ────────────────────────────────────────────────────────────────
 
+/** Validate and save a discussion, then let the AI post its first reply. Shared by the forum and the Novard Agent. */
+async function openIssue({ title, description, userEmail, userName, tags = [], category = 'general' }) {
+  const bad = (message) => Object.assign(new Error(message), { status: 400 });
+  if (!title?.trim() || !description?.trim() || !userEmail || !userName) {
+    throw bad('Title, description, user email, and user name are required');
+  }
+  if (!CATEGORIES.includes(category)) throw bad(`Category must be one of: ${CATEGORIES.join(', ')}`);
+
+  const cleanTags = [...new Set((Array.isArray(tags) ? tags : [])
+    .map((t) => String(t).trim().toLowerCase())
+    .filter(Boolean))].slice(0, 8);
+
+  const savedIssue = await new ForumIssue({
+    title: title.trim(),
+    description: description.trim(),
+    userEmail,
+    userName,
+    category,
+    tags: cleanTags,
+    issueId: generateIssueId(),
+  }).save();
+
+  // The AI's first reply is posted in the background and arrives via the thread's poll.
+  replyWithAI(savedIssue);
+  return savedIssue;
+}
+
 const createIssue = async (req, res) => {
   try {
-    const { title, description, userEmail, userName, tags = [], category = 'general' } = req.body;
-
-    if (!title?.trim() || !description?.trim() || !userEmail || !userName) {
-      return res.status(400).json({ error: 'Title, description, user email, and user name are required' });
-    }
-    if (!CATEGORIES.includes(category)) {
-      return res.status(400).json({ error: `Category must be one of: ${CATEGORIES.join(', ')}` });
-    }
-
-    const cleanTags = [...new Set((Array.isArray(tags) ? tags : [])
-      .map((t) => String(t).trim().toLowerCase())
-      .filter(Boolean))].slice(0, 8);
-
-    const savedIssue = await new ForumIssue({
-      title: title.trim(),
-      description: description.trim(),
-      userEmail,
-      userName,
-      category,
-      tags: cleanTags,
-      issueId: generateIssueId(),
-    }).save();
-
-    // Respond straight away; the AI's first reply arrives via the thread's poll.
+    const savedIssue = await openIssue(req.body);
     res.status(201).json({ ...savedIssue.toObject(), commentsCount: 0, netVotes: 0 });
-    replyWithAI(savedIssue);
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ error: error.message });
     console.error('Error creating issue:', error);
     res.status(500).json({ error: 'Failed to create issue' });
   }
@@ -353,6 +357,7 @@ const generateAIResponseForComment = async (req, res) => {
 
 module.exports = {
   CATEGORIES,
+  openIssue,
   createIssue,
   getAllIssues,
   getIssueById,

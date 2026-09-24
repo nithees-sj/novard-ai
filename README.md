@@ -103,7 +103,12 @@ Teachers create courses (title, description, cover image) and attach videos with
 
   The dashboard shows the change against the same score a week ago.
 - **Quiz accuracy** is weighted by question count and recency. **Plan completion** is the share of plan days completed. The **study streak** follows the student's own timezone.
-- **Estimated study time** for the last 7 days is charted. The app does not record time on task, so this is estimated from a fixed effort per action and labelled as an estimate.
+- **Study time** for the last 7 days is charted. It is the real time spent in the app, recorded by [useStudyTimeTracker](client/src/hooks/useStudyTimeTracker.js) on every page:
+  - time counts only while the tab is visible and focused, and while the student has used the mouse, keyboard or touch in the last 5 minutes, or is watching a video;
+  - the tracker saves about once a minute, and again when the tab is hidden or closed;
+  - the dashboard updates live as time is saved;
+  - each day shows the larger of the tracked time and an estimate from saved activity (both are lower bounds on the real time). Days from before tracking existed show only the estimate, drawn lighter and labelled "estimated".
+- Every AI chat counts as activity, including the Skill Gap coach and the Novard Agent. Generating a roadmap counts too.
 - A **subject proficiency radar** covers the student's own subjects, and a **strengths vs. needs-practice** list covers topics with at least 5 answered questions.
 
 ### Profile (`/profile`)
@@ -125,7 +130,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 ### Everywhere else
 
-- A floating **chatbot** button available across the app: a LangChain assistant with saved conversations and memory of everything said earlier in the chat.
+- A floating **Novard Agent** button available across the app (see [Novard Agent](#novard-agent) below).
 - Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output.
 - Tailwind layouts with a persistent sidebar.
 
@@ -171,7 +176,7 @@ Every chat in the app runs on one LangChain conversation engine,
 
 | Chat | Memory stored on |
 | --- | --- |
-| Global assistant (floating chatbot) | `ChatbotConversation.messages` |
+| Novard Agent | `ChatbotConversation.messages` (with each message's action cards) |
 | Notes | `Notes.chatHistory` |
 | Video Summarizer | `YouTubeVideo.chatHistory` |
 | Teacher Guidance / educational videos | `EducationalVideo.chatHistory` |
@@ -183,10 +188,50 @@ Every chat in the app runs on one LangChain conversation engine,
 - **Summary-buffer memory:** recent turns go to the model word for word. Once the unsummarised part of a chat passes `MEMORY_SUMMARIZE_AT_TOKENS` (default 10,000), the older turns are folded into a running summary saved in the document's `memory` field, keeping about `MEMORY_KEEP_RECENT_TOKENS` (default 6,000) verbatim. The student can keep asking about anything earlier in the chat, and long chats never overflow the model.
 - **Forum:** the AI participant uses the same LangChain pieces with the thread as its history. Human comments are labelled with the author's name, so replies can build on the whole discussion.
 
-The global assistant's conversations are saved per user, reopen after a page reload, and appear
-under *History* on the chatbot page. Routes: `POST /api/chatbot` (`{ prompt, userId, conversationId? }`),
-`GET /api/chatbot/conversations/user/:userId`, `GET /api/chatbot/conversations/:id?userId=`,
-`DELETE /api/chatbot/conversations/:id`.
+- **Rate limits:** Groq's free tier allows about 8,000 tokens per minute per model. When a request is refused with "try again in N s" (up to 30 s), every chat waits and retries automatically. The Novard Agent shows "The AI is busy - continuing in N s…" while it waits. The student never sees a raw provider error.
+
+## Novard Agent
+
+The assistant behind the floating button (`/chatbot`) is an **agent**: it teaches, and it can do things in the app for the student, always after asking.
+
+**Layout.** It is laid out like ChatGPT or Claude:
+- **Left:** a sidebar with *New chat* (Ctrl+Shift+O), search, and the chat history grouped by Today, Yesterday, Previous 7 days and so on. Each chat can be renamed or deleted.
+- **Centre:** the conversation. Replies stream in word by word, with a Stop button. Assistant messages have a Copy button, and there is a jump-to-latest button when you scroll up.
+- **Other touches:** each chat gets an AI-written title, the empty screen offers starter prompts, and on phones the history becomes a drawer.
+
+**How a turn works** ([agent/novardAgent.js](server/agent/novardAgent.js)): it is a LangChain tool-calling loop on `ChatGroq`, with at most 5 model calls per turn.
+- **Read tools** run immediately:
+  - `get_my_workspace` returns the student's doubts, videos, roadmaps, plans with progress, skill-gap results and recent quiz scores;
+  - `search_youtube_videos` searches YouTube.
+- **Action tools** (`propose_*`) never act directly. Each becomes a **card** in the chat showing what the agent filled in, with *Yes* and *No thanks* buttons. Pressing *Yes* runs it:
+
+| Card | What *Yes* does | Opens |
+|------|-----------------|-------|
+| Save as a doubt | Creates a doubt in Doubt Clearance, already containing the agent's explanation | `/doubt-clearance?open=<id>` |
+| Add a video | Adds the chosen YouTube video (from a real search) to Video Summarizer | `/youtube-video-summarizer?open=<id>` |
+| Generate a career roadmap | Generates a Smart Roadmap for the role, marking skills the student already knows | `/roadmap?open=<id>` |
+| Create a learning plan | Builds a day-by-day Skill Unlocker plan with a video per day | `/skill-unlocker?open=<id>` |
+| Analyse your skill gap | Runs a Skill Gap analysis and opens the coaching chat | `/skills-required?open=<id>` |
+| Start a forum discussion | Posts to the AI Forum (the forum AI replies as usual) | `/forum?open=<issueId>` |
+
+- **Same code as the pages:** each action calls the same function the page uses (`createDoubt`, `addYouTubeVideo`, `createRoadmapFor`, `createSkillPlan`, `startSession`, `openIssue`), so an item the agent creates is identical to one made by hand. Cards go from *needs your OK* → *working* → *done* (with an Open button), or *failed* with *Try again*.
+- **No duplicates:** a card is claimed atomically, so a double click never creates two items.
+- **Memory:** the agent remembers the whole conversation through the same summary-buffer memory as every other chat, including which cards it offered and whether the student accepted or declined them. So "make that roadmap intermediate instead" or "what did you suggest earlier?" work.
+- **Safeguards:**
+  - the model's arguments are cleaned and bounded, and video ids must come from a real search, never invented;
+  - at most 2 proposals per turn;
+  - if a reply says "confirm below" without calling a tool, one extra call recovers the card or removes the sentence.
+
+Routes:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/agent/chat` | `{userId, userName?, message, conversationId?}`. Streams Server-Sent Events: `meta`, `token`, `status`, `action`, `title`, `done`, `error`. |
+| `POST` | `/api/agent/conversations/:id/actions/:actionId` | `{userId, decision: "confirm" \| "dismiss"}`: runs or declines a card. |
+| `GET` | `/api/agent/conversations/user/:userId` | Chat history list. |
+| `GET` | `/api/agent/conversations/:id?userId=` | One chat with its messages and cards. |
+| `PATCH` | `/api/agent/conversations/:id` | Rename (`{userId, title}`). |
+| `DELETE` | `/api/agent/conversations/:id?userId=` | Delete a chat. |
 
 ## Personalised roadmaps
 
@@ -522,6 +567,7 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 | `POST` | `/api/skill-unlocker/save-quiz-result` | Persist an attempt. |
 | `DELETE` | `/api/skill-unlocker/plans/:planId` | Delete a plan. |
 | `GET` | `/api/analytics/:userId` | Dashboard analytics (`?tzOffset=` minutes). |
+| `POST` | `/api/usage/heartbeat` | Study-time tracker: `{userId, day: "YYYY-MM-DD", seconds}` (text/plain or JSON). Capped at 5 minutes per call and 24 hours per day. |
 | `GET` | `/api/profile/:userId/overview` | Profile page data: account, goal, tests, learning paths, activity (`?tzOffset=`). |
 
 </details>

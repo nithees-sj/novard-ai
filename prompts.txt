@@ -1,3 +1,1 @@
-Now make the skill gap analyser as a chatbot which can get your skill details as a small inputs and start chating and the normal chats like client would chat with the bot 
-
-Annalysing their goal and soo and soo input of the client the bot should answer their skils to learn and soo and soo accordingly 
+Remove teacher guidence feature completely in the application 

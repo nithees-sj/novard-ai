@@ -11,29 +11,31 @@ function present(doc) {
   };
 }
 
+/** Generate and save a roadmap. Shared by Smart Roadmap and the Novard Agent. */
+async function createRoadmapFor(userId, body) {
+  if (!userId) throw Object.assign(new Error('userId is required'), { status: 400 });
+  const input = readRoadmapInput(body);
+  if (input.role.length < 2) {
+    throw Object.assign(new Error('Tell us which role you want to reach, e.g. "Frontend Developer".'), { status: 400 });
+  }
+  const roadmap = await generateRoadmap(input);
+  return Roadmap.create({
+    userId,
+    role: input.role,
+    inputs: {
+      level: input.level,
+      hoursPerWeek: input.hoursPerWeek,
+      timelineMonths: input.timelineMonths,
+      knownSkills: input.knownSkills,
+      goal: input.goal,
+    },
+    ...roadmap,
+  });
+}
+
 const generate = async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId is required' });
-
-    const input = readRoadmapInput(req.body);
-    if (input.role.length < 2) {
-      return res.status(400).json({ error: 'Tell us which role you want to reach, e.g. "Frontend Developer".' });
-    }
-
-    const roadmap = await generateRoadmap(input);
-    const saved = await Roadmap.create({
-      userId,
-      role: input.role,
-      inputs: {
-        level: input.level,
-        hoursPerWeek: input.hoursPerWeek,
-        timelineMonths: input.timelineMonths,
-        knownSkills: input.knownSkills,
-        goal: input.goal,
-      },
-      ...roadmap,
-    });
+    const saved = await createRoadmapFor(req.body.userId, req.body);
     res.status(201).json(present(saved));
   } catch (error) {
     console.error('Error generating roadmap:', error.cause || error);
@@ -86,4 +88,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { generate, listForUser, getOne, remove };
+module.exports = { createRoadmapFor, generate, listForUser, getOne, remove };

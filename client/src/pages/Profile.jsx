@@ -143,7 +143,7 @@ const Profile = () => {
                   <Stat label="Skill score" value={<>{o.skillScore}<span className="text-sm font-medium text-gray-400"> / 1000</span></>} sub={`${scoreChange >= 0 ? '+' : ''}${scoreChange} in 12 weeks`} accent="bg-primary-600" />
                   <Stat label="Quiz accuracy" value={o.accuracy === null ? '—' : `${o.accuracy}%`} sub={`${o.correctAnswers} of ${o.questionsAnswered} correct`} accent="bg-green-500" />
                   <Stat label="Tests taken" value={o.testsTaken} sub={`${o.questionsAnswered} questions answered`} accent="bg-indigo-500" />
-                  <Stat label="Study time" value={formatMinutes(o.studyMinutes)} sub={`Estimated · ${o.activeDays} active ${o.activeDays === 1 ? 'day' : 'days'}`} accent="bg-purple-500" />
+                  <Stat label="Study time" value={formatMinutes(o.studyMinutes)} sub={`${o.trackedMinutes > 0 ? 'Time in the app' : 'Estimated'} · ${o.activeDays} active ${o.activeDays === 1 ? 'day' : 'days'}`} accent="bg-purple-500" />
                   <Stat label="Study streak" value={`${o.streak.days} ${o.streak.days === 1 ? 'day' : 'days'}`} sub={o.streak.longest > o.streak.days ? `Best ${o.streak.longest} days · ${o.streak.message}` : o.streak.message} accent="bg-amber-500" />
                   <Stat label="Questions asked" value={o.questionsAsked} sub="Across every AI chat" accent="bg-sky-400" />
                 </div>
