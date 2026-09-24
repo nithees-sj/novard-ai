@@ -34,8 +34,6 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 
 Sign-in is **Google OAuth 2.0** through `@react-oauth/google` (implicit flow). The access token is exchanged for the Google userinfo profile, the session is persisted in `localStorage`, and the user record (name, email, picture) is upserted server-side. Every application route in [App.js](client/src/App.js) is guarded — unauthenticated visitors are redirected to the landing page. Users can extend their profile with a mobile number and bio from the Profile page.
 
-A separate, hard-coded **teacher login** (`/teacher-login`) unlocks the teacher dashboard for course authoring.
-
 ### Career development hub (`/career`)
 
 Two tools rendered inline in a single workspace:
@@ -56,7 +54,7 @@ The most involved module. You describe a skill, a duration (minimum 10 days), yo
 
 From there you can tick days complete, regenerate a single day's video if the match was poor (`refresh-video`), generate a configurable quiz (5–20 questions, beginner/intermediate/advanced) scoped to the days you have actually finished, and keep a history of every quiz attempt with score and completion date.
 
-### Notes: chat with your PDFs (`/notes`)
+### Notes: chat with your PDFs (Doubts & Learning → Notes & Quiz)
 
 Upload a PDF (10 MB cap, PDF-only filter). The text is extracted with `pdf-parse` v2 (current pdf.js), chunked to fit the model context, and stored. You can then:
 
@@ -69,13 +67,12 @@ Upload a PDF (10 MB cap, PDF-only filter). The text is extracted with `pdf-parse
 Three sub-tools behind one page:
 
 - **Video Library** — describe what you want to learn and pick a platform (YouTube, Udemy, Coursera, edureka). YouTube results come from live search; Udemy/Coursera/edureka listings are produced by **Gemini Flash** with heavy prompt constraints pushing it toward real, still-live course URLs.
-- **Video Summarizer** (`/youtube-video-summarizer`) — paste a YouTube URL *or* upload a video file (100 MB cap). For YouTube links, the caption track is pulled via Innertube and used as the transcript; title and description are fetched from the video metadata. You then get chat-over-transcript, summarization and quiz generation with saved results. Uploaded files without captions fall back to LLM-generated transcript-style content derived from the filename.
-- **Teacher Guidance** (`/teacher-guidance`) — the same chat/summary/quiz loop over educational videos tagged by platform.
+- **Video Summarizer** (Video Sessions → Video Summarizer) — paste a YouTube URL *or* upload a video file (100 MB cap). For YouTube links, the caption track is pulled via Innertube and used as the transcript; title and description are fetched from the video metadata. You then get chat-over-transcript, summarization and quiz generation with saved results. Uploaded files without captions fall back to LLM-generated transcript-style content derived from the filename.
 
 ### Doubts & Learning (`/doubts`)
 
 - **Notes & Quiz** — entry point into the notes workflow above.
-- **Doubt Clearance** (`/doubt-clearance`) — open a doubt with a title, description and optional image reference, then hold a threaded conversation with the assistant. Responses are formatted for readability (code blocks, structured explanations). Each doubt can be summarized, turned into a quiz (with a content-aware fallback generator when the model returns unparseable JSON), and enriched with **YouTube video recommendations** that include a per-video reason for the suggestion.
+- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — open a doubt with a title, description and optional image reference, then hold a threaded conversation with the assistant. Responses are formatted for readability (code blocks, structured explanations). Each doubt can be summarized, turned into a quiz (with a content-aware fallback generator when the model returns unparseable JSON), and enriched with **YouTube video recommendations** that include a per-video reason for the suggestion.
 
 ### AI Forum (`/forum`)
 
@@ -86,10 +83,6 @@ A Stack Overflow-style Q&A board:
 - **Only the author can mark a discussion solved, close it, reopen it or delete it.** The server rejects the same request from anyone else with a 403, and deleting a discussion also removes its replies. Closed discussions don't accept new replies.
 - **AI participation:** the assistant answers every new discussion and every reply in the background, so posting never waits on the model. Its answers are Markdown (headings, lists, code, tables) and appear nested under the comment they answer, rather than wherever they happen to land in time order.
 - Up/down voting on posts and comments.
-
-### Teacher dashboard & courses
-
-Teachers create courses (title, description, cover image) and attach videos with a Drive link, description, content summary and thumbnail. Per video they can generate a quiz with gpt-oss-120b, and learners' submissions are stored on the video with score, correct count and timestamp — so a teacher can review results per course video.
 
 ### Dashboard analytics (`/home`)
 
@@ -122,7 +115,7 @@ Teachers create courses (title, description, cover image) and attach videos with
   - where study time went, as a donut chart;
   - a 52-week study calendar heatmap;
   - counts of notes, videos, doubts, plans, roadmaps and chats.
-- **Tests**: every submitted quiz from Notes, YouTube, the video library, Doubts, skill plans and teacher courses. Includes a score trend, a score spread, accuracy by section and by chosen difficulty, and a filterable history table.
+- **Tests**: every submitted quiz from Notes, the Video Summarizer, Doubts and skill plans. Includes a score trend, a score spread, accuracy by section and by chosen difficulty, and a filterable history table.
 - **Learning path**: skill plans with day progress and the next topic, roadmaps with their stages, and skill-gap analyses with readiness and top gaps.
 - **Subject mastery**: the proficiency radar and strengths and weaknesses.
 
@@ -132,7 +125,15 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 - A floating **Novard Agent** button available across the app (see [Novard Agent](#novard-agent) below).
 - Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output.
-- Tailwind layouts with a persistent sidebar.
+- Tailwind layouts with a persistent sidebar. Every student page is reachable from it:
+  - Home, Profile and Settings;
+  - Career Development (Smart Roadmap, Skill Gap Analysis);
+  - Doubts & Learning (Notes & Quiz, Doubt Clearance);
+  - AI Forum;
+  - My Learning (Skill Unlocker);
+  - Video Sessions (Video Library, Video Summarizer).
+
+  Tools inside a hub can be linked directly with `?tool=` and `?open=<id>` ([lib/openParam.js](client/src/lib/openParam.js)). The old standalone pages were removed. Their URLs (`/roadmap`, `/skills-required`, `/doubt-clearance`, `/notes`, `/youtube-video-summarizer`, `/youtube-videos`) redirect to the same tool inside its hub.
 
 ---
 
@@ -161,7 +162,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 | --- | --- | --- |
 | `MODELS.REASONING` | `openai/gpt-oss-120b` | Curriculum generation, quiz authoring, doubt clearance, forum answers. |
 | `MODELS.FAST` | `openai/gpt-oss-20b` | Notes chat, summarization, video Q&A. |
-| `MODELS.GEMINI` | `gemini-flash-latest` | Third-party course discovery only. |
+| `MODELS.GEMINI` | `gemini-flash-latest` | Third-party course discovery only. If it is overloaded (503) or rate-limited (429), it is retried once and then `MODELS.GEMINI_FALLBACKS` (default `gemini-flash-lite-latest`; set with `GEMINI_FALLBACK_MODELS`) is used ([ai/gemini.js](server/ai/gemini.js)). |
 
 Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI_MODEL` without touching code. The gpt-oss models are *reasoning* models: they spend completion tokens on an internal `reasoning` field before emitting `content`, so every Groq call sends `reasoning_effort: "low"` to keep the token budget available for the answer.
 
@@ -179,7 +180,6 @@ Every chat in the app runs on one LangChain conversation engine,
 | Novard Agent | `ChatbotConversation.messages` (with each message's action cards) |
 | Notes | `Notes.chatHistory` |
 | Video Summarizer | `YouTubeVideo.chatHistory` |
-| Teacher Guidance / educational videos | `EducationalVideo.chatHistory` |
 | Doubt Clearance | `DoubtClearance.chatHistory` |
 | Skill-gap coach | `SkillGapSession.messages` |
 
@@ -203,15 +203,25 @@ The assistant behind the floating button (`/chatbot`) is an **agent**: it teache
 - **Read tools** run immediately:
   - `get_my_workspace` returns the student's doubts, videos, roadmaps, plans with progress, skill-gap results and recent quiz scores;
   - `search_youtube_videos` searches YouTube.
-- **Action tools** (`propose_*`) never act directly. Each becomes a **card** in the chat showing what the agent filled in, with *Yes* and *No thanks* buttons. Pressing *Yes* runs it:
+- **Questions and tasks are handled differently.** Every action has two tools:
+  - **A question** ("what is Docker?", "how do I become a DevOps engineer?") gets a full answer plus ONE **suggestion** from a `propose_*` tool. It appears as a card with *Yes* / *No thanks*, and nothing is created until *Yes*. If the model forgets to suggest after a real learning question, one small extra call adds the suggestion (or none, if nothing fits or the student declined it before).
+  - **A command** ("create a doubt about…", "fetch me a video on…", "make me a roadmap for…", or "yes" to a suggestion) runs at once with the matching do tool (`create_doubt`, `add_video`, `generate_roadmap`, `create_skill_plan`, `run_skill_gap_analysis`, `post_to_forum`). Commands are recognised in code (a create/add/make… verb plus a doubt/video/roadmap/plan… object, "yes" to a suggestion, or the answer to the agent's clarifying question). For a command:
+    - the model is told to do it or ask the one missing detail, and suggestion cards are refused;
+    - its text is held back instead of streamed;
+    - once the task has run, the reply is a fixed confirmation ("Done! I've created the doubt "…" in Doubt Clearance.") with no further model call. A command never turns into an explanation.
+  - **Vague tasks get one question.** "Create a doubt about Docker" makes the agent ask which concept (images, volumes, networking…), then create it from the answer. Only the essential detail is ever asked for: the concept, the role or the skill. Level, hours and timeline are inferred.
+  - **A question can never create something by itself.** Do tools are refused unless the student's message, or their previous one, is actually a request (create, add, fetch, make, yes…).
+  - **Old suggestions are retired.** When a task is done, any earlier unanswered suggestion of the same kind is marked *Replaced*.
+
+  What each action does:
 
 | Card | What *Yes* does | Opens |
 |------|-----------------|-------|
-| Save as a doubt | Creates a doubt in Doubt Clearance, already containing the agent's explanation | `/doubt-clearance?open=<id>` |
-| Add a video | Adds the chosen YouTube video (from a real search) to Video Summarizer | `/youtube-video-summarizer?open=<id>` |
-| Generate a career roadmap | Generates a Smart Roadmap for the role, marking skills the student already knows | `/roadmap?open=<id>` |
+| Save as a doubt | Creates a doubt in Doubt Clearance, already containing the agent's explanation | `/doubts?tool=doubts&open=<id>` |
+| Add a video | Adds the chosen YouTube video (from a real search) to Video Summarizer | `/video?tool=summarizer&open=<id>` |
+| Generate a career roadmap | Generates a Smart Roadmap for the role, marking skills the student already knows | `/career?tool=roadmap&open=<id>` |
 | Create a learning plan | Builds a day-by-day Skill Unlocker plan with a video per day | `/skill-unlocker?open=<id>` |
-| Analyse your skill gap | Runs a Skill Gap analysis and opens the coaching chat | `/skills-required?open=<id>` |
+| Analyse your skill gap | Runs a Skill Gap analysis and opens the coaching chat | `/career?tool=skills&open=<id>` |
 | Start a forum discussion | Posts to the AI Forum (the forum AI replies as usual) | `/forum?open=<issueId>` |
 
 - **Same code as the pages:** each action calls the same function the page uses (`createDoubt`, `addYouTubeVideo`, `createRoadmapFor`, `createSkillPlan`, `startSession`, `openIssue`), so an item the agent creates is identical to one made by hand. Cards go from *needs your OK* → *working* → *done* (with an Open button), or *failed* with *Try again*.
@@ -221,6 +231,8 @@ The assistant behind the floating button (`/chatbot`) is an **agent**: it teache
   - the model's arguments are cleaned and bounded, and video ids must come from a real search, never invented;
   - at most 2 proposals per turn;
   - if a reply says "confirm below" without calling a tool, one extra call recovers the card or removes the sentence.
+
+Other pages can open the agent with a question already sent: *Start Mock Interview* (Career) and *Explore New Topics* (Doubts & Learning) do this with `navigate('/chatbot', { state: { prompt } })`.
 
 Routes:
 
@@ -495,7 +507,6 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 | `POST` | `/generate-youtube-quiz` | Build a quiz. |
 | `POST` | `/save-youtube-quiz-results` | Persist a scored attempt. |
 | `DELETE` | `/youtube-videos/:videoId` | Delete a video. |
-| `POST`/`GET`/`DELETE` | `/educational-videos…` | Equivalent set for teacher-guidance videos, plus `/chat-with-…`, `/summarize-…`, `/generate-educational-quiz`, `/save-educational-quiz-results`. |
 
 </details>
 
@@ -535,26 +546,6 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 </details>
 
 <details>
-<summary><b>Courses & course quizzes</b></summary>
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/courses` | List all courses. |
-| `GET` | `/api/courses/:courseId` | Fetch a course. |
-| `POST` | `/api/courses` | Create a course. |
-| `PUT` | `/api/courses/:courseId` | Update a course. |
-| `DELETE` | `/api/courses/:courseId` | Delete a course. |
-| `POST` | `/api/courses/:courseId/videos` | Add a video. |
-| `PUT` | `/api/courses/:courseId/videos/:videoId` | Update a video. |
-| `DELETE` | `/api/courses/:courseId/videos/:videoId` | Remove a video. |
-| `POST` | `…/videos/:videoId/generate-quiz` | Generate a quiz for a video. |
-| `GET` | `…/videos/:videoId/quiz` | Fetch the quiz. |
-| `POST` | `…/videos/:videoId/quiz/submit` | Submit answers. |
-| `GET` | `…/videos/:videoId/quiz/results` | Fetch results. |
-
-</details>
-
-<details>
 <summary><b>Skill Unlocker & analytics</b></summary>
 
 | Method | Path | Description |
@@ -584,10 +575,8 @@ Thirteen Mongoose schemas in [server/models/](server/models/):
 | `Skills` | Legacy per-role skill lists from the old Skill Gap Analysis (no longer used by the UI). |
 | `Notes` | Uploaded PDF metadata, extracted text, summary, chat history, quiz attempts. |
 | `YouTubeVideo` | URL/`videoId` or uploaded-file metadata, transcript, summary, chat history, quizzes. |
-| `EducationalVideo` | Same shape, plus a `platform` enum (youtube / udemy / coursera / edureka). |
 | `DoubtClearance` | Title, description, optional image, chat history, summary, quizzes, YouTube recommendations with reasons. |
 | `SkillPlan` | Skill, duration, preferences, per-day plan with matched video and completion flags, quiz configuration and attempt history. |
-| `Course` | Title, description, cover image, embedded videos each with quiz and per-user quiz results. |
 | `ForumIssue` / `ForumComment` | Issues with tags, status and votes; comments with nesting, votes, `isAI` and `isSolution`. |
 | `Video` | Lightweight video-request records. |
 
@@ -638,7 +627,6 @@ Worth knowing before you build on this:
 
 - **No server-side authorization.** Controllers trust the `userId` / email supplied in the request body or path. Anyone who can reach the API can read or delete another user's data. Add token verification middleware before exposing this publicly.
 - **Forum ownership uses the client-supplied email**, like the rest of the app. It stops ordinary users from resolving or deleting other people's discussions, but a hand-crafted request could still impersonate someone until real server-side auth exists. Votes are also not limited to one per user.
-- **Teacher credentials are hard-coded** in [TeacherLogin.jsx](client/src/pages/TeacherLogin.jsx) and checked client-side only.
 - **Uploads are stored on local disk.** On Cloud Run the filesystem is ephemeral, so uploaded PDFs and videos do not survive an instance restart. Move to Cloud Storage for a real deployment.
 - **CORS is fully open** (`app.use(cors())`).
 - **No automated tests.** Testing libraries are installed on the client but no suites exist.

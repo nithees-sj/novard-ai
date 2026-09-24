@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
+import { readParam, clearParam } from '../lib/openParam';
 import ChatbotButton from '../components/ChatbotButton';
 import RoadmapInlineView from '../components/RoadmapInlineView';
 import SkillsInlineView from '../components/SkillsInlineView';
@@ -39,7 +40,9 @@ const careerTools = [
 
 const Career = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('landing'); // 'landing', 'roadmap', 'skills'
+  // ?tool=<name> opens a section directly (links from the Novard Agent and the profile page).
+  const [activeView, setActiveView] = useState(() => ({ roadmap: 'roadmap', skills: 'skills' })[readParam('tool')] || 'landing'); // 'landing', 'roadmap', 'skills'
+  useEffect(() => clearParam('tool'), []);
 
   return (
     <>
@@ -160,7 +163,7 @@ const Career = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/mock-interview')}
+                    onClick={() => navigate('/chatbot', { state: { prompt: 'I want to practise a mock interview. First ask me which role and level I am interviewing for, then interview me one question at a time and give me feedback on each answer.' } })}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold 
                          flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl 
                          whitespace-nowrap"

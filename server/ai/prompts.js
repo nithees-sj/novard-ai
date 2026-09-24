@@ -5,7 +5,7 @@ const FORMAT_RULES = `How to answer:
 - Use GitHub-flavoured Markdown: ### headings only for longer answers, numbered lists for steps, bullets for key points, fenced code blocks with a language tag for code.
 - Never emit raw HTML (no <br>); start a new line or list item instead.`;
 
-/** Q&A about one video (YouTube summarizer, teacher guidance / educational videos). */
+/** Q&A about one video (YouTube summarizer, video library). */
 function videoTutorPrompt(video, { platform } = {}) {
   const content = [
     `Title: ${video.title}`,

@@ -8,10 +8,14 @@ const { openIssue, CATEGORIES } = require('../controllers/forumController');
 /**
  * Things the Novard Agent can do inside the app.
  *
- * The agent never acts on its own: it *proposes* an action (a propose_* tool
- * call), the student sees it as a card with its details, and it runs only when
- * they press "Yes". Each action reuses the exact function behind the matching
- * page, so an item the agent creates is identical to one made by hand.
+ * Every action has two tools:
+ *   propose_*  a suggestion after answering a question. The student sees it as
+ *              a card and it runs only when they press "Yes".
+ *   do tools   (create_doubt, add_video, ...) for when the student directly
+ *              asked for it ("create a doubt about...", "add a video on...").
+ *              These run straight away; the card shows the result.
+ * Each action reuses the exact function behind the matching page, so an item
+ * the agent creates is identical to one made by hand.
  *
  * For each action:
  *   tool       the function definition the model sees
@@ -64,7 +68,7 @@ const ACTIONS = {
         );
         await doubt.save();
       }
-      return { itemId: String(doubt._id), route: `/doubt-clearance?open=${doubt._id}`, label: 'Open doubt' };
+      return { itemId: String(doubt._id), route: `/doubts?tool=doubts&open=${doubt._id}`, label: 'Open doubt' };
     },
   },
 
@@ -99,7 +103,7 @@ const ACTIONS = {
         { title: a.title, videoUrl: `https://www.youtube.com/watch?v=${a.videoId}`, userId: ctx.userId },
         { returnExisting: true },
       );
-      return { itemId: String(video._id), route: `/youtube-video-summarizer?open=${video._id}`, label: 'Open video' };
+      return { itemId: String(video._id), route: `/video?tool=summarizer&open=${video._id}`, label: 'Open video' };
     },
   },
 
@@ -136,7 +140,7 @@ const ACTIONS = {
       const roadmap = await createRoadmapFor(ctx.userId, a);
       return {
         itemId: String(roadmap._id),
-        route: `/roadmap?open=${roadmap._id}`,
+        route: `/career?tool=roadmap&open=${roadmap._id}`,
         label: 'Open roadmap',
         note: `${(roadmap.stages || []).length} stages over about ${roadmap.totalWeeks || '?'} weeks`,
       };
@@ -214,7 +218,7 @@ const ACTIONS = {
       const session = await startSession(ctx.userId, a);
       return {
         itemId: String(session._id),
-        route: `/skills-required?open=${session._id}`,
+        route: `/career?tool=skills&open=${session._id}`,
         label: 'Open analysis',
         note: `${session.analysis.readiness}% ready · ${session.analysis.gaps.length} skills to learn`,
       };
@@ -253,6 +257,55 @@ const ACTIONS = {
   },
 };
 
-const TOOL_TO_ACTION = Object.fromEntries(Object.entries(ACTIONS).map(([type, a]) => [a.tool.function.name, type]));
+/** The "do it now" twin of each propose_* tool, and what it needs before it can run. */
+const DO_TOOLS = {
+  create_doubt: ['create_doubt', 'It needs a SPECIFIC concept or question. If they only named a broad topic ("create a doubt about Docker"), do not call this: ask which concept first (suggest 3-4), then call it with their answer.'],
+  add_video: ['add_video', 'Call search_youtube_videos first and use the videoId of the single best result.'],
+  generate_roadmap: ['generate_roadmap', 'It needs the target role; infer everything else from the conversation.'],
+  create_skill_plan: ['create_skill_plan', 'It needs the skill; default to 14 days unless they said otherwise.'],
+  skill_gap_analysis: ['run_skill_gap_analysis', 'It needs the target role; use the skills they have mentioned.'],
+  forum_post: ['post_to_forum', 'It needs the actual question they want to ask the community.'],
+};
+
+Object.entries(ACTIONS).forEach(([type, a]) => {
+  const [name, needs] = DO_TOOLS[type];
+  a.doTool = fn(
+    name,
+    `DO IT NOW: ${a.label.toLowerCase()} in ${a.section}, immediately and without a confirmation card. Use ONLY when the student has directly asked you to do this (e.g. "create…", "add…", "make…", "fetch me…", or "yes" to your suggestion). ${needs}`,
+    a.tool.function.parameters.properties,
+    a.tool.function.parameters.required,
+  );
+});
+
+/** Tool name -> { type, mode }: 'propose' shows a card to confirm, 'do' runs now. */
+/** The sentence added after an answer when a suggestion is attached without one. */
+const SUGGEST_LINES = {
+  create_doubt: 'Want to go deeper on this? I can save it as a doubt in Doubt Clearance so you can keep asking, get a diagram and quiz yourself - just confirm below.',
+  add_video: 'I found a video that covers this - I can add it to your library, just confirm below.',
+  generate_roadmap: 'I can turn this into a personalised roadmap for you in Smart Roadmap - just confirm below.',
+  create_skill_plan: 'Want a day-by-day plan for this? I can build one in Skill Unlocker - just confirm below.',
+  skill_gap_analysis: 'I can check exactly which skills you are missing for this role - just confirm below.',
+  forum_post: 'Other students may have been through this - I can post it to the AI Forum for you, just confirm below.',
+};
+Object.entries(SUGGEST_LINES).forEach(([type, line]) => { ACTIONS[type].suggestLine = line; });
+
+/**
+ * The whole reply when the student commanded a task and it finished: a fixed
+ * confirmation, so a command never turns into an explanation.
+ */
+const DONE_LINES = {
+  create_doubt: (a) => `Done! I've created the doubt **"${a.title}"** in Doubt Clearance.`,
+  add_video: (a) => `Done! I've added **"${a.title}"**${a.channelName ? ` by ${a.channelName}` : ''} to your Video Summarizer library.`,
+  generate_roadmap: (a, r) => `Done! Your **${a.role}** roadmap is ready in Smart Roadmap${r?.note ? ` (${r.note})` : ''}.`,
+  create_skill_plan: (a) => `Done! Your ${a.durationDays}-day **${a.skillName}** plan is ready in Skill Unlocker.`,
+  skill_gap_analysis: (a, r) => `Done! Your skill gap analysis for **${a.targetRole}** is ready${r?.note ? ` (${r.note})` : ''}.`,
+  forum_post: (a) => `Done! I've posted **"${a.title}"** to the AI Forum. The forum AI will reply shortly.`,
+};
+Object.entries(DONE_LINES).forEach(([type, line]) => { ACTIONS[type].doneLine = line; });
+
+const TOOL_TO_ACTION = Object.fromEntries(Object.entries(ACTIONS).flatMap(([type, a]) => [
+  [a.tool.function.name, { type, mode: 'propose' }],
+  [a.doTool.function.name, { type, mode: 'do' }],
+]));
 
 module.exports = { ACTIONS, TOOL_TO_ACTION };

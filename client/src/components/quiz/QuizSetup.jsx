@@ -105,7 +105,7 @@ const PreviousMarks = ({ state, onRetry }) => {
  * the options for a new quiz (difficulty, number of questions, style, focus).
  * Settings start from the student's last attempt on this topic.
  *
- * source: 'notes' | 'youtube' | 'educational' | 'doubt' | 'plan'
+ * source: 'notes' | 'youtube' | 'doubt' | 'plan'
  */
 const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = null, blockedReason = null }) => {
   const [history, setHistory] = useState({ loading: true, error: null, data: null });

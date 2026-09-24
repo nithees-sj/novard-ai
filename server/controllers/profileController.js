@@ -27,10 +27,8 @@ const {
 const SOURCES = {
   notes: 'Notes',
   youtube: 'YouTube',
-  educational: 'Video library',
   doubt: 'Doubts',
   plan: 'Skill plans',
-  course: 'Courses',
   other: 'Other',
 };
 
@@ -302,7 +300,7 @@ const getProfileOverview = async (req, res) => {
         mix: computeMix(data.events),
         library: {
           notes: raw.notes.length,
-          videos: raw.ytVideos.length + raw.eduVideos.length,
+          videos: raw.ytVideos.length,
           doubts: raw.doubts.length,
           plans: raw.plans.length,
           roadmaps: roadmaps.length,

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
@@ -20,6 +21,8 @@ const STARTERS = [
  */
 const Chatbot = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const userId = user?.email || localStorage.getItem('email') || 'anonymous';
   const userName = user?.name || user?.displayName || localStorage.getItem('name') || '';
   const firstName = userName.split(' ')[0];
@@ -168,7 +171,16 @@ const Chatbot = () => {
           if (!frame) frame = requestAnimationFrame(flush);
         },
         onStatus: ({ text: s }) => setStatus(s),
-        onAction: ({ action }) => updateLast((m) => ({ ...m, actions: [...(m.actions || []), action] })),
+        // A card arrives when proposed or started, and again as a task finishes.
+        onAction: ({ action }) => updateLast((m) => {
+          const list = m.actions || [];
+          return { ...m, actions: list.some((a) => a.id === action.id) ? list.map((a) => (a.id === action.id ? action : a)) : [...list, action] };
+        }),
+        // The student asked for something the agent had only suggested earlier: that old card is now moot.
+        onSuperseded: ({ type, except }) => setMessages((list) => list.map((m) => (!m.actions?.some((a) => a.type === type && a.status === 'proposed' && a.id !== except) ? m : {
+          ...m,
+          actions: m.actions.map((a) => (a.type === type && a.status === 'proposed' && a.id !== except ? { ...a, status: 'superseded' } : a)),
+        }))),
         onTitle: ({ title: t }) => {
           setChats((list) => list.map((c) => (c._id === conversationId ? { ...c, title: t } : c)));
           if (activeRef.current === conversationId) setTitle(t);
@@ -203,6 +215,22 @@ const Chatbot = () => {
   };
 
   const stop = () => abortRef.current?.abort();
+
+  // Other pages can open the agent with a question ready to go, e.g. the
+  // "Start Mock Interview" button: navigate('/chatbot', { state: { prompt } }).
+  // Sent on the next tick: React's StrictMode mounts twice in development, and the
+  // unmount in between would otherwise abort the reply it had just started.
+  const startPrompt = useRef(location.state?.prompt || null);
+  useEffect(() => {
+    if (!startPrompt.current) return undefined;
+    const timer = setTimeout(() => {
+      const prompt = startPrompt.current;
+      startPrompt.current = null;
+      navigate(location.pathname, { replace: true, state: null }); // a refresh must not send it again
+      send(prompt);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── action cards ───────────────────────────────────────────
   const setAction = (actionId, patch) => setMessages((list) => list.map((m) => (!m.actions?.some((a) => a.id === actionId) ? m : {
@@ -270,7 +298,7 @@ const Chatbot = () => {
           )}
         </div>
       </form>
-      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent asks before creating anything, and can make mistakes - check important information.</p>
+      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent creates what you ask for and asks before anything it only suggests. It can make mistakes - check important information.</p>
     </div>
   );
 
@@ -315,7 +343,7 @@ const Chatbot = () => {
               {firstName ? `Hi ${firstName}, how can I help?` : 'How can I help you today?'}
             </h2>
             <p className="mt-2 max-w-lg text-center text-sm text-gray-500">
-              Ask me anything about what you're learning. I can also save doubts, add videos, build roadmaps and study plans in the app for you - I'll always ask first.
+              Ask me anything about what you're learning and I'll suggest a next step - or just tell me to create a doubt, add a video, or build a roadmap or study plan, and I'll do it.
             </p>
             <div className="mt-8 w-full">{composer}</div>
             <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 px-4 sm:grid-cols-2">

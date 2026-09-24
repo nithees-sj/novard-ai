@@ -4,7 +4,8 @@ const apiUrl = process.env.REACT_APP_API_ENDPOINT;
  * Send one message to the Novard Agent and read its Server-Sent Events
  * stream (POST, so EventSource cannot be used).
  *
- * handlers: onMeta, onToken, onStatus, onAction, onTitle, onDone, onError.
+ * handlers: onMeta, onToken, onStatus, onAction (new or updated card),
+ * onSuperseded, onTitle, onDone, onError.
  * Pass an AbortSignal to stop generation; the server keeps what was written.
  */
 export async function streamAgentReply({ userId, userName, conversationId, message, signal }, handlers = {}) {
@@ -38,6 +39,7 @@ export async function streamAgentReply({ userId, userName, conversationId, messa
       token: handlers.onToken,
       status: handlers.onStatus,
       action: handlers.onAction,
+      superseded: handlers.onSuperseded,
       title: handlers.onTitle,
       done: handlers.onDone,
       error: handlers.onError,

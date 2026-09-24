@@ -134,7 +134,9 @@ exports.decideAction = async (req, res) => {
   }
 
   try {
-    const result = await ACTIONS[action.type].run(action.args || {}, { userId, userName, sourceText: message.content });
+    // A suggested doubt carries over the explanation it was suggested with; a requested one starts fresh.
+    const sourceText = action.origin === 'requested' ? '' : message.content;
+    const result = await ACTIONS[action.type].run(action.args || {}, { userId, userName, sourceText });
     await setAction({ status: 'done', result });
     res.json({ action: { ...action, status: 'done', result, error: null } });
   } catch (error) {

@@ -78,7 +78,7 @@ const LearningPath = ({ path }) => {
           })}
         </Column>
 
-        <Column title="Career roadmaps" count={roadmaps.length} action="Smart Roadmap" onAction={() => navigate('/roadmap')} empty="No roadmaps yet. Generate one for the role you want.">
+        <Column title="Career roadmaps" count={roadmaps.length} action="Smart Roadmap" onAction={() => navigate('/career?tool=roadmap')} empty="No roadmaps yet. Generate one for the role you want.">
           {roadmaps.slice(0, 4).map((r) => (
             <li key={r.id} className="min-w-0">
               <div className="flex items-start justify-between gap-3">
@@ -105,7 +105,7 @@ const LearningPath = ({ path }) => {
           ))}
         </Column>
 
-        <Column title="Skill gap analyses" count={gaps.length} action="Skill Gap coach" onAction={() => navigate('/skills-required')} empty="No analyses yet. Tell the coach your target role.">
+        <Column title="Skill gap analyses" count={gaps.length} action="Skill Gap coach" onAction={() => navigate('/career?tool=skills')} empty="No analyses yet. Tell the coach your target role.">
           {gaps.slice(0, 4).map((g) => (
             <li key={g.id} className="flex gap-4">
               <Ring value={g.readiness} size={52} thickness={6} color={readinessColor(g.readiness)} label={`${g.targetRole} readiness`} />

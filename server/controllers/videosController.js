@@ -1,7 +1,7 @@
 const Video = require('../models/video');
 const Groq = require('groq-sdk');
 const youtubesearchapi = require('youtube-search-api');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { geminiGenerate } = require('../ai/gemini');
 const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 
@@ -9,16 +9,10 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// Accept either name: the code has always read GEMINI_API_KEY while the
-// Docker/Cloud Run configs pass GOOGLE_API_KEY, which silently disabled
-// Gemini-backed course discovery in containers.
-const googleApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const genAI = new GoogleGenerativeAI(googleApiKey);
 
 // Function to get real course links using Gemini AI
 const getRealCourseLinks = async (platform, keyword, maxVideos) => {
   try {
-    const model = genAI.getGenerativeModel({ model: MODELS.GEMINI });
     
     const platformPrompts = {
       udemy: `Find ${maxVideos} popular, currently available Udemy courses related to "${keyword}". Return ONLY a JSON array with this exact format:
@@ -116,9 +110,7 @@ const getRealCourseLinks = async (platform, keyword, maxVideos) => {
       throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = await geminiGenerate(prompt);
     
     // Clean the response to extract JSON
     let cleanedText = text.trim();

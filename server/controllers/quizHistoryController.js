@@ -1,6 +1,5 @@
 const Notes = require('../models/notes');
 const YouTubeVideo = require('../models/youtubeVideo');
-const EducationalVideo = require('../models/educationalVideo');
 const DoubtClearance = require('../models/doubtClearance');
 const SkillPlan = require('../models/skillPlan');
 const { summariseAttempts } = require('../services/quizService');
@@ -42,12 +41,6 @@ const SOURCES = {
 
   youtube: {
     load: (id, userId) => YouTubeVideo.findOne({ _id: id, userId }).select('title quizzes').lean(),
-    topic: (doc) => doc.title,
-    attempts: (doc) => countBased(doc.quizzes, (q) => q.attemptedAt || Number(q.score) > 0),
-  },
-
-  educational: {
-    load: (id, userId) => EducationalVideo.findOne({ _id: id, userId }).select('title quizzes').lean(),
     topic: (doc) => doc.title,
     attempts: (doc) => countBased(doc.quizzes, (q) => q.attemptedAt || Number(q.score) > 0),
   },

@@ -1,9 +1,7 @@
 const Notes = require('../models/notes');
 const YouTubeVideo = require('../models/youtubeVideo');
-const EducationalVideo = require('../models/educationalVideo');
 const DoubtClearance = require('../models/doubtClearance');
 const SkillPlan = require('../models/skillPlan');
-const Course = require('../models/course');
 const ForumIssue = require('../models/forumIssue');
 const ForumComment = require('../models/forumComment');
 const Roadmap = require('../models/roadmap');
@@ -141,7 +139,7 @@ function weightedAccuracy(attempts, asOf) {
  * and Doubt quizzes are created with score 0 / null at generation time, so a
  * missing attemptedAt plus a zero/null score means "generated, never taken".
  */
-function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps = [], coachSessions = [], chats = [] }, userId) {
+function collectActivity({ notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps = [], coachSessions = [], chats = [] }) {
   const events = [];      // { at, minutes, kind }
   const attempts = [];    // { at, percentage, questions, correct, topic, domain }
   const items = [];       // { key, title, domain } - distinct things studied
@@ -190,7 +188,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     });
   });
 
-  // YouTube + educational videos: score is the number of correct answers.
+  // YouTube videos: score is the number of correct answers.
   const collectVideo = (v, kind) => {
     const text = `${v.title || ''} ${v.description || ''}`.slice(0, 600);
     items.push({ key: `${kind}:${v._id}`, title: v.title, domain: classifyDomain(text), at: toDate(v.createdAt) });
@@ -204,7 +202,6 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     });
   };
   ytVideos.forEach((v) => collectVideo(v, 'youtube'));
-  eduVideos.forEach((v) => collectVideo(v, 'educational'));
 
   // Doubts: score is the number correct; it is null until submitted.
   doubts.forEach((d) => {
@@ -241,18 +238,6 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
       const total = Number(r.totalQuestions) || Number(r.questionCount) || 0;
       const correct = r.correctAnswers !== undefined ? r.correctAnswers : Math.round(((Number(r.score) || 0) / 100) * total);
       addAttempt(r.completedAt, correct, total, p.skillName, text, 'plan', r.difficulty);
-    });
-  });
-
-  // Teacher courses: only this student's results.
-  courses.forEach((c) => {
-    (c.videos || []).forEach((v) => {
-      (v.quizResults || []).forEach((r) => {
-        if (r.userEmail !== userId) return;
-        const text = `${c.title || ''} ${v.title || ''} ${v.description || ''}`;
-        items.push({ key: `course:${c._id}:${v._id}`, title: v.title, domain: classifyDomain(text), at: toDate(r.completedAt) });
-        addAttempt(r.completedAt, r.correctAnswers, r.totalQuestions, v.title, text, 'course');
-      });
     });
   });
 
@@ -502,13 +487,11 @@ function computeStrengthsAndFocus(data, now) {
 
 /** Everything the student has stored, plus the derived events/attempts/items. */
 async function loadActivity(userId) {
-  const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps, coachSessions, chats, usage] = await Promise.all([
+  const [notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats, usage] = await Promise.all([
     Notes.find({ userId }).select('title fileName uploadedAt chatHistory quizzes').lean(),
     YouTubeVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
-    EducationalVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
     DoubtClearance.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
     SkillPlan.find({ userId }).lean(),
-    Course.find({ 'videos.quizResults.userEmail': userId }).lean(),
     ForumIssue.find({ userEmail: userId }).select('createdAt status').lean(),
     ForumComment.find({ userEmail: userId, isAI: { $ne: true } }).select('createdAt').lean(),
     Roadmap.find({ userId }).select('createdAt').lean(),
@@ -516,8 +499,8 @@ async function loadActivity(userId) {
     ChatbotConversation.find({ userId }).select('messages.role messages.createdAt').lean(),
     usageByDay(userId),
   ]);
-  const raw = { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments, roadmaps, coachSessions, chats };
-  return { raw, usage, data: collectActivity(raw, userId) };
+  const raw = { notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats };
+  return { raw, usage, data: collectActivity(raw) };
 }
 
 // ── handler ────────────────────────────────────────────────────────────────

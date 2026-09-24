@@ -2,9 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * A proposal from the Novard Agent: what it offers to create, with the
- * details it filled in, and Yes / No. Nothing is created until "Yes".
- * States: proposed → running → done | failed (retry) ; proposed → dismissed.
+ * Something the Novard Agent creates in the app, with the details it filled in.
+ *  - suggested (origin 'suggested'): Yes / No; nothing is created until "Yes".
+ *  - requested (origin 'requested'): the student asked for it, so it runs at once.
+ * States: proposed → running → done | failed (retry); proposed → dismissed |
+ * superseded (the student later asked for the same kind of thing directly).
  */
 
 const Icon = ({ d, className = 'w-5 h-5' }) => (
@@ -150,10 +152,11 @@ const ActionCard = ({ action, onDecide }) => {
   const t = TYPES[action.type];
   if (!t) return null;
   const { status } = action;
+  const requested = action.origin === 'requested';
 
   return (
     <div className={`mt-3 overflow-hidden rounded-xl border bg-white shadow-sm transition-colors ${
-      status === 'done' ? 'border-green-200' : status === 'failed' ? 'border-red-200' : status === 'dismissed' ? 'border-gray-200 opacity-70' : 'border-gray-200'
+      status === 'done' ? 'border-green-200' : status === 'failed' ? 'border-red-200' : status === 'dismissed' || status === 'superseded' ? 'border-gray-200 opacity-70' : 'border-gray-200'
     }`}>
       <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ${t.tint}`}><Icon d={t.icon} /></span>
@@ -161,7 +164,9 @@ const ActionCard = ({ action, onDecide }) => {
           <p className="text-sm font-semibold text-gray-900">{t.title}</p>
           <p className="text-xs text-gray-500">in {t.section}</p>
         </div>
-        {status === 'proposed' && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Needs your OK</span>}
+        {status === 'proposed' && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Suggestion · needs your OK</span>}
+        {status === 'running' && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">{requested ? 'On it' : 'Working'}</span>}
+        {status === 'superseded' && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">Replaced</span>}
         {status === 'done' && <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">✓ Done</span>}
         {status === 'dismissed' && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">Declined</span>}
       </div>
@@ -196,6 +201,7 @@ const ActionCard = ({ action, onDecide }) => {
           </>
         )}
         {status === 'dismissed' && <p className="mr-auto text-sm text-gray-500">You can ask me again any time.</p>}
+        {status === 'superseded' && <p className="mr-auto text-sm text-gray-500">You asked for this directly below.</p>}
       </div>
     </div>
   );

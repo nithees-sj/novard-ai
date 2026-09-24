@@ -40,15 +40,6 @@ const {
   deleteYouTubeVideo
 } = require('./controllers/youtubeVideoController');
 const {
-  createEducationalVideo,
-  getUserEducationalVideos,
-  chatWithEducationalVideo,
-  summarizeEducationalVideo,
-  generateEducationalQuiz,
-  saveEducationalQuizResults,
-  deleteEducationalVideo
-} = require('./controllers/educationalVideoController');
-const {
   getUserDoubtClearances,
   createDoubtClearance,
   deleteDoubtClearance,
@@ -74,22 +65,6 @@ const {
 const {
   generateAIForumResponse
 } = require('./controllers/forumAIController');
-const {
-  getAllCourses,
-  getCourseById,
-  createCourse,
-  updateCourse,
-  deleteCourse,
-  addVideoToCourse,
-  updateVideoInCourse,
-  deleteVideoFromCourse
-} = require('./controllers/courseController');
-const {
-  generateQuizForVideo,
-  getVideoQuiz,
-  submitQuizAnswers,
-  getQuizResults
-} = require('./controllers/quizController');
 const {
   generatePlan,
   generateQuiz: generateSkillQuiz,
@@ -185,13 +160,6 @@ app.post('/youtube/search', searchYouTubeVideos);
 app.delete('/youtube-videos/:videoId', deleteYouTubeVideo);
 
 // Educational Video Summarizer routes
-app.post('/educational-videos', createEducationalVideo);
-app.get('/educational-videos/:userId', getUserEducationalVideos);
-app.post('/chat-with-educational-video', chatWithEducationalVideo);
-app.post('/summarize-educational-video', summarizeEducationalVideo);
-app.post('/generate-educational-quiz', generateEducationalQuiz);
-app.post('/save-educational-quiz-results', saveEducationalQuizResults);
-app.delete('/educational-videos/:videoId', deleteEducationalVideo);
 
 // Doubt Clearance routes
 app.get('/doubt-clearances/:userId', getUserDoubtClearances);
@@ -228,22 +196,6 @@ app.post('/api/forum/ai-response', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate AI response' });
   }
 });
-
-// Course routes
-app.get('/api/courses', getAllCourses);
-app.get('/api/courses/:courseId', getCourseById);
-app.post('/api/courses', createCourse);
-app.put('/api/courses/:courseId', updateCourse);
-app.delete('/api/courses/:courseId', deleteCourse);
-app.post('/api/courses/:courseId/videos', addVideoToCourse);
-app.put('/api/courses/:courseId/videos/:videoId', updateVideoInCourse);
-app.delete('/api/courses/:courseId/videos/:videoId', deleteVideoFromCourse);
-
-// Quiz routes
-app.post('/api/courses/:courseId/videos/:videoId/generate-quiz', generateQuizForVideo);
-app.get('/api/courses/:courseId/videos/:videoId/quiz', getVideoQuiz);
-app.post('/api/courses/:courseId/videos/:videoId/quiz/submit', submitQuizAnswers);
-app.get('/api/courses/:courseId/videos/:videoId/quiz/results', getQuizResults);
 
 // Skill Unlocker routes
 app.post('/api/skill-unlocker/generate-plan', generatePlan);

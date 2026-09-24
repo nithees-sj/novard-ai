@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./AuthContext";
 import RouteFallback from "./components/RouteFallback";
 import useStudyTimeTracker from "./hooks/useStudyTimeTracker";
@@ -10,22 +10,28 @@ const Landing = lazy(() => import("./pages/Landing"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
-const Roadmap = lazy(() => import("./pages/Roadmap"));
-const Skills = lazy(() => import("./pages/Skills"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const Career = lazy(() => import("./pages/Career"));
 const Doubts = lazy(() => import("./pages/Doubts"));
 const Forum = lazy(() => import("./pages/Forum"));
 const Video = lazy(() => import("./pages/Video"));
-const YouTubeVideos = lazy(() => import("./pages/YouTubeVideos"));
-const Notes = lazy(() => import("./pages/Notes"));
-const YouTubeVideoSummarizer = lazy(() => import("./pages/YouTubeVideoSummarizer"));
-const DoubtClearance = lazy(() => import("./pages/DoubtClearance"));
-const TeacherLogin = lazy(() => import("./pages/TeacherLogin"));
-const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
-const CourseVideos = lazy(() => import("./pages/CourseVideos"));
-const TeacherGuidance = lazy(() => import("./pages/TeacherGuidance"));
 const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
+
+const LEGACY_ROUTES = {
+  '/roadmap': '/career?tool=roadmap',
+  '/skills-required': '/career?tool=skills',
+  '/doubt-clearance': '/doubts?tool=doubts',
+  '/notes': '/doubts?tool=notes',
+  '/youtube-video-summarizer': '/video?tool=summarizer',
+  '/youtube-videos': '/video?tool=library',
+};
+
+/** Redirect an old URL to its hub, keeping ?open=<id> so the same item opens. */
+function LegacyRedirect({ to }) {
+  const { search } = useLocation();
+  const open = new URLSearchParams(search).get('open');
+  return <Navigate to={open ? `${to}&open=${encodeURIComponent(open)}` : to} replace />;
+}
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -49,24 +55,18 @@ function AppRoutes() {
         <Route path="/home" element={protectedRoute(<HomePage />)} />
         <Route path="/profile" element={protectedRoute(<Profile />)} />
         <Route path="/settings" element={protectedRoute(<Settings />)} />
-        <Route path="/roadmap" element={protectedRoute(<Roadmap />)} />
-        <Route path="/skills-required" element={protectedRoute(<Skills />)} />
         <Route path="/chatbot" element={protectedRoute(<Chatbot />)} />
         <Route path="/career" element={protectedRoute(<Career />)} />
         <Route path="/skill-unlocker" element={protectedRoute(<SkillUnlocker />)} />
         <Route path="/doubts" element={protectedRoute(<Doubts />)} />
         <Route path="/forum" element={protectedRoute(<Forum />)} />
         <Route path="/video" element={protectedRoute(<Video />)} />
-        <Route path="/notes" element={protectedRoute(<Notes />)} />
-        <Route path="/youtube-videos" element={protectedRoute(<YouTubeVideos />)} />
-        <Route path="/youtube-video-summarizer" element={protectedRoute(<YouTubeVideoSummarizer />)} />
-        <Route path="/doubt-clearance" element={protectedRoute(<DoubtClearance />)} />
-        <Route path="/teacher-guidance" element={protectedRoute(<TeacherGuidance />)} />
 
-        {/* Teacher routes (separate credential check) */}
-        <Route path="/teacher-login" element={<TeacherLogin />} />
-        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
-        <Route path="/course-videos/:courseId" element={<CourseVideos />} />
+        {/* Old standalone copies of the hub tools were removed; their URLs (bookmarks,
+            links in earlier Novard Agent chats) now open the same tool inside its hub. */}
+        {Object.entries(LEGACY_ROUTES).map(([path, target]) => (
+          <Route key={path} path={path} element={<LegacyRedirect to={target} />} />
+        ))}
 
         {/* Anything else */}
         <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />

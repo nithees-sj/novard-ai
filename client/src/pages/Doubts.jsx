@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
+import { readParam, clearParam } from '../lib/openParam';
 import ChatbotButton from '../components/ChatbotButton';
 import NotesInlineView from '../components/NotesInlineView';
 import DoubtClearanceInlineView from '../components/DoubtClearanceInlineView';
@@ -37,7 +38,9 @@ const learningModules = [
 
 const Doubts = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('landing'); // 'landing', 'notes', 'doubtClearance'
+  // ?tool=<name> opens a section directly (links from the Novard Agent and the profile page).
+  const [activeView, setActiveView] = useState(() => ({ notes: 'notes', doubts: 'doubtClearance' })[readParam('tool')] || 'landing'); // 'landing', 'notes', 'doubtClearance'
+  useEffect(() => clearParam('tool'), []);
 
   return (
     <>
@@ -155,7 +158,7 @@ const Doubts = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/explore-topics')}
+                    onClick={() => navigate('/chatbot', { state: { prompt: 'Suggest new topics I should explore next, based on what I have been learning so far.' } })}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-lg font-semibold 
                              flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl 
                              whitespace-nowrap"

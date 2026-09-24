@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 
 /**
- * Something the Novard Agent offered to do in the app (create a doubt, add a
- * video, generate a roadmap, ...). It is only carried out once the student
- * confirms it; see agent/actions.js.
+ * Something the Novard Agent does in the app (create a doubt, add a video,
+ * generate a roadmap, ...): either suggested and carried out once the student
+ * confirms, or carried out at once because they asked; see agent/actions.js.
  */
 const actionSchema = new mongoose.Schema({
   id: { type: String, required: true },
   type: { type: String, required: true },
-  status: { type: String, enum: ['proposed', 'running', 'done', 'dismissed', 'failed'], default: 'proposed' },
+  status: { type: String, enum: ['proposed', 'running', 'done', 'dismissed', 'failed', 'superseded'], default: 'proposed' },
+  // 'suggested': the agent offered it and the student confirms; 'requested': the student asked for it, so it ran at once.
+  origin: { type: String, enum: ['suggested', 'requested'], default: 'suggested' },
   args: { type: mongoose.Schema.Types.Mixed, default: {} },
   result: {
     itemId: String,

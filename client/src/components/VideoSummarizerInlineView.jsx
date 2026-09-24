@@ -4,11 +4,13 @@ import MarkdownView from './MarkdownView';
 import SummaryHeader from './SummaryHeader';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
+import { readOpenParam, clearOpenParam } from '../lib/openParam';
 
 const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
 const VideoSummarizerInlineView = () => {
+  const [openId] = useState(readOpenParam); // ?open=<id>, e.g. from the Novard Agent
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -39,7 +41,12 @@ const VideoSummarizerInlineView = () => {
       const response = await axios.get(`${apiUrl}/youtube-videos/${userId}`);
       const videosData = Array.isArray(response.data) ? response.data : [];
       setVideos(videosData);
-      if (videosData.length > 0 && !selectedVideo) {
+      const target = openId && videosData.find((item) => item._id === openId);
+      if (target) {
+        setSelectedVideo(target);
+        loadVideoData(target);
+        clearOpenParam();
+      } else if (videosData.length > 0 && !selectedVideo) {
         setSelectedVideo(videosData[0]);
         loadVideoData(videosData[0]);
       }

@@ -22,6 +22,8 @@ const MODELS = {
   // Third-party course discovery. "latest" alias on purpose: pinned Gemini
   // snapshots get retired and start returning 404 to new callers.
   GEMINI: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+  // Tried in order when the main Gemini model is overloaded or rate-limited (see ai/gemini.js).
+  GEMINI_FALLBACKS: (process.env.GEMINI_FALLBACK_MODELS || 'gemini-flash-lite-latest').split(',').map((m) => m.trim()).filter(Boolean),
 };
 
 /**
