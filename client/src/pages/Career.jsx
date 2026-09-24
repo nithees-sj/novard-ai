@@ -5,8 +5,6 @@ import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
 import RoadmapInlineView from '../components/RoadmapInlineView';
 import SkillsInlineView from '../components/SkillsInlineView';
-import ProjectsInlineView from '../components/ProjectsInlineView';
-import ResumesInlineView from '../components/ResumesInlineView';
 
 const careerTools = [
   {
@@ -37,39 +35,11 @@ const careerTools = [
     id: 'skills',
     route: 'inline'
   },
-  {
-    title: 'Project Portfolio',
-    description: 'Build real-world AI projects to showcase your expertise to recruiters.',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-      </svg>
-    ),
-    iconBg: 'bg-green-50',
-    iconColor: 'text-green-600',
-    buttonColor: 'text-green-600',
-    id: 'projects',
-    route: 'inline'
-  },
-  {
-    title: 'AI Resume Builder',
-    description: 'Optimized resumes that bypass ATS and highlight your AI skills.',
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
-    buttonColor: 'text-orange-600',
-    id: 'resume',
-    route: 'inline'
-  },
 ];
 
 const Career = () => {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('landing'); // 'landing', 'roadmap', 'skills', 'projects', 'resume'
+  const [activeView, setActiveView] = useState('landing'); // 'landing', 'roadmap', 'skills'
 
   return (
     <>
@@ -111,22 +81,6 @@ const Career = () => {
                 <span className="text-gray-900 font-medium">Skill Gap Analysis</span>
               </>
             )}
-            {activeView === 'projects' && (
-              <>
-                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="text-gray-900 font-medium">Project Portfolio</span>
-              </>
-            )}
-            {activeView === 'resume' && (
-              <>
-                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="text-gray-900 font-medium">AI Resume Builder</span>
-              </>
-            )}
           </div>
 
           {/* Landing View */}
@@ -143,7 +97,7 @@ const Career = () => {
               </div>
 
               {/* Tools Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 max-w-4xl">
                 {careerTools.map((tool, index) => (
                   <div
                     key={index}
@@ -153,10 +107,6 @@ const Career = () => {
                           setActiveView('roadmap');
                         } else if (tool.id === 'skills') {
                           setActiveView('skills');
-                        } else if (tool.id === 'projects') {
-                          setActiveView('projects');
-                        } else if (tool.id === 'resume') {
-                          setActiveView('resume');
                         }
                       } else {
                         navigate(tool.route);
@@ -254,38 +204,6 @@ const Career = () => {
                 <span className="text-sm font-medium">Back to Career Tools</span>
               </button>
               <SkillsInlineView />
-            </div>
-          )}
-
-          {/* Projects Inline View */}
-          {activeView === 'projects' && (
-            <div>
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Career Tools</span>
-              </button>
-              <ProjectsInlineView />
-            </div>
-          )}
-
-          {/* Resume Inline View */}
-          {activeView === 'resume' && (
-            <div>
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Career Tools</span>
-              </button>
-              <ResumesInlineView />
             </div>
           )}
 

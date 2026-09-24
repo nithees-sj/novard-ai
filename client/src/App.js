@@ -11,8 +11,6 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Roadmap = lazy(() => import("./pages/Roadmap"));
 const Skills = lazy(() => import("./pages/Skills"));
-const ProjectsPage = lazy(() => import("./pages/Projects"));
-const ResumePage = lazy(() => import("./pages/Resumes"));
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const Career = lazy(() => import("./pages/Career"));
 const Doubts = lazy(() => import("./pages/Doubts"));
@@ -50,8 +48,6 @@ function AppRoutes() {
         <Route path="/settings" element={protectedRoute(<Settings />)} />
         <Route path="/roadmap" element={protectedRoute(<Roadmap />)} />
         <Route path="/skills-required" element={protectedRoute(<Skills />)} />
-        <Route path="/project-ideas" element={protectedRoute(<ProjectsPage />)} />
-        <Route path="/resume-build" element={protectedRoute(<ResumePage />)} />
         <Route path="/chatbot" element={protectedRoute(<Chatbot />)} />
         <Route path="/career" element={protectedRoute(<Career />)} />
         <Route path="/skill-unlocker" element={protectedRoute(<SkillUnlocker />)} />

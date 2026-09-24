@@ -38,16 +38,13 @@ A separate, hard-coded **teacher login** (`/teacher-login`) unlocks the teacher 
 
 ### Career development hub (`/career`)
 
-Four tools rendered inline in a single workspace:
+Two tools rendered inline in a single workspace:
 
 | Tool | What it does |
 | --- | --- |
 | **Smart Roadmap** | AI-generated, personalised roadmaps: the student picks a target role, starting level, hours per week, timeline, skills they already have and a goal. The result is a stage-by-stage plan drawn as a Mermaid flow diagram (zoom, full screen, SVG download), with per-topic explanations, tutorial searches, a project per stage and milestones. Every roadmap is saved. The original 12 pre-drawn roadmaps remain as references, each with a one-click "generate a personalised version". |
 | **Skill Gap Analysis** | A coaching chatbot. A short intake (target role, current skills, background, hours per week, goal) produces a gap report: the skills the role needs, which ones the student already has, and the missing ones ranked by priority with effort and a first step. The estimated readiness is *computed* from that list (core skills count double). The student then chats with a coach that knows their profile and gaps: short conversational answers by default, full plans when asked, with suggested questions based on their top gaps. Every conversation is saved per student. |
-| **Project Portfolio** | Generates portfolio-grade project ideas tailored to a target role, cached per career. |
-| **Resume Builder** | Produces an ATS-oriented resume draft for the chosen career path, also cached per career. |
 
-Each of the three AI tools supports listing saved `careerId`s and deleting a cached result to force regeneration.
 
 ### Skill Unlocker (`/skill-unlocker`)
 
@@ -94,23 +91,43 @@ A Stack Overflow-style Q&A board:
 
 Teachers create courses (title, description, cover image) and attach videos with a Drive link, description, content summary and thumbnail. Per video they can generate a quiz with gpt-oss-120b, and learners' submissions are stored on the video with score, correct count and timestamp — so a teacher can review results per course video.
 
-### Learning analytics (`/profile`)
+### Dashboard analytics (`/home`)
 
-[analyticsController.js](server/controllers/analyticsController.js) aggregates activity across YouTube videos, educational videos, doubt clearances and skill plans into a dashboard:
+[analyticsController.js](server/controllers/analyticsController.js) turns what the student has actually done into deterministic numbers. These come from quiz answers, skill-plan days completed, questions asked and material studied. The same data always gives the same result:
 
-- **Skill Score** (0–10 000) — weighted blend of video completion (40%), quiz performance (30%), doubt-clearance activity (20%) and streak bonus (10%).
-- **Course completion %** derived from completed days across all skill plans.
-- **Study streak** computed from activity timestamps.
-- **Weekly learning hours**, charted.
-- **Skill proficiency radar** per subject area, and a derived **strengths vs. weaknesses** breakdown.
+- **Skill Score** (0–1000) is built from four parts:
+  - mastery: quiz accuracy, weighted by recency;
+  - progress: skill-plan days completed;
+  - consistency: active days in the last 30;
+  - breadth: distinct materials studied.
 
-An `AppUsageTimer` component tracks per-session and per-day time in the app against a 4-hour visual target, stored client-side.
+  The dashboard shows the change against the same score a week ago.
+- **Quiz accuracy** is weighted by question count and recency. **Plan completion** is the share of plan days completed. The **study streak** follows the student's own timezone.
+- **Estimated study time** for the last 7 days is charted. The app does not record time on task, so this is estimated from a fixed effort per action and labelled as an estimate.
+- A **subject proficiency radar** covers the student's own subjects, and a **strengths vs. needs-practice** list covers topics with at least 5 answered questions.
+
+### Profile (`/profile`)
+
+[profileController.js](server/controllers/profileController.js) reuses the same activity model, so the profile and the dashboard always agree. The page shows:
+
+- **Identity card**: photo, name, email, mobile, bio, member-since and last-active date. The current goal comes from the newest skill-gap analysis or roadmap: target role, readiness, weekly hours and skills. The student edits their details inline.
+- **Overview tiles**: skill score, quiz accuracy, tests taken, estimated study time, streak, and questions asked across every AI chat.
+- **Activity**:
+  - the skill score over the last 12 weeks;
+  - where study time went, as a donut chart;
+  - a 52-week study calendar heatmap;
+  - counts of notes, videos, doubts, plans, roadmaps and chats.
+- **Tests**: every submitted quiz from Notes, YouTube, the video library, Doubts, skill plans and teacher courses. Includes a score trend, a score spread, accuracy by section and by chosen difficulty, and a filterable history table.
+- **Learning path**: skill plans with day progress and the next topic, roadmaps with their stages, and skill-gap analyses with readiness and top gaps.
+- **Subject mastery**: the proficiency radar and strengths and weaknesses.
+
+The charts are small SVG components written for this app ([components/profile/charts.jsx](client/src/components/profile/charts.jsx)); no chart library is used.
 
 ### Everywhere else
 
 - A floating **chatbot** button available across the app: a LangChain assistant with saved conversations and memory of everything said earlier in the chat.
-- Markdown rendering (`react-markdown` / `marked`) for all AI output.
-- Responsive Tailwind + MUI layouts with a collapsible sidebar.
+- Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output.
+- Tailwind layouts with a persistent sidebar.
 
 ---
 
@@ -137,7 +154,7 @@ An `AppUsageTimer` component tracks per-session and per-day time in the app agai
 
 | Role | Model | Used for |
 | --- | --- | --- |
-| `MODELS.REASONING` | `openai/gpt-oss-120b` | Curriculum generation, skills/projects/resume synthesis, quiz authoring, doubt clearance, forum answers. |
+| `MODELS.REASONING` | `openai/gpt-oss-120b` | Curriculum generation, quiz authoring, doubt clearance, forum answers. |
 | `MODELS.FAST` | `openai/gpt-oss-20b` | Notes chat, summarization, video Q&A. |
 | `MODELS.GEMINI` | `gemini-flash-latest` | Third-party course discovery only. |
 
@@ -395,28 +412,7 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 | `POST` | `/saveUser` | Upsert a user after Google sign-in. |
 | `GET` | `/getUser/:email` | Fetch a user by email. |
 | `GET` | `/getUserProfile` | Fetch the extended profile. |
-| `POST` | `/updateUserProfile` | Update mobile / bio. |
-
-</details>
-
-<details>
-<summary><b>Career tools — skills, projects, resumes</b></summary>
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `POST` | `/api/skills` | Generate and cache skills for a career. |
-| `GET` | `/api/skills/:careerId` | Fetch cached skills. |
-| `GET` | `/api/careerIds` | List careers with cached skills. |
-| `DELETE` | `/api/skills/delete/:careerId` | Drop the cache. |
-| `POST` | `/api/projects/process` | Generate project ideas. |
-| `GET` | `/api/projects/:careerId` | Fetch cached projects. |
-| `GET` | `/api/projects/careerIds` | List careers with cached projects. |
-| `DELETE` | `/api/projects/delete/:careerId` | Drop the cache. |
-| `POST` | `/api/resumes/process` | Generate a resume draft. |
-| `GET` | `/api/resumes/:careerId` | Fetch cached resume. |
-| `GET` | `/api/resumes/career/careerIds` | List careers with cached resumes. |
-| `DELETE` | `/api/resumes/delete/:careerId` | Drop the cache. |
-| `POST` | `/api/chatbot` | General-purpose assistant. |
+| `POST` | `/updateUserProfile` | Update name / mobile / bio. |
 
 </details>
 
@@ -525,7 +521,8 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 | `POST` | `/api/skill-unlocker/generate-quiz` | Quiz scoped to completed days. |
 | `POST` | `/api/skill-unlocker/save-quiz-result` | Persist an attempt. |
 | `DELETE` | `/api/skill-unlocker/plans/:planId` | Delete a plan. |
-| `GET` | `/api/analytics/:userId` | Aggregated learning analytics. |
+| `GET` | `/api/analytics/:userId` | Dashboard analytics (`?tzOffset=` minutes). |
+| `GET` | `/api/profile/:userId/overview` | Profile page data: account, goal, tests, learning paths, activity (`?tzOffset=`). |
 
 </details>
 
@@ -538,7 +535,7 @@ Thirteen Mongoose schemas in [server/models/](server/models/):
 | Model | Holds |
 | --- | --- |
 | `User` | Name, unique email, picture, mobile, bio. |
-| `Skills` / `Project` / `Resume` | AI output cached by unique `careerId`. |
+| `Skills` | Legacy per-role skill lists from the old Skill Gap Analysis (no longer used by the UI). |
 | `Notes` | Uploaded PDF metadata, extracted text, summary, chat history, quiz attempts. |
 | `YouTubeVideo` | URL/`videoId` or uploaded-file metadata, transcript, summary, chat history, quizzes. |
 | `EducationalVideo` | Same shape, plus a `platform` enum (youtube / udemy / coursera / edureka). |

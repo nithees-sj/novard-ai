@@ -12,8 +12,8 @@
  */
 
 const MODELS = {
-  // Heavier reasoning: curriculum design, quiz authoring, skills/projects/resume
-  // synthesis, doubt clearance, forum answers.
+  // Heavier reasoning: curriculum design, quiz authoring, roadmaps and skill-gap
+  // analysis, doubt clearance, forum answers.
   REASONING: process.env.GROQ_MODEL_REASONING || 'openai/gpt-oss-120b',
 
   // High-volume, lower-stakes: notes chat, summarisation, video Q&A.

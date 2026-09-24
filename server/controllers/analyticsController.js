@@ -146,7 +146,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     if (d) events.push({ at: d, kind, minutes });
   };
 
-  const addAttempt = (at, correct, total, topic, domainText) => {
+  const addAttempt = (at, correct, total, topic, domainText, source = 'other', difficulty = null) => {
     const d = toDate(at);
     const questions = Number(total) || 0;
     if (!d || questions <= 0) return;
@@ -158,6 +158,8 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
       percentage: (right / questions) * 100,
       topic: topic || 'Untitled',
       domain: classifyDomain(domainText || topic),
+      source,
+      difficulty: difficulty ? String(difficulty).toLowerCase() : null,
     });
     events.push({ at: d, kind: 'quiz', minutes: questions * EFFORT_MINUTES.quizQuestion });
   };
@@ -179,7 +181,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
       const total = Number(s.total) || 0;
       if (total <= 0) return; // generated but not submitted
       const correct = s.correct !== undefined ? s.correct : Math.round(((Number(s.percentage) || 0) / 100) * total);
-      addAttempt(q.attemptedAt || q.createdAt, correct, total, n.title, text);
+      addAttempt(q.attemptedAt || q.createdAt, correct, total, n.title, text, 'notes', q.settings?.difficulty);
     });
   });
 
@@ -193,7 +195,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
       const legacyTaken = !q.attemptedAt && Number(q.score) > 0;
       if (!q.attemptedAt && !legacyTaken) return;
       const total = Number(q.totalQuestions) || (q.questions || []).length;
-      addAttempt(q.attemptedAt || q.completedAt, q.score, total, v.title, text);
+      addAttempt(q.attemptedAt || q.completedAt, q.score, total, v.title, text, kind, q.settings?.difficulty);
     });
   };
   ytVideos.forEach((v) => collectVideo(v, 'youtube'));
@@ -208,7 +210,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     (d.quizzes || []).forEach((q) => {
       if (!q.attemptedAt && (q.score === null || q.score === undefined)) return;
       const total = Number(q.totalQuestions) || (q.questions || []).length;
-      addAttempt(q.attemptedAt || q.completedAt, q.score, total, d.title, text);
+      addAttempt(q.attemptedAt || q.completedAt, q.score, total, d.title, text, 'doubt', q.settings?.difficulty);
     });
   });
 
@@ -233,7 +235,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
     (p.quizResults || []).forEach((r) => {
       const total = Number(r.totalQuestions) || Number(r.questionCount) || 0;
       const correct = r.correctAnswers !== undefined ? r.correctAnswers : Math.round(((Number(r.score) || 0) / 100) * total);
-      addAttempt(r.completedAt, correct, total, p.skillName, text);
+      addAttempt(r.completedAt, correct, total, p.skillName, text, 'plan', r.difficulty);
     });
   });
 
@@ -244,7 +246,7 @@ function collectActivity({ notes, ytVideos, eduVideos, doubts, plans, courses, f
         if (r.userEmail !== userId) return;
         const text = `${c.title || ''} ${v.title || ''} ${v.description || ''}`;
         items.push({ key: `course:${c._id}:${v._id}`, title: v.title, domain: classifyDomain(text), at: toDate(r.completedAt) });
-        addAttempt(r.completedAt, r.correctAnswers, r.totalQuestions, v.title, text);
+        addAttempt(r.completedAt, r.correctAnswers, r.totalQuestions, v.title, text, 'course');
       });
     });
   });
@@ -449,6 +451,24 @@ function computeStrengthsAndFocus(data, now) {
   };
 }
 
+// ── loading ────────────────────────────────────────────────────────────────
+
+/** Everything the student has stored, plus the derived events/attempts/items. */
+async function loadActivity(userId) {
+  const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments] = await Promise.all([
+    Notes.find({ userId }).select('title fileName uploadedAt chatHistory quizzes').lean(),
+    YouTubeVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+    EducationalVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+    DoubtClearance.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
+    SkillPlan.find({ userId }).lean(),
+    Course.find({ 'videos.quizResults.userEmail': userId }).lean(),
+    ForumIssue.find({ userEmail: userId }).select('createdAt status').lean(),
+    ForumComment.find({ userEmail: userId, isAI: { $ne: true } }).select('createdAt').lean(),
+  ]);
+  const raw = { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments };
+  return { raw, data: collectActivity(raw, userId) };
+}
+
 // ── handler ────────────────────────────────────────────────────────────────
 
 const getUserAnalytics = async (req, res) => {
@@ -463,21 +483,7 @@ const getUserAnalytics = async (req, res) => {
     const dayKey = makeDayKey(tzOffset);
     const now = new Date();
 
-    const [notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments] = await Promise.all([
-      Notes.find({ userId }).select('title fileName uploadedAt chatHistory quizzes').lean(),
-      YouTubeVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
-      EducationalVideo.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
-      DoubtClearance.find({ userId }).select('title description createdAt chatHistory quizzes').lean(),
-      SkillPlan.find({ userId }).lean(),
-      Course.find({ 'videos.quizResults.userEmail': userId }).lean(),
-      ForumIssue.find({ userEmail: userId }).select('createdAt').lean(),
-      ForumComment.find({ userEmail: userId, isAI: { $ne: true } }).select('createdAt').lean(),
-    ]);
-
-    const data = collectActivity(
-      { notes, ytVideos, eduVideos, doubts, plans, courses, forumIssues, forumComments },
-      userId
-    );
+    const { data } = await loadActivity(userId);
 
     const activeDayKeys = new Set([...data.events.map((e) => dayKey(e.at))]);
 
@@ -544,6 +550,14 @@ const getUserAnalytics = async (req, res) => {
 
 module.exports = {
   getUserAnalytics,
+  computeSkillScore,
+  computeStreak,
+  computeProficiency,
+  computeStrengthsAndFocus,
+  weightedAccuracy,
   // exported for testing
+  loadActivity,
+  makeDayKey,
+  DAY_MS,
   _internal: { classifyDomain, collectActivity, computeSkillScore, computeStreak, computeWeekly, weightedAccuracy, makeDayKey },
 };

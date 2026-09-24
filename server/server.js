@@ -8,12 +8,8 @@ const mongoose = require('mongoose');
 const connectDB = require('./connect');
 const { saveUser, getUserByEmail, getUserProfile, updateUserProfile } = require('./controllers/userController');
 const { processSkillsPrompt, getSkillsByCareer } = require('./controllers/skillsController');  
-const { processProjectPrompt, getProjectsByCareer } = require('./controllers/projectsController');  
 const { getCareerIds } = require('./controllers/skillsController');
 const { deleteSkillsByCareer } = require('./controllers/skillsController');
-const {getProjectCareerIds} = require('./controllers/projectsController'); 
-const {deleteProjectsByCareer} = require('./controllers/projectsController'); 
-const { processResumePrompt, getResumeByCareer, getResumeCareerIds, deleteResumeByCareer } = require('./controllers/resumeController');
 const { processChatbotPrompt, listConversations, getConversation, deleteConversation } = require('./controllers/chatbot');
 const { 
   upload, 
@@ -107,10 +103,9 @@ const {
   getUserAnalytics
 } = require('./controllers/analyticsController');
 const { getQuizHistory } = require('./controllers/quizHistoryController');
+const { getProfileOverview } = require('./controllers/profileController');
 const roadmaps = require('./controllers/roadmapController');
 const skillGap = require('./controllers/skillGapController');
-
-
 
 const REQUIRED_ENV = ['MONGO_URI', 'GROQ_API_KEY'];
 const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
@@ -144,21 +139,9 @@ app.get('/getUserProfile', getUserProfile);
 app.post('/updateUserProfile', updateUserProfile);  
 
 app.get('/api/careerIds', getCareerIds);
-app.get('/api/projects/careerIds', getProjectCareerIds);
-
 app.post('/api/skills', processSkillsPrompt);  
 app.get('/api/skills/:careerId', getSkillsByCareer);  
 app.delete('/api/skills/delete/:careerId', deleteSkillsByCareer);
-
-app.post('/api/projects/process', processProjectPrompt); 
-app.get('/api/projects/:careerId', getProjectsByCareer);  
-app.delete('/api/projects/delete/:careerId', deleteProjectsByCareer);
-
-
-app.post('/api/resumes/process', processResumePrompt);
-app.get('/api/resumes/:careerId', getResumeByCareer);
-app.get('/api/resumes/career/careerIds', getResumeCareerIds);
-app.delete('/api/resumes/delete/:careerId', deleteResumeByCareer);
 
 app.post('/api/chatbot', processChatbotPrompt);
 app.get('/api/chatbot/conversations/user/:userId', listConversations);
@@ -269,6 +252,9 @@ app.post('/api/skill-unlocker/refresh-video', refreshVideo);
 
 // Analytics routes
 app.get('/api/analytics/:userId', getUserAnalytics);
+
+// Profile page: account details, goal, tests, learning paths and activity
+app.get('/api/profile/:userId/overview', getProfileOverview);
 
 // Previous quiz marks for one note / video / doubt / learning plan
 app.get('/api/quiz-history/:source/:itemId', getQuizHistory);
