@@ -8,6 +8,8 @@ const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
+const { converse } = require('../ai/conversation');
+const { videoTutorPrompt } = require('../ai/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -244,85 +246,34 @@ const getUserYouTubeVideos = async (req, res) => {
 const chatWithYouTubeVideo = async (req, res) => {
   try {
     const { videoId, message, userId } = req.body;
-    
-    if (!videoId || !message || !userId) {
+    const question = String(message || '').trim();
+    if (!videoId || !question || !userId) {
       return res.status(400).json({ error: 'Video ID, message, and user ID are required' });
     }
 
-    const video = await YouTubeVideo.findOne({ _id: videoId, userId });
+    const video = await YouTubeVideo.findOne({ _id: videoId, userId }).select('title description summary transcript');
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
 
-    // Add user message to chat history
-    video.chatHistory.push({
-      role: 'user',
-      content: message
+    // Previously the model saw only the latest question, so follow-ups like
+    // "explain the second point again" had nothing to refer to.
+    const aiResponse = await converse({
+      Model: YouTubeVideo,
+      filter: { _id: video._id, userId },
+      field: 'chatHistory',
+      timeKey: 'timestamp',
+      system: videoTutorPrompt(video),
+      input: question,
+      tier: 'FAST',
+      maxTokens: 2500,
+      temperature: 0.5,
     });
 
-    // Prepare context for AI
-    const context = `Video Title: ${video.title}\nVideo Description: ${video.description}\nVideo Content: ${video.transcript}`;
-    
-    // Get AI response using Groq
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful assistant that answers questions about YouTube videos. Use the video title, description, and content (transcript or summary) to provide accurate and helpful responses.
-
-IMPORTANT - Format your response using these markdown elements for professional display:
-
-0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
-
-1. Use ### for section headers (e.g., "### Key Point")
-2. Use numbered lists (1. 2. 3.) for step-by-step explanations
-3. Use bullet points (- or *) for key points or features
-4. Use code blocks with language tags for code examples:
-   \`\`\`language
-   // code here
-   \`\`\`
-5. Use emoji indicators for special notes:
-   ℹ️ for informational content
-   💡 for helpful tips
-   ⚠️ for warnings or cautions
-   ✅ for confirmations or best practices
-   ❌ for common mistakes to avoid
-
-RESPONSE STRUCTURE:
-- Start with a brief acknowledgment
-- Use ### headers to organize different sections
-- Include numbered lists for sequential information
-- Use bullet points for related concepts
-- Add emoji-prefixed notes for emphasis
-- Answer in depth: explain the concept, why it works that way, and how it is applied,
-  with a concrete example or code snippet where one helps. Prefer a complete answer
-  over a short one, but do not pad it with repetition
-- If the transcript is not available, work with the title and description to provide the best possible answer`
-        },
-        {
-          role: "user",
-          content: `Video Information:\n${context}\n\nUser Question: ${message}\n\nPlease provide a helpful answer based on the video content.`
-        }
-      ],
-      model: MODELS.FAST,
-      ...GROQ_DEFAULTS,
-      temperature: 0.7,
-      max_tokens: 2500,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-
-    // Add AI response to chat history
-    video.chatHistory.push({
-      role: 'assistant',
-      content: aiResponse
-    });
-
-    await video.save();
     res.json({ response: aiResponse });
   } catch (error) {
     console.error('Error chatting with YouTube video:', error);
-    res.status(500).json({ error: 'Error processing chat request' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Error processing chat message' });
   }
 };
 

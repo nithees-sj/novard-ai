@@ -68,6 +68,11 @@ const educationalVideoSchema = new mongoose.Schema({
     completedAt: Date,
     attemptedAt: { type: Date, default: null }, // set when the student submits; analytics counts only these
   }],
+  // LangChain conversation memory (see ai/conversation.js)
+  memory: {
+    summary: { type: String, default: '' },
+    summarizedCount: { type: Number, default: 0 }
+  },
   userId: {
     type: String,
     required: true

@@ -14,7 +14,7 @@ const { deleteSkillsByCareer } = require('./controllers/skillsController');
 const {getProjectCareerIds} = require('./controllers/projectsController'); 
 const {deleteProjectsByCareer} = require('./controllers/projectsController'); 
 const { processResumePrompt, getResumeByCareer, getResumeCareerIds, deleteResumeByCareer } = require('./controllers/resumeController');
-const { processChatbotPrompt } = require('./controllers/chatbot');
+const { processChatbotPrompt, listConversations, getConversation, deleteConversation } = require('./controllers/chatbot');
 const { 
   upload, 
   uploadNotes, 
@@ -107,6 +107,8 @@ const {
   getUserAnalytics
 } = require('./controllers/analyticsController');
 const { getQuizHistory } = require('./controllers/quizHistoryController');
+const roadmaps = require('./controllers/roadmapController');
+const skillGap = require('./controllers/skillGapController');
 
 
 
@@ -159,6 +161,9 @@ app.get('/api/resumes/career/careerIds', getResumeCareerIds);
 app.delete('/api/resumes/delete/:careerId', deleteResumeByCareer);
 
 app.post('/api/chatbot', processChatbotPrompt);
+app.get('/api/chatbot/conversations/user/:userId', listConversations);
+app.get('/api/chatbot/conversations/:id', getConversation);
+app.delete('/api/chatbot/conversations/:id', deleteConversation);
 
 // Notes routes
 app.post('/upload-notes', upload.single('pdf'), uploadNotes);
@@ -267,6 +272,19 @@ app.get('/api/analytics/:userId', getUserAnalytics);
 
 // Previous quiz marks for one note / video / doubt / learning plan
 app.get('/api/quiz-history/:source/:itemId', getQuizHistory);
+
+// AI-generated personalised career roadmaps
+app.post('/api/roadmaps/generate', roadmaps.generate);
+app.get('/api/roadmaps/user/:userId', roadmaps.listForUser);
+app.get('/api/roadmaps/:id', roadmaps.getOne);
+app.delete('/api/roadmaps/:id', roadmaps.remove);
+
+// Skill-gap coach: analyse a profile, then chat about it
+app.post('/api/skill-gap/sessions', skillGap.createSession);
+app.get('/api/skill-gap/sessions/user/:userId', skillGap.listSessions);
+app.get('/api/skill-gap/sessions/:id', skillGap.getSession);
+app.post('/api/skill-gap/sessions/:id/messages', skillGap.sendMessage);
+app.delete('/api/skill-gap/sessions/:id', skillGap.deleteSession);
 
 // ── Unmatched routes ──────────────────────────────────────────────────────
 app.use((req, res) => {

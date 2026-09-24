@@ -42,8 +42,8 @@ Four tools rendered inline in a single workspace:
 
 | Tool | What it does |
 | --- | --- |
-| **Smart Roadmap** | Twelve pre-built visual roadmaps (frontend, backend, DevOps, full-stack, AI engineering, AI data scientist, Android, iOS, cyber security, data analyst, game dev, UX design) rendered as zoomable images. |
-| **Skill Gap Analysis** | Sends a career title to gpt-oss-120b and stores the generated skill breakdown against a `careerId`, so repeat lookups are served from MongoDB instead of re-prompting. |
+| **Smart Roadmap** | AI-generated, personalised roadmaps: the student picks a target role, starting level, hours per week, timeline, skills they already have and a goal. The result is a stage-by-stage plan drawn as a Mermaid flow diagram (zoom, full screen, SVG download), with per-topic explanations, tutorial searches, a project per stage and milestones. Every roadmap is saved. The original 12 pre-drawn roadmaps remain as references, each with a one-click "generate a personalised version". |
+| **Skill Gap Analysis** | A coaching chatbot. A short intake (target role, current skills, background, hours per week, goal) produces a gap report: the skills the role needs, which ones the student already has, and the missing ones ranked by priority with effort and a first step. The estimated readiness is *computed* from that list (core skills count double). The student then chats with a coach that knows their profile and gaps: short conversational answers by default, full plans when asked, with suggested questions based on their top gaps. Every conversation is saved per student. |
 | **Project Portfolio** | Generates portfolio-grade project ideas tailored to a target role, cached per career. |
 | **Resume Builder** | Produces an ATS-oriented resume draft for the chosen career path, also cached per career. |
 
@@ -108,7 +108,7 @@ An `AppUsageTimer` component tracks per-session and per-day time in the app agai
 
 ### Everywhere else
 
-- A floating **chatbot** button available across the app, backed by gpt-oss-120b.
+- A floating **chatbot** button available across the app: a LangChain assistant with saved conversations and memory of everything said earlier in the chat.
 - Markdown rendering (`react-markdown` / `marked`) for all AI output.
 - Responsive Tailwind + MUI layouts with a collapsible sidebar.
 
@@ -146,6 +146,64 @@ Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI
 There is **no server-side auth middleware**: the client passes the user's email or a `userId` with requests, and controllers scope queries by that value.
 
 ---
+
+## Conversational AI (LangChain)
+
+Every chat in the app runs on one LangChain conversation engine,
+[server/ai/conversation.js](server/ai/conversation.js):
+
+| Chat | Memory stored on |
+| --- | --- |
+| Global assistant (floating chatbot) | `ChatbotConversation.messages` |
+| Notes | `Notes.chatHistory` |
+| Video Summarizer | `YouTubeVideo.chatHistory` |
+| Teacher Guidance / educational videos | `EducationalVideo.chatHistory` |
+| Doubt Clearance | `DoubtClearance.chatHistory` |
+| Skill-gap coach | `SkillGapSession.messages` |
+
+- **Chain:** `ChatPromptTemplate` (system instructions, `MessagesPlaceholder('history')`, then the new message) piped into `ChatGroq` and a `StringOutputParser`, wrapped in `RunnableWithMessageHistory`.
+- **History store:** `MongoChatHistory`, a `BaseListChatMessageHistory` that reads and writes the chat array already stored on each document. Messages are appended with an atomic `$push`, and a turn is saved only after the model answers.
+- **Summary-buffer memory:** recent turns go to the model word for word. Once the unsummarised part of a chat passes `MEMORY_SUMMARIZE_AT_TOKENS` (default 10,000), the older turns are folded into a running summary saved in the document's `memory` field, keeping about `MEMORY_KEEP_RECENT_TOKENS` (default 6,000) verbatim. The student can keep asking about anything earlier in the chat, and long chats never overflow the model.
+- **Forum:** the AI participant uses the same LangChain pieces with the thread as its history. Human comments are labelled with the author's name, so replies can build on the whole discussion.
+
+The global assistant's conversations are saved per user, reopen after a page reload, and appear
+under *History* on the chatbot page. Routes: `POST /api/chatbot` (`{ prompt, userId, conversationId? }`),
+`GET /api/chatbot/conversations/user/:userId`, `GET /api/chatbot/conversations/:id?userId=`,
+`DELETE /api/chatbot/conversations/:id`.
+
+## Personalised roadmaps
+
+[server/services/roadmapService.js](server/services/roadmapService.js) asks the model for a
+**structured** roadmap (stages, then topics, then a project for each stage), never for Mermaid.
+The server then:
+- validates the result: 4–7 stages, 3–6 topics each, and any stage with too few topics is dropped;
+- rescales stage lengths to the timeline the student chose;
+- marks topics the student already knows, using whole-word matching (knowing "C" does not mark "CSS");
+- builds the diagram in code (`buildRoadmapMermaid`), so it is always valid Mermaid with a consistent layout: start, one row per stage, then goal. Core topics are blue, optional ones dashed, already-known ones green, and projects magenta.
+
+The diagram is rebuilt every time a roadmap is read, so styling changes apply to older
+roadmaps too. Resources are YouTube *search* links built from model-suggested queries, not
+URLs written by the model, which can be invented.
+
+Routes: `POST /api/roadmaps/generate`, `GET /api/roadmaps/user/:userId`,
+`GET /api/roadmaps/:id?userId=`, `DELETE /api/roadmaps/:id`.
+
+## Skill-gap coach
+
+[server/services/skillGapService.js](server/services/skillGapService.js) makes one structured call
+to list the skills the target role needs and mark which ones the student already has. A skill the
+student listed always counts as held (whole-word match), even if the model misses it. Readiness is
+then calculated from that list rather than taken from the model. The opening chat message is built
+from the analysis, so it costs no extra model call.
+
+Every reply after that is grounded in the student's profile and gaps. Replies are short and
+conversational by default and switch to structured Markdown only when the student asks for a plan
+or a comparison.
+
+Sessions are stored per student in `SkillGapSession`. Routes:
+`POST /api/skill-gap/sessions`, `GET /api/skill-gap/sessions/user/:userId`,
+`GET /api/skill-gap/sessions/:id?userId=`, `POST /api/skill-gap/sessions/:id/messages`,
+`DELETE /api/skill-gap/sessions/:id`.
 
 ## Customised quizzes
 
@@ -201,7 +259,7 @@ is inert text rather than something that has to be sanitised.
 
 **Frontend** — React 18.3, React Router 6 (route-level code splitting), `@react-oauth/google`, Axios, Tailwind CSS 3 + `@tailwindcss/typography`, `react-markdown` + `remark-gfm`, `mermaid` (lazy-loaded), `react-icons`, Create React App (`react-scripts` 5).
 
-**Backend** — Node.js 20, Express 4, Mongoose 8, `groq-sdk`, `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `body-parser` (50 MB JSON limit), CORS.
+**Backend** — Node.js 20, Express 4, Mongoose 8, LangChain (`@langchain/core`, `@langchain/groq`), `groq-sdk`, `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `body-parser` (50 MB JSON limit), CORS.
 
 **Infrastructure** — MongoDB Atlas, Docker + Docker Compose, Nginx (client image), Google Cloud Run + Artifact Registry + Cloud Build, Vercel (client-only SPA deploy via [vercel.json](vercel.json)).
 

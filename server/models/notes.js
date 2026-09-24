@@ -77,6 +77,11 @@ const notesSchema = new mongoose.Schema({
   },
   chatHistory: [chatMessageSchema],
   quizzes: [quizSchema],
+  // LangChain conversation memory (see ai/conversation.js)
+  memory: {
+    summary: { type: String, default: '' },
+    summarizedCount: { type: Number, default: 0 }
+  },
   uploadedAt: {
     type: Date,
     default: Date.now

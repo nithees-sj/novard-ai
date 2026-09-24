@@ -34,6 +34,11 @@ const youtubeVideoSchema = new mongoose.Schema({
   summary: { type: String, default: '' },
   chatHistory: [chatMessageSchema],
   quizzes: [quizSchema],
+  // LangChain conversation memory (see ai/conversation.js)
+  memory: {
+    summary: { type: String, default: '' },
+    summarizedCount: { type: Number, default: 0 }
+  },
   userId: { type: String, required: true },
   videoType: { type: String, enum: ['youtube', 'uploaded'], default: 'youtube' },
   videoPath: { type: String, default: '' }, // For uploaded videos

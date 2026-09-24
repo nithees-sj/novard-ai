@@ -8,6 +8,7 @@ const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
+const { converse } = require('../ai/conversation');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -139,130 +140,74 @@ const uploadNotes = async (req, res) => {
 // Chat with notes
 const chatWithNotes = async (req, res) => {
   try {
-    const { noteId, message, chatHistory } = req.body;
-
-    if (!noteId || !message) {
+    const { noteId, message } = req.body;
+    const question = String(message || '').trim();
+    if (!noteId || !question) {
       return res.status(400).json({ error: 'Note ID and message are required' });
     }
 
-    // Get the note from database
-    const note = await Notes.findById(noteId);
+    const note = await Notes.findById(noteId).select('title extractedText chatHistory userId');
     if (!note) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    // Check if the note content is too large and chunk if necessary
-    const noteText = note.extractedText;
-    const chunks = chunkText(noteText, 1500); // Use smaller chunks for chat
-    
-    let relevantChunk = noteText;
-    
-    // If we have multiple chunks, try to find the most relevant one based on the user's question
-    if (chunks.length > 1) {
-      // Simple keyword matching to find relevant chunk
-      const questionWords = message.toLowerCase().split(' ');
-      let bestChunk = chunks[0];
-      let maxMatches = 0;
-      
-      for (const chunk of chunks) {
-        const chunkWords = chunk.toLowerCase().split(' ');
-        const matches = questionWords.filter(word => 
-          word.length > 3 && chunkWords.some(chunkWord => chunkWord.includes(word))
-        ).length;
-        
-        if (matches > maxMatches) {
-          maxMatches = matches;
-          bestChunk = chunk;
-        }
-      }
-      
-      relevantChunk = bestChunk;
-    }
+    // Ground the answer in the note. Short notes go in whole; long ones contribute
+    // the chunks that best match this question *and* the student's recent
+    // questions, so a follow-up like "explain that more" still finds the passage.
+    const recentQuestions = (note.chatHistory || []).filter((m) => m.role === 'user').slice(-2).map((m) => m.content);
+    const context = relevantNoteText(note.extractedText, [question, ...recentQuestions].join(' '));
 
-    const systemPrompt = `You are a helpful assistant that answers questions based on the provided notes. Use only the information from the notes to answer questions. If the question cannot be answered based on the notes, say so.
+    const system = `You are a patient tutor helping a student understand their own notes, titled "${note.title}".
+Answer from the notes below. If something is not covered by the notes, say so plainly, then give a brief general explanation marked as coming from outside the notes.
 
-Notes content:
-${relevantChunk}
+NOTES:
+${context}
 
-IMPORTANT - Format your response using these markdown elements for professional display:
+How to answer:
+- Match the length to the question: a quick question gets a short, direct answer; "explain" or "compare" gets more.
+- Use GitHub-flavoured Markdown: ### headings only for longer answers, lists for steps and key points, fenced code blocks with a language tag for code.
+- Quote or point to the relevant part of the notes when it helps.
+- Never emit raw HTML.`;
 
-0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
-
-1. Use ### for section headers (e.g., "### Key Concept")
-2. Use numbered lists (1. 2. 3.) for step-by-step explanations
-3. Use bullet points (- or *) for key points or features
-4. Use code blocks with language tags for code examples:
-   \`\`\`language
-   // code here
-   \`\`\`
-5. Use emoji indicators for special notes:
-   ℹ️ for informational content
-   💡 for helpful tips
-   ⚠️ for warnings or cautions
-   ✅ for confirmations or best practices
-   ❌ for common mistakes to avoid
-
-RESPONSE STRUCTURE:
-- Start with a brief acknowledgment
-- Use ### headers to organize different sections
-- Include code examples in proper code blocks when relevant
-- Use numbered lists for sequential information
-- Use bullet points for related concepts
-- Add emoji-prefixed notes for emphasis
-- Answer in depth: explain the concept, why it works that way, and how it is applied,
-  with a concrete example or code snippet where one helps. Prefer a complete answer
-  over a short one, but do not pad it with repetition
-- If asked about something not in the notes, politely explain that the information is not available in the provided notes
-- Maintain a helpful and educational tone`;
-
-    // Clean chatHistory to remove MongoDB _id fields and ensure proper format.
-    // chatHistory is optional in the request body, so it must not be assumed
-    // to be an array - an omitted field used to throw and return a 500.
-    const cleanedChatHistory = (Array.isArray(chatHistory) ? chatHistory : [])
-      .slice(-5)
-      .filter((msg) => msg && (msg.role === 'user' || msg.role === 'assistant') && msg.content)
-      .map((msg) => ({ role: msg.role, content: msg.content }));
-
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...cleanedChatHistory, // Use cleaned chat history
-      { role: 'user', content: message }
-    ];
-
-    const completion = await groq.chat.completions.create({
-      messages: messages,
-      model: MODELS.FAST,
-      ...GROQ_DEFAULTS,
-      max_tokens: 2500,
-      temperature: 0.7
+    const text = await converse({
+      Model: Notes,
+      filter: { _id: note._id },
+      field: 'chatHistory',
+      timeKey: 'timestamp',
+      system,
+      input: question,
+      tier: 'FAST',
+      maxTokens: 2500,
+      temperature: 0.5,
     });
+    await Notes.updateOne({ _id: note._id }, { $set: { lastAccessed: new Date() } });
 
-    const text = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
-
-    // Save chat message to database
-    if (note) {
-      note.chatHistory.push({
-        role: 'user',
-        content: message
-      });
-      note.chatHistory.push({
-        role: 'assistant',
-        content: text
-      });
-      note.lastAccessed = new Date();
-      await note.save();
-    }
-
-    res.json({
-      response: text,
-      noteId: noteId
-    });
-
+    res.json({ response: text, noteId });
   } catch (error) {
     console.error('Error in chat with notes:', error);
-    res.status(500).json({ error: 'Error processing chat request' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Error processing chat request' });
   }
 };
+
+/** Up to ~16k characters of the note: all of it if it fits, otherwise the best-matching chunks in document order. */
+function relevantNoteText(fullText, query, budget = 16000) {
+  const text = String(fullText || '');
+  if (text.length <= budget) return text;
+  const chunks = chunkText(text, 1200);
+  const words = String(query).toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+  const scored = chunks.map((chunk, index) => {
+    const lower = chunk.toLowerCase();
+    return { index, chunk, score: words.reduce((n, w) => n + (lower.includes(w) ? 1 : 0), 0) };
+  });
+  const picked = [];
+  let used = 0;
+  for (const c of [...scored].sort((a, b) => b.score - a.score || a.index - b.index)) {
+    if (used + c.chunk.length > budget) continue;
+    picked.push(c);
+    used += c.chunk.length;
+  }
+  return picked.sort((a, b) => a.index - b.index).map((c) => c.chunk).join('\n...\n');
+}
 
 // Summarize notes
 const summarizeNotes = async (req, res) => {

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 // Mermaid is ~500 kB, so it is imported on demand the first time a diagram
 // actually appears rather than being pulled into every route chunk.
 let mermaidPromise = null;
-function loadMermaid() {
+export function loadMermaid() {
   if (!mermaidPromise) {
     mermaidPromise = import('mermaid').then(({ default: mermaid }) => {
       mermaid.initialize({

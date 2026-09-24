@@ -6,6 +6,8 @@ const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
+const { converse } = require('../ai/conversation');
+const { videoTutorPrompt } = require('../ai/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -233,56 +235,32 @@ const getUserEducationalVideos = async (req, res) => {
 const chatWithEducationalVideo = async (req, res) => {
   try {
     const { videoId, message, platform, userId } = req.body;
-    
-    if (!videoId || !message || !platform || !userId) {
-      return res.status(400).json({ error: 'Video ID, message, platform, and user ID are required' });
+    const question = String(message || '').trim();
+    if (!videoId || !question || !userId) {
+      return res.status(400).json({ error: 'Video ID, message, and user ID are required' });
     }
 
-    const video = await EducationalVideo.findOne({ _id: videoId, userId });
+    const video = await EducationalVideo.findOne({ _id: videoId, userId }).select('title description summary transcript platform');
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
 
-    // Add user message to chat history
-    video.chatHistory.push({
-      role: 'user',
-      content: message
+    const aiResponse = await converse({
+      Model: EducationalVideo,
+      filter: { _id: video._id, userId },
+      field: 'chatHistory',
+      timeKey: 'timestamp',
+      system: videoTutorPrompt(video, { platform: platform || video.platform }),
+      input: question,
+      tier: 'FAST',
+      maxTokens: 2500,
+      temperature: 0.5,
     });
 
-    // Prepare context for AI
-    const context = `Video Title: ${video.title}\nVideo Description: ${video.description}\nVideo Content: ${video.transcript}\nPlatform: ${video.platform}`;
-    
-    // Get AI response using Groq
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful assistant that answers questions about educational videos from various platforms (YouTube, Udemy, Coursera, Edureka, Unacademy). Use the video title, description, and content (transcript or summary) to provide accurate and helpful responses. If the transcript is not available, work with the title and description to provide the best possible answer.`
-        },
-        {
-          role: "user",
-          content: `Video Information:\n${context}\n\nUser Question: ${message}\n\nPlease provide a helpful answer based on the video content.`
-        }
-      ],
-      model: MODELS.FAST,
-      ...GROQ_DEFAULTS,
-      temperature: 0.7,
-      max_tokens: 2500,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-
-    // Add AI response to chat history
-    video.chatHistory.push({
-      role: 'assistant',
-      content: aiResponse
-    });
-
-    await video.save();
     res.json({ response: aiResponse });
   } catch (error) {
     console.error('Error chatting with educational video:', error);
-    res.status(500).json({ error: 'Error processing chat request' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Error processing chat message' });
   }
 };
 

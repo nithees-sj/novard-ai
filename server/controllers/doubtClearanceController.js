@@ -5,6 +5,8 @@ const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
+const { converse } = require('../ai/conversation');
+const { FORMAT_RULES } = require('../ai/prompts');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -131,98 +133,49 @@ const deleteDoubtClearance = async (req, res) => {
 const chatWithDoubtClearance = async (req, res) => {
   try {
     const { doubtId, message, userId } = req.body;
-
-    if (!doubtId || !message || !userId) {
+    const question = String(message || '').trim();
+    if (!doubtId || !question || !userId) {
       return res.status(400).json({ error: 'Doubt ID, message, and userId are required' });
     }
 
-    const doubtClearance = await DoubtClearance.findById(doubtId);
-    if (!doubtClearance) {
+    const doubt = await DoubtClearance.findOne({ _id: doubtId, userId }).select('title description imageUrl');
+    if (!doubt) {
       return res.status(404).json({ error: 'Doubt clearance not found' });
     }
 
-    // Add user message to chat history
-    const userMessage = {
-      role: 'user',
-      content: message.trim(),
-      timestamp: new Date()
-    };
+    const system = `You are a patient tutor helping a student clear one specific doubt.
 
-    doubtClearance.chatHistory.push(userMessage);
+THE DOUBT
+Title: ${doubt.title}
+Details: ${doubt.description}${doubt.imageUrl ? `\nThe student attached an image link (you cannot see it): ${doubt.imageUrl}` : ''}
 
-    // Generate AI response using Groq with structured output formatting
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful educational assistant that helps students clear their doubts. 
-          The student has a doubt with the following details:
-          Title: "${doubtClearance.title}"
-          Description: "${doubtClearance.description}"
-          
-          IMPORTANT - Format your response using these markdown elements for professional display:
+Teaching approach:
+- Find the exact point of confusion and address that first, in plain language.
+- Build understanding step by step; use a concrete example, analogy or code where it helps.
+- When there is a common misconception behind the doubt, name it.
+- If the student seems stuck, check understanding with a quick question at the end.
 
-0. Never emit raw HTML. Do not use <br> for line breaks - start a new line or list item. HTML tags are displayed to the user as literal text.
-          
-          1. Use ### for section headers (e.g., "### Understanding the Concept")
-          2. Use numbered lists (1. 2. 3.) for step-by-step explanations
-          3. Use bullet points (- or *) for key points or features
-          4. Use code blocks with language tags for code examples:
-             \`\`\`javascript
-             // code here
-             \`\`\`
-          5. Use emoji indicators for special notes:
-             ℹ️ for informational content
-             💡 for helpful tips
-             ⚠️ for warnings or cautions
-             ✅ for confirmations or best practices
-             ❌ for common mistakes to avoid
-          
-          RESPONSE STRUCTURE:
-          - Start with a brief greeting or acknowledgment
-          - Answer in depth: explain the concept, why it works that way, and how it is applied,
-            with a concrete example or code snippet where one helps. Prefer a complete answer
-            over a short one, but do not pad it with repetition
-          - Use ### headers to organize different sections
-          - Include code examples in proper code blocks when relevant
-          - Use numbered lists for sequential steps
-          - Use bullet points for related concepts
-          - Add emoji-prefixed notes for emphasis
-          - End with encouragement
-          
-          Be clear, educational, and provide practical examples. Break complex topics into digestible sections.`
-        },
-        ...doubtClearance.chatHistory.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }))
-      ],
-      model: MODELS.REASONING,
-      ...GROQ_DEFAULTS,
-      temperature: 0.7,
-      max_tokens: 3200
+${FORMAT_RULES}`;
+
+    // The whole doubt thread is memory: the student can refer back to any earlier
+    // explanation. Long threads are summarised instead of growing without limit.
+    const aiResponse = await converse({
+      Model: DoubtClearance,
+      filter: { _id: doubt._id, userId },
+      field: 'chatHistory',
+      timeKey: 'timestamp',
+      system,
+      input: question,
+      tier: 'REASONING',
+      maxTokens: 3200,
+      temperature: 0.5,
     });
-
-    const aiResponse = completion.choices[0]?.message?.content;
-    
-    if (!aiResponse) {
-      throw new Error('No response from Groq AI');
-    }
-
-    // Add AI response to chat history
-    const assistantMessage = {
-      role: 'assistant',
-      content: aiResponse,
-      timestamp: new Date()
-    };
-
-    doubtClearance.chatHistory.push(assistantMessage);
-    await doubtClearance.save();
+    await DoubtClearance.updateOne({ _id: doubt._id }, { $set: { updatedAt: new Date() } });
 
     res.json({ response: aiResponse });
   } catch (error) {
     console.error('Error chatting with doubt clearance:', error);
-    res.status(500).json({ error: 'Failed to process chat message' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Failed to process chat message' });
   }
 };
 
