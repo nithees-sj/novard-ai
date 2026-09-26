@@ -61,7 +61,7 @@ const GapReport = ({ analysis, startOpen = true }) => {
               ))}
             </ul>
             {analysis.gaps.length > 5 && (
-              <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-1 text-xs font-medium text-indigo-600 hover:underline">
+              <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-1 text-xs font-medium text-blue-600 hover:underline">
                 {showAll ? 'Show fewer' : `Show all ${analysis.gaps.length}`}
               </button>
             )}
@@ -76,9 +76,9 @@ const Bubble = ({ message }) => {
   const mine = message.role === 'user';
   return (
     <div className={`flex gap-3 ${mine ? 'justify-end' : 'justify-start'}`}>
-      {!mine && <div className="w-8 h-8 shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>}
+      {!mine && <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>}
       <div className={`max-w-[85%] min-w-0 rounded-2xl px-4 py-3 ${mine
-        ? 'bg-indigo-600 text-white rounded-br-md'
+        ? 'bg-blue-600 text-white rounded-br-md'
         : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'}`}>
         {mine
           ? <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -139,7 +139,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
     <div className="h-full flex flex-col">
       <header className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-gray-200">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Skill gap coach</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Skill gap coach</p>
           <h2 className="text-xl font-bold text-gray-900 truncate">{profile.targetRole}</h2>
           <p className="text-xs text-gray-500 mt-0.5 truncate">
             {profile.currentSkills?.length ? `Your skills: ${profile.currentSkills.join(', ')}` : 'Starting from zero'} · {profile.hoursPerWeek} h/week
@@ -168,7 +168,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
         {messages.map((m, i) => <Bubble key={`${m.createdAt}-${i}`} message={m} />)}
         {sending && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>
+            <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>
             <div className="rounded-2xl rounded-bl-md bg-white border border-gray-200 px-4 py-3 flex items-center gap-1.5" aria-label="The coach is typing">
               {[0, 150, 300].map((d) => <span key={d} className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
             </div>
@@ -181,7 +181,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
         {suggestions.length > 0 && !sending && (
           <div className="flex flex-wrap gap-2 mb-2">
             {suggestions.map((s) => (
-              <button key={s} type="button" onClick={() => send(s)} className="px-3 py-1.5 rounded-full border border-indigo-200 bg-indigo-50 text-xs font-medium text-indigo-800 hover:bg-indigo-100">
+              <button key={s} type="button" onClick={() => send(s)} className="px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-xs font-medium text-blue-800 hover:bg-blue-100">
                 {s}
               </button>
             ))}
@@ -201,9 +201,9 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Ask your coach anything… (Shift+Enter for a new line)"
             aria-label="Message the coach"
-            className="flex-1 resize-none px-4 py-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 max-h-40"
+            className="flex-1 resize-none px-4 py-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 max-h-40"
           />
-          <button type="submit" disabled={sending || !draft.trim()} className="px-5 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+          <button type="submit" disabled={sending || !draft.trim()} className="px-5 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50">
             Send
           </button>
         </form>

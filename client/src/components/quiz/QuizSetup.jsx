@@ -169,8 +169,8 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
 
   const choice = (active) =>
     `rounded-lg border-2 text-left transition-colors ${active
-      ? 'border-indigo-600 bg-indigo-50'
-      : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-gray-50'}`;
+      ? 'border-blue-600 bg-blue-50'
+      : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-gray-50'}`;
 
   return (
     <form onSubmit={submit} className="max-w-3xl mx-auto space-y-6">
@@ -204,7 +204,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
             ))}
           </div>
           {nextLevel && settings.difficulty === last.difficulty && (
-            <p className="mt-2 text-xs text-indigo-700">
+            <p className="mt-2 text-xs text-blue-700">
               You scored {last.percentage}% on {difficultyLabel(last.difficulty)} last time - try{' '}
               <button type="button" onClick={() => update({ difficulty: nextLevel })} className="font-semibold underline">
                 {difficultyLabel(nextLevel)}
@@ -238,7 +238,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 onChange={(e) => { touched.current = true; setCustomCount(e.target.value); }}
                 placeholder={`${QUIZ_MIN}–${QUIZ_MAX}`}
                 aria-label="Custom number of questions"
-                className={`w-24 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${customInvalid ? 'border-red-400' : 'border-gray-300'}`}
+                className={`w-24 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${customInvalid ? 'border-red-400' : 'border-gray-300'}`}
               />
             </label>
           </div>
@@ -256,7 +256,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 aria-checked={settings.style === s.value}
                 onClick={() => update({ style: s.value })}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${settings.style === s.value
-                  ? 'bg-white text-indigo-700 shadow-sm'
+                  ? 'bg-white text-blue-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'}`}
               >
                 {s.label}
@@ -281,7 +281,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
             value={settings.focus}
             onChange={(e) => update({ focus: e.target.value })}
             placeholder="e.g. a sub-topic you want to practise"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
           />
         </div>
       </section>
@@ -295,7 +295,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
       <button
         type="submit"
         disabled={starting || Boolean(blockedReason) || customInvalid}
-        className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
       >
         {starting ? (
           <>

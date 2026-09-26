@@ -25,8 +25,8 @@ const Choice = ({ active, onClick, children, className = '' }) => (
     aria-pressed={active}
     onClick={onClick}
     className={`rounded-lg border-2 text-left transition-colors ${active
-      ? 'border-indigo-600 bg-indigo-50'
-      : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-gray-50'} ${className}`}
+      ? 'border-blue-600 bg-blue-50'
+      : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-gray-50'} ${className}`}
   >
     {children}
   </button>
@@ -97,7 +97,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           value={form.role}
           onChange={(e) => set({ role: e.target.value })}
           placeholder="e.g. Frontend Developer"
-          className={`w-full px-4 py-3 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${roleError ? 'border-red-400' : 'border-gray-300'}`}
+          className={`w-full px-4 py-3 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 ${roleError ? 'border-red-400' : 'border-gray-300'}`}
           aria-invalid={Boolean(roleError)}
         />
         {roleError && <p className="mt-1 text-xs text-red-600">{roleError}</p>}
@@ -108,8 +108,8 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
               type="button"
               onClick={() => set({ role: r })}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${form.role === r
-                ? 'bg-indigo-600 border-indigo-600 text-white'
-                : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'}`}
+                ? 'bg-blue-600 border-blue-600 text-white'
+                : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'}`}
             >
               {r}
             </button>
@@ -156,7 +156,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
         <label htmlFor="roadmap-skills" className={label}>
           Skills you already have <span className="normal-case font-normal text-gray-400">(optional - they will be marked, not re-taught)</span>
         </label>
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
           {form.knownSkills.map((s) => (
             <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-800">
               {s}
@@ -197,7 +197,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           value={form.goal}
           onChange={(e) => set({ goal: e.target.value })}
           placeholder="e.g. Land a first job at a product startup, or start freelancing"
-          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
         />
       </div>
 
@@ -206,7 +206,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
       <button
         type="submit"
         disabled={generating}
-        className="w-full px-6 py-3.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-70 transition-colors flex items-center justify-center gap-2"
+        className="w-full px-6 py-3.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-70 transition-colors flex items-center justify-center gap-2"
       >
         {generating ? (
           <>

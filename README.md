@@ -72,7 +72,7 @@ Three sub-tools behind one page:
 ### Doubts & Learning (`/doubts`)
 
 - **Notes & Quiz** — entry point into the notes workflow above.
-- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — open a doubt with a title, description and optional image reference, then hold a threaded conversation with the assistant. Responses are formatted for readability (code blocks, structured explanations). Each doubt can be summarized, turned into a quiz (with a content-aware fallback generator when the model returns unparseable JSON), and enriched with **YouTube video recommendations** that include a per-video reason for the suggestion.
+- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — describe the doubt (plus an optional image link) and the tutor answers straight away. The AI writes a short, specific title from the question ([services/doubtTitle.js](server/services/doubtTitle.js)), so the list and heading name the exact concept instead of repeating the description. `node scripts/retitleDoubts.js` retitles older doubts and keeps each old title in `previousTitle`. Then hold a threaded conversation with the assistant. Responses are formatted for readability (code blocks, structured explanations). Each doubt can be summarized, turned into a quiz (with a content-aware fallback generator when the model returns unparseable JSON), and enriched with **YouTube video recommendations** that include a per-video reason for the suggestion.
 
 ### AI Forum (`/forum`)
 

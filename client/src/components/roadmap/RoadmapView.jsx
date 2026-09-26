@@ -34,7 +34,7 @@ const TopicRow = ({ topic }) => (
         href={youtube(topic.searchQuery || `${topic.name} tutorial`)}
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+        className="shrink-0 text-xs font-semibold text-blue-600 hover:text-blue-800 whitespace-nowrap"
       >
         Find tutorials ↗
       </a>
@@ -109,7 +109,7 @@ const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Your roadmap</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Your roadmap</p>
           <h2 className="text-2xl font-bold text-gray-900">{roadmap.role}</h2>
           <p className="text-sm text-gray-500 mt-1">
             {[LEVEL_LABEL[inputs.level], `${inputs.timelineMonths} months`, `${inputs.hoursPerWeek} h/week`,
@@ -172,7 +172,7 @@ const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
       </div>
 
       {roadmap.careerTips?.length > 0 && (
-        <section className="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+        <section className="rounded-xl border border-blue-100 bg-blue-50 p-5">
           <h3 className="text-base font-bold text-gray-900 mb-2">Landing the role</h3>
           <ul className="space-y-1.5 list-disc pl-5 text-sm text-gray-800">
             {roadmap.careerTips.map((t) => <li key={t}>{t}</li>)}

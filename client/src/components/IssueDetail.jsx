@@ -339,7 +339,7 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
 
         <div className="flex-1 overflow-y-auto mb-4 min-h-0 pr-1">
           {/* The opening post */}
-          <article className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600">
+          <article className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600">
             <header className="flex justify-between items-start gap-3 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-9 h-9 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold text-white" aria-hidden="true">

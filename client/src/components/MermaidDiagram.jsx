@@ -29,6 +29,22 @@ export function loadMermaid() {
   return mermaidPromise;
 }
 
+// Mermaid sizes each node to its label *before* drawing. If Inter (a web font)
+// has not finished loading, labels are measured in the narrower fallback font
+// and then clipped once Inter arrives ("Use bind moun"). Wait for it briefly.
+let fontsReady = null;
+function whenDiagramFontReady() {
+  if (!fontsReady) {
+    fontsReady = document.fonts?.load
+      ? Promise.race([
+        document.fonts.load('14px Inter').catch(() => {}),
+        new Promise((resolve) => { setTimeout(resolve, 1500); }),
+      ])
+      : Promise.resolve();
+  }
+  return fontsReady;
+}
+
 let diagramSeq = 0;
 
 /**
@@ -46,8 +62,8 @@ const MermaidDiagram = ({ chart }) => {
     let cancelled = false;
     setFailed(false);
 
-    loadMermaid()
-      .then(async (mermaid) => {
+    Promise.all([loadMermaid(), whenDiagramFontReady()])
+      .then(async ([mermaid]) => {
         if (cancelled) return;
         diagramSeq += 1;
         const id = `mermaid-diagram-${diagramSeq}`;
@@ -92,7 +108,7 @@ const MermaidDiagram = ({ chart }) => {
       */}
       <div
         ref={containerRef}
-        className="min-h-[60px] [&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto [&>svg]:max-w-full"
+        className="min-h-[60px] [&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto [&>svg]:max-w-full [&_foreignObject]:overflow-visible"
       />
     </div>
   );

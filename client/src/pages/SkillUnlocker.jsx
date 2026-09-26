@@ -494,7 +494,7 @@ const SkillUnlocker = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-700 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
                   >
                     {loading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -663,7 +663,7 @@ const SkillUnlocker = () => {
                     <button
                         onClick={handleShowQuizConfig}
                         disabled={loading}
-                        className="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-70 disabled:transform-none"
+                        className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-70 disabled:transform-none"
                     >
                     {loading ? 'Preparing Quiz...' : '🧠 Take Skill Assessment Quiz'}
                     </button>
@@ -698,13 +698,13 @@ const SkillUnlocker = () => {
                         <span className="text-lg font-bold text-gray-900">
                           {Object.keys(quizAnswers).length + 1} <span className="text-gray-400 font-normal">/ {quiz.questions.length}</span>
                         </span>
-                        <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                        <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                            Quiz Phase
                         </span>
                       </div>
                       <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                         <div
-                          className="bg-indigo-600 h-full transition-all duration-500 ease-out"
+                          className="bg-blue-600 h-full transition-all duration-500 ease-out"
                           style={{ width: `${(Object.keys(quizAnswers).length / quiz.questions.length) * 100}%` }}
                         />
                       </div>
@@ -723,13 +723,13 @@ const SkillUnlocker = () => {
                                 onClick={() => handleQuizAnswer(qIndex, oIndex)}
                                 className={`w-full text-left px-6 py-4 rounded-xl border-2 transition-all duration-200 group ${
                                   quizAnswers[qIndex] === oIndex
-                                    ? 'bg-indigo-50 border-indigo-600 text-indigo-900'
-                                    : 'bg-white border-gray-100 text-gray-700 hover:border-indigo-200 hover:bg-gray-50'
+                                    ? 'bg-blue-50 border-blue-600 text-blue-900'
+                                    : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-gray-50'
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
                                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
-                                         quizAnswers[qIndex] === oIndex ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-400 group-hover:border-indigo-300'
+                                         quizAnswers[qIndex] === oIndex ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-gray-400 group-hover:border-blue-300'
                                     }`}>
                                         {['A','B','C','D'][oIndex]}
                                     </div>
@@ -747,7 +747,7 @@ const SkillUnlocker = () => {
                         <button
                         onClick={handleSubmitQuiz}
                         disabled={Object.keys(quizAnswers).length !== quiz.questions.length}
-                        className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                         Submit Quiz
                         </button>
@@ -809,13 +809,13 @@ const SkillUnlocker = () => {
                       </button>
                       <button
                         onClick={() => { setQuizError(null); setCurrentView('quiz-config'); }}
-                        className="px-6 py-2.5 bg-white border border-indigo-200 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-50 transition-colors"
+                        className="px-6 py-2.5 bg-white border border-blue-200 text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
                       >
                         All marks · New quiz
                       </button>
                       <button
                         onClick={() => setCurrentView('planner')}
-                        className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                        className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Back to Learning Plan
                       </button>

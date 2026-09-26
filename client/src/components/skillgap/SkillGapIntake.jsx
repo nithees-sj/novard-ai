@@ -55,13 +55,13 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
   const label = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2';
   const chip = (active) =>
     `rounded-lg border-2 text-sm font-semibold transition-colors ${active
-      ? 'border-indigo-600 bg-indigo-50 text-indigo-900'
-      : 'border-gray-200 bg-white text-gray-800 hover:border-indigo-200'}`;
+      ? 'border-blue-600 bg-blue-50 text-blue-900'
+      : 'border-gray-200 bg-white text-gray-800 hover:border-blue-200'}`;
 
   return (
     <form onSubmit={submit} className="max-w-2xl mx-auto space-y-6" noValidate>
       <div className="flex items-start gap-3">
-        <div className="w-11 h-11 shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg" aria-hidden="true">🧭</div>
+        <div className="w-11 h-11 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg" aria-hidden="true">🧭</div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Skill gap coach</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -83,14 +83,14 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
           value={form.targetRole}
           onChange={(e) => set({ targetRole: e.target.value })}
           placeholder="e.g. Backend Developer"
-          className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${roleError ? 'border-red-400' : 'border-gray-300'}`}
+          className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 ${roleError ? 'border-red-400' : 'border-gray-300'}`}
           aria-invalid={roleError}
         />
         {roleError && <p className="mt-1 text-xs text-red-600">Tell me which role you're aiming for.</p>}
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {ROLE_SUGGESTIONS.slice(0, 10).map((r) => (
             <button key={r} type="button" onClick={() => set({ targetRole: r })}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border ${form.targetRole === r ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'}`}>
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border ${form.targetRole === r ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'}`}>
               {r}
             </button>
           ))}
@@ -101,7 +101,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
         <label htmlFor="gap-skills" className="block text-sm font-semibold text-gray-900 mb-1.5">
           Which skills do you have right now?
         </label>
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-500">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
           {form.currentSkills.map((s) => (
             <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-800">
               {s}
@@ -154,7 +154,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
             value={form.goal}
             onChange={(e) => set({ goal: e.target.value })}
             placeholder="e.g. First job in 6 months"
-            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
           />
         </div>
       </div>
@@ -164,7 +164,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
       <button
         type="submit"
         disabled={starting}
-        className="w-full px-6 py-3.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-70 flex items-center justify-center gap-2"
+        className="w-full px-6 py-3.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center gap-2"
       >
         {starting ? (
           <>

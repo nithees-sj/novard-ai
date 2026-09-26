@@ -59,7 +59,7 @@ const ACTIONS = {
     },
     summary: (a) => `"${a.title}"`,
     async run(a, ctx) {
-      const doubt = await createDoubt({ ...a, userId: ctx.userId });
+      const doubt = await createDoubt({ ...a, userId: ctx.userId }, { keepTitle: true }); // the agent's title is already specific
       // Carry the agent's explanation over, so the doubt opens with the context of this chat.
       if (ctx.sourceText) {
         doubt.chatHistory.push(

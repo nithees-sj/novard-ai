@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-// Matches the limits in models/doubtClearance.js.
-const TITLE_MAX = 200;
+// Matches the limit in models/doubtClearance.js.
 const DESCRIPTION_MAX = 2000;
 
 const STEPS = [
-  { title: 'Describe it', text: 'Say what you are stuck on and what you have tried.' },
-  { title: 'Chat with the AI tutor', text: 'Ask follow-ups until it clicks.' },
-  { title: 'Get the solution summary', text: 'A structured recap with a flowchart.' },
+  { title: 'Describe it', text: 'Say what you are stuck on - we title it for you.' },
+  { title: 'Get an answer', text: 'The AI tutor answers at once; ask follow-ups until it clicks.' },
+  { title: 'Summarize it', text: 'A structured recap with a flowchart.' },
   { title: 'Practise', text: 'A custom quiz and hand-picked videos.' },
 ];
 
@@ -31,26 +30,24 @@ const Counter = ({ value, max }) => {
 
 /**
  * The "new doubt" form, shown in the main area of Doubt Clearance - whenever
- * no doubt is selected, and when "+ Add Doubt" is clicked. It used to be a
- * cramped form squeezed into the sidebar while the main area said only
- * "No Doubt Selected".
+ * no doubt is selected, and when "New doubt" is clicked. The student only
+ * describes the doubt: the server writes a short, specific title from it, and
+ * the question is sent to the tutor straight away.
  */
 const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, isFirstDoubt = false }) => {
-  const [form, setForm] = useState({ title: '', description: '', imageUrl: '' });
+  const [form, setForm] = useState({ description: '', imageUrl: '' });
   const [touched, setTouched] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-  const titleRef = useRef(null);
+  const questionRef = useRef(null);
 
   useEffect(() => {
-    titleRef.current?.focus();
+    questionRef.current?.focus();
   }, []);
 
-  const title = form.title.trim();
   const description = form.description.trim();
   const imageUrl = form.imageUrl.trim();
 
   const errors = {
-    title: !title ? 'Give your doubt a short title.' : title.length > TITLE_MAX ? `Keep the title under ${TITLE_MAX} characters.` : null,
     description: !description
       ? 'Describe what you are stuck on.'
       : description.length < 15
@@ -58,7 +55,7 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
         : description.length > DESCRIPTION_MAX ? `Keep the description under ${DESCRIPTION_MAX} characters.` : null,
     imageUrl: imageUrl && !isHttpUrl(imageUrl) ? 'Enter a full link starting with http:// or https://' : null,
   };
-  const valid = !errors.title && !errors.description && !errors.imageUrl;
+  const valid = !errors.description && !errors.imageUrl;
 
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -69,8 +66,8 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
     e.preventDefault();
     setTouched(true);
     if (!valid || submitting) return;
-    const ok = await onSubmit({ title, description, imageUrl: imageUrl || '' });
-    if (ok) setForm({ title: '', description: '', imageUrl: '' });
+    const ok = await onSubmit({ description, imageUrl: imageUrl || '' });
+    if (ok) setForm({ description: '', imageUrl: '' });
   };
 
   const fieldClass = (bad) =>
@@ -106,33 +103,14 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
         <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-5">
           <div>
             <div className="flex items-baseline justify-between mb-1.5">
-              <label htmlFor="doubt-title" className="text-sm font-semibold text-gray-900">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <Counter value={form.title.length} max={TITLE_MAX} />
-            </div>
-            <input
-              id="doubt-title"
-              ref={titleRef}
-              type="text"
-              value={form.title}
-              onChange={set('title')}
-              placeholder="e.g. Why does my React useEffect run twice?"
-              className={fieldClass(touched && errors.title)}
-              aria-invalid={Boolean(touched && errors.title)}
-            />
-            {touched && errors.title && <p className="mt-1 text-xs text-red-600">{errors.title}</p>}
-          </div>
-
-          <div>
-            <div className="flex items-baseline justify-between mb-1.5">
               <label htmlFor="doubt-description" className="text-sm font-semibold text-gray-900">
-                Describe your doubt <span className="text-red-500">*</span>
+                What's your doubt? <span className="text-red-500">*</span>
               </label>
               <Counter value={form.description.length} max={DESCRIPTION_MAX} />
             </div>
             <textarea
               id="doubt-description"
+              ref={questionRef}
               value={form.description}
               onChange={set('description')}
               rows={7}
@@ -142,7 +120,7 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
             />
             {touched && errors.description
               ? <p className="mt-1 text-xs text-red-600">{errors.description}</p>
-              : <p className="mt-1 text-xs text-gray-500">Include code, commands or error messages if you have them - the more specific, the better the answer.</p>}
+              : <p className="mt-1 text-xs text-gray-500">Include code, commands or error messages if you have them. We will give the doubt a short title from what you write.</p>}
           </div>
 
           <div>
@@ -189,7 +167,7 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
                 <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" aria-hidden="true" />
                 Creating…
               </>
-            ) : 'Create doubt & start chatting'}
+            ) : 'Ask the tutor'}
           </button>
           {onCancel && (
             <button

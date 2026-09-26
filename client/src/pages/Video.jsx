@@ -50,10 +50,13 @@ const Video = () => {
         <div className="ml-64 flex-1 p-8">
 
           {/* Breadcrumb */}
-          <div className="flex items-center text-sm text-gray-500 mb-6">
-            <span className="hover:text-blue-600 cursor-pointer" onClick={() => navigate('/home')}>
+          <div className="flex items-center text-sm text-gray-500 mb-4">
+            <button type="button" onClick={() => navigate('/home')} className="flex items-center gap-1.5 hover:text-blue-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
               Dashboard
-            </span>
+            </button>
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -189,16 +192,6 @@ const Video = () => {
           {/* Video Library Inline View */}
           {activeView === 'videoLibrary' && (
             <div>
-              {/* Back Button */}
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Video Sessions</span>
-              </button>
 
               <VideoLibraryInlineView />
             </div>
@@ -207,16 +200,6 @@ const Video = () => {
           {/* Video Summarizer Inline View */}
           {activeView === 'videoSummarizer' && (
             <div>
-              {/* Back Button */}
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Video Sessions</span>
-              </button>
 
               <VideoSummarizerInlineView />
             </div>

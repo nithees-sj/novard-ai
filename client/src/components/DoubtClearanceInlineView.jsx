@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import MarkdownView from './MarkdownView';
-import SummaryHeader from './SummaryHeader';
 import NewDoubtForm from './NewDoubtForm';
+import {
+  Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
+  QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
+} from './learning/LearningUI';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
@@ -15,7 +17,6 @@ const DoubtClearanceInlineView = () => {
   const [doubts, setDoubts] = useState([]);
   const [selectedDoubt, setSelectedDoubt] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -72,23 +73,23 @@ const DoubtClearanceInlineView = () => {
   };
 
   // Returns true on success so the form can clear itself.
-  const handleAddDoubt = async ({ title, description, imageUrl }) => {
+  const handleAddDoubt = async ({ description, imageUrl }) => {
     setIsAddingDoubt(true);
     setAddDoubtError(null);
     try {
       const userId = localStorage.getItem('email') || 'demo-user';
       const { data: created } = await axios.post(`${apiUrl}/doubt-clearances`, {
-        title,
         description,
         imageUrl,
         userId
       });
       await loadUserDoubts();
-      // Open the new doubt in the chat tab so the student can start asking straight away.
-      setSelectedDoubt(created);
+      // Open the new doubt and put the question to the tutor straight away,
+      // so the chat starts with the student's own words and an answer.
+      setSelectedDoubt({ ...created, chatHistory: [{ role: 'user', content: description }] });
       setActiveTab('chat');
       setShowAddDoubtForm(false);
-      showToast('Doubt added - ask your first question below.', 'success');
+      handleSendMessage(description, created, { echo: false });
       return true;
     } catch (error) {
       console.error('Error adding doubt:', error);
@@ -100,16 +101,15 @@ const DoubtClearanceInlineView = () => {
   };
 
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedDoubt) return;
-    const userMessage = newMessage.trim();
-    setNewMessage('');
+  // Returns false on failure so the chat box can restore what was typed.
+  // `echo: false` when the message is already on screen (a new doubt opens with its question shown).
+  const handleSendMessage = async (userMessage, doubt = selectedDoubt, { echo = true } = {}) => {
+    if (!userMessage || !doubt) return false;
     setIsLoading(true);
-    const tempUserMessage = { role: 'user', content: userMessage, timestamp: new Date() };
-    setChatMessages(prev => [...prev, tempUserMessage]);
+    if (echo) setChatMessages(prev => [...prev, { role: 'user', content: userMessage, timestamp: new Date() }]);
     try {
       const response = await axios.post(`${apiUrl}/chat-with-doubt-clearance`, {
-        doubtId: selectedDoubt._id,
+        doubtId: doubt._id,
         message: userMessage,
         userId: localStorage.getItem('email') || 'demo-user'
       });
@@ -117,7 +117,7 @@ const DoubtClearanceInlineView = () => {
       setChatMessages(prev => [...prev, aiResponse]);
       await loadUserDoubts();
       const updatedDoubts = await axios.get(`${apiUrl}/doubt-clearances/${localStorage.getItem('email') || 'demo-user'}`);
-      const updatedDoubt = updatedDoubts.data.find(d => d._id === selectedDoubt._id);
+      const updatedDoubt = updatedDoubts.data.find(d => d._id === doubt._id);
       if (updatedDoubt) {
         setSelectedDoubt(updatedDoubt);
         const chatHistory = Array.isArray(updatedDoubt.chatHistory) ? updatedDoubt.chatHistory : [];
@@ -126,11 +126,13 @@ const DoubtClearanceInlineView = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      showToast('Error sending message', 'error');
-      setChatMessages(prev => prev.slice(0, -1));
+      showToast('Could not send your message. Please try again.', 'error');
+      if (echo) setChatMessages(prev => prev.slice(0, -1));
+      return false;
     } finally {
       setIsLoading(false);
     }
+    return true;
   };
 
   const handleSummarize = async () => {
@@ -140,6 +142,7 @@ const DoubtClearanceInlineView = () => {
       setActiveTab('summary');
       return;
     }
+    setActiveTab('summary');
     setIsSummarizing(true);
     try {
       const response = await axios.post(`${apiUrl}/summarize-doubt-clearance`, {
@@ -147,7 +150,6 @@ const DoubtClearanceInlineView = () => {
         userId: localStorage.getItem('email') || 'demo-user'
       });
       setSummary(response.data.summary);
-      setActiveTab('summary');
       await loadUserDoubts();
     } catch (error) {
       console.error('Error summarizing doubt:', error);
@@ -267,339 +269,184 @@ const DoubtClearanceInlineView = () => {
     }
   }, [selectedDoubt]);
 
-  return (
-    <div className="flex gap-6">
-      {/* Main Content */}
-      <div className="flex-1 min-w-0">
-        {selectedDoubt && !showAddDoubtForm ? (
-          <>
-            {/* Header with Title and Tabs */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{selectedDoubt.title}</h2>
-              <p className="text-sm text-gray-600 mb-4 whitespace-pre-wrap">{selectedDoubt.description}</p>
-              {selectedDoubt.imageUrl && (
-                <a href={selectedDoubt.imageUrl} target="_blank" rel="noopener noreferrer" className="inline-block mb-4">
-                  <img src={selectedDoubt.imageUrl} alt="Attached to this doubt" className="max-h-40 rounded-lg border border-gray-200 object-contain bg-gray-50" />
-                </a>
-              )}
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'chat' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  💬 Chat
-                </button>
-                <button
-                  onClick={handleSummarize}
-                  disabled={isSummarizing}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'summary' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  📝 Summarize
-                </button>
-                <button
-                  onClick={handleGenerateQuiz}
-                  disabled={isGeneratingQuiz}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'quiz' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  🧠 Quiz
-                </button>
-                <button
-                  onClick={handleGetRecommendations}
-                  disabled={isGettingRecommendations}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === 'recommendations' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  📺 Videos
-                </button>
-              </div>
-            </div>
+  const onTab = (id) => {
+    if (id === 'chat') setActiveTab('chat');
+    else if (id === 'summary') handleSummarize();
+    else if (id === 'quiz') handleGenerateQuiz();
+    else if (id === 'recommendations') {
+      if (youtubeRecommendations.length) setActiveTab('recommendations');
+      else handleGetRecommendations();
+    }
+  };
 
-            {/* Chat Tab */}
-            {activeTab === 'chat' && (
-              <div className="bg-white rounded-lg border border-gray-200 h-[calc(100vh-400px)] flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {chatMessages.map((message, index) => (
-                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${
-                        message.role === 'user'
-                          ? 'bg-gray-900 text-white'
-                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
-                      }`}>
-                        {message.role === 'user' ? (
-                          message.content
-                        ) : (
-                          <MarkdownView content={message.content} />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 px-4 py-3 rounded-lg text-sm">Thinking...</div>
+  const quizResult = quizScore ? { correct: quizScore.score, total: quizScore.totalQuestions } : null;
+  const writing = showAddDoubtForm || !selectedDoubt;
+  const messageCount = chatMessages.length;
+
+  return (
+    <>
+      <Workspace
+        side={(
+          <SideList
+            title="Your doubts"
+            count={doubts.length}
+            action={(
+              <button
+                type="button"
+                onClick={() => { setShowAddDoubtForm(true); setAddDoubtError(null); }}
+                aria-pressed={writing}
+                className={`${writing ? btn.secondary : btn.primary} w-full`}
+              >
+                <Icon name="plus" />
+                {writing ? 'Writing a new doubt…' : 'New doubt'}
+              </button>
+            )}
+          >
+            {doubts.length > 0 ? doubts.map((doubt) => (
+              <ListItem
+                key={doubt._id}
+                active={selectedDoubt?._id === doubt._id && !showAddDoubtForm}
+                title={doubt.title}
+                meta={`${formatDate(doubt.createdAt)}${doubt.chatHistory?.length ? ` · ${doubt.chatHistory.length} messages` : ''}`}
+                onSelect={() => { setSelectedDoubt(doubt); setShowAddDoubtForm(false); setActiveTab('chat'); }}
+                onDelete={() => handleDeleteDoubt(doubt._id, doubt.title)}
+              />
+            )) : <ListEmpty icon="doubt" title="No doubts yet" text="Fill in the form to add your first one." />}
+          </SideList>
+        )}
+      >
+        {!writing ? (
+          <>
+            <ItemFrame
+              icon="doubt"
+              title={selectedDoubt.title}
+              meta={<>
+                Asked {formatDate(selectedDoubt.createdAt)}
+                {messageCount > 0 && ` · ${messageCount} ${messageCount === 1 ? 'message' : 'messages'}`}
+                {selectedDoubt.imageUrl && (
+                  <a href={selectedDoubt.imageUrl} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 font-medium text-blue-600 hover:underline">
+                    <Icon name="link" className="h-3 w-3" /> Attachment
+                  </a>
+                )}
+              </>}
+              tabs={(
+                <TabBar
+                  size="sm"
+                  active={activeTab}
+                  onChange={onTab}
+                  tabs={[
+                    { id: 'chat', label: 'Chat', icon: 'chat' },
+                    { id: 'summary', label: 'Summarize', icon: 'summary', busy: isSummarizing },
+                    { id: 'quiz', label: 'Quiz', icon: 'quiz', busy: isGeneratingQuiz },
+                    { id: 'recommendations', label: 'Videos', icon: 'video', busy: isGettingRecommendations },
+                  ]}
+                />
+              )}
+            >
+              {activeTab === 'chat' && (
+                <ChatPanel
+                  messages={chatMessages}
+                  sending={isLoading}
+                  onSend={handleSendMessage}
+                  placeholder="Ask a follow-up question about this doubt…"
+                  emptyTitle="Your question"
+                  emptyText={selectedDoubt.description}
+                  startPrompt={{ label: 'Get an answer', text: selectedDoubt.description }}
+                />
+              )}
+
+              {activeTab === 'summary' && (
+                <TabBody>
+                  {isSummarizing ? (
+                    <GeneratingState icon="summary" title="Summarizing your doubt" hint="Turning the conversation into a clear, structured summary with a diagram. This usually takes 10-20 seconds." />
+                  ) : summary ? (
+                    <SummaryView icon="summary" title="Summary" content={summary} />
+                  ) : (
+                    <EmptyState icon="summary" title="No summary yet" text="Summarize this doubt into a structured recap of the conversation." action={<button type="button" onClick={handleSummarize} className={btn.primary}>Summarize</button>} />
+                  )}
+                </TabBody>
+              )}
+
+              {activeTab === 'quiz' && (
+                <TabBody>
+                  {isGeneratingQuiz ? (
+                    <GeneratingState icon="quiz" title="Building your quiz" hint="Writing questions from what was explained in this doubt. This usually takes 10-30 seconds." />
+                  ) : currentQuiz ? (
+                    <QuizRunner
+                      questions={currentQuiz}
+                      answers={quizAnswers}
+                      onAnswer={(qi, oi) => setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
+                      onSubmit={handleSubmitQuiz}
+                      result={quizResult}
+                      onRetry={handleGenerateQuiz}
+                    />
+                  ) : (
+                    <div className="h-full overflow-y-auto p-6">
+                      <QuizSetup
+                        source="doubt"
+                        itemId={selectedDoubt._id}
+                        topic={selectedDoubt.title}
+                        onStart={startQuiz}
+                        starting={isGeneratingQuiz}
+                        error={quizError}
+                        blockedReason={Math.max(chatMessages.length, (selectedDoubt.chatHistory || []).length) < 4
+                          ? 'Ask at least two questions in the chat first - the quiz is built from what was explained to you.'
+                          : null}
+                      />
                     </div>
                   )}
-                </div>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <textarea
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder="Ask a question about your doubt..."
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      rows="2"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+                </TabBody>
+              )}
 
-            {/* Summary Tab - Structured Display */}
-            {activeTab === 'summary' && (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 h-[calc(100vh-400px)] overflow-y-auto">
-                {isSummarizing ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">📝</div>
-                      <p className="text-sm text-gray-600">Generating solutions...</p>
-                    </div>
-                  </div>
-                ) : summary ? (
-                  <div className="space-y-4">
-                    <SummaryHeader title="Solution Overview" subtitle={selectedDoubt.title} icon="check" tone="green" />
-                    <MarkdownView content={summary} size="base" />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">📝</div>
-                      <p className="text-sm text-gray-600">Click "Solutions" to generate a solution for this doubt.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Quiz Tab */}
-            {activeTab === 'quiz' && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 h-[calc(100vh-400px)] overflow-y-auto">
-                {currentQuiz ? (
-                  quizScore ? (
-                    <div className="text-center p-8 bg-blue-50 rounded-lg">
-                      <div className="text-5xl mb-4">🎯</div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h3>
-                      <p className="text-4xl font-bold text-blue-600 mb-4">
-                        {Math.round((quizScore.score / quizScore.totalQuestions) * 100)}%
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {quizScore.score} out of {quizScore.totalQuestions} correct
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleGenerateQuiz}
-                        className="mt-6 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
-                      >
-                        See all your marks · Try another quiz
-                      </button>
+              {activeTab === 'recommendations' && (
+                <TabBody>
+                  {isGettingRecommendations ? (
+                    <GeneratingState icon="video" title="Finding videos for you" hint="Searching YouTube for tutorials that match what you are stuck on." />
+                  ) : youtubeRecommendations.length > 0 ? (
+                    <div className="h-full overflow-y-auto p-5">
+                      <div className="mb-4 flex items-center justify-between">
+                        <p className="text-sm text-gray-500">{youtubeRecommendations.length} videos picked for this doubt</p>
+                        <button type="button" onClick={handleGetRecommendations} className={btn.ghost}>Refresh</button>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {youtubeRecommendations.map((video, index) => (
+                          <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+                            <div className="relative aspect-video bg-gray-100">
+                              {video.thumbnail && <img src={video.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />}
+                              {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">{video.duration}</span>}
+                            </div>
+                            <div className="p-3">
+                              <p className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-700">{video.title}</p>
+                              {video.description && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{video.description}</p>}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {currentQuiz.map((question, qIndex) => (
-                        <div key={qIndex} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="font-semibold text-sm text-gray-900 mb-3">
-                            {qIndex + 1}. {question.question}
-                          </p>
-                          <div className="space-y-2">
-                            {question.options.map((option, oIndex) => (
-                              <button
-                                key={oIndex}
-                                onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
-                                className={`w-full text-left px-3 py-2 text-sm rounded-md border ${
-                                  quizAnswers[qIndex] === oIndex
-                                    ? 'bg-gray-900 text-white'
-                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      <button
-                        onClick={handleSubmitQuiz}
-                        className="w-full px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                      >
-                        Submit Quiz
-                      </button>
-                    </div>
-                  )
-                ) : (
-                  <QuizSetup
-                    source="doubt"
-                    itemId={selectedDoubt._id}
-                    topic={selectedDoubt.title}
-                    onStart={startQuiz}
-                    starting={isGeneratingQuiz}
-                    error={quizError}
-                    blockedReason={Math.max(chatMessages.length, (selectedDoubt.chatHistory || []).length) < 4
-                      ? 'Ask at least two questions in the chat first - the quiz is built from what was explained to you.'
-                      : null}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Recommendations Tab */}
-            {activeTab === 'recommendations' && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 h-[calc(100vh-400px)] overflow-y-auto">
-                {isGettingRecommendations ? (
-                  <div className="flex items-center justify-center h-full bg-gradient-to-br from-red-50 to-orange-50">
-                    <div className="text-center p-8">
-                      {/* Animated Icon */}
-                      <div className="relative inline-block mb-6">
-                        <div className="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 border-t-red-600"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-3xl">📺</span>
-                        </div>
-                      </div>
-                      
-                      {/* Loading Text */}
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Finding Video Resources</h3>
-                      <p className="text-sm text-gray-600 mb-4">Searching YouTube for the best learning content...</p>
-                      
-                      {/* Progress Dots */}
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                        <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                      </div>
-                    </div>
-                  </div>
-                ) : youtubeRecommendations.length > 0 ? (
-                  <div className="space-y-3">
-                    {youtubeRecommendations.map((video, index) => (
-                      <a
-                        key={index}
-                        href={video.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-colors"
-                      >
-                        <h4 className="font-semibold text-sm text-gray-900 mb-1">{video.title}</h4>
-                        <p className="text-xs text-gray-600">{video.description}</p>
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">📺</div>
-                      <p className="text-sm text-gray-600">Click "Videos" to get YouTube recommendations.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                    <EmptyState icon="video" title="No videos yet" text="Get YouTube tutorials picked for this doubt." action={<button type="button" onClick={handleGetRecommendations} className={btn.primary}>Find videos</button>} />
+                  )}
+                </TabBody>
+              )}
+            </ItemFrame>
           </>
         ) : (
-          <div className="h-[calc(100vh-200px)] bg-white rounded-lg border border-gray-200">
-            <NewDoubtForm
-              onSubmit={handleAddDoubt}
-              // Cancel only makes sense when there is a doubt to go back to.
-              onCancel={selectedDoubt ? () => { setShowAddDoubtForm(false); setAddDoubtError(null); } : undefined}
-              submitting={isAddingDoubt}
-              error={addDoubtError}
-              isFirstDoubt={doubts.length === 0}
-            />
-          </div>
+          <Panel fill>
+            <div className="h-full overflow-y-auto">
+              <NewDoubtForm
+                onSubmit={handleAddDoubt}
+                // Cancel only makes sense when there is a doubt to go back to.
+                onCancel={selectedDoubt ? () => { setShowAddDoubtForm(false); setAddDoubtError(null); } : undefined}
+                submitting={isAddingDoubt}
+                error={addDoubtError}
+                isFirstDoubt={doubts.length === 0}
+              />
+            </div>
+          </Panel>
         )}
-      </div>
-
-      {/* Right Sidebar */}
-      <div className="w-80 bg-white rounded-lg border border-gray-200 p-4 h-[calc(100vh-200px)] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Your Doubts</h3>
-        </div>
-        <button
-          onClick={() => { setShowAddDoubtForm(true); setAddDoubtError(null); }}
-          aria-pressed={showAddDoubtForm || !selectedDoubt}
-          className={`w-full px-4 py-2 text-sm font-medium rounded-md mb-4 transition-colors ${
-            showAddDoubtForm || !selectedDoubt
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {showAddDoubtForm || !selectedDoubt ? 'Writing a new doubt…' : '+ Add Doubt'}
-        </button>
-
-        {/* Doubts List */}
-        {doubts.length > 0 ? (
-          <div className="space-y-3">
-            {doubts.map((doubt) => (
-              <div
-                key={doubt._id}
-                onClick={() => { setSelectedDoubt(doubt); setShowAddDoubtForm(false); }}
-                className={`relative p-3 rounded-lg cursor-pointer border transition-all ${
-                  selectedDoubt?._id === doubt._id && !showAddDoubtForm
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-gray-50 text-gray-900 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteDoubt(doubt._id, doubt.title);
-                  }}
-                  className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-red-600 hover:bg-red-50 rounded transition-colors"
-                >
-                  🗑️
-                </button>
-                <div className="font-semibold text-sm mb-1 pr-8">{doubt.title}</div>
-                <div className="text-xs opacity-75 mb-1 line-clamp-2">{doubt.description}</div>
-                <div className="text-xs opacity-75">
-                  Added {new Date(doubt.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-3">💭</div>
-            <p className="text-sm font-semibold text-gray-900 mb-1">No doubts yet</p>
-            <p className="text-xs text-gray-600">Fill in the form to add your first one</p>
-          </div>
-        )}
-      </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg text-sm font-medium z-50 ${
-          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-        }`}>
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
-        </div>
-      )}
-    </div>
+      </Workspace>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </>
   );
 };
 

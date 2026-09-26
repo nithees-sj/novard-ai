@@ -50,13 +50,13 @@ const Doubts = () => {
         <div className="ml-64 flex-1 p-8">
 
           {/* Breadcrumb */}
-          <div className="flex items-center text-sm text-gray-500 mb-6">
-            <span
-              onClick={() => setActiveView('landing')}
-              className={`cursor-pointer hover:text-blue-600 ${activeView === 'landing' ? 'text-gray-900 font-medium' : ''}`}
-            >
+          <div className="flex items-center text-sm text-gray-500 mb-4">
+            <button type="button" onClick={() => navigate('/home')} className="flex items-center gap-1.5 hover:text-blue-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
               Dashboard
-            </span>
+            </button>
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -176,16 +176,6 @@ const Doubts = () => {
           {/* Notes Inline View */}
           {activeView === 'notes' && (
             <div>
-              {/* Back Button */}
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Doubts & Learning</span>
-              </button>
 
               <NotesInlineView />
             </div>
@@ -194,16 +184,6 @@ const Doubts = () => {
           {/* Doubt Clearance Inline View */}
           {activeView === 'doubtClearance' && (
             <div>
-              {/* Back Button */}
-              <button
-                onClick={() => setActiveView('landing')}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-sm font-medium">Back to Doubts & Learning</span>
-              </button>
 
               <DoubtClearanceInlineView />
             </div>

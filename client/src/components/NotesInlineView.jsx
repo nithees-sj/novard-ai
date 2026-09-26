@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import MarkdownView from './MarkdownView';
-import SummaryHeader from './SummaryHeader';
+import {
+  Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
+  QuizRunner, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
+} from './learning/LearningUI';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 
@@ -12,7 +14,7 @@ const NotesInlineView = () => {
   const [notes, setNotes] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -92,7 +94,7 @@ const NotesInlineView = () => {
     formData.append('title', file.name);
     formData.append('userId', localStorage.getItem('email') || 'temp-user-id');
     try {
-      setIsLoading(true);
+      setIsUploading(true);
       const response = await axios.post(`${apiUrl}/upload-notes`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -104,49 +106,33 @@ const NotesInlineView = () => {
       console.error('Error uploading notes:', error);
       showToast('Error uploading notes. Please try again.', 'error');
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedNote) return;
-    
-    const messageText = newMessage.trim(); // Preserve the message text
-    console.log('Sending message:', messageText);
-    console.log('Selected note ID:', selectedNote._id);
-    
+  // Returns false on failure so the chat box can restore what was typed.
+  const handleSendMessage = async (messageText) => {
+    if (!messageText || !selectedNote) return false;
     const userMessage = { role: 'user', content: messageText };
     const updatedMessages = [...chatMessages, userMessage];
-    
-    // Update UI immediately
     setChatMessages(updatedMessages);
-    setNewMessage('');
     setIsLoading(true);
-    
     try {
       const response = await axios.post(`${apiUrl}/chat-with-notes`, {
         noteId: selectedNote._id,
-        message: messageText, // Use preserved text
+        message: messageText,
         chatHistory: chatMessages
       });
-      
-      console.log('API Response:', response.data);
-      
-      if (response.data && response.data.response) {
-        const botMessage = { role: 'assistant', content: response.data.response };
-        const finalMessages = [...updatedMessages, botMessage];
-        setChatMessages(finalMessages);
-        await loadUserNotes();
-      } else {
-        console.error('Invalid API response format:', response.data);
-        showToast('Received invalid response from server');
-      }
+      if (!response.data?.response) throw new Error('Invalid response from server');
+      setChatMessages([...updatedMessages, { role: 'assistant', content: response.data.response }]);
+      await loadUserNotes();
+      return true;
     } catch (error) {
       console.error('Error sending message:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      showToast('Error sending message. Please try again.');
-      // Revert the user message if there was an error
+      showToast('Could not send your message. Please try again.');
       setChatMessages(chatMessages);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -266,403 +252,151 @@ const NotesInlineView = () => {
   const selectQuiz = (quiz) => {
     setCurrentQuiz(quiz.questions);
     setCurrentQuizId(quiz.quizId);
-    setQuizAnswers(quiz.userAnswers || {});
+    setQuizAnswers(Object.fromEntries(Object.entries(quiz.userAnswers || {}).map(([k, v]) => [k, Number(v)])));
     setQuizScore(quiz.score || null);
   };
 
+  const onTab = (id) => {
+    if (id === 'read') setActiveTab('read');
+    else if (id === 'summarizer') handleSummarize();
+    else if (id === 'quiz') handleGenerateQuiz();
+  };
+  const quizResult = quizScore ? { correct: quizScore.correct, total: quizScore.total } : null;
+  const isActive = (note) => selectedNote?._id === note._id || (selectedNote?.id && selectedNote.id === note.id);
+
   return (
-    <div className="flex gap-6">
-      {/* Main Content */}
-      <div className="flex-1">
+    <>
+      <input type="file" ref={fileInputRef} accept=".pdf" onChange={handleFileUpload} className="hidden" />
+      <Workspace
+        side={(
+          <SideList
+            title={sidebarTab === 'notes' ? 'Your notes' : 'Quizzes'}
+            count={sidebarTab === 'notes' ? notes.length : (selectedNote?.quizzes?.length || 0)}
+            action={(
+              <div className="space-y-3">
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`${btn.primary} w-full`}>
+                  {isUploading ? <><Spinner /> Uploading and reading PDF…</> : <><Icon name="upload" /> Upload a PDF</>}
+                </button>
+                <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1" role="tablist">
+                  {[['notes', 'Notes'], ['quizzes', 'Quizzes']].map(([id, label]) => (
+                    <button key={id} type="button" role="tab" aria-selected={sidebarTab === id} onClick={() => setSidebarTab(id)}
+                      className={`rounded-md py-1.5 text-sm font-medium transition ${sidebarTab === id ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          >
+            {sidebarTab === 'notes' ? (
+              notes.length > 0 ? notes.map((note) => (
+                <ListItem
+                  key={note._id || note.id}
+                  active={isActive(note)}
+                  title={note.title}
+                  meta={formatDate(note.uploadedAt)}
+                  badges={<>
+                    {note.summary && <Badge tone="green">Summary</Badge>}
+                    {note.quizzes?.length > 0 && <Badge tone="blue">{note.quizzes.length} {note.quizzes.length === 1 ? 'quiz' : 'quizzes'}</Badge>}
+                  </>}
+                  onSelect={() => handleNoteSelect(note)}
+                  onDelete={() => handleDeleteNote(note._id || note.id, note.title)}
+                />
+              )) : <ListEmpty icon="book" title="No notes yet" text="Upload a PDF (up to 2 MB) to get started." />
+            ) : selectedNote?.quizzes?.length > 0 ? (
+              selectedNote.quizzes.map((quiz, index) => (
+                <ListItem
+                  key={quiz.quizId || index}
+                  active={currentQuizId === quiz.quizId && activeTab === 'quiz'}
+                  title={`Quiz ${index + 1}`}
+                  subtitle={selectedNote.title}
+                  meta={formatDate(quiz.createdAt)}
+                  badges={quiz.score?.total
+                    ? <Badge tone={quiz.score.percentage >= 70 ? 'green' : 'amber'}>{quiz.score.percentage}%</Badge>
+                    : <Badge>Not taken</Badge>}
+                  onSelect={() => { selectQuiz(quiz); setActiveTab('quiz'); }}
+                />
+              ))
+            ) : (
+              <ListEmpty icon="quiz" title={selectedNote ? 'No quizzes yet' : 'Select a note'} text={selectedNote ? 'Open the Quiz tab to create one.' : 'Choose a note from the Notes tab.'} />
+            )}
+          </SideList>
+        )}
+      >
         {selectedNote ? (
           <>
-            {/* Header with Note Title and Tabs */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 truncate">{selectedNote.title}</h2>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveTab('read')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
-                    activeTab === 'read'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  Read
-                </button>
-                <button
-                  onClick={handleSummarize}
-                  disabled={isLoading}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
-                    activeTab === 'summarizer'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Summarize
-                </button>
-                <button
-                  onClick={handleGenerateQuiz}
-                  disabled={isLoading}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
-                    activeTab === 'quiz'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  Quiz
-                </button>
-              </div>
-            </div>
+            <ItemFrame
+              icon="book"
+              title={selectedNote.title}
+              meta={`PDF notes · uploaded ${formatDate(selectedNote.uploadedAt)}`}
+              tabs={(
+                <TabBar
+                  size="sm"
+                  active={activeTab}
+                  onChange={onTab}
+                  tabs={[
+                    { id: 'read', label: 'Chat', icon: 'chat' },
+                    { id: 'summarizer', label: 'Summary', icon: 'summary', busy: isSummarizing },
+                    { id: 'quiz', label: 'Quiz', icon: 'quiz', busy: isGeneratingQuiz },
+                  ]}
+                />
+              )}
+            >
+              {activeTab === 'read' && (
+                <ChatPanel
+                  messages={chatMessages}
+                  sending={isLoading}
+                  onSend={handleSendMessage}
+                  placeholder="Ask a question about your notes…"
+                  emptyTitle="Chat with your notes"
+                  emptyText="Ask anything about this PDF - the answers come from its content."
+                  suggestions={['Summarise the main topics', 'Explain the hardest concept simply', 'What might come up in an exam?']}
+                />
+              )}
 
-            {/* Read/Chat Tab */}
-            {activeTab === 'read' && (
-              <div className="bg-white rounded-lg border border-gray-200 h-[calc(100vh-340px)] flex flex-col">
-                <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                  {Array.isArray(chatMessages) && chatMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] min-w-0 px-4 py-3 rounded-lg text-sm ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
-                        }`}
-                      >
-                        {message.role === 'user' ? (
-                          <div className="whitespace-pre-wrap break-words">
-                            {message.content}
-                          </div>
-                        ) : (
-                          <MarkdownView content={message.content} />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 px-4 py-3 rounded-lg text-sm text-gray-600 border border-gray-200">
-                        Thinking...
-                      </div>
-                    </div>
+              {activeTab === 'summarizer' && (
+                <TabBody>
+                  {isSummarizing ? (
+                    <GeneratingState icon="summary" title="Summarising your notes" hint="Reading the PDF and writing a structured summary with a diagram. Longer notes can take up to 30 seconds." />
+                  ) : summary ? (
+                    <SummaryView icon="summary" title="Summary" content={summary} />
+                  ) : (
+                    <EmptyState icon="summary" title="No summary yet" text="Generate a structured summary of this note." action={<button type="button" onClick={handleSummarize} className={btn.primary}>Generate summary</button>} />
                   )}
-                  {chatMessages.length === 0 && !isLoading && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <div className="text-4xl mb-4">💬</div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Start a Conversation</h3>
-                        <p className="text-sm text-gray-600">Ask questions about your notes and get instant answers.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder="Ask a question about your notes..."
-                      className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                </TabBody>
+              )}
+
+              {activeTab === 'quiz' && (
+                <TabBody>
+                  {isGeneratingQuiz ? (
+                    <GeneratingState icon="quiz" title="Building your quiz" hint="Writing questions from across your notes. This usually takes 10-30 seconds." />
+                  ) : currentQuiz ? (
+                    <QuizRunner
+                      questions={currentQuiz}
+                      answers={quizAnswers}
+                      onAnswer={handleQuizAnswer}
+                      onSubmit={handleSubmitQuiz}
+                      result={quizResult}
+                      onRetry={handleGenerateQuiz}
                     />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={isLoading || !newMessage.trim()}
-                      className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Summary Tab - Structured Display */}
-            {activeTab === 'summarizer' && (
-              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 h-[calc(100vh-340px)] overflow-y-auto">
-                {isSummarizing ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">📝</div>
-                      <p className="text-sm text-gray-600">Generating summary...</p>
+                  ) : (
+                    <div className="h-full overflow-y-auto p-6">
+                      <QuizSetup source="notes" itemId={selectedNote._id} topic={selectedNote.title} onStart={confirmGenerateQuiz} starting={isGeneratingQuiz} error={quizError} />
                     </div>
-                  </div>
-                ) : summary ? (
-                  <div className="space-y-4">
-                    <SummaryHeader title="Summary Overview" subtitle={selectedNote.title} />
-                    <MarkdownView content={summary} size="base" />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">📝</div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Summary Yet</h3>
-                      <p className="text-sm text-gray-600">Click "Summarize" to generate a summary of this note.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Quiz Tab */}
-            {activeTab === 'quiz' && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 h-[calc(100vh-340px)] overflow-y-auto">
-                {currentQuiz ? (
-                  <>
-                    {quizScore ? (
-                      <div className="text-center p-8 bg-blue-50 rounded-lg">
-                        <div className="text-5xl mb-4">🎯</div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Complete!</h3>
-                        <p className="text-4xl font-bold text-blue-600 mb-4">{quizScore.percentage}%</p>
-                        <p className="text-sm text-gray-600 mb-6">
-                          You got {quizScore.correct} out of {quizScore.total} questions correct
-                        </p>
-                        <button
-                          onClick={() => {
-                            setQuizScore(null);
-                            setQuizAnswers({});
-                            setCurrentQuiz(null);
-                          }}
-                          className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
-                        >
-                          See all your marks · Try another quiz
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {currentQuiz.map((question, qIndex) => (
-                          <div key={qIndex} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="font-semibold text-sm text-gray-900 mb-3">
-                              {qIndex + 1}. {question.question}
-                            </p>
-                            <div className="space-y-2">
-                              {question.options.map((option, oIndex) => (
-                                <button
-                                  key={oIndex}
-                                  onClick={() => handleQuizAnswer(qIndex, oIndex)}
-                                  className={`w-full text-left px-3 py-2 text-sm rounded-md border transition-colors ${
-                                    quizAnswers[qIndex] === oIndex
-                                      ? 'bg-blue-600 text-white border-blue-600'
-                                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                                  }`}
-                                >
-                                  {option}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          onClick={handleSubmitQuiz}
-                          className="w-full px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                        >
-                          Submit Quiz
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <QuizSetup
-                    source="notes"
-                    itemId={selectedNote._id}
-                    topic={selectedNote.title}
-                    onStart={confirmGenerateQuiz}
-                    starting={isGeneratingQuiz}
-                    error={quizError}
-                  />
-                )}
-              </div>
-            )}
+                  )}
+                </TabBody>
+              )}
+            </ItemFrame>
           </>
         ) : (
-          <div className="flex items-center justify-center h-[calc(100vh-260px)] bg-white rounded-lg border border-gray-200">
-            <div className="text-center">
-              <div className="text-6xl mb-4">📚</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Notes & Quiz</h2>
-              <p className="text-sm text-gray-600">Upload a PDF to start reading, get summaries, or create quizzes.</p>
-            </div>
-          </div>
+          <Panel fill>
+            <EmptyState icon="book" title="Welcome to Notes & Quiz" text="Upload a PDF to chat with it, get a summary and test yourself with a quiz."
+              action={<button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={btn.primary}>{isUploading ? <><Spinner /> Uploading…</> : <><Icon name="upload" /> Upload your first PDF</>}</button>} />
+          </Panel>
         )}
-      </div>
-
-      {/* Right Sidebar */}
-      <div className="w-80 bg-white rounded-lg border border-gray-200 p-4 h-[calc(100vh-260px)] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium text-sm"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add New Note
-          </button>
-        </div>
-
-        {/* Sidebar Tabs */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setSidebarTab('notes')}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              sidebarTab === 'notes'
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Notes
-          </button>
-          <button
-            onClick={() => setSidebarTab('quizzes')}
-            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              sidebarTab === 'quizzes'
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Quizzes
-          </button>
-        </div>
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept=".pdf"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-
-        {/* Notes List */}
-        {sidebarTab === 'notes' && (
-          Array.isArray(notes) && notes.length > 0 ? (
-            <div className="space-y-2">
-              {notes.map((note) => (
-                <div
-                  key={note._id || note.id}
-                  onClick={() => handleNoteSelect(note)}
-                  className={`relative p-3 rounded-lg cursor-pointer transition-all border ${
-                    selectedNote?._id === note._id || selectedNote?.id === note.id
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-gray-50 text-gray-900 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteNote(note._id || note.id, note.title);
-                    }}
-                    className="absolute top-2 right-2 p-1 text-red-600 hover:bg-red-50 rounded"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                  <div className="font-semibold text-sm mb-1 pr-8 truncate">{note.title}</div>
-                  <div className="text-xs opacity-75 mb-2">
-                    {new Date(note.uploadedAt).toLocaleDateString()}
-                  </div>
-                  <div className="flex gap-1 flex-wrap">
-                    {note.summary && (
-                      <div className={`text-xs px-2 py-1 rounded inline-block ${
-                        selectedNote?._id === note._id ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800'
-                      }`}>
-                        Summary
-                      </div>
-                    )}
-                    {note.quizzes && note.quizzes.length > 0 && (
-                      <div className={`text-xs px-2 py-1 rounded inline-block ${
-                        selectedNote?._id === note._id ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {note.quizzes.length} Quiz{note.quizzes.length > 1 ? 'zes' : ''}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-3">📄</div>
-              <p className="text-sm font-semibold text-gray-900 mb-1">No notes yet</p>
-              <p className="text-xs text-gray-600">Click "Add New Note" to upload your first PDF</p>
-            </div>
-          )
-        )}
-
-        {/* Quizzes List */}
-        {sidebarTab === 'quizzes' && (
-          selectedNote && selectedNote.quizzes && selectedNote.quizzes.length > 0 ? (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                {selectedNote.title}
-              </h4>
-              {selectedNote.quizzes.map((quiz, index) => (
-                <div
-                  key={quiz.quizId}
-                  onClick={() => {
-                    selectQuiz(quiz);
-                    setActiveTab('quiz');
-                  }}
-                  className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 border border-gray-200"
-                >
-                  <div className="font-semibold text-sm text-gray-900 mb-1">
-                    Quiz #{index + 1}
-                  </div>
-                  <div className="text-xs text-gray-600 mb-2">
-                    {new Date(quiz.createdAt).toLocaleDateString()}
-                  </div>
-                  {quiz.score && (
-                    <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded inline-block">
-                      Score: {quiz.score.percentage}%
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-3">🧠</div>
-              <p className="text-sm font-semibold text-gray-900 mb-1">
-                {selectedNote ? 'No quizzes yet' : 'Select a note'}
-              </p>
-              <p className="text-xs text-gray-600">
-                {selectedNote ? 'Generate a quiz to see it here' : 'Choose a note from the Notes tab'}
-              </p>
-            </div>
-          )
-        )}
-      </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 px-4 py-3 rounded-md shadow-lg text-sm font-medium z-50 ${
-          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-        }`}>
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
-        </div>
-      )}
-    </div>
+      </Workspace>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </>
   );
 };
 

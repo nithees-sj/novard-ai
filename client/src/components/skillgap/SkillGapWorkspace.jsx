@@ -161,8 +161,8 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
             onClick={() => newAnalysis()}
             aria-pressed={view === 'intake'}
             className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors ${view === 'intake'
-              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+              : 'bg-blue-600 text-white hover:bg-blue-700'}`}
           >
             {view === 'intake' ? 'Starting a new analysis…' : '+ New Analysis'}
           </button>
@@ -178,13 +178,13 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                 type="button"
                 onClick={() => open(s._id)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${active
-                  ? 'bg-indigo-50 border-indigo-200 border-l-4 border-l-indigo-600'
+                  ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600'
                   : 'bg-white border-gray-200 hover:border-gray-300'}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold truncate ${active ? 'text-indigo-800' : 'text-gray-900'}`}>{s.targetRole}</span>
+                  <span className={`text-sm font-semibold truncate ${active ? 'text-blue-800' : 'text-gray-900'}`}>{s.targetRole}</span>
                   {loadingId === s._id
-                    ? <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-200 border-t-indigo-600 animate-spin" aria-hidden="true" />
+                    ? <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-200 border-t-blue-600 animate-spin" aria-hidden="true" />
                     : <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded tabular-nums ${readinessBadge(s.readiness)}`}>{s.readiness}%</span>}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">

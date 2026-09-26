@@ -7,6 +7,7 @@ const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { readQuizOptions, generateQuiz: generateQuizQuestions, sampleContent } = require('../services/quizService');
 const { converse } = require('../ai/conversation');
 const { FORMAT_RULES } = require('../ai/prompts');
+const { contextualTitle } = require('../services/doubtTitle');
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -68,13 +69,17 @@ const getUserDoubtClearances = async (req, res) => {
 
 const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
 
-/** Validate and save a new doubt. Shared by the Doubt Clearance page and the Novard Agent. */
-const createDoubt = async ({ title, description, imageUrl, userId }) => {
-  if (!title?.trim() || !description?.trim() || !userId) {
-    throw badRequest('Title, description, and userId are required');
+/**
+ * Validate and save a new doubt. Shared by the Doubt Clearance page and the Novard Agent.
+ * The title is written by the AI from the question (the student's own title, if any,
+ * is only a hint); `keepTitle` keeps a title that is already specific, e.g. the agent's.
+ */
+const createDoubt = async ({ title, description, imageUrl, userId }, { keepTitle = false } = {}) => {
+  if (!description?.trim() || !userId) {
+    throw badRequest('Describe your doubt, and include userId.');
   }
   // Same limits as the schema, reported clearly instead of as a generic 500.
-  if (title.trim().length > 200) throw badRequest('The title must be 200 characters or fewer.');
+  if (title && title.trim().length > 200) throw badRequest('The title must be 200 characters or fewer.');
   if (description.trim().length > 2000) throw badRequest('The description must be 2000 characters or fewer.');
   let image = null;
   if (imageUrl && String(imageUrl).trim()) {
@@ -87,8 +92,12 @@ const createDoubt = async ({ title, description, imageUrl, userId }) => {
     }
   }
 
+  const finalTitle = keepTitle && title?.trim()
+    ? title.trim()
+    : await contextualTitle({ title, description });
+
   return new DoubtClearance({
-    title: title.trim(),
+    title: finalTitle,
     description: description.trim(),
     imageUrl: image,
     userId,
