@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+import { API_URL, apiFetch } from '../lib/api';
+import { getToken } from '../lib/session';
 
 const TICK_MS = 15 * 1000;      // how often active time is added up
 const FLUSH_MS = 60 * 1000;     // how often it is sent to the server
@@ -31,7 +31,7 @@ const videoPlaying = () =>
  */
 export default function useStudyTimeTracker(userId) {
   useEffect(() => {
-    if (!userId || !apiUrl) return undefined;
+    if (!userId || !API_URL) return undefined;
 
     let lastInput = Date.now();
     let lastTick = Date.now();
@@ -45,13 +45,14 @@ export default function useStudyTimeTracker(userId) {
     };
 
     const send = (day, seconds, { beacon = false } = {}) => {
-      const body = JSON.stringify({ userId, day, seconds });
-      const url = `${apiUrl}/api/usage/heartbeat`;
       if (beacon && navigator.sendBeacon) {
-        navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
+        // sendBeacon cannot set headers, so the session token travels in the body.
+        const body = JSON.stringify({ token: getToken(), day, seconds });
+        navigator.sendBeacon(`${API_URL}/api/usage/heartbeat`, new Blob([body], { type: 'text/plain' }));
         return;
       }
-      fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true })
+      const body = JSON.stringify({ day, seconds });
+      apiFetch('/api/usage/heartbeat', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true })
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           window.dispatchEvent(new CustomEvent(USAGE_EVENT, { detail: { day, seconds } }));

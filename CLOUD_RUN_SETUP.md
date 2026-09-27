@@ -33,6 +33,8 @@ export GCP_REGION=asia-south1
 #   MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/novard-ai
 #   GROQ_API_KEY=your_key
 #   GOOGLE_API_KEY=your_key
+#   JWT_SECRET=a_long_random_secret   (node -e "console.log(require('crypto').randomBytes(48).toString('hex'))")
+# and client/.env has REACT_APP_GOOGLE_CLIENT_ID (the server is given the same value).
 
 # Deploy!
 ./deploy.sh
@@ -94,7 +96,7 @@ gcloud run deploy novard-server \
   --allow-unauthenticated \
   --port=8080 \
   --memory=512Mi \
-  --set-env-vars="NODE_ENV=production,MONGO_URI=your_atlas_uri,GROQ_API_KEY=your_key,GOOGLE_API_KEY=your_key"
+  --set-env-vars="NODE_ENV=production,MONGO_URI=your_atlas_uri,GROQ_API_KEY=your_key,GOOGLE_API_KEY=your_key,JWT_SECRET=your_long_random_secret,GOOGLE_CLIENT_ID=your_google_client_id"
 ```
 
 ### 5. Get Server URL
@@ -205,6 +207,8 @@ Use the production docker-compose:
 export MONGO_URI="mongodb+srv://user:pass@cluster.mongodb.net/novard-ai"
 export GROQ_API_KEY="your_key"
 export GOOGLE_API_KEY="your_key"
+export JWT_SECRET="$(openssl rand -hex 48)"
+export REACT_APP_GOOGLE_CLIENT_ID="your_google_client_id"
 
 docker compose -f docker-compose.prod.yml up --build
 ```
@@ -238,3 +242,12 @@ gcloud run services logs read novard-client --region=asia-south1 --limit=50
 
 - Verify `REACT_APP_API_ENDPOINT` was set correctly during build
 - Inspect the built HTML source to confirm the API URL is embedded
+
+## After deploying the client
+
+Allow only the deployed client to call the API from a browser (deploy.sh does this for you):
+
+```bash
+gcloud run services update novard-server --region=asia-south1 \
+  --update-env-vars="CORS_ORIGINS=https://your-client-url.run.app"
+```

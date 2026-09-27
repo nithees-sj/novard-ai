@@ -5,6 +5,8 @@ const { StringOutputParser } = require('@langchain/core/output_parsers');
 const { BaseListChatMessageHistory } = require('@langchain/core/chat_history');
 const { HumanMessage, AIMessage, SystemMessage } = require('@langchain/core/messages');
 const { MODELS } = require('../config/ai');
+const { env } = require('../config/env');
+const { withRateLimitRetry } = require('./errors');
 
 /**
  * Conversation engine for every chatbot in the app, built on LangChain.
@@ -41,53 +43,13 @@ const MEMORY_INSTRUCTIONS = [
 
 function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6 } = {}) {
   return new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
+    apiKey: env.groqApiKey || 'missing-key',
     model: MODELS[tier] || MODELS.REASONING,
     temperature,
     maxTokens,
     // gpt-oss models are reasoning models; keep the token budget for the answer.
     reasoningEffort: 'low',
   });
-}
-
-// ── rate limits ────────────────────────────────────────────────────────────
-// Groq's free tier allows a few thousand tokens per minute per model. When a
-// request is refused with "try again in 12.3s", waiting that long and retrying
-// is almost always enough, and far better than failing the student's message.
-
-const MAX_RATE_LIMIT_WAIT_S = 30;
-const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
-
-/** Seconds to wait before retrying a rate-limited request, or null if it is not one (or the wait is too long). */
-function rateLimitWait(error) {
-  const text = String(error?.message || '');
-  if (error?.status !== 429 && !/rate limit/i.test(text)) return null;
-  const match = text.match(/try again in (?:(\d+)m)?([\d.]+)s/i);
-  const seconds = match ? (Number(match[1] || 0) * 60 + Number(match[2])) : 10;
-  return seconds <= MAX_RATE_LIMIT_WAIT_S ? Math.ceil(seconds) + 1 : null;
-}
-
-/** Run fn, retrying up to `retries` times on a short rate limit. onWait(seconds) is told before each wait. */
-async function withRateLimitRetry(fn, { retries = 2, onWait } = {}) {
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      return await fn(); // eslint-disable-line no-await-in-loop
-    } catch (error) {
-      const wait = rateLimitWait(error);
-      if (wait === null || attempt >= retries) throw error;
-      onWait?.(wait);
-      await sleep(wait * 1000); // eslint-disable-line no-await-in-loop
-    }
-  }
-}
-
-/** A message safe to show the student for an AI failure; never the raw provider error. */
-function friendlyAIError(error, fallback) {
-  if (rateLimitWait(error) !== null || error?.status === 429 || /rate limit/i.test(String(error?.message))) {
-    return 'The AI is busy right now (usage limit reached). Please try again in a minute.';
-  }
-  const own = error?.status && error.status < 500 && !/^\d{3}\b/.test(String(error.message));
-  return own ? error.message : fallback;
 }
 
 const toLangChain = (m) => (m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content));
@@ -232,12 +194,4 @@ async function converse({ Model, filter, field, timeKey, system, input, tier, ma
   return text;
 }
 
-/** Schema fragment each conversation model adds to persist its memory summary. */
-const memorySchemaFields = {
-  memory: {
-    summary: { type: String, default: '' },
-    summarizedCount: { type: Number, default: 0 },
-  },
-};
-
-module.exports = { converse, chatModel, MongoChatHistory, memorySchemaFields, MEMORY, withRateLimitRetry, rateLimitWait, friendlyAIError, _internal: { estimateTokens, summarize } };
+module.exports = { converse, chatModel, MongoChatHistory, MEMORY, _internal: { estimateTokens, summarize } };

@@ -57,4 +57,7 @@ forumCommentSchema.pre('save', function(next) {
 // Index for efficient querying
 forumCommentSchema.index({ issueId: 1, createdAt: 1 });
 
+// A student's own replies (analytics, profile).
+forumCommentSchema.index({ userEmail: 1 });
+
 module.exports = mongoose.model('ForumComment', forumCommentSchema);

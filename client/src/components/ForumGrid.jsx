@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import IssueCard from './IssueCard';
 import { FORUM_CATEGORIES, FORUM_STATUSES, FORUM_SORTS } from '../lib/forum';
+import { apiJson } from '../lib/api';
+import logger from '../lib/logger';
 
 const PAGE_SIZE = 12;
 const DEFAULTS = { category: 'all', status: 'all', sort: 'newest', query: '' };
@@ -33,7 +35,6 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
   const [status, setStatus] = useState(DEFAULTS.status);
   const [sort, setSort] = useState(DEFAULTS.sort);
 
-  const apiUrl = process.env.REACT_APP_API_ENDPOINT;
   const requestSeq = useRef(0);
 
   // Search as you type, but only once typing pauses.
@@ -51,9 +52,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
       });
       if (query) params.set('q', query);
 
-      const response = await fetch(`${apiUrl}/api/forum/issues?${params}`);
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Failed to load discussions');
+      const data = await apiJson(`/api/forum/issues?${params}`);
 
       // A slower, older request must not overwrite the results of a newer one.
       if (seq !== requestSeq.current) return;
@@ -64,7 +63,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
       setError(null);
     } catch (err) {
       if (seq !== requestSeq.current) return;
-      console.error('Error fetching issues:', err);
+      logger.error('Error fetching issues', err);
       setError(err.message || 'Failed to load discussions');
     } finally {
       if (seq === requestSeq.current) {
@@ -72,7 +71,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
         setLoadingMore(false);
       }
     }
-  }, [apiUrl, category, status, sort, query]);
+  }, [category, status, sort, query]);
 
   useEffect(() => {
     fetchPage(1, false);

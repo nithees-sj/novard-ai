@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { api, errorMessage } from '../lib/api';
+import logger from '../lib/logger';
+import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
   QuizRunner, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
@@ -7,7 +9,6 @@ import {
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
 const NotesInlineView = () => {
@@ -45,20 +46,19 @@ const NotesInlineView = () => {
     }
   }, [selectedNote]);
 
+  // Reloads the list and keeps the open note in step with it (its quizzes and
+  // summary change as the student works); opens the first note if none is open.
   const loadUserNotes = async () => {
     try {
-      const userId = localStorage.getItem('email') || 'temp-user-id';
-      const response = await axios.get(`${apiUrl}/notes/${userId}`);
+      const response = await api.get(`/notes/${encodeURIComponent(currentEmail())}`);
       const notesData = Array.isArray(response.data) ? response.data : [];
       setNotes(notesData);
-      if (notesData.length > 0 && !selectedNote) {
-        setSelectedNote(notesData[0]);
-        setActiveTab('read');
-        setTimeout(() => loadNoteData(notesData[0]), 0);
-      }
+      setSelectedNote((current) => (current
+        ? notesData.find((n) => n._id === current._id) || current
+        : notesData[0] || null));
     } catch (error) {
-      console.error('Error loading notes:', error);
-      setNotes([]);
+      logger.error('Error loading notes', error);
+      showToast(errorMessage(error, 'Could not load your notes.'));
     }
   };
 
@@ -92,19 +92,17 @@ const NotesInlineView = () => {
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('title', file.name);
-    formData.append('userId', localStorage.getItem('email') || 'temp-user-id');
     try {
       setIsUploading(true);
-      const response = await axios.post(`${apiUrl}/upload-notes`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      await loadUserNotes();
-      setSelectedNote(response.data);
+      const { data: created } = await api.post('/upload-notes', formData);
+      // The new note (with its _id) is opened straight away, ready to chat with.
+      setSelectedNote(created);
       setActiveTab('read');
+      await loadUserNotes();
       showToast('PDF uploaded successfully!', 'success');
     } catch (error) {
-      console.error('Error uploading notes:', error);
-      showToast('Error uploading notes. Please try again.', 'error');
+      logger.error('Error uploading notes', error);
+      showToast(errorMessage(error, 'Error uploading notes. Please try again.'), 'error');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -119,18 +117,17 @@ const NotesInlineView = () => {
     setChatMessages(updatedMessages);
     setIsLoading(true);
     try {
-      const response = await axios.post(`${apiUrl}/chat-with-notes`, {
+      const response = await api.post('/chat-with-notes', {
         noteId: selectedNote._id,
         message: messageText,
-        chatHistory: chatMessages
       });
       if (!response.data?.response) throw new Error('Invalid response from server');
       setChatMessages([...updatedMessages, { role: 'assistant', content: response.data.response }]);
       await loadUserNotes();
       return true;
     } catch (error) {
-      console.error('Error sending message:', error);
-      showToast('Could not send your message. Please try again.');
+      logger.error('Error sending message', error);
+      showToast(errorMessage(error, 'Could not send your message. Please try again.'));
       setChatMessages(chatMessages);
       return false;
     } finally {
@@ -148,14 +145,14 @@ const NotesInlineView = () => {
     try {
       setIsSummarizing(true);
       setActiveTab('summarizer');
-      const response = await axios.post(`${apiUrl}/summarize-notes`, {
+      const response = await api.post(`/summarize-notes`, {
         noteId: selectedNote._id
       });
       setSummary(response.data.summary);
       await loadUserNotes();
     } catch (error) {
-      console.error('Error generating summary:', error);
-      showToast('Error generating summary. Please try again.');
+      logger.error('Error generating summary', error);
+      showToast(errorMessage(error, 'Error generating summary. Please try again.'));
     } finally {
       setIsSummarizing(false);
     }
@@ -176,7 +173,7 @@ const NotesInlineView = () => {
     try {
       setIsGeneratingQuiz(true);
       setQuizError(null);
-      const response = await axios.post(`${apiUrl}/generate-quiz`, {
+      const response = await api.post(`/generate-quiz`, {
         noteId: selectedNote._id,
         ...settings
       });
@@ -186,8 +183,8 @@ const NotesInlineView = () => {
       setQuizScore(null);
       await loadUserNotes();
     } catch (error) {
-      console.error('Error generating quiz:', error);
-      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
+      logger.error('Error generating quiz', error);
+      setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -210,7 +207,7 @@ const NotesInlineView = () => {
     };
     setQuizScore(scoreData);
     try {
-      await axios.post(`${apiUrl}/save-quiz-results`, {
+      await api.post(`/save-quiz-results`, {
         noteId: selectedNote._id,
         quizId: currentQuizId,
         userAnswers: quizAnswers,
@@ -218,7 +215,8 @@ const NotesInlineView = () => {
       });
       await loadUserNotes();
     } catch (error) {
-      console.error('Error saving quiz results:', error);
+      logger.error('Error saving quiz results', error);
+      showToast(errorMessage(error, 'Your score could not be saved.'));
     }
   };
 
@@ -228,7 +226,6 @@ const NotesInlineView = () => {
     setQuizAnswers({});
     setCurrentQuiz(null);
     setSelectedNote(note);
-    setTimeout(() => loadNoteData(note), 0);
   };
 
   const handleDeleteNote = async (noteId, noteTitle) => {
@@ -236,16 +233,16 @@ const NotesInlineView = () => {
       return;
     }
     try {
-      await axios.delete(`${apiUrl}/notes/${noteId}`);
-      showToast('Note deleted successfully!', 'success');
-      await loadUserNotes();
+      await api.delete(`/notes/${noteId}`);
       if (selectedNote && (selectedNote._id === noteId || selectedNote.id === noteId)) {
         setSelectedNote(null);
         setActiveTab('read');
       }
+      await loadUserNotes();
+      showToast('Note deleted successfully!', 'success');
     } catch (error) {
-      console.error('Error deleting note:', error);
-      showToast('Error deleting note. Please try again.');
+      logger.error('Error deleting note', error);
+      showToast(errorMessage(error, 'Error deleting note. Please try again.'));
     }
   };
 
@@ -266,7 +263,7 @@ const NotesInlineView = () => {
 
   return (
     <>
-      <input type="file" ref={fileInputRef} accept=".pdf" onChange={handleFileUpload} className="hidden" />
+      <input type="file" ref={fileInputRef} accept=".pdf,application/pdf" onChange={handleFileUpload} className="hidden" aria-label="Choose a PDF to upload" />
       <Workspace
         side={(
           <SideList

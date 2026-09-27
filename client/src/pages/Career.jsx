@@ -53,21 +53,21 @@ const Career = () => {
 
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-6">
-            <span
+            <button type="button"
               className="cursor-pointer hover:text-blue-600"
               onClick={() => navigate('/home')}
             >
               Dashboard
-            </span>
+            </button>
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span
+            <button type="button"
               className={`cursor-pointer hover:text-blue-600 ${activeView === 'landing' ? 'text-gray-900 font-medium' : ''}`}
               onClick={() => setActiveView('landing')}
             >
               Career Tools
-            </span>
+            </button>
             {activeView === 'roadmap' && (
               <>
                 <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

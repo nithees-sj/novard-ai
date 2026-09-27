@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api, errorMessage } from '../lib/api';
+import logger from '../lib/logger';
+import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, GeneratingState, EmptyState, SideList, ListItem, ListEmpty, Badge, Toast, Icon, btn, inputClass,
 } from './learning/LearningUI';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const VideoLibraryInlineView = () => {
   const [videoRequests, setVideoRequests] = useState([]);
@@ -32,8 +33,7 @@ const VideoLibraryInlineView = () => {
 
   const loadUserVideoRequests = async () => {
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/educational-video-requests/${userId}`);
+      const response = await api.get(`/educational-video-requests/${encodeURIComponent(currentEmail())}`);
       const videoRequestsData = Array.isArray(response.data) ? response.data : [];
       setVideoRequests(videoRequestsData);
 
@@ -42,8 +42,8 @@ const VideoLibraryInlineView = () => {
         getRecommendedVideos(videoRequestsData[0], false);
       }
     } catch (error) {
-      console.error('Error loading video requests:', error);
-      setVideoRequests([]);
+      logger.error('Error loading video requests', error);
+      showToast(errorMessage(error, 'Could not load your requests.'), 'error');
     }
   };
 
@@ -59,7 +59,7 @@ const VideoLibraryInlineView = () => {
     
     setIsLoading(true);
     try {
-      const response = await axios.post(`${apiUrl}/recommend-educational-videos`, {
+      const response = await api.post(`/recommend-educational-videos`, {
         title: videoRequest.title,
         description: videoRequest.description,
         platform: videoRequest.platform || 'youtube'
@@ -68,8 +68,8 @@ const VideoLibraryInlineView = () => {
       setRecommendedVideos(videos);
       setVideoCache(prev => ({ ...prev, [requestId]: videos }));
     } catch (error) {
-      console.error('Error getting recommended videos:', error);
-      showToast('Error getting video recommendations', 'error');
+      logger.error('Error getting recommended videos', error);
+      showToast(errorMessage(error, 'Error getting video recommendations'), 'error');
       setRecommendedVideos([]);
     } finally {
       setIsLoading(false);
@@ -86,19 +86,15 @@ const VideoLibraryInlineView = () => {
 
     setIsLoading(true);
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      await axios.post(`${apiUrl}/educational-video-requests`, {
-        ...newVideoRequest,
-        userId: userId
-      });
+      await api.post('/educational-video-requests', newVideoRequest);
 
       await loadUserVideoRequests();
       setShowAddVideoRequest(false);
       setNewVideoRequest({ title: '', description: '', platform: 'youtube' });
       showToast('Video request added successfully!', 'success');
     } catch (error) {
-      console.error('Error adding video request:', error);
-      showToast('Error adding video request. Please try again.', 'error');
+      logger.error('Error adding video request', error);
+      showToast(errorMessage(error, 'Error adding video request. Please try again.'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +104,7 @@ const VideoLibraryInlineView = () => {
     if (!window.confirm(`Delete "${videoRequestTitle}"?`)) return;
 
     try {
-      await axios.delete(`${apiUrl}/educational-video-requests/${videoRequestId}`);
+      await api.delete(`/educational-video-requests/${videoRequestId}`);
       await loadUserVideoRequests();
 
       if (selectedVideoRequest && selectedVideoRequest._id === videoRequestId) {
@@ -123,8 +119,8 @@ const VideoLibraryInlineView = () => {
       });
       showToast('Video request deleted successfully!', 'success');
     } catch (error) {
-      console.error('Error deleting video request:', error);
-      showToast('Error deleting video request.', 'error');
+      logger.error('Error deleting video request', error);
+      showToast(errorMessage(error, 'Error deleting video request.'), 'error');
     }
   };
 

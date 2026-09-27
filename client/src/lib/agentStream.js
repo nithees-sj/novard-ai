@@ -1,4 +1,4 @@
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+import { apiFetch, apiJson } from './api';
 
 /**
  * Send one message to the Novard Agent and read its Server-Sent Events
@@ -8,11 +8,11 @@ const apiUrl = process.env.REACT_APP_API_ENDPOINT;
  * onSuperseded, onTitle, onDone, onError.
  * Pass an AbortSignal to stop generation; the server keeps what was written.
  */
-export async function streamAgentReply({ userId, userName, conversationId, message, signal }, handlers = {}) {
-  const res = await fetch(`${apiUrl}/api/agent/chat`, {
+export async function streamAgentReply({ conversationId, message, signal }, handlers = {}) {
+  const res = await apiFetch('/api/agent/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, userName, conversationId, message }),
+    body: JSON.stringify({ conversationId, message }),
     signal,
   });
 
@@ -62,20 +62,13 @@ export async function streamAgentReply({ userId, userName, conversationId, messa
   if (buffer.trim()) dispatch(buffer);
 }
 
-const json = async (res) => {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { data });
-  return data;
-};
+const enc = encodeURIComponent;
 
+/** Chat history and action cards. The student is identified by the session, not by these arguments. */
 export const agentApi = {
-  list: (userId) => fetch(`${apiUrl}/api/agent/conversations/user/${encodeURIComponent(userId)}`).then(json),
-  get: (id, userId) => fetch(`${apiUrl}/api/agent/conversations/${id}?userId=${encodeURIComponent(userId)}`).then(json),
-  rename: (id, userId, title) => fetch(`${apiUrl}/api/agent/conversations/${id}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, title }),
-  }).then(json),
-  remove: (id, userId) => fetch(`${apiUrl}/api/agent/conversations/${id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' }).then(json),
-  decide: (id, actionId, body) => fetch(`${apiUrl}/api/agent/conversations/${id}/actions/${actionId}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  }).then(json),
+  list: (userId) => apiJson(`/api/agent/conversations/user/${enc(userId)}`),
+  get: (id) => apiJson(`/api/agent/conversations/${enc(id)}`),
+  rename: (id, userId, title) => apiJson(`/api/agent/conversations/${enc(id)}`, { method: 'PATCH', body: { title } }),
+  remove: (id) => apiJson(`/api/agent/conversations/${enc(id)}`, { method: 'DELETE' }),
+  decide: (id, actionId, body) => apiJson(`/api/agent/conversations/${enc(id)}/actions/${enc(actionId)}`, { method: 'POST', body }),
 };

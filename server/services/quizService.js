@@ -1,8 +1,7 @@
-const Groq = require('groq-sdk');
-const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const { MODELS } = require('../config/ai');
+const { complete } = require('../ai/groqClient');
 const { parseModelJson } = require('../utils/parseModelJson');
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const logger = require('../utils/logger');
 
 /**
  * One quiz generator for every section (notes, videos, doubts, learning plans),
@@ -129,18 +128,16 @@ function buildPrompt({ subject, content, options, count, avoid }) {
 }
 
 async function requestQuestions({ subject, content, options, count, avoid, model }) {
-  const completion = await groq.chat.completions.create({
+  const text = await complete({
     messages: [
       { role: 'system', content: 'You are an expert educator who writes accurate, well-calibrated quiz questions. You always return valid JSON.' },
       { role: 'user', content: buildPrompt({ subject, content, options, count, avoid }) },
     ],
     model,
-    ...GROQ_DEFAULTS,
     temperature: 0.6,
     // ~350 tokens per question with its explanation, plus headroom.
-    max_tokens: Math.min(8000, 800 + count * 350),
+    maxTokens: Math.min(8000, 800 + count * 350),
   });
-  const text = completion.choices[0]?.message?.content || '';
   const parsed = parseModelJson(text, { context: 'quiz' });
   const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.questions) ? parsed.questions : [];
   return list.map(normaliseQuestion).filter(Boolean);
@@ -169,7 +166,7 @@ async function generateQuiz({ subject, content, options, model = MODELS.REASONIN
         }
       });
     } catch (error) {
-      console.warn('Quiz top-up request failed:', error.message);
+      logger.warn('Quiz top-up request failed', { error: error.message });
     }
   }
 

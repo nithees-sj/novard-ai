@@ -1,6 +1,12 @@
 node_modules
 npm-debug.log*
 .env
+.env.*
+!.env.example
 .git
 .gitignore
 Dockerfile
+tests
+coverage
+uploads
+eslint.config.js

@@ -1,8 +1,10 @@
-const Groq = require('groq-sdk');
-const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const SkillGapSession = require('../models/skillGapSession');
+const { MODELS } = require('../config/ai');
+const { complete } = require('../ai/groqClient');
 const { parseModelJson } = require('../utils/parseModelJson');
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const { converse } = require('../ai/conversation');
+const { badRequest, notFound } = require('../utils/httpError');
+const { objectId, text } = require('../utils/validate');
 
 /**
  * Skill-gap coach.
@@ -125,17 +127,17 @@ async function analyse(profile) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const completion = await groq.chat.completions.create({
+      // eslint-disable-next-line no-await-in-loop
+      const reply = await complete({
         messages: [
           { role: 'system', content: 'You are an experienced tech hiring manager and career coach. You are specific, current and honest. You always return valid JSON.' },
           { role: 'user', content: analysisPrompt(profile) },
         ],
         model: MODELS.REASONING,
-        ...GROQ_DEFAULTS,
         temperature: 0.4,
-        max_tokens: 5000,
+        maxTokens: 5000,
       });
-      const analysis = normaliseAnalysis(parseModelJson(completion.choices[0]?.message?.content || '', { context: 'skill analysis' }), profile);
+      const analysis = normaliseAnalysis(parseModelJson(reply, { context: 'skill analysis' }), profile);
       if (analysis) return analysis;
       lastError = new Error('Analysis came back incomplete');
     } catch (error) {
@@ -199,6 +201,73 @@ function coachSystemPrompt(profile, analysis) {
   ].join('\n');
 }
 
+// ── sessions ───────────────────────────────────────────────────────────────
+
+/** Analyse a profile and save a new coaching session. Shared by the Skill Gap page and the Novard Agent. */
+async function startSession(userId, body) {
+  if (!userId) throw badRequest('userId is required');
+  const profile = readProfile(body);
+  if (profile.targetRole.length < 2) throw badRequest('Tell the coach which role you are aiming for.');
+  const analysis = await analyse(profile);
+  return SkillGapSession.create({
+    userId,
+    profile,
+    analysis,
+    messages: [{ role: 'assistant', content: openingMessage(profile, analysis) }],
+  });
+}
+
+async function listSessions(userId) {
+  const docs = await SkillGapSession.find({ userId })
+    .sort({ updatedAt: -1 })
+    .select('profile.targetRole analysis.readiness messages.role updatedAt createdAt')
+    .lean();
+  return docs.map((d) => ({
+    _id: d._id,
+    targetRole: d.profile?.targetRole,
+    readiness: d.analysis?.readiness,
+    messageCount: (d.messages || []).length,
+    updatedAt: d.updatedAt,
+  }));
+}
+
+async function getSession(userId, id) {
+  const doc = await SkillGapSession.findOne({ _id: objectId(id, 'analysis id'), userId }).select('-memory').lean();
+  if (!doc) throw notFound('Analysis not found');
+  return doc;
+}
+
+/** One coaching turn, with memory of the whole chat (older turns summarised). */
+async function sendCoachMessage(userId, id, message) {
+  const input = text(message, 'Message', { max: 4000, collapse: false });
+  const session = await SkillGapSession.findOne({ _id: objectId(id, 'analysis id'), userId }).select('profile analysis').lean();
+  if (!session) throw notFound('Analysis not found');
+
+  const content = await converse({
+    Model: SkillGapSession,
+    filter: { _id: session._id, userId },
+    field: 'messages',
+    timeKey: 'createdAt',
+    system: coachSystemPrompt(session.profile, session.analysis),
+    input,
+    tier: 'REASONING',
+    maxTokens: 3000,
+    temperature: 0.6,
+  });
+
+  const saved = await SkillGapSession.findOneAndUpdate(
+    { _id: session._id },
+    { $set: { updatedAt: new Date() } },
+    { new: true, projection: { messages: { $slice: -2 } } }
+  ).lean();
+  const [userMessage, assistantMessage] = saved?.messages || [];
+  return { userMessage, assistantMessage: assistantMessage || { role: 'assistant', content, createdAt: new Date() } };
+}
+
+async function deleteSession(userId, id) {
+  const result = await SkillGapSession.deleteOne({ _id: objectId(id, 'analysis id'), userId });
+  if (!result.deletedCount) throw notFound('Analysis not found');
+}
 
 module.exports = {
   EXPERIENCE,
@@ -206,5 +275,10 @@ module.exports = {
   analyse,
   openingMessage,
   coachSystemPrompt,
+  startSession,
+  listSessions,
+  getSession,
+  sendCoachMessage,
+  deleteSession,
   _internal: { normaliseAnalysis, coachSystemPrompt },
 };

@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../lib/api';
+import logger from '../../lib/logger';
+import { currentEmail } from '../../lib/session';
 import { readOpenParam, clearOpenParam } from '../../lib/openParam';
 import RoadmapForm from './RoadmapForm';
 import RoadmapView from './RoadmapView';
 import { REFERENCE_ROADMAPS } from '../../lib/referenceRoadmaps';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
-const userId = () => localStorage.getItem('email') || 'demo-user';
+const userId = () => currentEmail();
 
 /**
  * Smart Roadmap: generate a personalised roadmap from the student's target
@@ -31,10 +32,10 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
 
   const loadList = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${apiUrl}/api/roadmaps/user/${encodeURIComponent(userId())}`);
+      const { data } = await api.get(`/api/roadmaps/user/${encodeURIComponent(userId())}`);
       setList(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error loading roadmaps:', err);
+      logger.error('Error loading roadmaps', err);
     }
   }, []);
 
@@ -44,7 +45,7 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     setLoadingId(id);
     setError(null);
     try {
-      const { data } = await axios.get(`${apiUrl}/api/roadmaps/${id}`, { params: { userId: userId() } });
+      const { data } = await api.get(`/api/roadmaps/${id}`, { params: { userId: userId() } });
       setCurrent(data);
       setView('roadmap');
     } catch (err) {
@@ -67,7 +68,7 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     setGenerating(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${apiUrl}/api/roadmaps/generate`, { ...values, userId: userId() });
+      const { data } = await api.post(`/api/roadmaps/generate`, { ...values, userId: userId() });
       setCurrent(data);
       setView('roadmap');
       setPreset(null);
@@ -83,7 +84,7 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     if (!current) return;
     setDeleting(true);
     try {
-      await axios.delete(`${apiUrl}/api/roadmaps/${current._id}`, { data: { userId: userId() } });
+      await api.delete(`/api/roadmaps/${current._id}`, { data: { userId: userId() } });
       setCurrent(null);
       setView('form');
       loadList();

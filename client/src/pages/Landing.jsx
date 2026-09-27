@@ -3,16 +3,8 @@ import { Navigation } from "../components/navigation";
 import { useAuth } from "../AuthContext";
 
 const Landing = () => {
-  const { signIn } = useAuth();
-
-  const handleSignIn = () => {
-    try {
-      signIn();
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Failed to sign in. Please try again.");
-    }
-  };
+  const { signIn, signingIn, authError } = useAuth();
+  const handleSignIn = () => signIn();
 
   return (
     <div className="bg-white min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
@@ -63,8 +55,11 @@ const Landing = () => {
               {/* CTA Buttons */}
               <div className="flex flex-wrap items-center gap-5 pt-2">
                 <button
+                  type="button"
                   onClick={handleSignIn}
-                  className="group"
+                  disabled={signingIn}
+                  aria-busy={signingIn}
+                  className="group disabled:opacity-70"
                   style={{
                     padding: '14px 32px',
                     background: '#3b82f6',
@@ -83,12 +78,15 @@ const Landing = () => {
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.45)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = '#3b82f6'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(59, 130, 246, 0.35)'; }}
                 >
-                  Get Started
+                  {signingIn ? 'Signing in…' : 'Get Started'}
                   <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </button>
               </div>
+              {authError && (
+                <p role="alert" className="text-sm font-medium text-red-600">{authError}</p>
+              )}
             </div>
 
             {/* Right: Dashboard Cards - 2x2 Bento Grid */}

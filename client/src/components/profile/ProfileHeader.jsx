@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api, errorMessage } from '../../lib/api';
+import { useAuth } from '../../AuthContext';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const formatDate = (d, opts = { day: 'numeric', month: 'short', year: 'numeric' }) =>
   d ? new Date(d).toLocaleDateString(undefined, opts) : '—';
@@ -42,6 +42,7 @@ const ICONS = {
  * and the student's current goal. "Edit profile" swaps the details for a form.
  */
 const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
+  const { updateSession } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', mobile: '', bio: '' });
   const [saving, setSaving] = useState(false);
@@ -63,15 +64,16 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
     setSaving(true);
     setNotice(null);
     try {
-      const { data } = await axios.post(`${apiUrl}/updateUserProfile`, { email: account.email, name, mobile, bio: form.bio.trim() });
+      const { data } = await api.post('/updateUserProfile', { name, mobile, bio: form.bio.trim() });
       if (!data.success) throw new Error('not saved');
-      localStorage.setItem('name', name);
+      // The response carries a fresh session with the new name, used by the forum and the agent.
+      if (data.token) updateSession({ token: data.token, user: data.user });
       onSaved?.({ name, mobile, bio: form.bio.trim() });
       setEditing(false);
       setNotice({ type: 'success', text: 'Profile updated.' });
       setTimeout(() => setNotice(null), 3000);
     } catch (err) {
-      setNotice({ type: 'error', text: err.response?.data?.error || 'Could not save your profile. Please try again.' });
+      setNotice({ type: 'error', text: errorMessage(err, 'Could not save your profile. Please try again.') });
     } finally {
       setSaving(false);
     }

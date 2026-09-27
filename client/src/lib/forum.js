@@ -1,3 +1,5 @@
+import { currentEmail } from './session';
+
 /**
  * Shared forum vocabulary. Category and status are independent: a Tutorial can
  * be open or solved. The old UI mixed both into a single dropdown and sent the
@@ -31,7 +33,7 @@ export const categoryMeta = (value) =>
 export const statusMeta = (value) =>
   FORUM_STATUSES.find((s) => s.value === value) || FORUM_STATUSES[0];
 
-export const currentUserEmail = () => (localStorage.getItem('email') || '').trim().toLowerCase();
+export const currentUserEmail = () => currentEmail().trim().toLowerCase();
 
 export const isOwner = (issue) =>
   Boolean(issue?.userEmail) && issue.userEmail.trim().toLowerCase() === currentUserEmail();

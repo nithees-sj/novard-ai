@@ -94,4 +94,6 @@ doubtClearanceSchema.pre('save', function(next) {
   next();
 });
 
+doubtClearanceSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('DoubtClearance', doubtClearanceSchema);

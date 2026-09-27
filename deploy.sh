@@ -77,6 +77,7 @@ ENV_FILE="./server/.env"
 MONGO_URI=""
 GROQ_API_KEY=""
 GOOGLE_API_KEY=""
+JWT_SECRET=""
 
 if [[ -f "$ENV_FILE" ]]; then
   while IFS='=' read -r key value; do
@@ -89,12 +90,21 @@ if [[ -f "$ENV_FILE" ]]; then
       MONGO_URI)       MONGO_URI="$value" ;;
       GROQ_API_KEY)    GROQ_API_KEY="$value" ;;
       GOOGLE_API_KEY)  GOOGLE_API_KEY="$value" ;;
+      JWT_SECRET)      JWT_SECRET="$value" ;;
     esac
   done < "$ENV_FILE"
 fi
 
 [[ -z "$MONGO_URI" ]] && err "MONGO_URI not found in server/.env. Set it to your MongoDB Atlas connection string."
 [[ "$MONGO_URI" == *"localhost"* ]] && warn "MONGO_URI points to localhost — this won't work on Cloud Run. Use MongoDB Atlas."
+[[ -z "$JWT_SECRET" ]] && err "JWT_SECRET not found in server/.env. Generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\""
+
+# The server only accepts sign-ins issued to this OAuth client, and the client is built with it.
+GOOGLE_CLIENT_ID="${REACT_APP_GOOGLE_CLIENT_ID:-}"
+if [[ -z "$GOOGLE_CLIENT_ID" && -f "./client/.env" ]]; then
+  GOOGLE_CLIENT_ID=$(grep REACT_APP_GOOGLE_CLIENT_ID ./client/.env | cut -d'=' -f2- || true)
+fi
+[[ -z "$GOOGLE_CLIENT_ID" ]] && err "REACT_APP_GOOGLE_CLIENT_ID not found. Set it in client/.env or the environment."
 
 # ── Step 6: Build & push server image ──
 info "Building server image..."
@@ -115,7 +125,7 @@ gcloud run deploy "$SERVER_SERVICE" \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=10 \
-  --set-env-vars="NODE_ENV=production,MONGO_URI=${MONGO_URI},GROQ_API_KEY=${GROQ_API_KEY},GOOGLE_API_KEY=${GOOGLE_API_KEY}" \
+  --set-env-vars="NODE_ENV=production,MONGO_URI=${MONGO_URI},GROQ_API_KEY=${GROQ_API_KEY},GOOGLE_API_KEY=${GOOGLE_API_KEY},JWT_SECRET=${JWT_SECRET},GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
   --quiet
 
 # ── Step 8: Get server URL ──
@@ -125,16 +135,6 @@ SERVER_URL=$(gcloud run services describe "$SERVER_SERVICE" \
 ok "Server deployed at: $SERVER_URL"
 
 # ── Step 9: Build & push client image (with server URL baked in) ──
-# Read Google OAuth Client ID
-GOOGLE_CLIENT_ID="${REACT_APP_GOOGLE_CLIENT_ID:-}"
-if [[ -z "$GOOGLE_CLIENT_ID" && -f "./client/.env" ]]; then
-  GOOGLE_CLIENT_ID=$(grep REACT_APP_GOOGLE_CLIENT_ID ./client/.env | cut -d'=' -f2- || true)
-fi
-if [[ -z "$GOOGLE_CLIENT_ID" ]]; then
-  GOOGLE_CLIENT_ID="821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com"
-  warn "Using default Google Client ID. Set REACT_APP_GOOGLE_CLIENT_ID to override."
-fi
-
 info "Building client image (API → $SERVER_URL)..."
 docker build \
   --build-arg REACT_APP_API_ENDPOINT="$SERVER_URL" \
@@ -165,6 +165,13 @@ CLIENT_URL=$(gcloud run services describe "$CLIENT_SERVICE" \
   --format='value(status.url)')
 ok "Client deployed at: $CLIENT_URL"
 
+# ── Step 12: Only the deployed client may call the API from a browser ──
+info "Restricting API CORS to $CLIENT_URL..."
+gcloud run services update "$SERVER_SERVICE" \
+  --region="$REGION" \
+  --update-env-vars="CORS_ORIGINS=${CLIENT_URL}" \
+  --quiet
+
 # ── Summary ──
 echo ""
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
@@ -177,6 +184,6 @@ echo -e "  ${CYAN}Health:${NC}    ${SERVER_URL}/health"
 echo ""
 echo -e "${YELLOW}  Next steps:${NC}"
 echo -e "  1. Add ${CLIENT_URL} to Google OAuth Authorized JavaScript Origins"
-echo -e "  2. Update CORS on server if needed"
+echo -e "  2. If you add a custom domain, add it to the server's CORS_ORIGINS"
 echo -e "  3. Ensure MongoDB Atlas allows connections from all IPs (0.0.0.0/0)"
 echo ""

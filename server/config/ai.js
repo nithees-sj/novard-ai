@@ -1,3 +1,5 @@
+require('./env'); // load .env before reading the model overrides below
+
 /**
  * Single source of truth for the model IDs this app talks to.
  *

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AgentAvatar from './AgentAvatar';
+import { currentName } from '../../lib/session';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -159,7 +160,7 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
         <Link to="/home" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gray-200/60">
           <img src={user?.photoURL || user?.picture || '/img/team/user.jpeg'} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover bg-gray-200" onError={(e) => { e.currentTarget.src = '/img/team/user.jpeg'; }} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-gray-900">{user?.name || user?.displayName || localStorage.getItem('name') || 'You'}</p>
+            <p className="truncate text-sm font-medium text-gray-900">{user?.name || user?.displayName || currentName() || 'You'}</p>
             <p className="text-xs text-gray-500">← Back to dashboard</p>
           </div>
         </Link>

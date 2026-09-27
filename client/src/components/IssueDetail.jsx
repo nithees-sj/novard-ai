@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MarkdownView from './MarkdownView';
 import { categoryMeta, statusMeta, isOwner, currentUserEmail } from '../lib/forum';
+import { apiJson } from '../lib/api';
+import logger from '../lib/logger';
 
 const POLL_MS = 10000;
 const POLL_WHILE_AI_PENDING_MS = 4000;
@@ -96,7 +98,6 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
   const [actionError, setActionError] = useState(null);
   const [issueStatus, setIssueStatus] = useState(issue?.status || 'open');
 
-  const apiUrl = process.env.REACT_APP_API_ENDPOINT;
   const owner = isOwner(issue);
   const category = categoryMeta(issue?.category);
   const status = statusMeta(issueStatus);
@@ -112,19 +113,17 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
     if (!issue) return;
     try {
       isRefresh ? setRefreshing(true) : setLoading(true);
-      const response = await fetch(`${apiUrl}/api/forum/issues/${issue.issueId}/comments`);
-      if (!response.ok) throw new Error('Failed to fetch comments');
-      const data = await response.json();
+      const data = await apiJson(`/api/forum/issues/${encodeURIComponent(issue.issueId)}/comments`);
       setComments(data.comments || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching comments:', err);
+      logger.error('Error fetching comments', err);
       setError('Failed to load replies');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [issue, apiUrl]);
+  }, [issue]);
 
   const threads = useMemo(() => buildThreads(comments), [comments]);
 
@@ -158,22 +157,15 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
     return () => clearInterval(t);
   }, [issue, fetchComments, aiPendingFor, issueAnswerPending]);
 
-  const readError = async (response, fallback) => {
-    const data = await response.json().catch(() => ({}));
-    return data.error || fallback;
-  };
-
   const handleGenerateAIResponse = async (commentId) => {
     setGeneratingAI(commentId);
     setActionError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/forum/comments/${commentId}/ai-response`, { method: 'POST' });
-      if (!response.ok) throw new Error(await readError(response, 'Failed to generate an AI response.'));
-      const aiComment = await response.json();
+      const aiComment = await apiJson(`/api/forum/comments/${commentId}/ai-response`, { method: 'POST' });
       setComments((prev) => [...prev, aiComment]);
     } catch (err) {
-      console.error('Error generating AI response:', err);
-      setActionError(err.message);
+      logger.error('Error generating AI response', err);
+      setActionError(err.message || 'Failed to generate an AI response.');
     } finally {
       setGeneratingAI(null);
     }
@@ -183,17 +175,11 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
     setUpdatingStatus(true);
     setActionError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/forum/issues/${issue.issueId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, userEmail: localStorage.getItem('email') }),
-      });
-      if (!response.ok) throw new Error(await readError(response, 'Failed to update the status.'));
+      await apiJson(`/api/forum/issues/${encodeURIComponent(issue.issueId)}/status`, { method: 'PUT', body: { status: newStatus } });
       setIssueStatus(newStatus);
-      issue.status = newStatus;
     } catch (err) {
-      console.error('Error updating issue status:', err);
-      setActionError(err.message);
+      logger.error('Error updating issue status', err);
+      setActionError(err.message || 'Failed to update the status.');
     } finally {
       setUpdatingStatus(false);
     }
@@ -203,16 +189,11 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
     setDeleting(true);
     setActionError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/forum/issues/${issue.issueId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail: localStorage.getItem('email') }),
-      });
-      if (!response.ok) throw new Error(await readError(response, 'Failed to delete the discussion.'));
+      await apiJson(`/api/forum/issues/${encodeURIComponent(issue.issueId)}`, { method: 'DELETE' });
       onDeleted?.(issue);
     } catch (err) {
-      console.error('Error deleting issue:', err);
-      setActionError(err.message);
+      logger.error('Error deleting issue', err);
+      setActionError(err.message || 'Failed to delete the discussion.');
       setDeleting(false);
       setConfirmingDelete(false);
     }
@@ -224,23 +205,13 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
     setSubmittingComment(true);
     setActionError(null);
     try {
-      const response = await fetch(`${apiUrl}/api/forum/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          issueId: issue.issueId,
-          content: newComment,
-          userEmail: localStorage.getItem('email') || 'anonymous@example.com',
-          userName: localStorage.getItem('name') || 'Anonymous User',
-        }),
-      });
-      if (!response.ok) throw new Error(await readError(response, 'Failed to post your reply.'));
-      const saved = await response.json();
+      // The author is the signed-in student; the server takes that from the session.
+      const saved = await apiJson('/api/forum/comments', { method: 'POST', body: { issueId: issue.issueId, content: newComment } });
       setComments((prev) => [...prev, saved]);
       setNewComment('');
     } catch (err) {
-      console.error('Error submitting comment:', err);
-      setActionError(err.message);
+      logger.error('Error submitting comment', err);
+      setActionError(err.message || 'Failed to post your reply.');
     } finally {
       setSubmittingComment(false);
     }

@@ -1,9 +1,10 @@
-const { createDoubt } = require('../controllers/doubtClearanceController');
-const { addYouTubeVideo } = require('../controllers/youtubeVideoController');
-const { createRoadmapFor } = require('../controllers/roadmapController');
-const { createSkillPlan } = require('../controllers/skillUnlockerController');
-const { startSession } = require('../controllers/skillGapController');
-const { openIssue, CATEGORIES } = require('../controllers/forumController');
+const { createDoubt } = require('../services/doubtService');
+const { addYouTubeVideo } = require('../services/videoSummarizerService');
+const { createRoadmapFor } = require('../services/roadmapService');
+const { createSkillPlan } = require('../services/skillPlanService');
+const { startSession } = require('../services/skillGapService');
+const { openIssue, CATEGORIES } = require('../services/forumService');
+const DoubtClearance = require('../models/doubtClearance');
 
 /**
  * Things the Novard Agent can do inside the app.
@@ -62,11 +63,17 @@ const ACTIONS = {
       const doubt = await createDoubt({ ...a, userId: ctx.userId }, { keepTitle: true }); // the agent's title is already specific
       // Carry the agent's explanation over, so the doubt opens with the context of this chat.
       if (ctx.sourceText) {
-        doubt.chatHistory.push(
-          { role: 'user', content: a.description },
-          { role: 'assistant', content: ctx.sourceText },
-        );
-        await doubt.save();
+        const now = Date.now();
+        await DoubtClearance.updateOne({ _id: doubt._id }, {
+          $push: {
+            chatHistory: {
+              $each: [
+                { role: 'user', content: a.description, timestamp: new Date(now) },
+                { role: 'assistant', content: ctx.sourceText, timestamp: new Date(now + 1) },
+              ],
+            },
+          },
+        });
       }
       return { itemId: String(doubt._id), route: `/doubts?tool=doubts&open=${doubt._id}`, label: 'Open doubt' };
     },

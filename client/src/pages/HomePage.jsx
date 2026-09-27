@@ -8,11 +8,14 @@ import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import WeeklyActivityChart from '../components/analytics/WeeklyActivityChart';
 import { USAGE_EVENT } from '../hooks/useStudyTimeTracker';
+import { apiJson } from '../lib/api';
+import { currentEmail, currentName } from '../lib/session';
+import logger from '../lib/logger';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const userName = localStorage.getItem('name') || 'Student';
-  const userEmail = localStorage.getItem('email');
+  const userName = currentName() || 'Student';
+  const userEmail = currentEmail();
 
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,15 +34,11 @@ const HomePage = () => {
       // getTimezoneOffset lets the server bucket days in the student's local
       // time, so streaks and "today" match the student's calendar.
       const tzOffset = new Date().getTimezoneOffset();
-      const response = await fetch(
-        `${process.env.REACT_APP_API_ENDPOINT}/api/analytics/${encodeURIComponent(userEmail)}?tzOffset=${tzOffset}`
-      );
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+      const data = await apiJson(`/api/analytics/${encodeURIComponent(userEmail)}?tzOffset=${tzOffset}`);
       setAnalytics(data);
       setError(null);
     } catch (err) {
-      console.error('Error loading analytics:', err);
+      logger.error('Error loading analytics', err);
       setError(err.message || 'Could not load your analytics');
     } finally {
       inFlight.current = false;

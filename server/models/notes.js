@@ -92,6 +92,9 @@ const notesSchema = new mongoose.Schema({
   }
 });
 
+// The Notes page lists a student's notes, most recently used first.
+notesSchema.index({ userId: 1, lastAccessed: -1 });
+
 const Notes = mongoose.model('Notes', notesSchema);
 
 module.exports = Notes;

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import logger from '../lib/logger';
 
 // Mermaid is ~500 kB, so it is imported on demand the first time a diagram
 // actually appears rather than being pulled into every route chunk.
@@ -73,14 +74,14 @@ const MermaidDiagram = ({ chart }) => {
             containerRef.current.innerHTML = svg;
           }
         } catch (error) {
-          console.warn('Mermaid diagram could not be rendered:', error?.message || error);
+          logger.warn('Mermaid diagram could not be rendered', error?.message || error);
           // mermaid injects a hidden error node on failure; clear it.
           document.getElementById(`d${id}`)?.remove();
           if (!cancelled) setFailed(true);
         }
       })
       .catch((error) => {
-        console.warn('Mermaid failed to load:', error);
+        logger.warn('Mermaid failed to load', error);
         if (!cancelled) setFailed(true);
       });
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api, errorMessage } from '../lib/api';
+import logger from '../lib/logger';
+import { currentEmail } from '../lib/session';
 import NewDoubtForm from './NewDoubtForm';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
@@ -9,7 +11,6 @@ import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
 const DoubtClearanceInlineView = () => {
@@ -39,24 +40,26 @@ const DoubtClearanceInlineView = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Reloads the list and keeps the open doubt in step with it; returns the list.
   const loadUserDoubts = async () => {
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/doubt-clearances/${userId}`);
+      const response = await api.get(`/doubt-clearances/${encodeURIComponent(currentEmail())}`);
       const doubtsData = Array.isArray(response.data) ? response.data : [];
       setDoubts(doubtsData);
       const target = openId && doubtsData.find((item) => item._id === openId);
       if (target) {
         setSelectedDoubt(target);
-        loadDoubtData(target);
         clearOpenParam();
-      } else if (doubtsData.length > 0 && !selectedDoubt) {
-        setSelectedDoubt(doubtsData[0]);
-        loadDoubtData(doubtsData[0]);
+      } else {
+        setSelectedDoubt((current) => (current
+          ? doubtsData.find((d) => d._id === current._id) || current
+          : doubtsData[0] || null));
       }
+      return doubtsData;
     } catch (error) {
-      console.error('Error loading doubts:', error);
-      setDoubts([]);
+      logger.error('Error loading doubts', error);
+      showToast(errorMessage(error, 'Could not load your doubts.'), 'error');
+      return [];
     }
   };
 
@@ -77,12 +80,8 @@ const DoubtClearanceInlineView = () => {
     setIsAddingDoubt(true);
     setAddDoubtError(null);
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const { data: created } = await axios.post(`${apiUrl}/doubt-clearances`, {
-        description,
-        imageUrl,
-        userId
-      });
+      const userId = currentEmail();
+      const { data: created } = await api.post('/doubt-clearances', { description, imageUrl, userId });
       await loadUserDoubts();
       // Open the new doubt and put the question to the tutor straight away,
       // so the chat starts with the student's own words and an answer.
@@ -92,8 +91,8 @@ const DoubtClearanceInlineView = () => {
       handleSendMessage(description, created, { echo: false });
       return true;
     } catch (error) {
-      console.error('Error adding doubt:', error);
-      setAddDoubtError(error.response?.data?.error || 'Could not add the doubt. Please try again.');
+      logger.error('Error adding doubt', error);
+      setAddDoubtError(errorMessage(error, 'Could not add the doubt. Please try again.'));
       return false;
     } finally {
       setIsAddingDoubt(false);
@@ -108,25 +107,18 @@ const DoubtClearanceInlineView = () => {
     setIsLoading(true);
     if (echo) setChatMessages(prev => [...prev, { role: 'user', content: userMessage, timestamp: new Date() }]);
     try {
-      const response = await axios.post(`${apiUrl}/chat-with-doubt-clearance`, {
+      const response = await api.post(`/chat-with-doubt-clearance`, {
         doubtId: doubt._id,
         message: userMessage,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
+      // One reload brings the stored chat (and message count) back in step.
       await loadUserDoubts();
-      const updatedDoubts = await axios.get(`${apiUrl}/doubt-clearances/${localStorage.getItem('email') || 'demo-user'}`);
-      const updatedDoubt = updatedDoubts.data.find(d => d._id === doubt._id);
-      if (updatedDoubt) {
-        setSelectedDoubt(updatedDoubt);
-        const chatHistory = Array.isArray(updatedDoubt.chatHistory) ? updatedDoubt.chatHistory : [];
-        const cleanedChatHistory = chatHistory.map(msg => ({ role: msg.role, content: msg.content }));
-        setChatMessages(cleanedChatHistory);
-      }
     } catch (error) {
-      console.error('Error sending message:', error);
-      showToast('Could not send your message. Please try again.', 'error');
+      logger.error('Error sending message', error);
+      showToast(errorMessage(error, 'Could not send your message. Please try again.'), 'error');
       if (echo) setChatMessages(prev => prev.slice(0, -1));
       return false;
     } finally {
@@ -145,15 +137,15 @@ const DoubtClearanceInlineView = () => {
     setActiveTab('summary');
     setIsSummarizing(true);
     try {
-      const response = await axios.post(`${apiUrl}/summarize-doubt-clearance`, {
+      const response = await api.post(`/summarize-doubt-clearance`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       setSummary(response.data.summary);
       await loadUserDoubts();
     } catch (error) {
-      console.error('Error summarizing doubt:', error);
-      showToast('Error generating summary', 'error');
+      logger.error('Error summarizing doubt', error);
+      showToast(errorMessage(error, 'Error generating summary'), 'error');
     } finally {
       setIsSummarizing(false);
     }
@@ -173,9 +165,9 @@ const DoubtClearanceInlineView = () => {
     setIsGeneratingQuiz(true);
     setQuizError(null);
     try {
-      const response = await axios.post(`${apiUrl}/generate-doubt-quiz`, {
+      const response = await api.post(`/generate-doubt-quiz`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('email') || 'demo-user',
+        userId: currentEmail(),
         ...settings
       });
       const newQuiz = response.data.quiz;
@@ -191,8 +183,8 @@ const DoubtClearanceInlineView = () => {
       setQuizScore(null);
       await loadUserDoubts();
     } catch (error) {
-      console.error('Error generating quiz:', error);
-      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
+      logger.error('Error generating quiz', error);
+      setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -203,15 +195,15 @@ const DoubtClearanceInlineView = () => {
     setActiveTab('recommendations');
     setIsGettingRecommendations(true);
     try {
-      const response = await axios.post(`${apiUrl}/get-youtube-recommendations`, {
+      const response = await api.post(`/get-youtube-recommendations`, {
         doubtId: selectedDoubt._id,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       setYoutubeRecommendations(response.data.recommendations);
       await loadUserDoubts();
     } catch (error) {
-      console.error('Error getting recommendations:', error);
-      showToast(error.response?.data?.error || 'Error getting recommendations', 'error');
+      logger.error('Error getting recommendations', error);
+      showToast(errorMessage(error, 'Error getting recommendations'), 'error');
     } finally {
       setIsGettingRecommendations(false);
     }
@@ -223,15 +215,16 @@ const DoubtClearanceInlineView = () => {
     const score = countCorrect(currentQuiz, quizAnswers);
     setQuizScore({ score, totalQuestions });
     try {
-      await axios.post(`${apiUrl}/save-doubt-quiz-results`, {
+      await api.post(`/save-doubt-quiz-results`, {
         doubtId: selectedDoubt._id,
         quizIndex: currentQuizId,
         score,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       await loadUserDoubts();
     } catch (error) {
-      console.error('Error saving quiz results:', error);
+      logger.error('Error saving quiz results', error);
+      showToast(errorMessage(error, 'Your score could not be saved.'), 'error');
     }
   };
 
@@ -240,8 +233,8 @@ const DoubtClearanceInlineView = () => {
       return;
     }
     try {
-      await axios.delete(`${apiUrl}/doubt-clearances/${doubtId}`, {
-        data: { userId: localStorage.getItem('email') || 'demo-user' }
+      await api.delete(`/doubt-clearances/${doubtId}`, {
+        data: { userId: currentEmail() }
       });
       await loadUserDoubts();
       if (selectedDoubt && selectedDoubt._id === doubtId) {
@@ -253,8 +246,8 @@ const DoubtClearanceInlineView = () => {
       }
       showToast('Doubt deleted successfully!', 'success');
     } catch (error) {
-      console.error('Error deleting doubt:', error);
-      showToast('Error deleting doubt', 'error');
+      logger.error('Error deleting doubt', error);
+      showToast(errorMessage(error, 'Error deleting doubt'), 'error');
     }
   };
 

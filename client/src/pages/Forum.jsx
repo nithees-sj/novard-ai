@@ -7,8 +7,8 @@ import IssueForm from '../components/IssueForm';
 import ForumGrid from '../components/ForumGrid';
 import IssueDetail from '../components/IssueDetail';
 import Notification from '../components/Notification';
-
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
+import { apiJson } from '../lib/api';
+import logger from '../lib/logger';
 
 const Forum = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
@@ -37,10 +37,9 @@ const Forum = () => {
     const id = readOpenParam();
     if (!id) return;
     clearOpenParam();
-    fetch(`${apiUrl}/api/forum/issues/${encodeURIComponent(id)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((issue) => { if (issue) setSelectedIssue(issue); })
-      .catch(() => {});
+    apiJson(`/api/forum/issues/${encodeURIComponent(id)}`)
+      .then((issue) => setSelectedIssue(issue))
+      .catch(() => setNotification({ message: 'That discussion could not be found.', type: 'error' }));
   }, []);
 
   const handleCreateIssue = () => {
@@ -49,19 +48,7 @@ const Forum = () => {
 
   const handleIssueSubmit = async (issueData) => {
     try {
-      const response = await fetch(`${apiUrl}/api/forum/issues`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(issueData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create issue');
-      }
-
-      const newIssue = await response.json();
+      const newIssue = await apiJson('/api/forum/issues', { method: 'POST', body: issueData });
       setSelectedIssue(newIssue);
       setListVersion((v) => v + 1);
       setShowIssueForm(false);
@@ -70,9 +57,9 @@ const Forum = () => {
         type: 'success'
       });
     } catch (error) {
-      console.error('Error creating issue:', error);
+      logger.error('Error creating issue', error);
       setNotification({
-        message: 'Failed to create issue. Please try again.',
+        message: error.message || 'Failed to create issue. Please try again.',
         type: 'error'
       });
       throw error;

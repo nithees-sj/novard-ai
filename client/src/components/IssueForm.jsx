@@ -29,20 +29,13 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
 
     setIsSubmitting(true);
     try {
-      const userEmail = localStorage.getItem('email') || 'anonymous@example.com';
-      const userName = localStorage.getItem('name') || 'Anonymous User';
-      
       const tagsArray = formData.tags
         .split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
-      await onSubmit({
-        ...formData,
-        userEmail,
-        userName,
-        tags: tagsArray
-      });
+      // The author is the signed-in student; the server takes that from the session.
+      await onSubmit({ ...formData, tags: tagsArray });
 
       setFormData({
         title: '',
@@ -51,8 +44,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
         category: 'general'
       });
     } catch (error) {
-      console.error('Error submitting issue:', error);
-      setFormError('Could not create the discussion. Please try again.');
+      setFormError(error.message || 'Could not create the discussion. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

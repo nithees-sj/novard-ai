@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../lib/api';
+import logger from '../../lib/logger';
+import { currentEmail } from '../../lib/session';
 import { readOpenParam, clearOpenParam } from '../../lib/openParam';
 import SkillGapIntake from './SkillGapIntake';
 import SkillGapChat from './SkillGapChat';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
-const userId = () => localStorage.getItem('email') || 'demo-user';
+const userId = () => currentEmail();
 
 const readinessBadge = (r) =>
   r >= 75 ? 'bg-green-100 text-green-800' : r >= 50 ? 'bg-blue-100 text-blue-800' : r >= 25 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700';
@@ -29,10 +30,10 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
 
   const loadList = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${apiUrl}/api/skill-gap/sessions/user/${encodeURIComponent(userId())}`);
+      const { data } = await api.get(`/api/skill-gap/sessions/user/${encodeURIComponent(userId())}`);
       setList(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error loading analyses:', err);
+      logger.error('Error loading analyses', err);
     }
   }, []);
 
@@ -42,7 +43,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     setStarting(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${apiUrl}/api/skill-gap/sessions`, { ...profile, userId: userId() });
+      const { data } = await api.post(`/api/skill-gap/sessions`, { ...profile, userId: userId() });
       setSession(data);
       setView('chat');
       setPreset(null);
@@ -58,7 +59,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     setLoadingId(id);
     setError(null);
     try {
-      const { data } = await axios.get(`${apiUrl}/api/skill-gap/sessions/${id}`, { params: { userId: userId() } });
+      const { data } = await api.get(`/api/skill-gap/sessions/${id}`, { params: { userId: userId() } });
       setSession(data);
       setView('chat');
     } catch (err) {
@@ -76,7 +77,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     setSending(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${apiUrl}/api/skill-gap/sessions/${session._id}/messages`, { userId: userId(), message: text });
+      const { data } = await api.post(`/api/skill-gap/sessions/${session._id}/messages`, { userId: userId(), message: text });
       setSession((s) => ({ ...s, messages: [...s.messages.filter((m) => m !== optimistic), data.userMessage, data.assistantMessage] }));
       loadList();
       return true;
@@ -93,7 +94,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
     if (!session) return;
     setDeleting(true);
     try {
-      await axios.delete(`${apiUrl}/api/skill-gap/sessions/${session._id}`, { data: { userId: userId() } });
+      await api.delete(`/api/skill-gap/sessions/${session._id}`, { data: { userId: userId() } });
       setSession(null);
       setView('intake');
       loadList();

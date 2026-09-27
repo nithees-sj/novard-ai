@@ -39,4 +39,6 @@ videoSchema.pre('save', function(next) {
   next();
 });
 
+videoSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Video', videoSchema);

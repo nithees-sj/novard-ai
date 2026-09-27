@@ -6,10 +6,12 @@ const YouTubeVideo = require('../models/youtubeVideo');
 const Roadmap = require('../models/roadmap');
 const SkillPlan = require('../models/skillPlan');
 const SkillGapSession = require('../models/skillGapSession');
-const { chatModel, MongoChatHistory, withRateLimitRetry, friendlyAIError } = require('../ai/conversation');
+const { chatModel, MongoChatHistory } = require('../ai/conversation');
+const { withRateLimitRetry, friendlyAIError } = require('../ai/errors');
 const { FORMAT_RULES } = require('../ai/prompts');
-const { searchVideos } = require('../controllers/youtubeVideoController');
-const { loadActivity } = require('../controllers/analyticsController');
+const { searchVideos } = require('../services/youtubeService');
+const { loadActivity } = require('../services/analyticsService');
+const logger = require('../utils/logger');
 const { ACTIONS, TOOL_TO_ACTION } = require('./actions');
 
 /**
@@ -278,7 +280,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
         note: 'It is created and shown on a card with an Open button. Confirm in one or two short sentences what you created and where. Do not explain the topic unless they also asked a question.',
       };
     } catch (error) {
-      console.error(`Agent task ${type} failed:`, error.cause || error);
+      logger.error(`Agent task ${type} failed`, error.cause || error);
       const reason = friendlyAIError(error.cause || error, error.status === 502 && error.message ? error.message : 'Something went wrong while creating it.');
       Object.assign(action, { status: 'failed', error: reason, updatedAt: new Date() });
       emit('action', { action: { ...action } });
@@ -367,7 +369,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
       ], { signal }));
       for (const call of (forced.tool_calls || []).filter((c) => c.name !== NO_SUGGESTION.function.name).slice(0, 1)) await runTool(call); // eslint-disable-line no-await-in-loop
     } catch (error) {
-      console.warn('Agent: could not add the suggestion card:', error.message);
+      logger.warn('Agent: could not add the suggestion card', { error: error.message });
     }
     if (!actions.length && mentionsCard) text = text.replace(CARD_SENTENCE, '').trim();
     if (actions.length && !mentionsCard) {

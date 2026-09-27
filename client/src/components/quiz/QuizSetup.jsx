@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
+import { api } from '../../lib/api';
 import {
   QUIZ_DIFFICULTIES, QUIZ_STYLES, QUIZ_COUNTS, QUIZ_MIN, QUIZ_MAX, QUIZ_DEFAULTS, difficultyLabel,
 } from '../../lib/quiz';
+import { currentEmail } from '../../lib/session';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const scoreTone = (p) =>
   p >= 85 ? { bar: 'bg-green-500', text: 'text-green-700' }
@@ -114,14 +114,14 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
   const touched = useRef(false);
 
   const loadHistory = async () => {
-    const userId = localStorage.getItem('email');
+    const userId = currentEmail();
     if (!itemId || !userId) {
       setHistory({ loading: false, error: null, data: null });
       return;
     }
     setHistory((h) => ({ ...h, loading: true, error: null }));
     try {
-      const { data } = await axios.get(`${apiUrl}/api/quiz-history/${source}/${itemId}`, { params: { userId } });
+      const { data } = await api.get(`/api/quiz-history/${source}/${itemId}`, { params: { userId } });
       setHistory({ loading: false, error: null, data });
       // Start from the student's last choices on this topic, unless they have already changed something.
       const last = data.attempts?.[0];

@@ -1,123 +1,95 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
+import { api, errorMessage } from './lib/api';
+import { clearSession, restoreSession, saveSession, SESSION_EXPIRED_EVENT } from './lib/session';
+import logger from './lib/logger';
 
 const AuthContext = createContext(null);
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
-
 /**
- * AuthProvider wraps the app and provides authentication state + actions.
- * Uses Google OAuth (via @react-oauth/google) instead of Firebase.
- * Persists session in localStorage.
+ * Authentication state and actions.
+ *
+ * Sign-in: Google's implicit flow gives the browser an access token, which the
+ * API verifies with Google and exchanges for a Novard-AI session token. The
+ * session is kept in localStorage (lib/session.js) and sent with every API
+ * call (lib/api.js). When the API rejects it, the student is signed out.
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
-  // On mount, restore session from localStorage
+  const signOut = useCallback(() => {
+    clearSession();
+    setUser(null);
+    window.google?.accounts?.id?.disableAutoSelect();
+  }, []);
+
+  // Restore the session on load, then confirm in the background that the API still accepts it.
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('auth_user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      console.error('Error restoring session:', error);
-      localStorage.removeItem('auth_user');
-    }
+    const stored = restoreSession();
+    setUser(stored);
     setLoading(false);
-  }, []);
-
-  // Save user to backend
-  const saveUserToBackend = useCallback(async (userData) => {
-    try {
-      const response = await axios.post(`${apiUrl}/saveUser`, userData);
-      console.log('User data saved:', response.data);
-    } catch (error) {
-      console.error('Error saving user data:', error);
+    if (stored) {
+      api.get('/api/auth/me').catch((error) => {
+        if (error.response?.status !== 401) logger.warn('Could not verify the session', error);
+      });
     }
   }, []);
 
-  // Google OAuth login using implicit flow to get an ID token
+  // Any 401 from the API (expired or revoked session) signs the student out.
+  useEffect(() => {
+    const onExpired = () => signOut();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, [signOut]);
+
   const googleLogin = useGoogleLogin({
     flow: 'implicit',
     onSuccess: async (tokenResponse) => {
+      setSigningIn(true);
+      setAuthError(null);
       try {
-        // Fetch user info from Google's userinfo endpoint
-        const userInfoResponse = await axios.get(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          {
-            headers: {
-              Authorization: `Bearer ${tokenResponse.access_token}`,
-            },
-          }
-        );
-
-        const profile = userInfoResponse.data;
-        const userData = {
-          name: profile.name,
-          email: profile.email,
-          picture: profile.picture,
-          displayName: profile.name,
-          photoURL: profile.picture,
-        };
-
-        setUser(userData);
-
-        // Persist to localStorage
-        localStorage.setItem('auth_user', JSON.stringify(userData));
-        localStorage.setItem('name', userData.name);
-        localStorage.setItem('email', userData.email);
-        localStorage.setItem('profilePic', userData.picture);
-
-        // Save to backend
-        await saveUserToBackend({
-          name: userData.name,
-          email: userData.email,
-          picture: userData.picture,
-        });
+        const { data } = await api.post('/api/auth/google', { accessToken: tokenResponse.access_token });
+        setUser(saveSession(data));
       } catch (error) {
-        console.error('Error fetching user info:', error);
+        logger.error('Sign-in failed', error);
+        setAuthError(errorMessage(error, 'Sign-in failed. Please try again.'));
+      } finally {
+        setSigningIn(false);
       }
     },
     onError: (error) => {
-      console.error('Google login error:', error);
+      logger.error('Google sign-in error', error);
+      setAuthError('Google sign-in was cancelled or failed. Please try again.');
+    },
+    onNonOAuthError: (error) => {
+      // e.g. the popup was closed or blocked
+      if (error?.type !== 'popup_closed') setAuthError('The Google sign-in window could not be opened. Please allow pop-ups and try again.');
     },
   });
 
   const signIn = useCallback(() => {
+    setAuthError(null);
     googleLogin();
   }, [googleLogin]);
 
-  const signOut = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('name');
-    localStorage.removeItem('email');
-    localStorage.removeItem('profilePic');
-    // Revoke Google session
-    window.google?.accounts?.id?.disableAutoSelect();
+  /** Keep the session in step after the profile changes (new name, new token). */
+  const updateSession = useCallback((session) => {
+    setUser(saveSession(session));
   }, []);
 
-  const value = {
-    user,
-    loading,
-    signIn,
-    signOut,
-  };
+  const value = useMemo(() => ({
+    user, loading, signingIn, authError, signIn, signOut, updateSession,
+  }), [user, loading, signingIn, authError, signIn, signOut, updateSession]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Custom hook to access auth state and actions.
- * Returns { user, loading, signIn, signOut }
- */
+/** Auth state and actions: { user, loading, signingIn, authError, signIn, signOut, updateSession } */
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

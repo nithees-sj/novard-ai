@@ -52,7 +52,10 @@ steps:
       - '--cpu=1'
       - '--min-instances=0'
       - '--max-instances=10'
-      - '--set-env-vars=NODE_ENV=production'
+      # --update-env-vars keeps the variables already set on the service (--set-env-vars replaced them all).
+      # MONGO_URI, GROQ_API_KEY, GOOGLE_API_KEY and JWT_SECRET must be set on the service once
+      # (see CLOUD_RUN_SETUP.md), ideally as Secret Manager references.
+      - '--update-env-vars=NODE_ENV=production,GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},CORS_ORIGINS=${_CLIENT_URL}'
     id: 'deploy-server'
     waitFor: ['push-server']
 
@@ -78,6 +81,7 @@ substitutions:
   _REGION: 'asia-south1'
   _AR_REPO: 'asia-south1-docker.pkg.dev/${PROJECT_ID}/novard-ai'
   _SERVER_URL: 'https://novard-server-CHANGE_ME.run.app'
+  _CLIENT_URL: 'https://novard-client-CHANGE_ME.run.app'
   _GOOGLE_CLIENT_ID: '821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com'
 
 images:

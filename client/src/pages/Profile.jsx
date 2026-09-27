@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from '../lib/api';
 import { Navigationinner } from '../components/navigationinner';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../AuthContext';
@@ -9,8 +9,8 @@ import LearningPath from '../components/profile/LearningPath';
 import { Donut, Heatmap, LineChart } from '../components/profile/charts';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
+import { currentEmail } from '../lib/session';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const MIX_COLORS = {
   quiz: '#0284c7',
@@ -77,7 +77,7 @@ const LIBRARY = [
  */
 const Profile = () => {
   const { user } = useAuth();
-  const email = user?.email || localStorage.getItem('email');
+  const email = user?.email || currentEmail();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +87,7 @@ const Profile = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: res } = await axios.get(`${apiUrl}/api/profile/${encodeURIComponent(email)}/overview`, {
+      const { data: res } = await api.get(`/api/profile/${encodeURIComponent(email)}/overview`, {
         params: { tzOffset: new Date().getTimezoneOffset() },
       });
       setData(res);

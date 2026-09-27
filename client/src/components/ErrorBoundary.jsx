@@ -1,4 +1,5 @@
 import React from 'react';
+import logger from '../lib/logger';
 
 /**
  * Catches render-time errors anywhere below it. Without this, a single thrown
@@ -16,7 +17,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Unhandled render error:', error, errorInfo);
+    logger.error('Unhandled render error', { error, componentStack: errorInfo?.componentStack });
   }
 
   handleReload = () => {

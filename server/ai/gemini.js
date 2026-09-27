@@ -1,5 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { MODELS } = require('../config/ai');
+const { env } = require('../config/env');
+const logger = require('../utils/logger');
 
 /**
  * Gemini text generation with a fallback model.
@@ -11,15 +13,14 @@ const { MODELS } = require('../config/ai');
  * in MODELS.GEMINI_FALLBACKS is used.
  */
 
-// Accept either name: the code has always read GEMINI_API_KEY while the
-// Docker/Cloud Run configs pass GOOGLE_API_KEY.
-const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const apiKey = env.geminiApiKey;
 const genAI = new GoogleGenerativeAI(apiKey);
 
 const RETRYABLE = new Set([429, 500, 503]);
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
 async function geminiGenerate(prompt) {
+  if (!apiKey) throw new Error('No Gemini API key is configured (GEMINI_API_KEY or GOOGLE_API_KEY)');
   const models = [MODELS.GEMINI, ...MODELS.GEMINI_FALLBACKS.filter((m) => m !== MODELS.GEMINI)];
   let lastError;
   for (const name of models) {
@@ -27,7 +28,7 @@ async function geminiGenerate(prompt) {
       try {
         // eslint-disable-next-line no-await-in-loop
         const result = await genAI.getGenerativeModel({ model: name }).generateContent(prompt);
-        if (name !== MODELS.GEMINI) console.warn(`Gemini: ${MODELS.GEMINI} unavailable, answered by ${name}`);
+        if (name !== MODELS.GEMINI) logger.warn(`Gemini: ${MODELS.GEMINI} unavailable, answered by ${name}`);
         return result.response.text();
       } catch (error) {
         lastError = error;

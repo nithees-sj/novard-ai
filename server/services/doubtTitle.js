@@ -1,5 +1,7 @@
 const { SystemMessage, HumanMessage } = require('@langchain/core/messages');
-const { chatModel, withRateLimitRetry } = require('../ai/conversation');
+const { chatModel } = require('../ai/conversation');
+const { withRateLimitRetry } = require('../ai/errors');
+const logger = require('../utils/logger');
 
 /**
  * A short, specific title for a doubt, written from what the student asked.
@@ -43,7 +45,7 @@ async function contextualTitle({ title, description }) {
     const words = generated.split(' ').length;
     if (generated && generated.length <= MAX_TITLE && words >= 2 && words <= 12) return generated;
   } catch (error) {
-    console.warn('Doubt title could not be generated:', error.message);
+    logger.warn('Doubt title could not be generated', { error: error.message });
   }
   return fallbackTitle({ title, description });
 }

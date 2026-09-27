@@ -64,4 +64,8 @@ forumIssueSchema.pre('save', function(next) {
   next();
 });
 
+// Default forum sort, and a student's own posts (analytics, profile).
+forumIssueSchema.index({ createdAt: -1 });
+forumIssueSchema.index({ userEmail: 1 });
+
 module.exports = mongoose.model('ForumIssue', forumIssueSchema);

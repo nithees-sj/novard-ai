@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api, errorMessage } from '../lib/api';
+import logger from '../lib/logger';
+import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
   QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, btn, inputClass, formatDate,
@@ -8,7 +10,6 @@ import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 
 const VideoSummarizerInlineView = () => {
@@ -36,24 +37,24 @@ const VideoSummarizerInlineView = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Reloads the list and keeps the open video in step with it.
   const loadUserVideos = async () => {
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const response = await axios.get(`${apiUrl}/youtube-videos/${userId}`);
+      const response = await api.get(`/youtube-videos/${encodeURIComponent(currentEmail())}`);
       const videosData = Array.isArray(response.data) ? response.data : [];
       setVideos(videosData);
       const target = openId && videosData.find((item) => item._id === openId);
       if (target) {
         setSelectedVideo(target);
-        loadVideoData(target);
         clearOpenParam();
-      } else if (videosData.length > 0 && !selectedVideo) {
-        setSelectedVideo(videosData[0]);
-        loadVideoData(videosData[0]);
+      } else {
+        setSelectedVideo((current) => (current
+          ? videosData.find((v) => v._id === current._id) || current
+          : videosData[0] || null));
       }
     } catch (error) {
-      console.error('Error loading videos:', error);
-      setVideos([]);
+      logger.error('Error loading videos', error);
+      showToast(errorMessage(error, 'Could not load your videos.'), 'error');
     }
   };
 
@@ -86,8 +87,8 @@ const VideoSummarizerInlineView = () => {
     }
     setIsAddingVideo(true);
     try {
-      const userId = localStorage.getItem('email') || 'demo-user';
-      const { data: created } = await axios.post(`${apiUrl}/youtube-videos`, {
+      const userId = currentEmail();
+      const { data: created } = await api.post(`/youtube-videos`, {
         title: newVideo.title,
         videoUrl: newVideo.videoUrl,
         userId
@@ -98,8 +99,8 @@ const VideoSummarizerInlineView = () => {
       if (created) { setSelectedVideo(created); setActiveTab('chat'); }
       showToast('Video added successfully!', 'success');
     } catch (error) {
-      console.error('Error adding video:', error);
-      showToast(error.response?.data?.error || 'Error adding video', 'error');
+      logger.error('Error adding video', error);
+      showToast(errorMessage(error, 'Error adding video'), 'error');
     } finally {
       setIsAddingVideo(false);
     }
@@ -112,25 +113,18 @@ const VideoSummarizerInlineView = () => {
     const tempUserMessage = { role: 'user', content: userMessage, timestamp: new Date() };
     setChatMessages(prev => [...prev, tempUserMessage]);
     try {
-      const response = await axios.post(`${apiUrl}/chat-with-youtube-video`, {
+      const response = await api.post(`/chat-with-youtube-video`, {
         videoId: selectedVideo._id,
         message: userMessage,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
+      // One reload brings the stored chat back in step.
       await loadUserVideos();
-      const updatedVideos = await axios.get(`${apiUrl}/youtube-videos/${localStorage.getItem('email') || 'demo-user'}`);
-      const updatedVideo = updatedVideos.data.find(v => v._id === selectedVideo._id);
-      if (updatedVideo) {
-        setSelectedVideo(updatedVideo);
-        const chatHistory = Array.isArray(updatedVideo.chatHistory) ? updatedVideo.chatHistory : [];
-        const cleanedChatHistory = chatHistory.map(msg => ({ role: msg.role, content: msg.content }));
-        setChatMessages(cleanedChatHistory);
-      }
     } catch (error) {
-      console.error('Error sending message:', error);
-      showToast('Could not send your message. Please try again.', 'error');
+      logger.error('Error sending message', error);
+      showToast(errorMessage(error, 'Could not send your message. Please try again.'), 'error');
       setChatMessages(prev => prev.slice(0, -1));
       return false;
     } finally {
@@ -149,15 +143,15 @@ const VideoSummarizerInlineView = () => {
     setActiveTab('summary');
     setIsSummarizing(true);
     try {
-      const response = await axios.post(`${apiUrl}/summarize-youtube-video`, {
+      const response = await api.post(`/summarize-youtube-video`, {
         videoId: selectedVideo._id,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       setSummary(response.data.summary);
       await loadUserVideos();
     } catch (error) {
-      console.error('Error summarizing video:', error);
-      showToast('Error generating summary', 'error');
+      logger.error('Error summarizing video', error);
+      showToast(errorMessage(error, 'Error generating summary'), 'error');
     } finally {
       setIsSummarizing(false);
     }
@@ -177,9 +171,9 @@ const VideoSummarizerInlineView = () => {
     setIsGeneratingQuiz(true);
     setQuizError(null);
     try {
-      const response = await axios.post(`${apiUrl}/generate-youtube-quiz`, {
+      const response = await api.post(`/generate-youtube-quiz`, {
         videoId: selectedVideo._id,
-        userId: localStorage.getItem('email') || 'demo-user',
+        userId: currentEmail(),
         ...settings
       });
       const newQuiz = response.data.quiz;
@@ -195,8 +189,8 @@ const VideoSummarizerInlineView = () => {
       setQuizScore(null);
       await loadUserVideos();
     } catch (error) {
-      console.error('Error generating quiz:', error);
-      setQuizError(error.response?.data?.error || 'Could not generate the quiz. Please try again.');
+      logger.error('Error generating quiz', error);
+      setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
     } finally {
       setIsGeneratingQuiz(false);
     }
@@ -208,15 +202,16 @@ const VideoSummarizerInlineView = () => {
     const score = countCorrect(currentQuiz, quizAnswers);
     setQuizScore({ score, totalQuestions });
     try {
-      await axios.post(`${apiUrl}/save-youtube-quiz-results`, {
+      await api.post(`/save-youtube-quiz-results`, {
         videoId: selectedVideo._id,
         quizIndex: currentQuizId,
         score,
-        userId: localStorage.getItem('email') || 'demo-user'
+        userId: currentEmail()
       });
       await loadUserVideos();
     } catch (error) {
-      console.error('Error saving quiz results:', error);
+      logger.error('Error saving quiz results', error);
+      showToast(errorMessage(error, 'Your score could not be saved.'), 'error');
     }
   };
 
@@ -225,8 +220,8 @@ const VideoSummarizerInlineView = () => {
       return;
     }
     try {
-      await axios.delete(`${apiUrl}/youtube-videos/${videoId}`, {
-        data: { userId: localStorage.getItem('email') || 'demo-user' }
+      await api.delete(`/youtube-videos/${videoId}`, {
+        data: { userId: currentEmail() }
       });
       await loadUserVideos();
       if (selectedVideo && selectedVideo._id === videoId) {
@@ -237,8 +232,8 @@ const VideoSummarizerInlineView = () => {
       }
       showToast('Video deleted successfully!', 'success');
     } catch (error) {
-      console.error('Error deleting video:', error);
-      showToast('Error deleting video', 'error');
+      logger.error('Error deleting video', error);
+      showToast(errorMessage(error, 'Error deleting video'), 'error');
     }
   };
 

@@ -26,9 +26,14 @@ Create `server/.env` with:
 MONGO_URI=your_mongodb_connection_string
 GROQ_API_KEY=your_groq_api_key
 GOOGLE_API_KEY=your_google_ai_api_key
+# Signs session tokens (required in production):
+#   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+JWT_SECRET=your_long_random_secret
 PORT=5001
 NODE_ENV=production
 ```
+
+`GOOGLE_CLIENT_ID` and `CORS_ORIGINS` are set by `docker-compose.yml` from `REACT_APP_GOOGLE_CLIENT_ID` (below). See `server/.env.example` for every option.
 
 ### Client (Google OAuth)
 

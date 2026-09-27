@@ -1,8 +1,9 @@
-const Groq = require('groq-sdk');
-const { MODELS, GROQ_DEFAULTS } = require('../config/ai');
+const Roadmap = require('../models/roadmap');
+const { MODELS } = require('../config/ai');
+const { complete } = require('../ai/groqClient');
 const { parseModelJson } = require('../utils/parseModelJson');
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const { badRequest, notFound } = require('../utils/httpError');
+const { objectId } = require('../utils/validate');
 
 /**
  * Personalised career roadmaps.
@@ -160,17 +161,17 @@ async function generateRoadmap(input) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const completion = await groq.chat.completions.create({
+      // eslint-disable-next-line no-await-in-loop
+      const reply = await complete({
         messages: [
           { role: 'system', content: 'You are a senior engineering mentor who designs realistic, industry-current learning roadmaps. You always return valid JSON.' },
           { role: 'user', content: buildPrompt(input) },
         ],
         model: MODELS.REASONING,
-        ...GROQ_DEFAULTS,
         temperature: 0.5,
-        max_tokens: 7000,
+        maxTokens: 7000,
       });
-      const raw = parseModelJson(completion.choices[0]?.message?.content || '', { context: 'roadmap' });
+      const raw = parseModelJson(reply, { context: 'roadmap' });
       const roadmap = normaliseRoadmap(raw, input);
       if (roadmap) return roadmap;
       lastError = new Error('The roadmap came back incomplete.');
@@ -278,10 +279,72 @@ function buildRoadmapMermaid(roadmap, input) {
   return out.join('\n');
 }
 
+// ── storage ────────────────────────────────────────────────────────────────
+
+/** Full roadmap plus its diagram. The diagram is rebuilt on every read, so
+ *  styling improvements apply to roadmaps generated earlier too. */
+function presentRoadmap(doc) {
+  const r = doc.toObject ? doc.toObject() : doc;
+  return { ...r, mermaid: buildRoadmapMermaid(r, { role: r.role, ...r.inputs }) };
+}
+
+/** Generate and save a roadmap. Shared by Smart Roadmap and the Novard Agent. */
+async function createRoadmapFor(userId, body) {
+  if (!userId) throw badRequest('userId is required');
+  const input = readRoadmapInput(body);
+  if (input.role.length < 2) throw badRequest('Tell us which role you want to reach, e.g. "Frontend Developer".');
+  const roadmap = await generateRoadmap(input);
+  return Roadmap.create({
+    userId,
+    role: input.role,
+    inputs: {
+      level: input.level,
+      hoursPerWeek: input.hoursPerWeek,
+      timelineMonths: input.timelineMonths,
+      knownSkills: input.knownSkills,
+      goal: input.goal,
+    },
+    ...roadmap,
+  });
+}
+
+async function listRoadmaps(userId) {
+  const docs = await Roadmap.find({ userId })
+    .sort({ createdAt: -1 })
+    .select('role inputs totalWeeks stages.title createdAt')
+    .lean();
+  return docs.map((d) => ({
+    _id: d._id,
+    role: d.role,
+    level: d.inputs?.level,
+    timelineMonths: d.inputs?.timelineMonths,
+    hoursPerWeek: d.inputs?.hoursPerWeek,
+    totalWeeks: d.totalWeeks,
+    stageCount: (d.stages || []).length,
+    createdAt: d.createdAt,
+  }));
+}
+
+async function getRoadmap(userId, id) {
+  const doc = await Roadmap.findOne({ _id: objectId(id, 'roadmap id'), userId }).lean();
+  if (!doc) throw notFound('Roadmap not found');
+  return presentRoadmap(doc);
+}
+
+async function deleteRoadmap(userId, id) {
+  const result = await Roadmap.deleteOne({ _id: objectId(id, 'roadmap id'), userId });
+  if (!result.deletedCount) throw notFound('Roadmap not found');
+}
+
 module.exports = {
   LEVELS,
   readRoadmapInput,
   generateRoadmap,
   buildRoadmapMermaid,
+  presentRoadmap,
+  createRoadmapFor,
+  listRoadmaps,
+  getRoadmap,
+  deleteRoadmap,
   _internal: { normaliseRoadmap, wrap, safeLabel, buildPrompt },
 };

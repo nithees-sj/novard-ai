@@ -54,4 +54,8 @@ youtubeVideoSchema.pre('save', function(next) {
   next();
 });
 
+// Library listing (newest first) and the duplicate check when a video is added.
+youtubeVideoSchema.index({ userId: 1, createdAt: -1 });
+youtubeVideoSchema.index({ userId: 1, videoId: 1 });
+
 module.exports = mongoose.model('YouTubeVideo', youtubeVideoSchema);

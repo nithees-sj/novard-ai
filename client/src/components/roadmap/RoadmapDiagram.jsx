@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import logger from '../../lib/logger';
 import { loadMermaid } from '../MermaidDiagram';
 
 let seq = 0;
@@ -66,7 +67,7 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
         requestAnimationFrame(fit);
       })
       .catch((error) => {
-        console.error('Roadmap diagram failed to render:', error);
+        logger.error('Roadmap diagram failed to render', error);
         if (!cancelled) setStatus('error');
       });
     return () => { cancelled = true; };

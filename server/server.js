@@ -1,296 +1,51 @@
-require('dotenv').config();
-
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const multer = require('multer');
 const mongoose = require('mongoose');
-const connectDB = require('./connect');
-const { saveUser, getUserByEmail, getUserProfile, updateUserProfile } = require('./controllers/userController');
-const { processSkillsPrompt, getSkillsByCareer } = require('./controllers/skillsController');  
-const { getCareerIds } = require('./controllers/skillsController');
-const { deleteSkillsByCareer } = require('./controllers/skillsController');
-const agent = require('./controllers/chatbot');
-const { 
-  upload, 
-  uploadNotes, 
-  chatWithNotes, 
-  summarizeNotes, 
-  generateQuiz, 
-  getUserNotes,
-  deleteNote,
-  saveQuizResults
-} = require('./controllers/notesController');
-const { 
-  getUserVideoRequests, 
-  createVideoRequest, 
-  deleteVideoRequest, 
-  recommendVideos 
-} = require('./controllers/videosController');
-const { 
-  upload: uploadVideoMiddleware,
-  uploadVideo,
-  createYouTubeVideo,
-  getUserYouTubeVideos,
-  chatWithYouTubeVideo,
-  summarizeYouTubeVideo,
-  generateQuizForYouTubeVideo,
-  saveQuizResults: saveYouTubeQuizResults,
-  searchYouTubeVideos,
-  deleteYouTubeVideo
-} = require('./controllers/youtubeVideoController');
-const {
-  getUserDoubtClearances,
-  createDoubtClearance,
-  deleteDoubtClearance,
-  chatWithDoubtClearance,
-  summarizeDoubtClearance,
-  generateDoubtQuiz,
-  saveDoubtQuizResults,
-  getYouTubeRecommendations
-} = require('./controllers/doubtClearanceController');
-const {
-  createIssue,
-  getAllIssues,
-  getIssueById,
-  getIssueComments,
-  addComment,
-  updateIssueStatus,
-  deleteIssue,
-  voteOnIssue,
-  voteOnComment,
-  searchIssues,
-  generateAIResponseForComment
-} = require('./controllers/forumController');
-const {
-  generateAIForumResponse
-} = require('./controllers/forumAIController');
-const {
-  generatePlan,
-  generateQuiz: generateSkillQuiz,
-  getUserPlans,
-  saveQuizResult,
-  toggleDayCompletion,
-  deletePlan,
-  refreshVideo
-} = require('./controllers/skillUnlockerController');
-const {
-  getUserAnalytics
-} = require('./controllers/analyticsController');
-const { getQuizHistory } = require('./controllers/quizHistoryController');
-const { getProfileOverview } = require('./controllers/profileController');
-const { recordUsage } = require('./controllers/usageController');
-const roadmaps = require('./controllers/roadmapController');
-const skillGap = require('./controllers/skillGapController');
+const { env, missingEnv } = require('./config/env');
+const { connectDB } = require('./config/db');
+const { createApp } = require('./app');
+const logger = require('./utils/logger');
 
-const REQUIRED_ENV = ['MONGO_URI', 'GROQ_API_KEY'];
-const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
-if (missingEnv.length > 0) {
-  console.error(
-    `\nMissing required environment variable(s): ${missingEnv.join(', ')}\n` +
-    `Add them to server/.env before starting the server.\n`
-  );
+const missing = missingEnv();
+if (missing.length > 0) {
+  logger.error(`Missing required environment variable(s): ${missing.join(', ')}. Add them to server/.env (see server/.env.example).`);
   process.exit(1);
 }
-
-if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-  console.warn(
-    'Neither GEMINI_API_KEY nor GOOGLE_API_KEY is set - Udemy/Coursera/edureka course discovery will return no results.'
-  );
+if (env.jwtSecretGenerated) {
+  logger.warn('JWT_SECRET is not set: using a random secret, so everyone is signed out whenever the server restarts.');
+}
+if (!env.geminiApiKey) {
+  logger.warn('Neither GEMINI_API_KEY nor GOOGLE_API_KEY is set - Udemy/Coursera/Edureka course discovery will use the built-in course list.');
+}
+if (env.isProduction && !env.corsOrigins.length) {
+  logger.warn('CORS_ORIGINS is not set: the API accepts requests from any website origin.');
 }
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+// Keep the process alive on a stray rejection rather than dying mid-request, but make it loud.
+process.on('unhandledRejection', (reason) => logger.error('Unhandled promise rejection', { reason }));
 
-connectDB();
+async function start() {
+  await connectDB(env.mongoUri);
+  const server = createApp().listen(env.port, () => logger.info(`Server is running on port ${env.port}`));
 
-app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
-app.get('/', (req, res) => res.status(200).send('NOVARD-AI API is running'));
-
-app.post('/saveUser', saveUser); 
-app.get('/getUser/:email', getUserByEmail);
-app.get('/getUserProfile', getUserProfile);
-app.post('/updateUserProfile', updateUserProfile);  
-
-app.get('/api/careerIds', getCareerIds);
-app.post('/api/skills', processSkillsPrompt);  
-app.get('/api/skills/:careerId', getSkillsByCareer);  
-app.delete('/api/skills/delete/:careerId', deleteSkillsByCareer);
-
-// Novard Agent: streaming chat (SSE), action cards, chat history
-app.post('/api/agent/chat', agent.chat);
-app.post('/api/agent/conversations/:id/actions/:actionId', agent.decideAction);
-app.get('/api/agent/conversations/user/:userId', agent.listConversations);
-app.get('/api/agent/conversations/:id', agent.getConversation);
-app.patch('/api/agent/conversations/:id', agent.renameConversation);
-app.delete('/api/agent/conversations/:id', agent.deleteConversation);
-
-// Notes routes
-app.post('/upload-notes', upload.single('pdf'), uploadNotes);
-app.post('/chat-with-notes', chatWithNotes);
-app.post('/summarize-notes', summarizeNotes);
-app.post('/generate-quiz', generateQuiz);
-app.get('/notes/:userId', getUserNotes);
-app.delete('/notes/:noteId', deleteNote);
-app.post('/save-quiz-results', saveQuizResults);
-
-// Video requests routes
-app.get('/video-requests/:userId', getUserVideoRequests);
-app.post('/video-requests', createVideoRequest);
-app.delete('/video-requests/:videoRequestId', deleteVideoRequest);
-app.post('/recommend-videos', recommendVideos);
-
-// Educational video requests routes
-app.get('/educational-video-requests/:userId', getUserVideoRequests);
-app.post('/educational-video-requests', createVideoRequest);
-app.delete('/educational-video-requests/:videoRequestId', deleteVideoRequest);
-app.post('/recommend-educational-videos', recommendVideos);
-
-// YouTube Video Summarizer routes
-app.post('/youtube-videos', createYouTubeVideo);
-app.post('/upload-video', uploadVideoMiddleware.single('video'), uploadVideo);
-app.get('/youtube-videos/:userId', getUserYouTubeVideos);
-app.post('/chat-with-youtube-video', chatWithYouTubeVideo);
-app.post('/summarize-youtube-video', summarizeYouTubeVideo);
-app.post('/generate-youtube-quiz', generateQuizForYouTubeVideo);
-app.post('/save-youtube-quiz-results', saveYouTubeQuizResults);
-app.post('/youtube/search', searchYouTubeVideos);
-app.delete('/youtube-videos/:videoId', deleteYouTubeVideo);
-
-// Educational Video Summarizer routes
-
-// Doubt Clearance routes
-app.get('/doubt-clearances/:userId', getUserDoubtClearances);
-app.post('/doubt-clearances', createDoubtClearance);
-app.delete('/doubt-clearances/:doubtId', deleteDoubtClearance);
-app.post('/chat-with-doubt-clearance', chatWithDoubtClearance);
-app.post('/summarize-doubt-clearance', summarizeDoubtClearance);
-app.post('/generate-doubt-quiz', generateDoubtQuiz);
-app.post('/save-doubt-quiz-results', saveDoubtQuizResults);
-app.post('/get-youtube-recommendations', getYouTubeRecommendations);
-
-// Forum routes
-app.post('/api/forum/issues', createIssue);
-app.get('/api/forum/issues', getAllIssues);
-app.get('/api/forum/issues/:issueId', getIssueById);
-app.get('/api/forum/issues/:issueId/comments', getIssueComments);
-app.post('/api/forum/comments', addComment);
-app.put('/api/forum/issues/:issueId/status', updateIssueStatus);
-app.delete('/api/forum/issues/:issueId', deleteIssue);
-app.post('/api/forum/issues/:issueId/vote', voteOnIssue);
-app.post('/api/forum/comments/:commentId/vote', voteOnComment);
-app.get('/api/forum/search', searchIssues);
-app.post('/api/forum/comments/:commentId/ai-response', generateAIResponseForComment);
-app.post('/api/forum/ai-response', async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      logger.error(`Port ${env.port} is already in use. Stop the other process or set PORT in server/.env.`);
+      process.exit(1);
     }
-    const response = await generateAIForumResponse(prompt);
-    res.json({ response });
-  } catch (error) {
-    console.error('Error generating AI response:', error);
-    res.status(500).json({ error: 'Failed to generate AI response' });
-  }
-});
-
-// Skill Unlocker routes
-app.post('/api/skill-unlocker/generate-plan', generatePlan);
-app.post('/api/skill-unlocker/generate-quiz', generateSkillQuiz);
-app.get('/api/skill-unlocker/plans/:userId', getUserPlans);
-app.post('/api/skill-unlocker/save-quiz-result', saveQuizResult);
-app.post('/api/skill-unlocker/toggle-day-completion', toggleDayCompletion);
-app.delete('/api/skill-unlocker/plans/:planId', deletePlan);
-app.post('/api/skill-unlocker/refresh-video', refreshVideo);
-
-// Analytics routes
-app.get('/api/analytics/:userId', getUserAnalytics);
-
-// Study-time tracker heartbeat (navigator.sendBeacon posts text/plain)
-app.post('/api/usage/heartbeat', bodyParser.text({ type: 'text/plain', limit: '2kb' }), recordUsage);
-
-// Profile page: account details, goal, tests, learning paths and activity
-app.get('/api/profile/:userId/overview', getProfileOverview);
-
-// Previous quiz marks for one note / video / doubt / learning plan
-app.get('/api/quiz-history/:source/:itemId', getQuizHistory);
-
-// AI-generated personalised career roadmaps
-app.post('/api/roadmaps/generate', roadmaps.generate);
-app.get('/api/roadmaps/user/:userId', roadmaps.listForUser);
-app.get('/api/roadmaps/:id', roadmaps.getOne);
-app.delete('/api/roadmaps/:id', roadmaps.remove);
-
-// Skill-gap coach: analyse a profile, then chat about it
-app.post('/api/skill-gap/sessions', skillGap.createSession);
-app.get('/api/skill-gap/sessions/user/:userId', skillGap.listSessions);
-app.get('/api/skill-gap/sessions/:id', skillGap.getSession);
-app.post('/api/skill-gap/sessions/:id/messages', skillGap.sendMessage);
-app.delete('/api/skill-gap/sessions/:id', skillGap.deleteSession);
-
-// ── Unmatched routes ──────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ error: `Not found: ${req.method} ${req.originalUrl}` });
-});
-
-// ── Central error handler ─────────────────────────────────────────────────
-// Without this, Express replies to upload failures and thrown errors with an
-// HTML stack trace, which the client's response.json() then chokes on.
-app.use((err, req, res, next) => {
-  if (res.headersSent) return next(err);
-
-  console.error('Unhandled error:', err);
-
-  if (err instanceof multer.MulterError) {
-    const message =
-      err.code === 'LIMIT_FILE_SIZE'
-        ? 'File is too large.'
-        : `Upload failed: ${err.message}`;
-    return res.status(413).json({ error: message });
-  }
-
-  if (err && /Only (PDF|video) files are allowed/i.test(err.message || '')) {
-    return res.status(415).json({ error: err.message });
-  }
-
-  if (err && err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'Request body is too large.' });
-  }
-
-  return res.status(err.status || 500).json({
-    error: err.expose ? err.message : 'Internal server error',
+    throw error;
   });
+
+  const shutdown = (signal) => () => {
+    logger.info(`${signal} received - shutting down.`);
+    server.close(() => {
+      mongoose.connection.close(false).finally(() => process.exit(0));
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on('SIGINT', shutdown('SIGINT'));
+  process.on('SIGTERM', shutdown('SIGTERM'));
+}
+
+start().catch((error) => {
+  logger.error(error.message);
+  process.exit(1);
 });
-
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Stop the other process or set PORT in server/.env.`);
-    process.exit(1);
-  }
-  throw err;
-});
-
-// Keep the process alive on a stray rejection rather than dying mid-request,
-// but make it loud so the cause is visible in the log.
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled promise rejection:', reason);
-});
-
-const shutdown = (signal) => () => {
-  console.log(`\n${signal} received - shutting down.`);
-  server.close(() => {
-    mongoose.connection.close(false).finally(() => process.exit(0));
-  });
-  setTimeout(() => process.exit(1), 10000).unref();
-};
-
-process.on('SIGINT', shutdown('SIGINT'));
-process.on('SIGTERM', shutdown('SIGTERM'));

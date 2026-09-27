@@ -25,6 +25,9 @@ services:
       - NODE_ENV=production
       # Fallback to containerized mongo or host.docker.internal if MONGO_URI in .env points to localhost
       - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/novard-ai}
+      # Sign-ins must come from the same Google OAuth client the web app is built with.
+      - GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
+      - CORS_ORIGINS=http://localhost:3000
     ports:
       - "5001:5001"
     volumes:

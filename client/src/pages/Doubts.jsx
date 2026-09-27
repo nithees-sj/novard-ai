@@ -60,12 +60,12 @@ const Doubts = () => {
             <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span
+            <button type="button"
               onClick={() => setActiveView('landing')}
               className={`cursor-pointer hover:text-blue-600 ${activeView === 'landing' ? 'text-gray-900 font-medium' : ''}`}
             >
               Doubts & Learning
-            </span>
+            </button>
             {activeView === 'notes' && (
               <>
                 <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

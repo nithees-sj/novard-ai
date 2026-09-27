@@ -5,6 +5,7 @@ import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
 import { BotMark } from '../components/ChatbotButton';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
+import { currentEmail, currentName } from '../lib/session';
 
 const STARTERS = [
   { icon: '💡', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
@@ -23,8 +24,8 @@ const Chatbot = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const userId = user?.email || localStorage.getItem('email') || 'anonymous';
-  const userName = user?.name || user?.displayName || localStorage.getItem('name') || '';
+  const userId = user?.email || currentEmail();
+  const userName = user?.name || user?.displayName || currentName();
   const firstName = userName.split(' ')[0];
 
   const [chats, setChats] = useState([]);
@@ -156,7 +157,7 @@ const Chatbot = () => {
     abortRef.current = controller;
     let conversationId = activeId;
     try {
-      await streamAgentReply({ userId, userName, conversationId, message: text, signal: controller.signal }, {
+      await streamAgentReply({ conversationId, message: text, signal: controller.signal }, {
         onMeta: (m) => {
           conversationId = m.conversationId;
           if (!activeRef.current) {
@@ -244,7 +245,7 @@ const Chatbot = () => {
     const before = action.status;
     setAction(action.id, decision === 'confirm' ? { status: 'running', error: null } : { status: 'dismissed' });
     try {
-      const { action: updated } = await agentApi.decide(convId, action.id, { userId, userName, decision });
+      const { action: updated } = await agentApi.decide(convId, action.id, { decision });
       if (activeRef.current === convId) setAction(action.id, updated);
     } catch (err) {
       if (activeRef.current !== convId) return;

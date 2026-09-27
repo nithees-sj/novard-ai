@@ -14,8 +14,10 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 
 - [Features](#features)
 - [Architecture](#architecture)
+- [Security](#security)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
+- [Testing, linting and building](#testing-linting-and-building)
 - [Environment Variables](#environment-variables)
 - [Running with Docker](#running-with-docker)
 - [Deploying to Google Cloud Run](#deploying-to-google-cloud-run)
@@ -32,7 +34,7 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 
 ### Authentication & profile
 
-Sign-in is **Google OAuth 2.0** through `@react-oauth/google` (implicit flow). The access token is exchanged for the Google userinfo profile, the session is persisted in `localStorage`, and the user record (name, email, picture) is upserted server-side. Every application route in [App.js](client/src/App.js) is guarded — unauthenticated visitors are redirected to the landing page. Users can extend their profile with a mobile number and bio from the Profile page.
+Sign-in is **Google OAuth 2.0** through `@react-oauth/google` (implicit flow). The browser sends the Google access token to `POST /api/auth/google`; the API asks Google whether the token is valid, was issued to *this* app's OAuth client and belongs to a verified email, creates the account on first sign-in, and returns a signed **session token** (JWT, 7 days by default). The client keeps it in `localStorage` ([lib/session.js](client/src/lib/session.js)) and sends it as `Authorization: Bearer …` on every request ([lib/api.js](client/src/lib/api.js)); when the API answers 401 the student is signed out. Every application route in [App.js](client/src/App.js) is guarded — unauthenticated visitors are redirected to the landing page. Users can extend their profile with a mobile number and bio from the Profile page.
 
 ### Career development hub (`/career`)
 
@@ -67,7 +69,7 @@ Upload a PDF (10 MB cap, PDF-only filter). The text is extracted with `pdf-parse
 Three sub-tools behind one page:
 
 - **Video Library** — describe what you want to learn and pick a platform (YouTube, Udemy, Coursera, edureka). YouTube results come from live search; Udemy/Coursera/edureka listings are produced by **Gemini Flash** with heavy prompt constraints pushing it toward real, still-live course URLs.
-- **Video Summarizer** (Video Sessions → Video Summarizer) — paste a YouTube URL *or* upload a video file (100 MB cap). For YouTube links, the caption track is pulled via Innertube and used as the transcript; title and description are fetched from the video metadata. You then get chat-over-transcript, summarization and quiz generation with saved results. Uploaded files without captions fall back to LLM-generated transcript-style content derived from the filename.
+- **Video Summarizer** (Video Sessions → Video Summarizer) — paste a YouTube URL. The caption track (English preferred) is downloaded through Innertube's iOS client and used as the transcript; title and description come from the video metadata. Videos without captions fall back to title + description. You then get chat-over-transcript, summarization (long transcripts are sampled from start to end) and quiz generation with saved results.
 
 ### Doubts & Learning (`/doubts`)
 
@@ -86,7 +88,7 @@ A Stack Overflow-style Q&A board:
 
 ### Dashboard analytics (`/home`)
 
-[analyticsController.js](server/controllers/analyticsController.js) turns what the student has actually done into deterministic numbers. These come from quiz answers, skill-plan days completed, questions asked and material studied. The same data always gives the same result:
+[analyticsService.js](server/services/analyticsService.js) turns what the student has actually done into deterministic numbers. These come from quiz answers, skill-plan days completed, questions asked and material studied. The same data always gives the same result:
 
 - **Skill Score** (0–1000) is built from four parts:
   - mastery: quiz accuracy, weighted by recency;
@@ -141,17 +143,17 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 ```
 ┌──────────────────────┐        ┌───────────────────────────┐
-│  React 18 SPA        │        │  Express API              │
-│  CRA + Tailwind      │  HTTP  │  16 controllers           │
-│  react-router v6     ├───────►│  89 routes                │
-│  Google OAuth (impl.)│        │  Mongoose ODM             │
+│  React 18 SPA        │ HTTPS  │  Express API (63 routes)  │
+│  CRA + Tailwind      │ Bearer │  routes → controllers →   │
+│  react-router v6     ├───────►│  services → Mongoose      │
+│  Google OAuth (impl.)│ token  │  JWT sessions, rate limits│
 └──────────────────────┘        └─────────┬─────────────────┘
                                           │
               ┌───────────────────────────┼──────────────────────────┐
               ▼                           ▼                          ▼
       ┌───────────────┐          ┌─────────────────┐        ┌────────────────┐
       │ MongoDB Atlas │          │ Groq (gpt-oss)  │        │ YouTube        │
-      │ 13 collections│          │ Gemini Flash    │        │ (Innertube +   │
+      │ 12 collections│          │ Gemini Flash    │        │ (Innertube +   │
       └───────────────┘          └─────────────────┘        │  search API)   │
                                                             └────────────────┘
 ```
@@ -166,7 +168,22 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI_MODEL` without touching code. The gpt-oss models are *reasoning* models: they spend completion tokens on an internal `reasoning` field before emitting `content`, so every Groq call sends `reasoning_effort: "low"` to keep the token budget available for the answer.
 
-There is **no server-side auth middleware**: the client passes the user's email or a `userId` with requests, and controllers scope queries by that value.
+**Server layers.** A request passes through [app.js](server/app.js) (security headers, CORS, JSON body limit, global rate limit) to a router in [routes/](server/routes/), which applies `requireAuth()` and, for AI-backed endpoints, the per-student AI rate limit. Controllers in [controllers/](server/controllers/) only translate HTTP: they read the request, take the student's id from the session, call a service and shape the response. Business logic and data access live in [services/](server/services/) (the Novard Agent's in [agent/](server/agent/)), and every error — thrown anywhere — is turned into one JSON format by [middleware/errorHandler.js](server/middleware/errorHandler.js):
+
+```json
+{ "error": "A message for the student", "code": "BAD_REQUEST", "details": "optional" }
+```
+
+---
+
+## Security
+
+- **Authentication.** Every route except `GET /health`, `GET /` and `POST /api/auth/google` requires a valid session token ([middleware/auth.js](server/middleware/auth.js)). Google tokens issued to any other OAuth client are rejected.
+- **Authorization.** The student's id always comes from the session. Routes that still carry a user id in the URL or body (kept for compatibility) must match it, or the request is refused with 403. Every read, update and delete of a note, doubt, video, plan, roadmap, analysis or chat is scoped to its owner; forum posts and replies are attributed to the signed-in student, and only the author can change a discussion's status or delete it.
+- **Input validation.** Ids must be valid ObjectIds (which also blocks `{"$ne": …}`-style operator injection), text fields are length-bounded, numbers are range-checked, uploads must really be PDFs (the file signature is checked, not just the MIME type), and links that come from model output must be `http(s)`.
+- **Rate limiting** ([middleware/rateLimit.js](server/middleware/rateLimit.js)): 300 requests/min per IP, 30 AI requests/min per student, 30 sign-in attempts per 15 min per IP (all configurable).
+- **Headers & CORS.** `helmet` sets standard security headers; `CORS_ORIGINS` restricts which sites may call the API. Sessions are bearer tokens, not cookies, so there is no CSRF surface.
+- **XSS.** AI output is rendered by `react-markdown` without raw HTML, and Mermaid runs with `securityLevel: 'strict'`.
 
 ---
 
@@ -333,7 +350,9 @@ is inert text rather than something that has to be sanitised.
 
 **Frontend** — React 18.3, React Router 6 (route-level code splitting), `@react-oauth/google`, Axios, Tailwind CSS 3 + `@tailwindcss/typography`, `react-markdown` + `remark-gfm`, `mermaid` (lazy-loaded), `react-icons`, Create React App (`react-scripts` 5).
 
-**Backend** — Node.js 20, Express 4, Mongoose 8, LangChain (`@langchain/core`, `@langchain/groq`), `groq-sdk`, `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `body-parser` (50 MB JSON limit), CORS.
+**Backend** — Node.js 20, Express 4, Mongoose 8, LangChain (`@langchain/core`, `@langchain/groq`), `groq-sdk`, `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `jsonwebtoken`, `helmet`, `express-rate-limit`, CORS.
+
+**Quality** — Jest + Supertest + `mongodb-memory-server` (server), Jest + React Testing Library (client), ESLint on both.
 
 **Infrastructure** — MongoDB Atlas, Docker + Docker Compose, Nginx (client image), Google Cloud Run + Artifact Registry + Cloud Build, Vercel (client-only SPA deploy via [vercel.json](vercel.json)).
 
@@ -343,55 +362,59 @@ is inert text rather than something that has to be sanitised.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.16+ (the server uses `pdf-parse`, which needs it)
 - A MongoDB instance (Atlas connection string, or local/Docker MongoDB)
 - A [Groq API key](https://console.groq.com)
-- A Google AI (Gemini) API key — needed only for Udemy/Coursera/edureka course discovery
-- A Google OAuth 2.0 Client ID (Web application) with your dev origin whitelisted
+- A Google OAuth 2.0 Client ID (Web application) with your dev origin (`http://localhost:3000`) in its **Authorized JavaScript origins**
+- Optional: a Google AI (Gemini) API key — used only for Udemy/Coursera/Edureka course discovery
 
 ### Install
 
 ```bash
 git clone <your-fork-url> novard-ai
 cd novard-ai
-
-# Backend
-cd server && npm install
-
-# Frontend
-cd ../client && npm install
+npm run install:all          # installs server/ and client/
 ```
 
 ### Configure
 
-Create `server/.env`:
-
-```env
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/novard-ai
-GROQ_API_KEY=your_groq_api_key
-GEMINI_API_KEY=your_google_ai_api_key
-PORT=5000
-NODE_ENV=development
+```bash
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 ```
 
-Create `client/.env`:
+Then fill in at least `MONGO_URI`, `GROQ_API_KEY`, `GOOGLE_CLIENT_ID` and `JWT_SECRET` in `server/.env`, and `REACT_APP_API_ENDPOINT` and `REACT_APP_GOOGLE_CLIENT_ID` in `client/.env`. `GOOGLE_CLIENT_ID` (server) and `REACT_APP_GOOGLE_CLIENT_ID` (client) must be the same value. Generate a `JWT_SECRET` with:
 
-```env
-REACT_APP_API_ENDPOINT=http://localhost:5000
-REACT_APP_GOOGLE_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
 ### Run
 
 ```bash
-# Terminal 1 — API on :5000
-cd server && npm start
+# Terminal 1 — API on :5000 (restarts on file changes)
+npm run dev:server
 
 # Terminal 2 — React dev server on :3000
-cd client && npm start
+npm run dev:client
 ```
 
-Open <http://localhost:3000>. The API exposes `GET /health` for liveness checks.
+Open <http://localhost:3000>. `GET /health` reports `{ "status": "OK", "database": "up" }` when the API and its database are ready. Use `npm start --prefix server` to run the API without file watching.
+
+---
+
+## Testing, linting and building
+
+| Command (from the repo root) | What it does |
+| --- | --- |
+| `npm test` | Server tests, then client tests. |
+| `npm test --prefix server` | Unit + API tests. Each API test file runs against its own in-memory MongoDB; the AI providers and YouTube are mocked, so no keys or network are needed. The first run downloads a MongoDB binary (~120 MB). |
+| `npm run test:coverage --prefix server` | The same, with a coverage report. |
+| `npm run test:ci --prefix client` | Client tests once (use `npm test --prefix client` for watch mode). |
+| `npm run lint` | ESLint on server and client. |
+| `npm run build` | Production build of the client into `client/build/`. |
+
+The server test suites cover every endpoint's authentication, ownership and validation rules, each feature's workflow (notes, doubts, videos, video library, forum, learning plans, roadmaps, skill-gap coach, analytics, profile, study time, the Novard Agent's turn loop and action cards) and the business logic behind them (quiz validation, analytics scoring, roadmap and readiness maths, transcript parsing, JSON recovery from model output).
 
 ---
 
@@ -399,19 +422,31 @@ Open <http://localhost:3000>. The API exposes `GET /health` for liveness checks.
 
 ### Server
 
+See [server/.env.example](server/.env.example) for a commented template.
+
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `MONGO_URI` | yes | MongoDB connection string. |
-| `GROQ_API_KEY` | yes | Powers every Groq-backed feature. Without it, most of the app fails. |
-| `GEMINI_API_KEY` | optional | Gemini Flash, used only for Udemy/Coursera/edureka course discovery. `GOOGLE_API_KEY` is accepted as an alias. |
+| `GROQ_API_KEY` | yes | Powers every Groq-backed feature. |
+| `GOOGLE_CLIENT_ID` | yes | Google OAuth client ID(s), comma-separated, whose sign-ins the API accepts. Same value as the client's `REACT_APP_GOOGLE_CLIENT_ID`. |
+| `JWT_SECRET` | yes in production | Signs session tokens. In development a random secret is used when unset (everyone is signed out on restart). Changing it signs everyone out. |
+| `GOOGLE_API_KEY` / `GEMINI_API_KEY` | optional | Gemini, used only for Udemy/Coursera/Edureka course discovery; without it the built-in course list is used. |
 | `PORT` | no | Defaults to `5000`; container images default to `8080`. |
-| `NODE_ENV` | no | Standard Node environment flag. |
+| `NODE_ENV` | no | `production` enables JSON logs and `TRUST_PROXY=1`, and makes `JWT_SECRET` mandatory. |
+| `JWT_EXPIRES_IN` | no | Session lifetime, default `7d`. |
+| `CORS_ORIGINS` | no | Comma-separated browser origins allowed to call the API. Unset = any origin (a warning is logged in production). |
+| `TRUST_PROXY` | no | Proxy hops in front of the API (default `1` in production), so rate limits see the real client IP. |
+| `UPLOAD_DIR` | no | Where uploaded PDFs are stored, relative to `server/` (default `uploads`). |
+| `RATE_LIMIT_API_PER_MINUTE` / `RATE_LIMIT_AI_PER_MINUTE` / `RATE_LIMIT_AUTH_PER_15_MIN` | no | Rate limits (defaults 300 / 30 / 30). |
+| `LOG_LEVEL` / `LOG_FORMAT` | no | `error`, `warn`, `info`, `debug` or `silent`; `LOG_FORMAT=json` forces JSON lines. |
+| `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | no | Model overrides (see [config/ai.js](server/config/ai.js)). |
+| `MEMORY_SUMMARIZE_AT_TOKENS`, `MEMORY_KEEP_RECENT_TOKENS` | no | When chat memory is summarised (see [Conversational AI](#conversational-ai-langchain)). |
 
-> The server refuses to start if `MONGO_URI` or `GROQ_API_KEY` is missing, and warns (without failing) when no Google AI key is set.
+> The server refuses to start if `MONGO_URI`, `GROQ_API_KEY`, `GOOGLE_CLIENT_ID` or (in production) `JWT_SECRET` is missing.
 
 ### Client
 
-Create React App inlines `REACT_APP_*` values **at build time**, not at runtime — a container must be rebuilt (or built with the right `--build-arg`) to change them.
+Create React App inlines `REACT_APP_*` values **at build time**, not at runtime — a container must be rebuilt (or built with the right `--build-arg`) to change them. Template: [client/.env.example](client/.env.example).
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
@@ -433,15 +468,17 @@ docker compose up --build
 - API → <http://localhost:5001>
 - MongoDB → `localhost:27018` (persisted in the `mongodb_data` volume)
 
-Both services declare health checks, and `server/uploads` is bind-mounted so uploaded PDFs and videos survive container restarts.
+Both services declare health checks, and `server/uploads` is bind-mounted so uploaded PDFs survive container restarts.
 
-To smoke-test the production images against an external Atlas cluster, use [docker-compose.prod.yml](docker-compose.prod.yml) — it drops the MongoDB container and reads credentials from your shell. Full details in [DOCKER_SETUP.md](DOCKER_SETUP.md).
+To smoke-test the production images against an external Atlas cluster, use [docker-compose.prod.yml](docker-compose.prod.yml) — it drops the MongoDB container and reads credentials (including `JWT_SECRET`) from your shell. Full details in [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+The server image runs as the unprivileged `node` user with `NODE_ENV=production`; only `/app/uploads` is writable.
 
 ---
 
 ## Deploying to Google Cloud Run
 
-[deploy.sh](deploy.sh) automates the whole path: it authenticates, enables the Cloud Run / Artifact Registry / Cloud Build APIs, creates the registry repo, builds and pushes both images, deploys the server, reads back its URL, rebuilds the client with that URL baked in, and deploys the client.
+[deploy.sh](deploy.sh) automates the whole path: it authenticates, enables the Cloud Run / Artifact Registry / Cloud Build APIs, creates the registry repo, builds and pushes both images, deploys the server (with `MONGO_URI`, `GROQ_API_KEY`, `GOOGLE_API_KEY` and `JWT_SECRET` from `server/.env`, and `GOOGLE_CLIENT_ID` from `client/.env`), reads back its URL, rebuilds the client with that URL baked in, deploys the client, and finally sets the server's `CORS_ORIGINS` to the client URL.
 
 ```bash
 export GCP_PROJECT_ID=your-project-id
@@ -449,7 +486,7 @@ export GCP_REGION=asia-south1   # optional, this is the default
 ./deploy.sh
 ```
 
-The client image is a two-stage build (Node build → Nginx) whose config template is expanded with the `PORT` Cloud Run injects. [cloudbuild.yaml](cloudbuild.yaml) covers CI-triggered builds. Step-by-step manual instructions and troubleshooting live in [CLOUD_RUN_SETUP.md](CLOUD_RUN_SETUP.md).
+The client image is a two-stage build (Node build → Nginx) whose config template is expanded with the `PORT` Cloud Run injects. [cloudbuild.yaml](cloudbuild.yaml) covers CI-triggered builds; it only *updates* `NODE_ENV`, `GOOGLE_CLIENT_ID` and `CORS_ORIGINS` (set `_CLIENT_URL`), so set `MONGO_URI`, `GROQ_API_KEY`, `GOOGLE_API_KEY` and `JWT_SECRET` on the service once — ideally as Secret Manager references. Step-by-step manual instructions and troubleshooting live in [CLOUD_RUN_SETUP.md](CLOUD_RUN_SETUP.md).
 
 Remember to add your deployed client URL to the **Authorized JavaScript origins** of your Google OAuth client.
 
@@ -457,19 +494,18 @@ Remember to add your deployed client URL to the **Authorized JavaScript origins*
 
 ## API Reference
 
-All routes are defined in [server.js](server/server.js) (89 registrations). Base URL is `REACT_APP_API_ENDPOINT`. Unmatched paths and upload/body errors return JSON, never an HTML stack trace.
+Routes live in [server/routes/](server/routes/) (63 in total). Base URL is `REACT_APP_API_ENDPOINT`. Except where marked *public*, every route needs `Authorization: Bearer <session token>`; the `:userId` path segments and `userId` body fields that some routes still accept must be the signed-in student's email. Errors use the format shown under [Architecture](#architecture); AI-backed routes (marked **AI**) share a per-student rate limit.
 
 <details>
-<summary><b>Health & users</b></summary>
+<summary><b>Health, sign-in & account</b></summary>
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/health` | Liveness probe. |
-| `GET` | `/` | Returns a plain-text banner. |
-| `POST` | `/saveUser` | Upsert a user after Google sign-in. |
-| `GET` | `/getUser/:email` | Fetch a user by email. |
-| `GET` | `/getUserProfile` | Fetch the extended profile. |
-| `POST` | `/updateUserProfile` | Update name / mobile / bio. |
+| `GET` | `/health` | *Public.* Liveness probe; reports whether the database is connected. |
+| `GET` | `/` | *Public.* Plain-text banner. |
+| `POST` | `/api/auth/google` | *Public.* `{accessToken}` from Google → `{token, user}`. Creates the account on first sign-in. |
+| `GET` | `/api/auth/me` | The signed-in student's account. |
+| `POST` | `/updateUserProfile` | `{name?, mobile?, bio?}` → `{success, user, token}` (a fresh token carrying the new name). |
 
 </details>
 
@@ -478,13 +514,13 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/upload-notes` | Multipart PDF upload (field `pdf`, 10 MB max). |
-| `GET` | `/notes/:userId` | List a user's notes. |
-| `POST` | `/chat-with-notes` | Ask a question against the extracted text. |
-| `POST` | `/summarize-notes` | Chunked summarization. |
-| `POST` | `/generate-quiz` | Build a quiz from the note. |
-| `POST` | `/save-quiz-results` | Persist a scored attempt. |
-| `DELETE` | `/notes/:noteId` | Delete a note. |
+| `POST` | `/upload-notes` | **AI.** Multipart PDF upload (field `pdf`, 10 MB max) → 201 with the new note. |
+| `GET` | `/notes/:userId` | The student's notes (without extracted text). |
+| `POST` | `/chat-with-notes` | **AI.** `{noteId, message}` — answer grounded in the note. |
+| `POST` | `/summarize-notes` | **AI.** `{noteId}` — chunked summarization. |
+| `POST` | `/generate-quiz` | **AI.** `{noteId, difficulty?, questionCount?, style?, focus?}`. |
+| `POST` | `/save-quiz-results` | `{noteId, quizId, userAnswers, score: {correct, total}}`. |
+| `DELETE` | `/notes/:noteId` | Delete a note and its file. |
 
 </details>
 
@@ -493,19 +529,16 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/video-requests/:userId` | List saved video requests. |
-| `POST` | `/video-requests` | Create a request. |
-| `DELETE` | `/video-requests/:videoRequestId` | Delete a request. |
-| `POST` | `/recommend-videos` | Platform-aware recommendations (YouTube search or Gemini). |
-| `GET`/`POST`/`DELETE` | `/educational-video-requests…`, `/recommend-educational-videos` | Same handlers under the educational namespace. |
-| `POST` | `/youtube-videos` | Register a YouTube URL; fetches metadata + captions. |
-| `POST` | `/upload-video` | Multipart video upload (field `video`, 100 MB max). |
-| `GET` | `/youtube-videos/:userId` | List a user's videos. |
-| `POST` | `/youtube/search` | Search YouTube. |
-| `POST` | `/chat-with-youtube-video` | Chat over the transcript. |
-| `POST` | `/summarize-youtube-video` | Summarize the transcript. |
-| `POST` | `/generate-youtube-quiz` | Build a quiz. |
-| `POST` | `/save-youtube-quiz-results` | Persist a scored attempt. |
+| `GET` | `/educational-video-requests/:userId` | The student's learning requests. |
+| `POST` | `/educational-video-requests` | `{title, description, platform?}` → 201. |
+| `DELETE` | `/educational-video-requests/:videoRequestId` | Delete a request. |
+| `POST` | `/recommend-educational-videos` | **AI.** `{title, description, platform?}` → `{videos}`. |
+| `POST` | `/youtube-videos` | **AI.** `{title, videoUrl}` → 201; fetches metadata and captions. |
+| `GET` | `/youtube-videos/:userId` | The student's videos (without transcripts). |
+| `POST` | `/chat-with-youtube-video` | **AI.** `{videoId, message}`. |
+| `POST` | `/summarize-youtube-video` | **AI.** `{videoId}` (cached after the first run). |
+| `POST` | `/generate-youtube-quiz` | **AI.** `{videoId, …quiz options}` → `{quiz, quizIndex}`. |
+| `POST` | `/save-youtube-quiz-results` | `{videoId, quizIndex, score}` (number correct). |
 | `DELETE` | `/youtube-videos/:videoId` | Delete a video. |
 
 </details>
@@ -515,13 +548,13 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/doubt-clearances/:userId` | List a user's doubts. |
-| `POST` | `/doubt-clearances` | Open a new doubt. |
-| `POST` | `/chat-with-doubt-clearance` | Continue the conversation. |
-| `POST` | `/summarize-doubt-clearance` | Summarize the thread (cached after first run). |
-| `POST` | `/generate-doubt-quiz` | Quiz from the conversation. |
-| `POST` | `/save-doubt-quiz-results` | Persist a scored attempt. |
-| `POST` | `/get-youtube-recommendations` | Suggested videos with a reason each. |
+| `GET` | `/doubt-clearances/:userId` | The student's doubts. |
+| `POST` | `/doubt-clearances` | **AI.** `{description, title?, imageUrl?}` → 201 (title written by the AI). |
+| `POST` | `/chat-with-doubt-clearance` | **AI.** `{doubtId, message}`. |
+| `POST` | `/summarize-doubt-clearance` | **AI.** `{doubtId}` (cached after the first run). |
+| `POST` | `/generate-doubt-quiz` | **AI.** `{doubtId, …quiz options}`; needs two exchanges in the chat. |
+| `POST` | `/save-doubt-quiz-results` | `{doubtId, quizIndex, score}`. |
+| `POST` | `/get-youtube-recommendations` | **AI.** `{doubtId}` → up to 6 videos. |
 | `DELETE` | `/doubt-clearances/:doubtId` | Delete a doubt. |
 
 </details>
@@ -531,35 +564,53 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/forum/issues` | Create an issue. |
-| `GET` | `/api/forum/issues` | List issues. |
-| `GET` | `/api/forum/issues/:issueId` | Fetch one issue. |
-| `GET` | `/api/forum/search` | Search issues. |
-| `PUT` | `/api/forum/issues/:issueId/status` | Change status. |
-| `POST` | `/api/forum/issues/:issueId/vote` | Vote on an issue. |
-| `GET` | `/api/forum/issues/:issueId/comments` | List comments. |
-| `POST` | `/api/forum/comments` | Add a comment or nested reply. |
-| `POST` | `/api/forum/comments/:commentId/vote` | Vote on a comment. |
-| `POST` | `/api/forum/comments/:commentId/ai-response` | AI reply to a specific comment. |
-| `POST` | `/api/forum/ai-response` | AI answer from a raw prompt. |
+| `POST` | `/api/forum/issues` | **AI.** `{title, description, category?, tags?}` → 201; the AI's first answer follows in the background. |
+| `GET` | `/api/forum/issues` | `?category= &status= &q= &sort= &page= &limit=` |
+| `GET` | `/api/forum/issues/:issueId` | One discussion. |
+| `PUT` | `/api/forum/issues/:issueId/status` | Author only. `{status: open\|resolved\|closed}`. |
+| `DELETE` | `/api/forum/issues/:issueId` | Author only; removes every reply. |
+| `GET` | `/api/forum/issues/:issueId/comments` | Replies, oldest first. |
+| `POST` | `/api/forum/comments` | **AI.** `{issueId, content, parentCommentId?}` → 201; the AI replies in the background. |
+| `POST` | `/api/forum/comments/:commentId/ai-response` | **AI.** An AI reply to one comment. |
 
 </details>
 
 <details>
-<summary><b>Skill Unlocker & analytics</b></summary>
+<summary><b>Skill Unlocker, career tools, analytics</b></summary>
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/skill-unlocker/generate-plan` | Generate an N-day plan with matched YouTube videos. |
-| `GET` | `/api/skill-unlocker/plans/:userId` | List a user's plans. |
-| `POST` | `/api/skill-unlocker/toggle-day-completion` | Mark a day done/undone. |
-| `POST` | `/api/skill-unlocker/refresh-video` | Re-match the video for one day. |
-| `POST` | `/api/skill-unlocker/generate-quiz` | Quiz scoped to completed days. |
-| `POST` | `/api/skill-unlocker/save-quiz-result` | Persist an attempt. |
+| `POST` | `/api/skill-unlocker/generate-plan` | **AI.** `{skillName, duration (10-60), description, preferences?}` → 201. |
+| `GET` | `/api/skill-unlocker/plans/:userId` | The student's plans with progress. |
+| `POST` | `/api/skill-unlocker/toggle-day-completion` | `{planId, dayNumber}`. |
+| `POST` | `/api/skill-unlocker/refresh-video` | **AI.** `{planId, dayNumber}` — another video for that day. |
+| `POST` | `/api/skill-unlocker/generate-quiz` | **AI.** Quiz on the completed days. |
+| `POST` | `/api/skill-unlocker/save-quiz-result` | `{planId, quizId, score (0-100), totalQuestions, …}`. |
 | `DELETE` | `/api/skill-unlocker/plans/:planId` | Delete a plan. |
+| `POST` | `/api/roadmaps/generate` | **AI.** `{role, level?, hoursPerWeek?, timelineMonths?, knownSkills?, goal?}` → 201. |
+| `GET` | `/api/roadmaps/user/:userId`, `/api/roadmaps/:id` | List / open (with its Mermaid diagram). |
+| `DELETE` | `/api/roadmaps/:id` | Delete a roadmap. |
+| `POST` | `/api/skill-gap/sessions` | **AI.** `{targetRole, currentSkills?, experience?, hoursPerWeek?, goal?}` → 201. |
+| `GET` | `/api/skill-gap/sessions/user/:userId`, `/api/skill-gap/sessions/:id` | List / open. |
+| `POST` | `/api/skill-gap/sessions/:id/messages` | **AI.** `{message}` → `{userMessage, assistantMessage}`. |
+| `DELETE` | `/api/skill-gap/sessions/:id` | Delete an analysis. |
 | `GET` | `/api/analytics/:userId` | Dashboard analytics (`?tzOffset=` minutes). |
-| `POST` | `/api/usage/heartbeat` | Study-time tracker: `{userId, day: "YYYY-MM-DD", seconds}` (text/plain or JSON). Capped at 5 minutes per call and 24 hours per day. |
-| `GET` | `/api/profile/:userId/overview` | Profile page data: account, goal, tests, learning paths, activity (`?tzOffset=`). |
+| `GET` | `/api/profile/:userId/overview` | Profile page data (`?tzOffset=`). |
+| `GET` | `/api/quiz-history/:source/:itemId` | Previous marks; `source` is `notes`, `youtube`, `doubt` or `plan`. |
+| `POST` | `/api/usage/heartbeat` | Study time: `{day: "YYYY-MM-DD", seconds}`. `text/plain` bodies (from `sendBeacon`) may carry `token` instead of the header. Capped at 5 minutes per call and 24 hours per day. |
+
+</details>
+
+<details>
+<summary><b>Novard Agent</b></summary>
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/agent/chat` | **AI.** `{message, conversationId?}` → Server-Sent Events: `meta`, `token`, `status`, `action`, `superseded`, `title`, `done`, `error`. |
+| `POST` | `/api/agent/conversations/:id/actions/:actionId` | **AI.** `{decision: confirm\|dismiss}` → `{action}`. |
+| `GET` | `/api/agent/conversations/user/:userId`, `/api/agent/conversations/:id` | List / open chats. |
+| `PATCH` | `/api/agent/conversations/:id` | `{title}`. |
+| `DELETE` | `/api/agent/conversations/:id` | Delete a chat. |
 
 </details>
 
@@ -567,18 +618,21 @@ All routes are defined in [server.js](server/server.js) (89 registrations). Base
 
 ## Data Models
 
-Thirteen Mongoose schemas in [server/models/](server/models/):
+Twelve Mongoose schemas in [server/models/](server/models/), each indexed on the fields its list queries filter and sort by:
 
 | Model | Holds |
 | --- | --- |
 | `User` | Name, unique email, picture, mobile, bio. |
-| `Skills` | Legacy per-role skill lists from the old Skill Gap Analysis (no longer used by the UI). |
-| `Notes` | Uploaded PDF metadata, extracted text, summary, chat history, quiz attempts. |
-| `YouTubeVideo` | URL/`videoId` or uploaded-file metadata, transcript, summary, chat history, quizzes. |
-| `DoubtClearance` | Title, description, optional image, chat history, summary, quizzes, YouTube recommendations with reasons. |
+| `Notes` | Uploaded PDF metadata, extracted text, summary, chat history and memory, quiz attempts. |
+| `YouTubeVideo` | URL/`videoId`, transcript, summary, chat history and memory, quizzes (older records may be uploaded files). |
+| `DoubtClearance` | Title, description, optional image link, chat history and memory, summary, quizzes, YouTube recommendations. |
 | `SkillPlan` | Skill, duration, preferences, per-day plan with matched video and completion flags, quiz configuration and attempt history. |
-| `ForumIssue` / `ForumComment` | Issues with tags, status and votes; comments with nesting, votes, `isAI` and `isSolution`. |
-| `Video` | Lightweight video-request records. |
+| `ForumIssue` / `ForumComment` | Discussions with category, tags and status; threaded replies with an `isAI` flag. |
+| `Video` | Video Library learning requests. |
+| `Roadmap` | Generated career roadmaps (stages, topics, projects). |
+| `SkillGapSession` | A skill-gap analysis and its coaching chat. |
+| `ChatbotConversation` | Novard Agent chats, with action cards and their status. |
+| `AppUsage` | Tracked study seconds per student per local day. |
 
 ---
 
@@ -586,37 +640,44 @@ Thirteen Mongoose schemas in [server/models/](server/models/):
 
 ```
 novard-ai/
-├── client/                      # React SPA (Create React App)
+├── client/                        # React SPA (Create React App)
 │   ├── src/
-│   │   ├── App.js               # Route table + auth guards
-│   │   ├── AuthContext.js       # Google OAuth provider, localStorage session
-│   │   ├── pages/               # 22 route-level pages
-│   │   ├── components/          # Sidebar, inline views, analytics widgets, chatbot
-│   │   │   ├── MarkdownView.jsx   # The one Markdown renderer (GFM + Mermaid)
-│   │   │   └── MermaidDiagram.jsx # Lazy-loaded flowchart rendering
-│   │   ├── hooks/               # useViewportWidth
-│   │   ├── images/roadmaps/     # 12 career roadmap graphics
-│   ├── Dockerfile               # Node build → Nginx serve
-│   └── nginx.conf.template      # SPA fallback, $PORT-aware
+│   │   ├── App.js                 # Route table + auth guards
+│   │   ├── AuthContext.js         # Google sign-in → API session
+│   │   ├── lib/api.js             # Axios/fetch client: base URL, timeout, session token, 401 handling
+│   │   ├── lib/session.js         # Session storage (token + profile)
+│   │   ├── pages/                 # Route-level pages
+│   │   ├── components/            # Sidebar, hub views, analytics widgets, agent, forum
+│   │   ├── hooks/                 # useStudyTimeTracker
+│   │   └── **/__tests__/          # Jest + React Testing Library
+│   ├── .env.example
+│   ├── Dockerfile                 # Node build → Nginx serve
+│   └── nginx.conf.template        # SPA fallback, $PORT-aware
 │
-├── server/                      # Express API
-│   ├── server.js                # 89 routes + error handling
-│   ├── connect.js               # Mongoose connection
-│   ├── config/ai.js             # Model IDs (single source of truth)
-│   ├── config/prompts.js        # Shared Markdown + Mermaid format rules
-│   ├── utils/parseModelJson.js  # Tolerant JSON extraction from model output
-│   ├── controllers/             # 16 controllers
-│   ├── models/                  # 13 Mongoose schemas
-│   ├── uploads/                 # PDF and video uploads (bind-mounted in Docker)
+├── server/                        # Express API
+│   ├── server.js                  # Entry: env checks, DB connect, listen, graceful shutdown
+│   ├── app.js                     # Express app: headers, CORS, limits, routes, error handler
+│   ├── routes/                    # URL → middleware → controller
+│   ├── controllers/               # HTTP in/out only
+│   ├── services/                  # Business logic and data access
+│   ├── agent/                     # Novard Agent: turn loop, actions, conversations
+│   ├── ai/                        # Groq client, LangChain memory, Gemini, AI error handling
+│   ├── middleware/                # auth, rate limits, async wrapper, error handler
+│   ├── models/                    # Mongoose schemas
+│   ├── config/                    # env, db, model IDs, shared prompts
+│   ├── utils/                     # logger, HttpError, validators, uploads, JSON recovery
+│   ├── scripts/                   # One-off maintenance scripts
+│   ├── tests/                     # Jest unit + API tests (in-memory MongoDB)
+│   ├── .env.example
 │   └── Dockerfile
 │
-├── docker-compose.yml           # Dev: mongo + server + client
-├── docker-compose.prod.yml      # Prod image smoke test (external Atlas)
-├── cloudbuild.yaml              # Cloud Build pipeline
-├── deploy.sh                    # One-command Cloud Run deploy
-├── CLOUD_RUN_SETUP.md           # Cloud Run guide
-├── DOCKER_SETUP.md              # Docker guide
-└── vercel.json                  # Client-only SPA deploy config
+├── docker-compose.yml             # Dev: mongo + server + client
+├── docker-compose.prod.yml        # Prod image smoke test (external Atlas)
+├── cloudbuild.yaml                # Cloud Build pipeline
+├── deploy.sh                      # One-command Cloud Run deploy
+├── CLOUD_RUN_SETUP.md             # Cloud Run guide
+├── DOCKER_SETUP.md                # Docker guide
+└── vercel.json                    # Client-only SPA deploy config
 ```
 
 ---
@@ -625,12 +686,12 @@ novard-ai/
 
 Worth knowing before you build on this:
 
-- **No server-side authorization.** Controllers trust the `userId` / email supplied in the request body or path. Anyone who can reach the API can read or delete another user's data. Add token verification middleware before exposing this publicly.
-- **Forum ownership uses the client-supplied email**, like the rest of the app. It stops ordinary users from resolving or deleting other people's discussions, but a hand-crafted request could still impersonate someone until real server-side auth exists. Votes are also not limited to one per user.
-- **Uploads are stored on local disk.** On Cloud Run the filesystem is ephemeral, so uploaded PDFs and videos do not survive an instance restart. Move to Cloud Storage for a real deployment.
-- **CORS is fully open** (`app.use(cors())`).
-- **No automated tests.** Testing libraries are installed on the client but no suites exist.
-- **YouTube captions are often unavailable**, in which case the summarizer falls back to title + description, so summaries are shallower than the transcript-backed ones.
+- **Uploads are stored on local disk.** On Cloud Run the filesystem is ephemeral, so uploaded PDFs do not survive an instance restart. Move to Cloud Storage for a real deployment.
+- **Sessions live in `localStorage`** and cannot be revoked individually before they expire (7 days by default); rotating `JWT_SECRET` signs everyone out.
+- **Forum replies show each author's email address** to every signed-in student.
+- **Rate limits are per instance** (in memory). With several Cloud Run instances, use a shared store (e.g. Redis) for exact limits.
+- **The client is built with Create React App**, which is deprecated; most remaining `npm audit` findings are in its build tooling. Migrating to Vite would clear them.
+- **YouTube captions are not always available** (and YouTube changes its private API regularly); without captions the summarizer falls back to title + description.
 - **Scanned PDFs have no text layer**, so notes upload rejects them with a 422 rather than running OCR.
 
 ---

@@ -3,12 +3,13 @@ import { readOpenParam, clearOpenParam } from '../lib/openParam';
 import { Navigationinner } from "../components/navigationinner";
 import Sidebar from '../components/Sidebar';
 import ChatbotButton from '../components/ChatbotButton';
-import axios from 'axios';
+import { api, errorMessage } from '../lib/api';
+import logger from '../lib/logger';
+import { currentEmail } from '../lib/session';
 import QuizSetup from '../components/quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { MdDeleteOutline, MdAdd } from "react-icons/md";
 
-const apiUrl = process.env.REACT_APP_API_ENDPOINT;
 
 const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -72,14 +73,15 @@ const SkillUnlocker = () => {
   const [quizScore, setQuizScore] = useState(null);
   const [quizError, setQuizError] = useState(null);
 
-  const userId = localStorage.getItem('email') || 'demo-user';
+  const userId = currentEmail();
 
   const fetchPlans = useCallback(async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/skill-unlocker/plans/${userId}`);
-      setPlans(response.data.plans);
+      const response = await api.get(`/api/skill-unlocker/plans/${encodeURIComponent(userId)}`);
+      setPlans(response.data.plans || []);
     } catch (err) {
-      console.error('Error fetching plans:', err);
+      logger.error('Error fetching plans', err);
+      setError(errorMessage(err, 'Could not load your learning plans.'));
     }
   }, [userId]);
 
@@ -131,7 +133,7 @@ const SkillUnlocker = () => {
         teachingStyle: formData.teachingStyle
       };
 
-      const response = await axios.post(`${apiUrl}/api/skill-unlocker/generate-plan`, {
+      const response = await api.post(`/api/skill-unlocker/generate-plan`, {
         skillName: formData.skillName,
         duration: parseInt(formData.duration),
         description: formData.description,
@@ -155,8 +157,8 @@ const SkillUnlocker = () => {
       });
 
     } catch (err) {
-      console.error('Error generating plan:', err);
-      setError(err.response?.data?.error || 'Failed to generate learning plan. Please try again.');
+      logger.error('Error generating plan', err);
+      setError(errorMessage(err, 'Failed to generate learning plan. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -187,14 +189,15 @@ const SkillUnlocker = () => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this skill plan? This cannot be undone.')) {
       try {
-        await axios.delete(`${apiUrl}/api/skill-unlocker/plans/${planId}`);
+        await api.delete(`/api/skill-unlocker/plans/${planId}`);
         if (currentPlan && (currentPlan.planId === planId || currentPlan._id === planId)) {
             setCurrentPlan(null);
             setCurrentView('form');
         }
         fetchPlans();
       } catch (err) {
-        console.error('Error deleting plan:', err);
+        logger.error('Error deleting plan', err);
+        setError(errorMessage(err, 'Could not delete the plan. Please try again.'));
       }
     }
   };
@@ -206,7 +209,7 @@ const SkillUnlocker = () => {
   const handleRefreshVideo = async (dayNumber) => {
     setRefreshingVideo(dayNumber);
     try {
-        const response = await axios.post(`${apiUrl}/api/skill-unlocker/refresh-video`, {
+        const response = await api.post(`/api/skill-unlocker/refresh-video`, {
             planId: currentPlan.planId || currentPlan._id,
             dayNumber
         });
@@ -220,8 +223,8 @@ const SkillUnlocker = () => {
         }));
         
     } catch (err) {
-        console.error('Error refreshing video:', err);
-        alert('Failed to refresh video. Please try again.');
+        logger.error('Error refreshing video', err);
+        setError(errorMessage(err, 'Failed to refresh video. Please try again.'));
     } finally {
         setRefreshingVideo(null);
     }
@@ -231,26 +234,24 @@ const SkillUnlocker = () => {
     // Only allow if interacted or already completed (to undo)
     if (!videoInteracted.has(dayNumber) && !completedDays.has(dayNumber)) return;
 
-    // Optimistic update
-    setCompletedDays(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(dayNumber)) {
-        newSet.delete(dayNumber);
-      } else {
-        newSet.add(dayNumber);
-      }
-      return newSet;
-    });
+    const flip = (prev) => {
+      const next = new Set(prev);
+      if (next.has(dayNumber)) next.delete(dayNumber);
+      else next.add(dayNumber);
+      return next;
+    };
+    setCompletedDays(flip); // optimistic
 
     try {
-        await axios.post(`${apiUrl}/api/skill-unlocker/toggle-day-completion`, {
-            planId: currentPlan.planId || currentPlan._id, 
+        await api.post('/api/skill-unlocker/toggle-day-completion', {
+            planId: currentPlan.planId || currentPlan._id,
             dayNumber,
-            userId
         });
-        fetchPlans(); 
+        fetchPlans();
     } catch (err) {
-        console.error('Error toggling day:', err);
+        logger.error('Error toggling day', err);
+        setCompletedDays(flip); // put it back as it was
+        setError(errorMessage(err, 'Could not update that day. Please try again.'));
     }
   };
 
@@ -270,7 +271,7 @@ const SkillUnlocker = () => {
     setLoading(true);
     setQuizError(null);
     try {
-      const response = await axios.post(`${apiUrl}/api/skill-unlocker/generate-quiz`, {
+      const response = await api.post(`/api/skill-unlocker/generate-quiz`, {
         planId: currentPlan.planId || currentPlan._id,
         skillName: currentPlan.skillName,
         userId,
@@ -281,8 +282,8 @@ const SkillUnlocker = () => {
       setQuizScore(null);
       setCurrentView('quiz');
     } catch (err) {
-      console.error('Error generating quiz:', err);
-      setQuizError(err.response?.data?.error || 'Failed to generate quiz. Please try again.');
+      logger.error('Error generating quiz', err);
+      setQuizError(errorMessage(err, 'Failed to generate quiz. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -300,7 +301,7 @@ const SkillUnlocker = () => {
     setQuizScore({ percentage: score, correct, total: quiz.questions.length });
 
     try {
-      await axios.post(`${apiUrl}/api/skill-unlocker/save-quiz-result`, {
+      await api.post(`/api/skill-unlocker/save-quiz-result`, {
         quizId: quiz.quizId,
         planId: currentPlan.planId || currentPlan._id,
         userId,
@@ -313,7 +314,8 @@ const SkillUnlocker = () => {
       });
       fetchPlans();
     } catch (err) {
-      console.error('Error saving quiz result:', err);
+      logger.error('Error saving quiz result', err);
+      setError(errorMessage(err, 'Your quiz score could not be saved.'));
     }
   };
 

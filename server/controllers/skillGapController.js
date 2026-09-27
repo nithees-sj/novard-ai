@@ -1,107 +1,24 @@
-const SkillGapSession = require('../models/skillGapSession');
-const { readProfile, analyse, openingMessage, coachSystemPrompt } = require('../services/skillGapService');
-const { converse } = require('../ai/conversation');
-
-const fail = (res, error, fallback) => {
-  console.error(fallback, error.cause || error);
-  res.status(error.status || 500).json({ error: error.status ? error.message : fallback });
-};
-
-/** Analyse a profile and save a new coaching session. Shared by the Skill Gap page and the Novard Agent. */
-async function startSession(userId, body) {
-  if (!userId) throw Object.assign(new Error('userId is required'), { status: 400 });
-  const profile = readProfile(body);
-  if (profile.targetRole.length < 2) {
-    throw Object.assign(new Error('Tell the coach which role you are aiming for.'), { status: 400 });
-  }
-  const analysis = await analyse(profile);
-  return SkillGapSession.create({
-    userId,
-    profile,
-    analysis,
-    messages: [{ role: 'assistant', content: openingMessage(profile, analysis) }],
-  });
-}
+const skillGap = require('../services/skillGapService');
+const { currentUserId } = require('../middleware/auth');
 
 /** Start a coaching session: analyse the profile and open the chat with the result. */
-const createSession = async (req, res) => {
-  try {
-    const session = await startSession(req.body.userId, req.body);
-    res.status(201).json(session);
-  } catch (error) {
-    fail(res, error, 'Failed to analyse your skills');
-  }
+exports.createSession = async (req, res) => {
+  res.status(201).json(await skillGap.startSession(currentUserId(req, req.body.userId), req.body));
 };
 
-const listSessions = async (req, res) => {
-  try {
-    const docs = await SkillGapSession.find({ userId: req.params.userId })
-      .sort({ updatedAt: -1 })
-      .select('profile.targetRole analysis.readiness messages updatedAt createdAt')
-      .lean();
-    res.json(docs.map((d) => ({
-      _id: d._id,
-      targetRole: d.profile?.targetRole,
-      readiness: d.analysis?.readiness,
-      messageCount: (d.messages || []).length,
-      updatedAt: d.updatedAt,
-    })));
-  } catch (error) {
-    fail(res, error, 'Failed to load your analyses');
-  }
+exports.listSessions = async (req, res) => {
+  res.json(await skillGap.listSessions(currentUserId(req, req.params.userId)));
 };
 
-const getSession = async (req, res) => {
-  try {
-    const doc = await SkillGapSession.findOne({ _id: req.params.id, userId: req.query.userId }).lean().catch(() => null);
-    if (!doc) return res.status(404).json({ error: 'Analysis not found' });
-    res.json(doc);
-  } catch (error) {
-    fail(res, error, 'Failed to load the analysis');
-  }
+exports.getSession = async (req, res) => {
+  res.json(await skillGap.getSession(currentUserId(req, req.query.userId), req.params.id));
 };
 
-const sendMessage = async (req, res) => {
-  try {
-    const { userId, message } = req.body;
-    const text = String(message || '').trim();
-    if (!text) return res.status(400).json({ error: 'Type a message first.' });
-    if (text.length > 4000) return res.status(400).json({ error: 'Please keep messages under 4000 characters.' });
-
-    const session = await SkillGapSession.findOne({ _id: req.params.id, userId }).select('profile analysis').lean().catch(() => null);
-    if (!session) return res.status(404).json({ error: 'Analysis not found' });
-
-    // LangChain conversation with memory of the whole coaching chat (older turns summarised).
-    const content = await converse({
-      Model: SkillGapSession,
-      filter: { _id: session._id, userId },
-      field: 'messages',
-      timeKey: 'createdAt',
-      system: coachSystemPrompt(session.profile, session.analysis),
-      input: text,
-      tier: 'REASONING',
-      maxTokens: 3000,
-      temperature: 0.6,
-    });
-
-    const saved = await SkillGapSession.findById(session._id).select('messages').lean();
-    const [userMessage, assistantMessage] = saved.messages.slice(-2);
-    await SkillGapSession.updateOne({ _id: session._id }, { $set: { updatedAt: new Date() } });
-    res.json({ userMessage, assistantMessage: assistantMessage || { role: 'assistant', content, createdAt: new Date() } });
-  } catch (error) {
-    fail(res, error, 'The coach could not reply');
-  }
+exports.sendMessage = async (req, res) => {
+  res.json(await skillGap.sendCoachMessage(currentUserId(req, req.body.userId), req.params.id, req.body.message));
 };
 
-const deleteSession = async (req, res) => {
-  try {
-    const userId = req.body?.userId || req.query.userId;
-    const result = await SkillGapSession.deleteOne({ _id: req.params.id, userId }).catch(() => ({ deletedCount: 0 }));
-    if (!result.deletedCount) return res.status(404).json({ error: 'Analysis not found' });
-    res.json({ success: true });
-  } catch (error) {
-    fail(res, error, 'Failed to delete the analysis');
-  }
+exports.deleteSession = async (req, res) => {
+  await skillGap.deleteSession(currentUserId(req, req.body?.userId || req.query.userId), req.params.id);
+  res.json({ success: true });
 };
-
-module.exports = { startSession, createSession, listSessions, getSession, sendMessage, deleteSession };
