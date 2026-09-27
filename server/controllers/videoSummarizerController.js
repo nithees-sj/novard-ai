@@ -2,9 +2,10 @@ const videos = require('../services/videoSummarizerService');
 const { currentUserId } = require('../middleware/auth');
 const { badRequest } = require('../utils/httpError');
 
+// The title is optional: without one, the video's own YouTube title is used.
 exports.create = async (req, res) => {
   const { title, videoUrl } = req.body;
-  if (!title) throw badRequest('Title, video URL, and user ID are required');
+  if (!videoUrl) throw badRequest('Paste a YouTube link to add a video.');
   const video = await videos.addYouTubeVideo({ title, videoUrl, userId: currentUserId(req, req.body.userId) });
   res.status(201).json(videos.presentVideo(video));
 };

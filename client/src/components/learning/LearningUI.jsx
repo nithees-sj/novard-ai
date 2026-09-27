@@ -507,3 +507,76 @@ export const Toast = ({ toast, onClose }) => {
 };
 
 export const formatDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
+// ── "add new" forms in the main area ───────────────────────────────────────
+
+/** A labelled form field with an optional hint, error and character counter. */
+export const Field = ({ id, label, optional = false, required = false, hint, error, count, max, children }) => (
+  <div>
+    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+      <label htmlFor={id} className="text-sm font-semibold text-gray-900">
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+        {optional && <span className="font-normal text-gray-400"> (optional)</span>}
+      </label>
+      {max && (
+        <span className={`text-xs tabular-nums ${count > max ? 'font-semibold text-red-600' : count > max * 0.9 ? 'text-amber-600' : 'text-gray-400'}`}>{count}/{max}</span>
+      )}
+    </div>
+    {children}
+    {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
+  </div>
+);
+
+export const fieldClass = (bad) => `${inputClass} ${bad ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`;
+
+/**
+ * The page for adding something new (a video, a video request, ...), shown in
+ * the main area in place of the open item: heading, how it works, the fields
+ * and the actions - the same layout as the new-doubt form.
+ */
+export const FormPage = ({ icon, title, subtitle, steps = [], onSubmit, children, error, submitLabel, submitting = false, submittingLabel, onCancel }) => (
+  <Panel fill>
+    {/* m-auto in a flex box centres the form when it fits, and lets it scroll from the top when it does not. */}
+    <div className="flex h-full overflow-y-auto">
+      <form onSubmit={onSubmit} className="m-auto w-full max-w-3xl space-y-6 p-6 py-10" noValidate>
+        <div className="flex items-start gap-3.5">
+          {icon && (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <Icon name={icon} className="h-5 w-5" />
+            </span>
+          )}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+          </div>
+        </div>
+
+        {steps.length > 0 && (
+          <ol className={`grid gap-3 ${steps.length === 3 ? 'sm:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
+            {steps.map((step, i) => (
+              <li key={step.title} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="mb-1 flex items-start gap-2">
+                  <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">{i + 1}</span>
+                  <span className="text-sm font-semibold text-gray-900">{step.title}</span>
+                </div>
+                <p className="text-xs text-gray-600">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-5">{children}</div>
+
+        {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+
+        <div className="flex gap-3">
+          <button type="submit" disabled={submitting} className={`${btn.primary} flex-1 py-3`}>
+            {submitting ? <><Spinner /> {submittingLabel || 'Saving…'}</> : submitLabel}
+          </button>
+          {onCancel && <button type="button" onClick={onCancel} disabled={submitting} className={`${btn.secondary} px-6 py-3`}>Cancel</button>}
+        </div>
+      </form>
+    </div>
+  </Panel>
+);

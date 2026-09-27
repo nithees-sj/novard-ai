@@ -4,7 +4,7 @@ import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import NewDoubtForm from './NewDoubtForm';
 import {
-  Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
+  Workspace, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
   QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
 } from './learning/LearningUI';
 import QuizSetup from './quiz/QuizSetup';
@@ -424,18 +424,14 @@ const DoubtClearanceInlineView = () => {
             </ItemFrame>
           </>
         ) : (
-          <Panel fill>
-            <div className="h-full overflow-y-auto">
-              <NewDoubtForm
-                onSubmit={handleAddDoubt}
-                // Cancel only makes sense when there is a doubt to go back to.
-                onCancel={selectedDoubt ? () => { setShowAddDoubtForm(false); setAddDoubtError(null); } : undefined}
-                submitting={isAddingDoubt}
-                error={addDoubtError}
-                isFirstDoubt={doubts.length === 0}
-              />
-            </div>
-          </Panel>
+          <NewDoubtForm
+            onSubmit={handleAddDoubt}
+            // Cancel only makes sense when there is a doubt to go back to.
+            onCancel={selectedDoubt ? () => { setShowAddDoubtForm(false); setAddDoubtError(null); } : undefined}
+            submitting={isAddingDoubt}
+            error={addDoubtError}
+            isFirstDoubt={doubts.length === 0}
+          />
         )}
       </Workspace>
       <Toast toast={toast} onClose={() => setToast(null)} />

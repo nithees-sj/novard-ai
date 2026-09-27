@@ -38,6 +38,19 @@ describe('Video Summarizer workflow', () => {
     expect((await YouTubeVideo.findById(res.body._id)).transcript).toMatch(/docker/);
   });
 
+  it('uses the video’s own YouTube title when none is given', async () => {
+    const res = await request(app).post('/youtube-videos').set('Authorization', bearer())
+      .send({ videoUrl: 'https://youtu.be/Gjnup-PuquQ' });
+    expect(res.status).toBe(201);
+    expect(res.body.title).toBe('Docker in 100 seconds');
+  });
+
+  it('asks for a link when none is given', async () => {
+    const res = await request(app).post('/youtube-videos').set('Authorization', bearer()).send({ title: 'Docker' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Paste a YouTube link to add a video.');
+  });
+
   it('rejects duplicates and invalid URLs', async () => {
     await addVideo();
     expect((await addVideo()).body.error).toBe('This video has already been added');

@@ -58,7 +58,7 @@ From there you can tick days complete, regenerate a single day's video if the ma
 
 ### Notes: chat with your PDFs (Doubts & Learning → Notes & Quiz)
 
-Upload a PDF (10 MB cap, PDF-only filter). The text is extracted with `pdf-parse` v2 (current pdf.js), chunked to fit the model context, and stored. You can then:
+Upload a PDF (the app accepts files up to 2 MB; the API itself allows 10 MB, and checks the file really is a PDF). The text is extracted with `pdf-parse` v2 (current pdf.js), chunked to fit the model context, and stored. You can then:
 
 - **Chat** with the document — questions are answered from the extracted text, with full chat history retained per note.
 - **Summarize** it — long documents are summarized chunk-by-chunk and then consolidated.
@@ -66,15 +66,35 @@ Upload a PDF (10 MB cap, PDF-only filter). The text is extracted with `pdf-parse
 
 ### Video Sessions (`/video`)
 
-Three sub-tools behind one page:
+Two tools behind one page:
 
-- **Video Library** — describe what you want to learn and pick a platform (YouTube, Udemy, Coursera, edureka). YouTube results come from live search; Udemy/Coursera/edureka listings are produced by **Gemini Flash** with heavy prompt constraints pushing it toward real, still-live course URLs.
-- **Video Summarizer** (Video Sessions → Video Summarizer) — paste a YouTube URL. The caption track (English preferred) is downloaded through Innertube's iOS client and used as the transcript; title and description come from the video metadata. Videos without captions fall back to title + description. You then get chat-over-transcript, summarization (long transcripts are sampled from start to end) and quiz generation with saved results.
+- **Video Library** — a request says what you want to learn and your level. The form offers one-click examples. Saving it opens the request and searches straight away: the AI turns the request into 2–3 focused search terms, and YouTube returns the best matches. Placeholder durations and descriptions are hidden on the cards. The app's form uses YouTube. The API also accepts `udemy`, `coursera` and `edureka` for course discovery through **Gemini Flash** (or a built-in course list when no Gemini key is set).
+- **Video Summarizer** — paste a YouTube link (watch, youtu.be, Shorts and embed links all work).
+  - The title is optional; without one, the video's own YouTube title is used.
+  - A preview with the thumbnail appears as soon as the link is valid, and a video you have already added is flagged with an *Open it* button.
+  - The caption track (English preferred) is downloaded through Innertube's iOS client and used as the transcript; videos without captions fall back to title + description.
+  - Each video then has **Chat** (answers from the transcript), **Summary** (long transcripts are sampled from start to end) and **Quiz** with saved results.
 
 ### Doubts & Learning (`/doubts`)
 
 - **Notes & Quiz** — entry point into the notes workflow above.
-- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — describe the doubt (plus an optional image link) and the tutor answers straight away. The AI writes a short, specific title from the question ([services/doubtTitle.js](server/services/doubtTitle.js)), so the list and heading name the exact concept instead of repeating the description. `node scripts/retitleDoubts.js` retitles older doubts and keeps each old title in `previousTitle`. Then hold a threaded conversation with the assistant. Responses are formatted for readability (code blocks, structured explanations). Each doubt can be summarized, turned into a quiz (with a content-aware fallback generator when the model returns unparseable JSON), and enriched with **YouTube video recommendations** that include a per-video reason for the suggestion.
+- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — describe the doubt (plus an optional screenshot link) and the tutor answers straight away; your question becomes the first message of the chat.
+  - The AI writes a short, specific title from the question ([services/doubtTitle.js](server/services/doubtTitle.js)), e.g. "State Remains Old After setCount". The heading and the list show that title with the date and message count, never the description again. `npm run retitle-doubts --prefix server` retitles older doubts and keeps each old title in `previousTitle`.
+  - Each doubt has four tabs: **Chat** (follow-up questions), **Summarize** (a structured recap with a flowchart), **Quiz** (after at least two exchanges) and **Videos** (YouTube recommendations picked for the doubt).
+
+### How the learning tools look
+
+Notes & Quiz, Doubt Clearance, Video Summarizer and Video Library share one set of components ([components/learning/](client/src/components/learning/)), so they look and behave the same:
+
+- **One container per item:** a slim heading bar (icon, title, one line of detail, tabs on the right) above the active tab. The list of your items sits on the right.
+- **Chat:**
+  - a centred reading column;
+  - your messages in blue bubbles, the assistant's as plain 16px Markdown beside its avatar;
+  - a typing indicator, suggested first questions, and an input box that grows as you type (Enter to send).
+- **Waiting on the AI:** summaries, quizzes and video searches show a spinner around the tool's icon, what is happening, how long it usually takes, a live seconds counter and a content skeleton. The tab shows a small spinner too.
+- **Quizzes:** lettered answers and an answered-count progress bar. After you submit, you see a score ring and every question marked right or wrong with a "Why" explanation.
+- **Adding something new:** a new doubt, video or video request is added through a form in the main area, vertically centred, with a short "how it works" strip. The list button shows when the form is open, and the form opens by itself when you have nothing yet.
+- **One palette:** blue for actions and the selected item, neutral greys, and green, amber and red only for status.
 
 ### AI Forum (`/forum`)
 
@@ -163,7 +183,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 | Role | Model | Used for |
 | --- | --- | --- |
 | `MODELS.REASONING` | `openai/gpt-oss-120b` | Curriculum generation, quiz authoring, doubt clearance, forum answers. |
-| `MODELS.FAST` | `openai/gpt-oss-20b` | Notes chat, summarization, video Q&A. |
+| `MODELS.FAST` | `openai/gpt-oss-20b` | Notes chat, summarization, video Q&A, doubt and chat titles, chat-memory summaries. |
 | `MODELS.GEMINI` | `gemini-flash-latest` | Third-party course discovery only. If it is overloaded (503) or rate-limited (429), it is retried once and then `MODELS.GEMINI_FALLBACKS` (default `gemini-flash-lite-latest`; set with `GEMINI_FALLBACK_MODELS`) is used ([ai/gemini.js](server/ai/gemini.js)). |
 
 Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI_MODEL` without touching code. The gpt-oss models are *reasoning* models: they spend completion tokens on an internal `reasoning` field before emitting `content`, so every Groq call sends `reasoning_effort: "low"` to keep the token budget available for the answer.
@@ -251,16 +271,7 @@ The assistant behind the floating button (`/chatbot`) is an **agent**: it teache
 
 Other pages can open the agent with a question already sent: *Start Mock Interview* (Career) and *Explore New Topics* (Doubts & Learning) do this with `navigate('/chatbot', { state: { prompt } })`.
 
-Routes:
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/api/agent/chat` | `{userId, userName?, message, conversationId?}`. Streams Server-Sent Events: `meta`, `token`, `status`, `action`, `title`, `done`, `error`. |
-| `POST` | `/api/agent/conversations/:id/actions/:actionId` | `{userId, decision: "confirm" \| "dismiss"}`: runs or declines a card. |
-| `GET` | `/api/agent/conversations/user/:userId` | Chat history list. |
-| `GET` | `/api/agent/conversations/:id?userId=` | One chat with its messages and cards. |
-| `PATCH` | `/api/agent/conversations/:id` | Rename (`{userId, title}`). |
-| `DELETE` | `/api/agent/conversations/:id?userId=` | Delete a chat. |
+Routes: see [Novard Agent in the API Reference](#api-reference).
 
 ## Personalised roadmaps
 
@@ -276,8 +287,7 @@ The diagram is rebuilt every time a roadmap is read, so styling changes apply to
 roadmaps too. Resources are YouTube *search* links built from model-suggested queries, not
 URLs written by the model, which can be invented.
 
-Routes: `POST /api/roadmaps/generate`, `GET /api/roadmaps/user/:userId`,
-`GET /api/roadmaps/:id?userId=`, `DELETE /api/roadmaps/:id`.
+Routes: see *Skill Unlocker, career tools, analytics* in the [API Reference](#api-reference).
 
 ## Skill-gap coach
 
@@ -291,10 +301,7 @@ Every reply after that is grounded in the student's profile and gaps. Replies ar
 conversational by default and switch to structured Markdown only when the student asks for a plan
 or a comparison.
 
-Sessions are stored per student in `SkillGapSession`. Routes:
-`POST /api/skill-gap/sessions`, `GET /api/skill-gap/sessions/user/:userId`,
-`GET /api/skill-gap/sessions/:id?userId=`, `POST /api/skill-gap/sessions/:id/messages`,
-`DELETE /api/skill-gap/sessions/:id`.
+Sessions are stored per student in `SkillGapSession` (routes in the [API Reference](#api-reference)).
 
 ## Customised quizzes
 
@@ -320,12 +327,12 @@ All four sections generate through one service
   more often than chance;
 - samples long documents from start to end instead of reading only the first chunk.
 
-Past marks come from `GET /api/quiz-history/:source/:itemId?userId=`.
+Past marks come from `GET /api/quiz-history/:source/:itemId`.
 
 ## How summaries and chat replies are rendered
 
-Every piece of model output in the app — summaries, chat replies, generated skills,
-projects and resumes — is rendered by one component,
+Every piece of model output in the app — summaries, chat replies, forum answers and the
+Novard Agent's and skill-gap coach's messages — is rendered by one component,
 [`MarkdownView`](client/src/components/MarkdownView.jsx): `react-markdown` with
 `remark-gfm` for tables, task lists and strikethrough.
 
@@ -335,9 +342,10 @@ strict, because models break the Mermaid parser in the same few ways every time
 (unquoted labels containing punctuation, the reserved word `end` used as a node id).
 A ```mermaid fence is rendered as an SVG by
 [`MermaidDiagram`](client/src/components/MermaidDiagram.jsx), which imports mermaid
-on demand so the ~480 kB library never enters the initial bundle. If a model does emit
-an invalid diagram, that block falls back to a plain code block rather than taking the
-summary down with it.
+on demand so the ~480 kB library never enters the initial bundle. It waits (up to 1.5 s)
+for the page font before drawing, so node labels are measured in the font they are shown
+in and are never clipped. If a model does emit an invalid diagram, that block falls back
+to a plain code block rather than taking the summary down with it.
 
 This replaced three separate approaches: raw `{summary}` text (which showed `###` and
 `**` literally), a sentence-splitting card builder that destroyed tables and lists, and
@@ -533,7 +541,7 @@ Routes live in [server/routes/](server/routes/) (63 in total). Base URL is `REAC
 | `POST` | `/educational-video-requests` | `{title, description, platform?}` → 201. |
 | `DELETE` | `/educational-video-requests/:videoRequestId` | Delete a request. |
 | `POST` | `/recommend-educational-videos` | **AI.** `{title, description, platform?}` → `{videos}`. |
-| `POST` | `/youtube-videos` | **AI.** `{title, videoUrl}` → 201; fetches metadata and captions. |
+| `POST` | `/youtube-videos` | **AI.** `{videoUrl, title?}` → 201; fetches metadata and captions. Without a title, the video's own YouTube title is used. |
 | `GET` | `/youtube-videos/:userId` | The student's videos (without transcripts). |
 | `POST` | `/chat-with-youtube-video` | **AI.** `{videoId, message}`. |
 | `POST` | `/summarize-youtube-video` | **AI.** `{videoId}` (cached after the first run). |
@@ -692,6 +700,7 @@ Worth knowing before you build on this:
 - **Rate limits are per instance** (in memory). With several Cloud Run instances, use a shared store (e.g. Redis) for exact limits.
 - **The client is built with Create React App**, which is deprecated; most remaining `npm audit` findings are in its build tooling. Migrating to Vite would clear them.
 - **YouTube captions are not always available** (and YouTube changes its private API regularly); without captions the summarizer falls back to title + description.
+- **Two PDF size limits:** the Notes page rejects files over 2 MB, while the API accepts up to 10 MB.
 - **Scanned PDFs have no text layer**, so notes upload rejects them with a 422 rather than running OCR.
 
 ---

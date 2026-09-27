@@ -4,8 +4,9 @@ import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, btn, inputClass, formatDate,
+  QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, Spinner, btn, formatDate,
 } from './learning/LearningUI';
+import NewVideoForm from './learning/NewVideoForm';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
@@ -29,8 +30,9 @@ const VideoSummarizerInlineView = () => {
   const [showAddVideoForm, setShowAddVideoForm] = useState(false);
   const [toast, setToast] = useState(null);
   const [quizError, setQuizError] = useState(null);
-  const [newVideo, setNewVideo] = useState({ title: '', videoUrl: '' });
   const [isAddingVideo, setIsAddingVideo] = useState(false);
+  const [addError, setAddError] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
   const showToast = (message, type) => {
     setToast({ message, type });
@@ -55,6 +57,8 @@ const VideoSummarizerInlineView = () => {
     } catch (error) {
       logger.error('Error loading videos', error);
       showToast(errorMessage(error, 'Could not load your videos.'), 'error');
+    } finally {
+      setLoaded(true);
     }
   };
 
@@ -69,41 +73,31 @@ const VideoSummarizerInlineView = () => {
     setSummary(video.summary || '');
   };
 
-  const handleAddVideo = async (e) => {
-    e.preventDefault();
-    if (!newVideo.title.trim() || !newVideo.videoUrl.trim()) {
-      showToast('Please fill in all fields', 'error');
-      return;
-    }
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
-    if (!youtubeRegex.test(newVideo.videoUrl)) {
-      showToast('Please enter a valid YouTube URL', 'error');
-      return;
-    }
-    const duplicateTitle = videos.find(video => video.title.toLowerCase() === newVideo.title.toLowerCase());
-    if (duplicateTitle) {
-      showToast('A video with this title already exists', 'error');
-      return;
-    }
+  // Called by the add-video form in the main area; returns true when the video was added.
+  const handleAddVideo = async ({ videoUrl, title }) => {
     setIsAddingVideo(true);
+    setAddError(null);
     try {
-      const userId = currentEmail();
-      const { data: created } = await api.post(`/youtube-videos`, {
-        title: newVideo.title,
-        videoUrl: newVideo.videoUrl,
-        userId
-      });
-      setNewVideo({ title: '', videoUrl: '' });
+      const { data: created } = await api.post('/youtube-videos', { videoUrl, title: title || undefined, userId: currentEmail() });
       setShowAddVideoForm(false);
       await loadUserVideos();
       if (created) { setSelectedVideo(created); setActiveTab('chat'); }
-      showToast('Video added successfully!', 'success');
+      showToast('Video added - ask it anything.', 'success');
+      return true;
     } catch (error) {
       logger.error('Error adding video', error);
-      showToast(errorMessage(error, 'Error adding video'), 'error');
+      setAddError(errorMessage(error, 'The video could not be added. Please try again.'));
+      return false;
     } finally {
       setIsAddingVideo(false);
     }
+  };
+
+  const openVideo = (video) => {
+    setSelectedVideo(video);
+    setShowAddVideoForm(false);
+    setAddError(null);
+    setActiveTab('chat');
   };
 
   // Returns false on failure so the chat box can restore what was typed.
@@ -254,6 +248,8 @@ const VideoSummarizerInlineView = () => {
     else if (id === 'quiz') handleGenerateQuiz();
   };
   const quizResult = quizScore ? { correct: quizScore.score, total: quizScore.totalQuestions } : null;
+  // The add form fills the main area: on request, or straight away when there are no videos yet.
+  const adding = showAddVideoForm || (loaded && videos.length === 0);
 
   return (
     <>
@@ -262,40 +258,45 @@ const VideoSummarizerInlineView = () => {
           <SideList
             title="Your videos"
             count={videos.length}
-            action={showAddVideoForm ? (
-              <form onSubmit={handleAddVideo} className="space-y-2.5">
-                <input type="text" value={newVideo.title} onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })} placeholder="Video title" className={inputClass} autoFocus />
-                <input type="url" value={newVideo.videoUrl} onChange={(e) => setNewVideo({ ...newVideo, videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=…" className={inputClass} />
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setShowAddVideoForm(false)} className={`${btn.secondary} flex-1`}>Cancel</button>
-                  <button type="submit" disabled={isAddingVideo} className={`${btn.primary} flex-1`}>{isAddingVideo ? 'Adding…' : 'Add video'}</button>
-                </div>
-                {isAddingVideo && <p className="text-xs text-gray-500">Fetching the video details and transcript…</p>}
-              </form>
-            ) : (
-              <button type="button" onClick={() => setShowAddVideoForm(true)} className={`${btn.primary} w-full`}>
-                <Icon name="plus" /> Add video
+            action={(
+              <button
+                type="button"
+                onClick={() => { setShowAddVideoForm(true); setAddError(null); }}
+                aria-pressed={adding}
+                className={`${adding ? btn.secondary : btn.primary} w-full`}
+              >
+                <Icon name="plus" /> {adding ? 'Adding a video…' : 'Add video'}
               </button>
             )}
           >
             {videos.length > 0 ? videos.map((video) => (
               <ListItem
                 key={video._id}
-                active={selectedVideo?._id === video._id}
+                active={selectedVideo?._id === video._id && !adding}
                 title={video.title}
                 meta={formatDate(video.createdAt)}
                 badges={<>
                   {video.summary && <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">Summary</span>}
                   {video.quizzes?.length > 0 && <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">{video.quizzes.length} {video.quizzes.length === 1 ? 'quiz' : 'quizzes'}</span>}
                 </>}
-                onSelect={() => { setSelectedVideo(video); setActiveTab('chat'); }}
+                onSelect={() => openVideo(video)}
                 onDelete={() => handleDeleteVideo(video._id, video.title)}
               />
             )) : <ListEmpty icon="video" title="No videos yet" text="Add a YouTube link to get started." />}
           </SideList>
         )}
       >
-        {selectedVideo ? (
+        {adding ? (
+          <NewVideoForm
+            onSubmit={handleAddVideo}
+            onCancel={videos.length > 0 ? () => { setShowAddVideoForm(false); setAddError(null); } : undefined}
+            onOpenExisting={(dup) => openVideo(videos.find((v) => v._id === dup._id) || dup)}
+            existing={videos}
+            submitting={isAddingVideo}
+            error={addError}
+            isFirst={videos.length === 0}
+          />
+        ) : selectedVideo ? (
           <>
             <ItemFrame
               icon="video"
@@ -366,7 +367,9 @@ const VideoSummarizerInlineView = () => {
           </>
         ) : (
           <Panel fill>
-            <EmptyState icon="video" title="Welcome to Video Summarizer" text="Add a YouTube video to chat with it, get a summary and test yourself with a quiz." action={<button type="button" onClick={() => setShowAddVideoForm(true)} className={btn.primary}><Icon name="plus" /> Add your first video</button>} />
+            {loaded
+              ? <EmptyState icon="video" title="Pick a video" text="Choose a video from your list, or add a new one." />
+              : <div className="flex h-full items-center justify-center text-blue-600"><Spinner className="h-6 w-6" /></div>}
           </Panel>
         )}
       </Workspace>
