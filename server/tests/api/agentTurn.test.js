@@ -56,7 +56,7 @@ const DOUBT = {
 describe('Novard Agent turn: answering', () => {
   it('answers a learning question and attaches an offer card that has not run', async () => {
     const { message, saved, streamed } = await turn('What is the difference between Docker volumes and bind mounts?', [
-      { tools: [{ name: 'suggest_doubt', args: { topic: 'Docker volumes vs bind mounts' } }] },
+      { tools: [{ name: 'suggest_next_step', args: { kind: 'doubt', topic: 'Docker volumes vs bind mounts', reason: null } }] },
       { text: LONG_ANSWER, chunks: 4 },
     ]);
 
@@ -73,7 +73,7 @@ describe('Novard Agent turn: answering', () => {
   it('adds a missing offer card to a long answer to a learning question', async () => {
     const { message, streamed } = await turn('How do Docker volumes work?', [
       { text: LONG_ANSWER },
-      { tools: [{ name: 'suggest_doubt', args: { topic: 'Docker volumes' } }] }, // the forced follow-up
+      { tools: [{ name: 'suggest_next_step', args: { kind: 'doubt', topic: 'Docker volumes' } }] }, // the forced follow-up
     ]);
     expect(message.actions).toHaveLength(1);
     expect(message.content).toMatch(/save it as a doubt/);
@@ -89,8 +89,10 @@ describe('Novard Agent turn: answering', () => {
     expect(saved.messages[1].content).toBe(message.content);
   });
 
-  it('fails the turn when the model produces nothing', async () => {
-    await expect(turn('hi', [{ text: '' }])).rejects.toMatchObject({ status: 502 });
+  it('retries once when the model returns nothing, then fails the turn', async () => {
+    const { message } = await turn('hi', [{ text: '' }, { text: 'Hello!' }]);
+    expect(message.content).toBe('Hello!');
+    await expect(turn('hi', [{ text: '' }, { text: '' }])).rejects.toMatchObject({ status: 502 });
   });
 });
 
@@ -127,6 +129,17 @@ describe('Novard Agent turn: clarify -> draft', () => {
     expect(await Roadmap.countDocuments()).toBe(0);
   });
 
+  it('sends an empty prepare_* call back once, quoting what the student said', async () => {
+    await turn('Create a 7-day plan to learn React', [
+      { tools: [{ name: 'prepare_skill_plan', args: { allowDuplicate: null, stated: [] } }] },
+      { tools: [{ name: 'prepare_skill_plan', args: { skillName: 'React', durationDays: 7, stated: ['skillName', 'durationDays'] } }] },
+      { text: 'Plans run 10-60 days.' },
+    ]);
+    const [first, second] = toolResults();
+    expect(first.error).toMatch(/no details.*Create a 7-day plan to learn React/);
+    expect(second).toMatchObject({ status: 'invalid', invalid: [expect.objectContaining({ key: 'durationDays' })] });
+  });
+
   it('drafts once everything is known, filling gaps from the saved profile and marking assumptions', async () => {
     await LearnerProfile.create({ userId: ALICE.email, level: 'beginner', hoursPerWeek: 15 });
     const { message } = await turn('Make me a DevOps roadmap, I know Linux', [
@@ -144,6 +157,9 @@ describe('Novard Agent turn: clarify -> draft', () => {
     });
     expect(draft.meta.fields.map((f) => f.key)).toEqual(['role', 'level', 'knownSkills', 'hoursPerWeek', 'timelineMonths', 'goal']);
     expect(toolResults()[0]).toMatchObject({ status: 'drafted', assumed: ['timelineMonths'] });
+    // The draft is confirmed with a fixed line, without a second model call.
+    expect(mockModel.calls).toHaveLength(1);
+    expect(message.content).toBe("Here's your draft to generate a career roadmap: **DevOps Engineer · beginner · 15 h/week · 6 months · knows Linux**. Check the details, change anything you like, and create it when it looks right. I assumed timeline (months) 6 - change it if that doesn't suit you. Some details come from your learner profile.");
     expect(await Roadmap.countDocuments()).toBe(0); // nothing is created until the student presses Create
   });
 
@@ -168,8 +184,41 @@ describe('Novard Agent turn: clarify -> draft', () => {
       { text: 'Plans run 10 to 60 days - shall I make it 10?' },
     ]);
     const [prepared] = toolResults();
-    expect(prepared.status).toBe('needs_info');
+    expect(prepared.status).toBe('invalid');
     expect(prepared.invalid).toEqual([expect.objectContaining({ key: 'durationDays', reason: expect.stringMatching(/between 10 and 60/) })]);
+  });
+
+  it('also catches an out-of-range value the model forgot to mark as stated', async () => {
+    await turn('Create a 7-day plan to learn React', [
+      { tools: [{ name: 'prepare_skill_plan', args: { skillName: 'React', durationDays: 7, stated: ['skillName'] } }] },
+      { text: 'Plans run 10 to 60 days.' },
+    ]);
+    const [prepared] = toolResults();
+    expect(prepared.invalid).toEqual([expect.objectContaining({ key: 'durationDays' })]);
+    expect(prepared.missing.map((m) => m.key)).toEqual(['level', 'description']);
+  });
+
+  it('treats null for unknown fields as not given, like the real model sends them', async () => {
+    const nulls = { role: null, level: null, knownSkills: null, hoursPerWeek: null, timelineMonths: null, goal: null, stated: null };
+    await turn('Make me a roadmap', [
+      { tools: [{ name: 'prepare_roadmap', args: nulls }] },
+      { tools: [{ name: 'prepare_roadmap', args: nulls }] }, // the request really had no details
+      { text: 'A few questions.' },
+    ]);
+    const [first, second] = toolResults();
+    expect(first.error).toMatch(/no details/);
+    expect(second.missing.map((m) => m.key)).toEqual(['role', 'level', 'knownSkills', 'time']);
+  });
+
+  it('retries a step once when the provider rejects a malformed tool call', async () => {
+    const rejected = Object.assign(new Error('400 Tool call validation failed: parameters for tool prepare_roadmap did not match schema'), { status: 400 });
+    const { message } = await turn('Make me a roadmap', [
+      { error: rejected },
+      { text: 'Which role are you aiming for?' },
+    ]);
+    expect(message.content).toBe('Which role are you aiming for?');
+    expect(mockModel.calls[1].messages.at(-1).content).toMatch(/rejected/);
+    await expect(turn('Make me a roadmap', [{ error: rejected }, { error: rejected }])).rejects.toThrow(/validation failed/);
   });
 
   it('points out an item the student already has, and drafts a new one only when asked to', async () => {
@@ -198,16 +247,18 @@ describe('Novard Agent turn: clarify -> draft', () => {
     expect(events.find((e) => e.event === 'superseded').data).toMatchObject({ type: 'create_skill_plan' });
   });
 
-  it('asks the agent to write the parts it owns, like a doubt title', async () => {
+  it('asks the student first, and only then has the agent write the parts it owns, like a doubt title', async () => {
     const { title, ...noTitle } = DOUBT;
-    await turn('Create a doubt about volumes vs bind mounts', [
+    await turn('Create a doubt about docker', [
+      { tools: [{ name: 'prepare_doubt', args: { level: 'beginner', stated: [] } }] },
       { tools: [{ name: 'prepare_doubt', args: noTitle }] },
       { tools: [{ name: 'prepare_doubt', args: { ...noTitle, title } }] },
       { text: 'Draft ready.' },
     ]);
-    const [first, second] = toolResults();
-    expect(first.error).toMatch(/title/);
-    expect(second.status).toBe('drafted');
+    const [first, second, third] = toolResults();
+    expect(first.missing.map((m) => m.key)).toEqual(['question', 'context']); // never the title
+    expect(second.error).toMatch(/title yourself.*never ask/);
+    expect(third.status).toBe('drafted');
   });
 
   it('finds the video candidates itself and lets the student pick on the draft', async () => {

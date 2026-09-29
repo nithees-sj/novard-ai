@@ -16,8 +16,8 @@ const { badRequest } = require('../utils/httpError');
  * Things the Novard Agent can create in the app, and what each one needs.
  *
  * Creating something goes: clarify -> draft -> create.
- *   suggest_*  after answering a question, a small card offering a next step.
- *              "Yes" continues in the chat, where the details are gathered.
+ *   suggest_next_step  after answering a question, a small card offering a next
+ *              step. "Yes" continues in the chat, where the details are gathered.
  *   prepare_*  the model passes what it knows and which details the student
  *              actually said. The server fills gaps from the learner profile,
  *              checks the requirements below and either reports what is
@@ -126,8 +126,9 @@ function prepareArgs(def, raw, { stated = [], profile = {}, derivedKeys = [] } =
     // item (which role, which skill), are offered to the student as an option instead.
     const profileConfirmed = !fromProfile.missing && !derivedKeys.includes(f.profile.key) && !f.profile.hintOnly;
 
-    if (said.has(f.key) && r.reason && !r.short) {
-      bad.push({ key: f.key, question: f.ask, reason: r.reason });
+    // A value out of range almost always came from the student ("a 7-day plan"): ask, never change it silently.
+    if (r.reason && !r.short) {
+      bad.push({ key: f.key, question: f.ask || `Which ${f.label.toLowerCase()} would you like?`, reason: r.reason });
       return;
     }
     let value;
@@ -230,13 +231,12 @@ const ACTIONS = {
     tool: 'doubt',
     label: 'Create a doubt',
     section: 'Doubt Clearance',
-    suggest: 'Offer to save the student\'s question as a doubt in Doubt Clearance, where they can keep chatting about it, get a summary with a diagram, video suggestions and a quiz.',
-    prepareHint: 'It needs the SPECIFIC question (not just a broad topic like "Docker") and what confuses them or what they tried.',
+    prepareHint: 'the SPECIFIC question (not a broad topic like "Docker") and what confuses them or what they tried.',
     fields: [
-      { key: 'question', label: 'Your question', type: 'textarea', need: 'must', min: 10, max: 1000, ask: 'What exactly do you want to understand? Name the specific concept or question.', describe: 'The specific question, in the first person, e.g. "What is the difference between Docker volumes and bind mounts?"' },
-      { key: 'context', label: 'Where you are stuck', type: 'textarea', need: 'must', min: 5, max: 800, ask: 'What have you tried so far, or which part confuses you?', describe: 'In their words: what confuses them, what they tried, the error, or where it came up. If their question already shows exactly what confuses them, use that and list it as stated.' },
+      { key: 'question', label: 'Your question', type: 'textarea', need: 'must', min: 10, max: 1000, ask: 'What exactly do you want to understand? Name the specific concept or question.', describe: 'First person, e.g. "What is the difference between Docker volumes and bind mounts?"' },
+      { key: 'context', label: 'Where you are stuck', type: 'textarea', need: 'must', min: 5, max: 800, ask: 'What have you tried so far, or which part confuses you?', describe: 'What confuses them, what they tried, or the error, in their words. If their question already shows it, use that (stated).' },
       { key: 'level', label: 'Your level', type: 'select', need: 'should', options: opts('beginner', 'intermediate', 'advanced'), profile: P.levelDoubt },
-      { key: 'title', label: 'Title', type: 'text', need: 'auto', min: 3, max: 200, describe: 'Short, specific title, 3-8 words, e.g. "Docker Volumes vs Bind Mounts"' },
+      { key: 'title', label: 'Title', type: 'text', need: 'auto', min: 3, max: 200, describe: 'You write it: 3-8 words, e.g. "Docker Volumes vs Bind Mounts"' },
     ],
     summary: (a) => `"${a.title || a.question || ''}"`,
     async findExisting(a, userId) {
@@ -269,15 +269,14 @@ const ACTIONS = {
     tool: 'video',
     label: 'Add a video',
     section: 'Video Summarizer',
-    suggest: 'Offer to find and add a YouTube video on this topic to their Video Summarizer library, where they can chat with it, summarise it and take a quiz.',
-    prepareHint: 'It needs the topic. The server searches YouTube and puts the 3 best matches on the draft for the student to pick; pass videoIds only if you already searched and want specific ones first.',
+    prepareHint: 'the topic. The server finds the 3 best YouTube matches for the student to pick from.',
     fields: [
-      { key: 'topic', label: 'Topic', type: 'text', need: 'must', min: 2, max: 120, ask: 'Which topic should the video cover?', describe: 'Specific topic to search, e.g. "Docker volumes explained"' },
+      { key: 'topic', label: 'Topic', type: 'text', need: 'must', min: 2, max: 120, ask: 'Which topic should the video cover?', describe: 'e.g. "Docker volumes explained"' },
       { key: 'level', label: 'Level', type: 'select', need: 'should', options: opts('beginner', 'intermediate', 'advanced'), profile: P.levelDoubt },
       { key: 'length', label: 'Length', type: 'select', need: 'should', default: 'any', options: opts(['short', 'Short (under 15 min)'], ['medium', '15-45 min'], ['long', 'Deep dive (45 min+)'], ['any', 'Any length']) },
       { key: 'videoId', label: 'Video', type: 'video', need: 'auto' },
     ],
-    extraParams: { videoIds: { type: 'array', items: { type: 'string' }, description: 'Optional: ids from search_youtube_videos, best first' } },
+    extraParams: { videoIds: { type: ['array', 'null'], items: { type: 'string' }, description: 'Optional ids from search_youtube_videos, best first' } },
     /** Find the candidates the student picks from on the draft. */
     async complete(args, raw, ctx) {
       const pool = new Map();
@@ -327,15 +326,14 @@ const ACTIONS = {
     tool: 'roadmap',
     label: 'Generate a career roadmap',
     section: 'Smart Roadmap',
-    suggest: 'Offer to generate a personalised, staged career roadmap (with a diagram) towards a target role in Smart Roadmap.',
-    prepareHint: 'It needs the target role, their starting level, the related skills they already have, and how much time they can give.',
+    prepareHint: 'the target role, starting level, skills they have, and weekly hours or a timeline.',
     fields: [
       { key: 'role', label: 'Target role', type: 'text', need: 'must', min: 2, max: 80, ask: 'Which role are you aiming for?', describe: 'e.g. "DevOps Engineer"', profile: P.role },
       { key: 'level', label: 'Starting level', type: 'select', need: 'must', ask: 'Where are you starting from?', options: opts(['beginner', 'Complete beginner'], ['intermediate', 'I know the basics'], ['experienced', 'Working professional, switching role']), profile: P.level3 },
-      { key: 'knownSkills', label: 'Skills you have', type: 'tags', need: 'must', emptyOk: true, maxItems: 20, maxLen: 40, ask: 'Which related skills do you already have? ("none" is fine)', describe: 'Skills they already have. An empty list (listed as stated) means they said none.', profile: P.skills },
+      { key: 'knownSkills', label: 'Skills you have', type: 'tags', need: 'must', emptyOk: true, maxItems: 20, maxLen: 40, ask: 'Which related skills do you already have? ("none" is fine)', describe: '[] with the field stated = they said none', profile: P.skills },
       { key: 'hoursPerWeek', label: 'Hours per week', type: 'int', need: 'should', min: 3, max: 40, default: 10, group: 'time', profile: P.hours },
       { key: 'timelineMonths', label: 'Timeline (months)', type: 'int', need: 'should', min: 1, max: 24, default: 6, group: 'time', profile: P.months },
-      { key: 'goal', label: 'Goal', type: 'text', need: 'should', max: 240, describe: 'Their goal in their own words, e.g. "get a job at a product company"', profile: P.goal },
+      { key: 'goal', label: 'Goal', type: 'text', need: 'should', max: 240, describe: 'In their words', profile: P.goal },
     ],
     groups: { time: { ask: 'How much time can you give - hours per week, or a target timeline?', options: ['5 h/week', '10 h/week', '20 h/week', 'Within 3 months', 'Within 6 months'] } },
     summary: (a) => [a.role, a.level, a.hoursPerWeek && `${a.hoursPerWeek} h/week`, a.timelineMonths && `${a.timelineMonths} months`, a.knownSkills?.length && `knows ${a.knownSkills.slice(0, 4).join(', ')}`].filter(Boolean).join(' · '),
@@ -358,12 +356,11 @@ const ACTIONS = {
     tool: 'skill_plan',
     label: 'Create a learning plan',
     section: 'Skill Unlocker',
-    suggest: 'Offer to create a day-by-day learning plan for ONE skill in Skill Unlocker: a topic, an objective and a YouTube video for each day, with progress tracking and quizzes.',
-    prepareHint: 'It needs the skill, their current level in it, and what they want to be able to do by the end. Plans run 10-60 days.',
+    prepareHint: 'the skill, their level in it, and what they want to be able to do by the end. 10-60 days.',
     fields: [
       { key: 'skillName', label: 'Skill', type: 'text', need: 'must', min: 2, max: 80, ask: 'Which skill do you want to learn?', describe: 'One skill, e.g. "React Hooks" or "SQL"' },
       { key: 'level', label: 'Current level', type: 'select', need: 'must', ask: 'What is your current level in it?', options: opts(['beginner', 'Beginner - new to it'], ['intermediate', 'Intermediate - I know the basics']), profile: P.level2 },
-      { key: 'description', label: 'By the end you can', type: 'textarea', need: 'must', min: 10, max: 500, ask: 'What do you want to be able to do by the end (e.g. build a REST API, pass an interview, use it at work)?', describe: 'The outcome they want, in their words' },
+      { key: 'description', label: 'By the end you can', type: 'textarea', need: 'must', min: 10, max: 500, ask: 'What do you want to be able to do by the end (e.g. build a REST API, pass an interview, use it at work)?', describe: 'The outcome, in their words' },
       { key: 'durationDays', label: 'Days', type: 'int', need: 'should', min: 10, max: 60, default: 14, ask: 'How many days should the plan be (10-60)?' },
       { key: 'focusAreas', label: 'Focus on', type: 'tags', need: 'should', maxItems: 8, maxLen: 60, describe: 'Sub-topics to emphasise' },
       { key: 'language', label: 'Language', type: 'select', need: 'should', default: 'English', options: opts(...LANGUAGES), profile: P.language },
@@ -392,11 +389,10 @@ const ACTIONS = {
     tool: 'skill_gap_analysis',
     label: 'Run a skill gap analysis',
     section: 'Skill Gap Analysis',
-    suggest: 'Offer to analyse the student\'s skills against a target role in Skill Gap Analysis: readiness %, the skills they have, the gaps ranked by priority, then a coaching chat.',
-    prepareHint: 'It needs the target role, the skills they have now, and their experience.',
+    prepareHint: 'the target role, the skills they have now, and their experience.',
     fields: [
       { key: 'targetRole', label: 'Target role', type: 'text', need: 'must', min: 2, max: 80, ask: 'Which role do you want to be ready for?', profile: P.role },
-      { key: 'currentSkills', label: 'Your skills', type: 'tags', need: 'must', emptyOk: true, maxItems: 30, maxLen: 40, ask: 'Which skills do you have right now (languages, tools, frameworks)?', describe: 'Skills they have now. An empty list (listed as stated) means they said none.', profile: P.skills },
+      { key: 'currentSkills', label: 'Your skills', type: 'tags', need: 'must', emptyOk: true, maxItems: 30, maxLen: 40, ask: 'Which skills do you have right now (languages, tools, frameworks)?', describe: '[] with the field stated = they said none', profile: P.skills },
       { key: 'experience', label: 'Experience', type: 'select', need: 'must', ask: 'Which describes you best?', options: opts(['student', 'Student'], ['junior', 'Junior (0-2 years)'], ['switching', 'Switching careers'], ['experienced', 'Experienced professional']), profile: P.experience },
       { key: 'hoursPerWeek', label: 'Hours per week', type: 'int', need: 'should', min: 2, max: 40, default: 10, profile: P.hours },
       { key: 'goal', label: 'Goal', type: 'text', need: 'should', max: 240, profile: P.goal },
@@ -421,11 +417,10 @@ const ACTIONS = {
     tool: 'forum_post',
     label: 'Post to the AI Forum',
     section: 'AI Forum',
-    suggest: 'Offer to start a discussion in the AI Forum, for questions that benefit from other students\' experience or opinions (not for plain concept questions).',
-    prepareHint: 'It needs the actual question for the community with context (what they tried, their situation). It is public, so the student always reviews it first.',
+    prepareHint: 'the question for the community, with context (what they tried, their situation).',
     fields: [
       { key: 'title', label: 'Title', type: 'text', need: 'auto', min: 3, max: 200 },
-      { key: 'description', label: 'Your post', type: 'textarea', need: 'must', min: 40, max: 5000, ask: 'What exactly do you want to ask the community, and what have you tried so far?', describe: 'The full question with their context, written as the student' },
+      { key: 'description', label: 'Your post', type: 'textarea', need: 'must', min: 40, max: 5000, ask: 'What exactly do you want to ask the community, and what have you tried so far?', describe: 'The question with their context, written as the student' },
       { key: 'category', label: 'Category', type: 'select', need: 'auto', default: 'general', options: opts(...CATEGORIES) },
       { key: 'tags', label: 'Tags', type: 'tags', need: 'auto', maxItems: 8, maxLen: 30 },
     ],
@@ -461,44 +456,58 @@ const fn = (name, description, properties, required = []) => ({
   function: { name, description, parameters: { type: 'object', properties, required } },
 });
 
+// Groq refuses a tool call whose arguments do not match the schema, so the
+// schema is loose: every parameter accepts null (the model sends null for what
+// it does not know) and allowed values are described rather than enforced -
+// the server reads them either way, including an option's label.
 const paramFor = (f) => {
-  const description = [f.describe, f.type === 'int' ? `${f.min}-${f.max}` : ''].filter(Boolean).join(' ') || undefined;
-  if (f.type === 'int') return { type: 'integer', description };
-  if (f.type === 'select') return { type: 'string', enum: f.options.map((o) => o.value), ...(description ? { description } : {}) };
-  if (f.type === 'tags') return { type: 'array', items: { type: 'string' }, ...(description ? { description } : {}) };
-  return { type: 'string', ...(description ? { description } : {}) };
+  const description = [
+    f.describe,
+    f.type === 'int' ? `${f.min}-${f.max}` : '',
+    f.type === 'select' ? `One of: ${f.options.map((o) => (o.label === o.value ? o.value : `${o.value} (= "${o.label}")`)).join(', ')}` : '',
+  ].filter(Boolean).join('. ') || undefined;
+  const d = description ? { description } : {};
+  if (f.type === 'int') return { type: ['integer', 'null'], ...d };
+  if (f.type === 'select') return { type: ['string', 'null'], ...d };
+  if (f.type === 'tags') return { type: ['array', 'null'], items: { type: 'string' }, ...d };
+  return { type: ['string', 'null'], ...d };
 };
 
 Object.entries(ACTIONS).forEach(([type, a]) => {
   a.type = type;
   const askable = a.fields.filter((f) => f.need !== 'auto' && f.type !== 'video').map((f) => f.key);
-  a.suggestTool = fn(
-    `suggest_${a.tool}`,
-    `${a.suggest} Use after answering a learning question. It only shows a small offer card; if they say Yes, you then gather the details and call prepare_${a.tool}.`,
-    {
-      topic: { type: 'string', description: 'What it would be about, e.g. "Docker volumes vs bind mounts" or "DevOps Engineer"' },
-      reason: { type: 'string', description: 'One short sentence on why it would help them' },
-    },
-    ['topic'],
-  );
   a.prepareTool = fn(
     `prepare_${a.tool}`,
-    `Prepare a DRAFT to ${lowerFirst(a.label)} in ${a.section}, when the student wants it (they asked, or said yes to your suggestion). ${a.prepareHint} Call it with everything you know - the server fills gaps from their profile and tells you exactly what is still missing, so you can ask. Nothing is created here: the student reviews the draft and presses Create.`,
+    `${a.label} in ${a.section}: prepare a DRAFT for the student to review (nothing is created). Needs ${a.prepareHint}`,
     {
       ...Object.fromEntries(a.fields.filter((f) => f.type !== 'video').map((f) => [f.key, paramFor(f)])),
       ...(a.extraParams || {}),
-      stated: { type: 'array', items: { type: 'string', enum: askable }, description: 'The fields the student actually told you in this conversation (any message) or clearly implied, e.g. the topic of the question they asked. NEVER list a field you guessed.' },
-      ...(a.findExisting ? { allowDuplicate: { type: 'boolean', description: 'true only when the student said they want a new one although they already have one' } } : {}),
+      stated: { type: ['array', 'null'], items: { type: 'string' }, description: `Which of ${askable.join(', ')} the student actually said, in any message. Never guessed ones.` },
+      ...(a.findExisting ? { allowDuplicate: { type: ['boolean', 'null'], description: 'true only if they want a new one although they have one' } } : {}),
     },
   );
 });
 
+/** kind (what the model passes) <-> action type */
+const KIND_TO_TYPE = Object.fromEntries(Object.entries(ACTIONS).map(([type, a]) => [a.tool, type]));
+
+const SUGGEST_TOOL = fn(
+  'suggest_next_step',
+  'After answering a learning question, offer ONE next step as a small card. Never use it when they asked you to create something (use prepare_* then). If they say Yes, you gather the details and call prepare_*. Kinds: doubt = keep exploring a concept (chat, diagram, quiz) · video = a video would help · roadmap = career direction · skill_plan = learn a skill day by day · skill_gap_analysis = readiness for a role · forum_post = other students\' experience.',
+  {
+    kind: { type: 'string', description: `One of: ${Object.keys(KIND_TO_TYPE).join(', ')}` },
+    topic: { type: 'string', description: 'What it would be about, e.g. "Docker volumes vs bind mounts"' },
+    reason: { type: ['string', 'null'], description: 'One short sentence on why it helps' },
+  },
+  ['kind', 'topic'],
+);
+
 PROFILE_UPDATE.tool = fn(
   'remember_about_student',
-  'Offer to remember a lasting fact the student told you about themselves (level, experience, target role, skills, weekly hours, goal, preferred language or teaching style) in their learner profile, so future chats and drafts use it. Shows a "Remember this?" card; it is saved only if they say Yes. Only for facts they stated, not guesses, and not for what a draft they are creating already saves.',
+  'Offer to save a lasting fact the student stated about themselves to their learner profile (a "Remember this?" card; saved only on Yes). Not for guesses, or details a draft already carries.',
   Object.fromEntries(Object.entries(PROFILE_FIELDS).map(([k, f]) => [k, f.kind === 'list'
-    ? { type: 'array', items: { type: 'string' } }
-    : f.kind === 'int' ? { type: 'integer' } : f.kind === 'enum' ? { type: 'string', enum: f.options } : { type: 'string' }])),
+    ? { type: ['array', 'null'], items: { type: 'string' } }
+    : f.kind === 'int' ? { type: ['integer', 'null'] } : f.kind === 'enum' ? { type: ['string', 'null'], description: `One of: ${f.options.join(', ')}` } : { type: ['string', 'null'] }])),
 );
 
 /** The sentence added after an answer when a suggestion is attached without one. */
@@ -512,13 +521,27 @@ const SUGGEST_LINES = {
 };
 Object.entries(SUGGEST_LINES).forEach(([type, line]) => { ACTIONS[type].suggestLine = line; });
 
-/** Tool name -> { type, mode }: 'suggest' offers a next step, 'prepare' drafts it. */
-const TOOL_TO_ACTION = Object.fromEntries(Object.entries(ACTIONS).flatMap(([type, a]) => [
-  [a.suggestTool.function.name, { type, mode: 'suggest' }],
-  [a.prepareTool.function.name, { type, mode: 'prepare' }],
-]));
+/** prepare_* tool name -> action type. */
+const PREPARE_TO_TYPE = Object.fromEntries(Object.entries(ACTIONS).map(([type, a]) => [a.prepareTool.function.name, type]));
 
 const defFor = (type) => (type === 'profile_update' ? PROFILE_UPDATE : ACTIONS[type]);
+
+/**
+ * The reply when a draft is shown: fixed, so the turn needs no further model
+ * call (each call counts against the provider's per-minute token limit).
+ */
+function draftLine(type, args, provenance = {}) {
+  const def = ACTIONS[type];
+  const assumed = def.fields.filter((f) => provenance[f.key] === 'assumed' && args[f.key] !== undefined)
+    .map((f) => `${f.label.toLowerCase()} ${Array.isArray(args[f.key]) ? args[f.key].join(', ') : (f.options?.find((o) => o.value === args[f.key])?.label || args[f.key])}`);
+  const fromProfile = def.fields.some((f) => provenance[f.key] === 'profile');
+  return [
+    `Here's your draft to ${lowerFirst(def.label)}: **${summarize(type, args)}**.`,
+    type === 'add_video' ? 'Pick the video you like best, then add it.' : 'Check the details, change anything you like, and create it when it looks right.',
+    assumed.length ? `I assumed ${assumed.join(' and ')} - change ${assumed.length > 1 ? 'them' : 'it'} if that doesn't suit you.` : '',
+    fromProfile ? 'Some details come from your learner profile.' : '',
+  ].filter(Boolean).join(' ');
+}
 
 /** One line describing a card's content, for the card and the model's memory. */
 function summarize(type, args = {}) {
@@ -556,10 +579,13 @@ function withMeta(action) {
 module.exports = {
   ACTIONS,
   PROFILE_UPDATE,
-  TOOL_TO_ACTION,
+  SUGGEST_TOOL,
+  KIND_TO_TYPE,
+  PREPARE_TO_TYPE,
   defFor,
   summarize,
   withMeta,
+  draftLine,
   prepareArgs,
   applyEdits,
   profilePatchFrom,

@@ -13,15 +13,15 @@ const { searchVideos } = require('../services/youtubeService');
 const { loadActivity } = require('../services/analyticsService');
 const { getProfile, profileForPrompt } = require('../services/learnerProfileService');
 const logger = require('../utils/logger');
-const { ACTIONS, PROFILE_UPDATE, TOOL_TO_ACTION, defFor, summarize, withMeta, prepareArgs } = require('./actions');
+const { ACTIONS, PROFILE_UPDATE, SUGGEST_TOOL, KIND_TO_TYPE, PREPARE_TO_TYPE, defFor, summarize, withMeta, prepareArgs, draftLine } = require('./actions');
 
 /**
  * The Novard Agent: a tool-using assistant on LangChain.
  *
  * Each turn is a small agent loop. The model answers, and may call:
  *   - read tools, run straight away: get_my_workspace, search_youtube_videos
- *   - suggest_* (agent/actions.js): a small offer card after answering a
- *     question; "Yes" continues in the chat
+ *   - suggest_next_step (agent/actions.js): a small offer card after answering
+ *     a question; "Yes" continues in the chat
  *   - prepare_*: when the student wants something created. The server checks
  *     what the item needs against the conversation and the learner profile,
  *     and either reports what is missing or shows an editable DRAFT card
@@ -82,17 +82,17 @@ const ASK_TOOL = {
     parameters: {
       type: 'object',
       properties: {
-        intro: { type: 'string', description: 'Optional one short, friendly sentence shown above the questions' },
+        intro: { type: ['string', 'null'], description: 'Optional one short, friendly sentence shown above the questions' },
         questions: {
           type: 'array',
-          maxItems: 3,
+          maxItems: 4,
           items: {
             type: 'object',
             properties: {
-              key: { type: 'string', description: 'The field it fills, e.g. "level"' },
+              key: { type: ['string', 'null'], description: 'The field it fills, e.g. "level"' },
               question: { type: 'string', description: 'Short and clear, e.g. "Where are you starting from?"' },
               options: { type: 'array', items: { type: 'string' }, description: '3-5 short answers tailored to this student, most likely first' },
-              multiSelect: { type: 'boolean', description: 'true when several options can apply (e.g. skills they know)' },
+              multiSelect: { type: ['boolean', 'null'], description: 'true when several options can apply (e.g. skills they know)' },
             },
             required: ['question', 'options'],
           },
@@ -103,7 +103,10 @@ const ASK_TOOL = {
   },
 };
 
-const TOOLS = [...READ_TOOLS, ASK_TOOL, PROFILE_UPDATE.tool, ...Object.values(ACTIONS).flatMap((a) => [a.suggestTool, a.prepareTool])];
+const TOOLS = [...READ_TOOLS, ASK_TOOL, SUGGEST_TOOL, PROFILE_UPDATE.tool, ...Object.values(ACTIONS).map((a) => a.prepareTool)];
+
+// Groq refuses a tool call whose arguments do not match its schema; the step is retried once.
+const TOOL_CALL_REJECTED = /tool call validation failed|tool_use_failed|failed to call a function/i;
 
 function systemPrompt({ userName, profileText }) {
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -121,28 +124,29 @@ WHAT YOU CAN CREATE IN THE APP
 - Skill Unlocker: a day-by-day learning plan for one skill (10-60 days).
 - Skill Gap Analysis: their skills compared with a target role.
 - AI Forum: a public discussion when other students' experience would help.
-Each has suggest_* (a small offer card after an answer) and prepare_* (a draft the student reviews). You never create anything yourself: the student presses Create on the draft.
+You never create anything yourself. prepare_* shows the student a DRAFT with every detail filled in, which they check and create. suggest_next_step offers one of these as a small card after an answer.
 You can also look at their workspace (get_my_workspace), search YouTube (search_youtube_videos), ask questions with tap-to-answer options (ask_student) and offer to remember facts about them (remember_about_student).
 
 FIRST DECIDE WHAT THE MESSAGE IS
 
-A) A QUESTION or learning request - "what is Docker?", "I have a doubt in React hooks", "how do I become a DevOps engineer?", "explain volumes".
-   1. Every real learning question gets ONE offer - it is expected, not optional. Call the matching suggest_* tool (only a tool call creates the card; words alone do not):
-      concept doubt -> suggest_doubt · career direction -> suggest_roadmap · wants to learn a skill over time -> suggest_skill_plan · readiness for a role -> suggest_skill_gap_analysis · a video would help -> suggest_video · wants others' experience -> suggest_forum_post.
-   2. Answer fully - an offer never makes the answer shorter. For a concept: a clear explanation, a small code or real-world example, common mistakes.
-   3. End with one short sentence pointing to the card, e.g. "Want to keep going on this? I can save it as a doubt - just confirm below." If you did not call a suggest_* tool, do not mention a card.
-   No offers for small talk, and never offer again something they declined in this chat.
-
-B) A REQUEST TO CREATE something - "create a doubt about…", "make me a roadmap", "find me a video on…", "make a 14-day plan for…", "analyse my skills for…", "post this in the forum", or "yes" to your offer.
-   1. Call the matching prepare_* tool straight away with everything you know from this conversation, and list in \`stated\` only the fields the student actually told you. Never invent values to complete the form - leave unknown fields out; the server fills them from the profile or asks.
+B) A REQUEST TO CREATE - checked first. They ask you to create, make, build, generate, find, fetch, add, save, post or set up one of the things above ("make me a roadmap", "find me a short video on git branching", "create a doubt about Docker", "a 7-day plan for React"), or say yes to your offer, or send details for something they asked for earlier.
+   Then do NOT write the item in the chat (no roadmap, plan or explanation in your reply) - prepare it:
+   1. Your FIRST step is always the matching prepare_* call - before asking anything, even if a value looks wrong or details are missing; the server checks everything at once and tells you exactly what to ask. Pass what you know from the conversation, listing in \`stated\` only the fields the student actually told you. Leave out what you do not know - never guess to fill the form.
    2. The result says what to do next:
-      - needs_info: call ask_student ONCE with all the missing questions (at most 3), each with 3-5 short options tailored to what you know (for a broad doubt topic like "Docker", offer its 4 most likely sub-concepts; use a "hint" as the first option). Write one short, friendly sentence before it. Do not teach, and do not create anything else in that reply.
-      - exists: tell them they already have it, with its progress and where it is, and ask (ask_student) whether to continue that one or create a new one. For a new one, call prepare_* again with allowDuplicate true.
-      - drafted: the draft card is shown. Reply in one or two short sentences: what you prepared, that they can change any field and press Create, and any assumption worth checking.
-      - error or invalid: fix what it says, or - when it is the student's to decide (e.g. a value out of the allowed range) - explain the limit and ask.
-   3. When they answer your questions, call prepare_* again with ALL the details so far, including the new ones in \`stated\`.
+      - needs_info: call ask_student ONCE with ALL the missing questions (up to 4), each with 3-5 short options tailored to what you know (for a broad doubt topic like "Docker", offer its 4 most likely sub-concepts; when an item has a hint, make that value the first option). Options are plain answers - never "Hint:" or instructions. One short, friendly sentence before it, nothing else.
+      - invalid: in the same ask_student call, explain the limit (e.g. plans run 10-60 days) and offer valid values, together with any missing questions.
+      - exists: say they already have it, with its progress and where, and ask (ask_student) whether to continue it or make a new one. For a new one, call prepare_* again with allowDuplicate true.
+      - drafted: reply in one or two short sentences: what you prepared, that they can change any field and press Create, and any assumption worth checking.
+      - error: fix what it says (for example write the title yourself - never ask the student for a title, category or tags).
+   3. When they answer, call prepare_* again with ALL the details so far, the new ones included in \`stated\`.
    4. To change a draft ("make it 20 days", "add Kubernetes"), call prepare_* again with the change; the new draft replaces the old one.
-   Ask only what the result reports as missing, or something that genuinely changes the result. Never ask about what you already know.
+   Ask only what the result reports as missing. Never ask about what you already know.
+
+A) A QUESTION or learning request - "what is Docker?", "I have a doubt in React hooks", "how do I become a DevOps engineer?", "explain volumes".
+   1. Answer fully: a clear explanation, a small code or real-world example, common mistakes.
+   2. Every real learning question also gets ONE offer - call suggest_next_step (only a tool call creates the card; words alone do not): doubt for a concept · roadmap for career direction · skill_plan to learn a skill over time · skill_gap_analysis for readiness for a role · video when a video would help · forum_post for other students' experience.
+   3. End with one short sentence pointing to the card, e.g. "Want to keep going on this? I can save it as a doubt - just confirm below." If you did not call suggest_next_step, do not mention a card.
+   No offers for small talk, and never offer again something they declined in this chat.
 
 ALWAYS
 - Never say something was created unless the conversation shows its card with status "done". A draft is not created yet.
@@ -155,7 +159,7 @@ ${FORMAT_RULES}`;
 
 const CARD_STATUS = {
   proposed: (a) => (a.type === 'profile_update' ? 'waiting for the student to say Yes' : 'offered, waiting for Yes / No'),
-  accepted: () => 'the student said Yes - gather the details and call prepare_*',
+  accepted: () => 'the student said Yes - call prepare_* for it now',
   draft: () => 'draft shown, NOT created yet - waiting for the student to press Create (for changes, call prepare_* again)',
   running: () => 'being created',
   done: (a) => `created${a.result?.note ? ` (${a.result.note})` : ''}`,
@@ -186,7 +190,7 @@ function messageForModel(m) {
 
 /** The agent's questions, cleaned; null when there are none. */
 function readAsk(args) {
-  const questions = (Array.isArray(args.questions) ? args.questions : []).slice(0, 3)
+  const questions = (Array.isArray(args.questions) ? args.questions : []).slice(0, 4)
     .filter((q) => q && typeof q === 'object')
     .map((q) => ({
       key: clean(q.key, 40),
@@ -260,6 +264,8 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
 
   const ctx = { userId, searchResults: new Map(), emit };
   const actions = [];
+  const drafted = []; // drafts shown this turn, for the fixed confirmation
+  const rechecked = new Set(); // action types whose missing details the model was asked to re-check
   let ask = null;
   let text = '';
   let stopped = false;
@@ -318,12 +324,9 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
       return { ok: true, note: 'The "Remember this?" card is shown; it is saved only if they press Yes. Continue your reply.' };
     }
 
-    const tool = TOOL_TO_ACTION[name];
-    if (!tool) return { error: `Unknown tool ${name}` };
-    const { type, mode } = tool;
-    const def = ACTIONS[type];
-
-    if (mode === 'suggest') {
+    if (name === SUGGEST_TOOL.function.name) {
+      const type = KIND_TO_TYPE[args.kind];
+      if (!type) return { error: `kind must be one of: ${Object.keys(KIND_TO_TYPE).join(', ')}.` };
       const topic = clean(args.topic, 160);
       if (topic.length < 2) return { error: 'Say what the suggestion is about (topic).' };
       addCard({ id: newActionId(), type, origin: 'suggested', status: 'proposed', args: { topic, ...(args.reason ? { reason: clean(args.reason, 240) } : {}) }, updatedAt: new Date() });
@@ -334,20 +337,37 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
     }
 
     // prepare: check the requirements, then show a draft.
-    const prepared = prepareArgs(def, args, { stated: args.stated, profile: learner.profile, derivedKeys: learner.derivedKeys });
-    if (prepared.autoMissing.length) {
-      return { error: `Write ${prepared.autoMissing.join(', ')} yourself (you fill these in), then call ${name} again.` };
+    const type = PREPARE_TO_TYPE[name];
+    if (!type) return { error: `Unknown tool ${name}` };
+    const def = ACTIONS[type];
+    // An empty call means the model skipped reading the request: it is sent back once to fill it in.
+    const given = (Array.isArray(args.stated) && args.stated.length)
+      || def.fields.some((f) => ![undefined, null, ''].includes(args[f.key]) && !(Array.isArray(args[f.key]) && !args[f.key].length));
+    if (!given && !rechecked.has(type)) {
+      rechecked.add(type);
+      return { error: `You passed no details. Fill in everything the student already said - their message: "${input.slice(0, 400)}" - list those fields in stated, and call ${name} again. It then tells you what is really missing.` };
     }
-    if (prepared.missing.length || prepared.invalid.length) {
+    const draft = prepareArgs(def, args, { stated: args.stated, profile: learner.profile, derivedKeys: learner.derivedKeys });
+    // What only the student can answer comes first; what the agent writes itself (a title) after.
+    if (draft.missing.length || draft.invalid.length) {
+      // The first time, the model re-reads what the student said: often the detail is already there.
+      const recheck = !rechecked.has(type);
+      rechecked.add(type);
       return {
-        status: 'needs_info',
-        ...(prepared.invalid.length ? { invalid: prepared.invalid } : {}),
-        missing: prepared.missing,
-        next: 'Call ask_student once with these questions (tailor the options to this student), after one short sentence. Then stop.',
+        status: draft.invalid.length ? 'invalid' : 'needs_info',
+        ...(draft.invalid.length ? { invalid: draft.invalid } : {}),
+        ...(draft.missing.length ? { missing: draft.missing } : {}),
+        ...(recheck ? { studentSaid: input.slice(0, 400) } : {}),
+        next: recheck
+          ? `First check the conversation and studentSaid: if the student already gave any of these (e.g. the skill, a number of days), call ${name} again with ALL of them listed in stated. Otherwise call ask_student once with the questions (tailor the options), after one short sentence.`
+          : 'Call ask_student once with these questions (tailor the options to this student), after one short sentence. Then stop.',
       };
     }
+    if (draft.autoMissing.length) {
+      return { error: `Write the ${draft.autoMissing.join(' and ')} yourself from what the student said (never ask them), then call ${name} again.` };
+    }
     if (def.findExisting && args.allowDuplicate !== true) {
-      const existing = await def.findExisting(prepared.args, userId).catch(() => null);
+      const existing = await def.findExisting(draft.args, userId).catch(() => null);
       if (existing) {
         return {
           status: 'exists',
@@ -358,23 +378,26 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
     }
     if (def.complete) {
       try {
-        await def.complete(prepared.args, args, ctx);
+        await def.complete(draft.args, args, ctx);
       } catch (error) {
         return { error: error.message };
       }
     }
-    const action = { id: newActionId(), type, origin: 'requested', status: 'draft', args: prepared.args, provenance: prepared.provenance, updatedAt: new Date() };
+    const action = { id: newActionId(), type, origin: 'requested', status: 'draft', args: draft.args, provenance: draft.provenance, updatedAt: new Date() };
     await supersede(type, action.id);
     addCard(action);
-    const assumed = Object.keys(prepared.provenance).filter((k) => prepared.provenance[k] === 'assumed');
+    drafted.push(action);
+    const assumed = Object.keys(draft.provenance).filter((k) => draft.provenance[k] === 'assumed');
     return {
       status: 'drafted',
-      draft: `${def.label}: ${summarize(type, prepared.args)}`,
+      draft: `${def.label}: ${summarize(type, draft.args)}`,
       ...(assumed.length ? { assumed } : {}),
       note: 'The draft card is shown; every field is editable and nothing is created until they press Create. Reply in one or two short sentences.',
     };
   };
 
+  let toolRetried = false;
+  let emptyRetried = false;
   try {
     for (let step = 0; step < MAX_STEPS; step += 1) {
       // The last step has no tools, so the turn always ends with words for the student.
@@ -383,7 +406,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
       let stepText = '';
       // A rate limit is only retried before any text has been streamed for this step.
       // eslint-disable-next-line no-await-in-loop
-      await withRateLimitRetry(async () => {
+      const ran = await withRateLimitRetry(async () => {
         aggregate = null;
         const stream = await llm.stream(messages, { signal });
         for await (const chunk of stream) {
@@ -399,15 +422,29 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
             emit('token', { text: delta });
           }
         }
+        return true;
       }, {
         retries: 3,
         onWait: (seconds) => {
           if (stepText) throw Object.assign(new Error('rate limited mid-reply'), { status: 429 });
           emit('status', { text: `The AI is busy - continuing in ${seconds}s…` });
         },
+      }).catch((error) => {
+        if (signal?.aborted || stepText || toolRetried || !TOOL_CALL_REJECTED.test(String(error?.message))) throw error;
+        toolRetried = true;
+        logger.warn('Agent: tool call rejected, retrying the step', { error: String(error.message).slice(0, 300) });
+        messages.push(new HumanMessage('(system) Your last tool call was rejected because its arguments did not match the schema. Call it again, leaving out any field you do not know instead of sending an empty or invalid value.'));
+        return false;
       });
+      if (!ran) { step -= 1; continue; }
 
       const calls = aggregate?.tool_calls || [];
+      // The reasoning model occasionally returns nothing at all (only its hidden reasoning): try once more.
+      if (!calls.length && !stepText.trim() && !text.trim() && !emptyRetried && !actions.length && !ask) {
+        emptyRetried = true;
+        step -= 1;
+        continue;
+      }
       if (!calls.length) break;
 
       messages.push(new AIMessage({ content: stepText, tool_calls: calls }));
@@ -418,6 +455,15 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
       }
       emit('status', { text: '' });
       if (ask) break; // the reply ends with the questions
+      // A draft is shown: confirm it with a fixed line rather than another model call.
+      if (drafted.length && !stepText.trim()) {
+        const line = drafted.filter((a) => a.status === 'draft').map((a) => draftLine(a.type, a.args, a.provenance)).join('\n\n');
+        if (line) {
+          text += `${text ? '\n\n' : ''}${line}`;
+          emit('token', { text: text === line ? line : `\n\n${line}` });
+        }
+        break;
+      }
     }
   } catch (error) {
     // Stopped by the student: keep what was written so far instead of losing the turn.
@@ -437,15 +483,14 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
   const missingSuggestion = text.length > 300 && LEARNING_QUESTION.test(input);
   if (!stopped && !ask && !actions.length && (mentionsCard || missingSuggestion)) {
     try {
-      const tools = Object.values(ACTIONS).map((a) => a.suggestTool);
-      const forced = await withRateLimitRetry(() => base.bindTools([...tools, NO_SUGGESTION], { tool_choice: 'required' }).invoke([
+      const forced = await withRateLimitRetry(() => base.bindTools([SUGGEST_TOOL, NO_SUGGESTION], { tool_choice: 'required' }).invoke([
         ...messages,
         new AIMessage(text),
         new HumanMessage(mentionsCard
-          ? '(system) Your reply refers to a confirmation card, but you did not call a suggest_* tool. Call the one that matches what you offered. Do not write text.'
-          : '(system) Pick the ONE offer that would help this student most next, by calling its suggest_* tool. If nothing fits, or they declined it earlier in this chat, call no_suggestion. Do not write text.'),
+          ? '(system) Your reply refers to a confirmation card, but you did not call suggest_next_step. Call it for what you offered. Do not write text.'
+          : '(system) Pick the ONE offer that would help this student most next and call suggest_next_step. If nothing fits, or they declined it earlier in this chat, call no_suggestion. Do not write text.'),
       ], { signal }));
-      for (const call of (forced.tool_calls || []).filter((c) => c.name !== NO_SUGGESTION.function.name && TOOL_TO_ACTION[c.name]?.mode === 'suggest').slice(0, 1)) await runTool(call); // eslint-disable-line no-await-in-loop
+      for (const call of (forced.tool_calls || []).filter((c) => c.name === SUGGEST_TOOL.function.name).slice(0, 1)) await runTool(call); // eslint-disable-line no-await-in-loop
     } catch (error) {
       logger.warn('Agent: could not add the suggestion card', { error: error.message });
     }
