@@ -97,7 +97,7 @@ const Row = ({ chat, active, onOpen, onRename, onDelete }) => {
 };
 
 /** Left column of the agent: new chat, search, and the chat history grouped by date. */
-const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose }) => {
+const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose, onProfile }) => {
   const [query, setQuery] = useState('');
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -157,6 +157,15 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
       </nav>
 
       <div className="border-t border-gray-200 p-3">
+        {onProfile && (
+          <button type="button" onClick={onProfile} className="mb-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-200/60">
+            <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <span>
+              <span className="block font-medium text-gray-900">Learner profile</span>
+              <span className="block text-xs text-gray-500">What the agent remembers about you</span>
+            </span>
+          </button>
+        )}
         <Link to="/home" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gray-200/60">
           <img src={user?.photoURL || user?.picture || '/img/team/user.jpeg'} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover bg-gray-200" onError={(e) => { e.currentTarget.src = '/img/team/user.jpeg'; }} />
           <div className="min-w-0">

@@ -1,12 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import DraftForm from './DraftForm';
 
 /**
- * Something the Novard Agent creates in the app, with the details it filled in.
- *  - suggested (origin 'suggested'): Yes / No; nothing is created until "Yes".
- *  - requested (origin 'requested'): the student asked for it, so it runs at once.
- * States: proposed → running → done | failed (retry); proposed → dismissed |
- * superseded (the student later asked for the same kind of thing directly).
+ * A card the Novard Agent attaches to a reply.
+ *  - an offer (status 'proposed'): "Yes" continues in the chat, where the
+ *    agent asks what it needs and prepares a draft (-> 'accepted')
+ *  - a draft ('draft'): every detail filled in and editable; nothing is
+ *    created until the student presses Create
+ *  - "Remember this?" (type profile_update): Yes saves it to the learner profile
+ * Then running -> done | failed (retry); or dismissed, or superseded by a newer draft.
  */
 
 const Icon = ({ d, className = 'w-5 h-5' }) => (
@@ -56,6 +59,14 @@ const TYPES = {
     tint: 'bg-violet-50 text-violet-700 ring-violet-100',
     icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
   },
+  profile_update: {
+    title: 'Remember this about you?',
+    section: 'your learner profile',
+    confirm: 'Remember',
+    running: 'Saving…',
+    tint: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
+    icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+  },
   forum_post: {
     title: 'Start a forum discussion',
     section: 'AI Forum',
@@ -66,10 +77,6 @@ const TYPES = {
   },
 };
 
-const Chip = ({ children }) => (
-  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{children}</span>
-);
-
 const Field = ({ label, children }) => (
   <div className="min-w-0">
     <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</dt>
@@ -77,132 +84,141 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-function Details({ type, a }) {
-  switch (type) {
-    case 'create_doubt':
-      return (
-        <dl className="space-y-2">
-          <Field label="Title"><span className="font-semibold text-gray-900">{a.title}</span></Field>
-          <Field label="Your question"><span className="text-gray-600">{a.description}</span></Field>
-        </dl>
-      );
-    case 'add_video':
-      return (
+const PROFILE_LABELS = {
+  level: 'Level', experience: 'Experience', targetRole: 'Target role', knownSkills: 'Known skills', interests: 'Interests',
+  hoursPerWeek: 'Hours per week', timelineMonths: 'Timeline (months)', goal: 'Goal', language: 'Language', teachingStyle: 'Teaching style', notes: 'Notes',
+};
+
+const show = (f, v) => {
+  if (Array.isArray(v)) return v.length ? v.join(', ') : 'None';
+  const option = f.options?.find((o) => o.value === v);
+  return option ? option.label : String(v);
+};
+
+/** The details of a draft that can no longer be edited (created, running, replaced...). */
+function ReadOnly({ action }) {
+  const a = action.args || {};
+  const fields = action.meta?.fields || [];
+  if (action.type === 'profile_update') {
+    return (
+      <dl className="space-y-2">
+        {Object.entries(a).map(([k, v]) => <Field key={k} label={PROFILE_LABELS[k] || k}>{Array.isArray(v) ? v.join(', ') : String(v)}</Field>)}
+      </dl>
+    );
+  }
+  const video = (a.candidates || []).find((c) => c.videoId === a.videoId) || (a.videoId && a.title ? a : null);
+  return (
+    <dl className="space-y-2">
+      {video && (
         <div className="flex gap-3">
-          <a href={`https://www.youtube.com/watch?v=${a.videoId}`} target="_blank" rel="noopener noreferrer" className="relative shrink-0 w-40 aspect-video overflow-hidden rounded-lg bg-gray-100 group">
-            <img src={a.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-            {a.duration && <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1 text-[10px] font-medium text-white">{a.duration}</span>}
+          <a href={`https://www.youtube.com/watch?v=${video.videoId}`} target="_blank" rel="noopener noreferrer" className="relative shrink-0 w-32 aspect-video overflow-hidden rounded-lg bg-gray-100">
+            <img src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`} alt="" className="h-full w-full object-cover" />
           </a>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 line-clamp-2">{a.title}</p>
-            {a.channelName && <p className="mt-0.5 text-xs text-gray-500">{a.channelName}</p>}
-            {a.reason && <p className="mt-1.5 text-xs text-gray-600">{a.reason}</p>}
+            <p className="text-sm font-semibold text-gray-900 line-clamp-2">{video.title}</p>
+            {video.channelName && <p className="mt-0.5 text-xs text-gray-500">{video.channelName}</p>}
           </div>
         </div>
-      );
-    case 'generate_roadmap':
-      return (
-        <dl className="space-y-2.5">
-          <Field label="Target role"><span className="font-semibold text-gray-900">{a.role}</span></Field>
-          <div className="flex flex-wrap gap-1.5">
-            <Chip>{a.level}</Chip><Chip>{a.hoursPerWeek} h/week</Chip><Chip>{a.timelineMonths} months</Chip>
-          </div>
-          {a.knownSkills?.length > 0 && (
-            <Field label="You already know">
-              <div className="flex flex-wrap gap-1.5 mt-1">{a.knownSkills.map((s) => <span key={s} className="rounded-md bg-green-50 px-2 py-0.5 text-xs text-green-800">✓ {s}</span>)}</div>
-            </Field>
-          )}
-          {a.goal && <Field label="Goal"><span className="text-gray-600">{a.goal}</span></Field>}
-        </dl>
-      );
-    case 'create_skill_plan':
-      return (
-        <dl className="space-y-2.5">
-          <Field label="Skill"><span className="font-semibold text-gray-900">{a.skillName}</span></Field>
-          <div className="flex flex-wrap gap-1.5"><Chip>{a.durationDays} days</Chip><Chip>{a.level}</Chip></div>
-          {a.focusAreas?.length > 0 && <Field label="Focus">{a.focusAreas.join(' · ')}</Field>}
-          {a.description && <Field label="By the end"><span className="text-gray-600">{a.description}</span></Field>}
-        </dl>
-      );
-    case 'skill_gap_analysis':
-      return (
-        <dl className="space-y-2.5">
-          <Field label="Target role"><span className="font-semibold text-gray-900">{a.targetRole}</span></Field>
-          <div className="flex flex-wrap gap-1.5"><Chip>{a.experience}</Chip><Chip>{a.hoursPerWeek} h/week</Chip></div>
-          {a.currentSkills?.length > 0 && <Field label="Your skills">{a.currentSkills.join(', ')}</Field>}
-        </dl>
-      );
-    case 'forum_post':
-      return (
-        <dl className="space-y-2">
-          <Field label="Title"><span className="font-semibold text-gray-900">{a.title}</span></Field>
-          <Field label="Post"><span className="text-gray-600 line-clamp-3">{a.description}</span></Field>
-          <div className="flex flex-wrap gap-1.5"><Chip>{a.category}</Chip>{(a.tags || []).map((t) => <Chip key={t}>#{t}</Chip>)}</div>
-        </dl>
-      );
-    default:
-      return null;
-  }
+      )}
+      {fields.filter((f) => f.type !== 'video' && a[f.key] !== undefined && a[f.key] !== '').map((f) => (
+        <Field key={f.key} label={f.label}>
+          <span className={f.type === 'textarea' ? 'text-gray-600 line-clamp-3' : ''}>{show(f, a[f.key])}</span>
+        </Field>
+      ))}
+      {/* A card from before drafts existed: fall back to its one-line summary. */}
+      {!video && !fields.some((f) => a[f.key] !== undefined) && action.meta?.summary && <p className="text-sm text-gray-700">{action.meta.summary}</p>}
+    </dl>
+  );
 }
+
+/** An offer: what it would be about, and why. */
+const Offer = ({ action }) => (
+  <div>
+    <p className="text-sm font-semibold text-gray-900">{action.args?.topic || action.meta?.summary}</p>
+    {action.args?.reason && <p className="mt-1 text-xs text-gray-600">{action.args.reason}</p>}
+  </div>
+);
 
 const Spinner = () => <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" aria-hidden="true" />;
 
-const ActionCard = ({ action, onDecide }) => {
+const Badge = ({ className, children }) => <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${className}`}>{children}</span>;
+
+const ActionCard = ({ action, onDecide, busy = false }) => {
   const navigate = useNavigate();
   const t = TYPES[action.type];
   if (!t) return null;
   const { status } = action;
-  const requested = action.origin === 'requested';
+  const isProfile = action.type === 'profile_update';
+  const isDraft = !isProfile && action.origin === 'requested';
+  const isOffer = !isProfile && !isDraft;
+  const retry = () => onDecide(action, isProfile ? 'confirm' : 'create', {});
 
   return (
     <div className={`mt-3 overflow-hidden rounded-xl border bg-white shadow-sm transition-colors ${
-      status === 'done' ? 'border-green-200' : status === 'failed' ? 'border-red-200' : status === 'dismissed' || status === 'superseded' ? 'border-gray-200 opacity-70' : 'border-gray-200'
+      status === 'done' ? 'border-green-200' : status === 'failed' ? 'border-red-200' : status === 'draft' ? 'border-blue-200' : ['dismissed', 'superseded', 'accepted'].includes(status) ? 'border-gray-200 opacity-70' : 'border-gray-200'
     }`}>
       <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ${t.tint}`}><Icon d={t.icon} /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">{t.title}</p>
+          <p className="text-sm font-semibold text-gray-900">{status === 'draft' ? `Draft · ${t.title.toLowerCase()}` : t.title}</p>
           <p className="text-xs text-gray-500">in {t.section}</p>
         </div>
-        {status === 'proposed' && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Suggestion · needs your OK</span>}
-        {status === 'running' && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">{requested ? 'On it' : 'Working'}</span>}
-        {status === 'superseded' && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">Replaced</span>}
-        {status === 'done' && <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">✓ Done</span>}
-        {status === 'dismissed' && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">Declined</span>}
+        {status === 'proposed' && isOffer && <Badge className="bg-amber-50 text-amber-700">Suggestion</Badge>}
+        {status === 'draft' && <Badge className="bg-blue-50 text-blue-700">Review &amp; create</Badge>}
+        {status === 'accepted' && <Badge className="bg-gray-100 text-gray-600">Setting it up</Badge>}
+        {status === 'running' && <Badge className="bg-blue-50 text-blue-700">Working</Badge>}
+        {status === 'superseded' && <Badge className="bg-gray-100 text-gray-500">Replaced</Badge>}
+        {status === 'done' && <Badge className="bg-green-50 text-green-700">✓ Done</Badge>}
+        {status === 'dismissed' && <Badge className="bg-gray-100 text-gray-500">{isDraft ? 'Cancelled' : 'Declined'}</Badge>}
       </div>
 
-      <div className="px-4 py-3"><Details type={action.type} a={action.args || {}} /></div>
+      {status === 'draft' ? (
+        <DraftForm
+          action={action}
+          confirmLabel={t.confirm}
+          busy={busy}
+          onCancel={() => onDecide(action, 'dismiss')}
+          onCreate={(args, remember) => onDecide(action, 'create', { args, remember })}
+        />
+      ) : (
+        <>
+          <div className="px-4 py-3">{isOffer ? <Offer action={action} /> : <ReadOnly action={action} />}</div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/60 px-4 py-2.5">
-        {status === 'proposed' && (
-          <>
-            <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">No thanks</button>
-            <button type="button" onClick={() => onDecide(action, 'confirm')} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">Yes, {t.confirm.toLowerCase()}</button>
-          </>
-        )}
-        {status === 'running' && (
-          <p className="mr-auto flex items-center gap-2 text-sm text-gray-600" role="status"><span className="text-blue-600"><Spinner /></span>{t.running}</p>
-        )}
-        {status === 'done' && (
-          <>
-            <p className="mr-auto text-sm text-green-700">{action.result?.note ? `Created · ${action.result.note}` : `Created in ${t.section}`}</p>
-            {action.result?.route && (
-              <button type="button" onClick={() => navigate(action.result.route)} className="rounded-lg bg-green-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-green-700">
-                {action.result.label || 'Open'} →
-              </button>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/60 px-4 py-2.5">
+            {status === 'proposed' && (
+              <>
+                <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">{isProfile ? 'Not now' : 'No thanks'}</button>
+                <button type="button" disabled={busy} onClick={() => onDecide(action, isProfile ? 'confirm' : 'accept')} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50">
+                  {isProfile ? 'Yes, remember' : 'Yes, set it up'}
+                </button>
+              </>
             )}
-          </>
-        )}
-        {status === 'failed' && (
-          <>
-            <p className="mr-auto text-sm text-red-700" role="alert">{action.error || 'That did not work.'}</p>
-            <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Dismiss</button>
-            <button type="button" onClick={() => onDecide(action, 'confirm')} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">Try again</button>
-          </>
-        )}
-        {status === 'dismissed' && <p className="mr-auto text-sm text-gray-500">You can ask me again any time.</p>}
-        {status === 'superseded' && <p className="mr-auto text-sm text-gray-500">You asked for this directly below.</p>}
-      </div>
+            {status === 'accepted' && <p className="mr-auto text-sm text-gray-500">Let&apos;s get the details right - see below.</p>}
+            {status === 'running' && (
+              <p className="mr-auto flex items-center gap-2 text-sm text-gray-600" role="status"><span className="text-blue-600"><Spinner /></span>{t.running}</p>
+            )}
+            {status === 'done' && (
+              <>
+                <p className="mr-auto text-sm text-green-700">{action.result?.note ? (isProfile ? action.result.note : `Created · ${action.result.note}`) : `Created in ${t.section}`}</p>
+                {action.result?.route && (
+                  <button type="button" onClick={() => navigate(action.result.route)} className="rounded-lg bg-green-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-green-700">
+                    {action.result.label || 'Open'} →
+                  </button>
+                )}
+              </>
+            )}
+            {status === 'failed' && (
+              <>
+                <p className="mr-auto text-sm text-red-700" role="alert">{action.error || 'That did not work.'}</p>
+                <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Dismiss</button>
+                <button type="button" onClick={retry} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">Try again</button>
+              </>
+            )}
+            {status === 'dismissed' && <p className="mr-auto text-sm text-gray-500">You can ask me again any time.</p>}
+            {status === 'superseded' && <p className="mr-auto text-sm text-gray-500">An updated version is below.</p>}
+          </div>
+        </>
+      )}
     </div>
   );
 };

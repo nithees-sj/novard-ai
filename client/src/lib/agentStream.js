@@ -5,7 +5,7 @@ import { apiFetch, apiJson } from './api';
  * stream (POST, so EventSource cannot be used).
  *
  * handlers: onMeta, onToken, onStatus, onAction (new or updated card),
- * onSuperseded, onTitle, onDone, onError.
+ * onAsk (questions with tap-to-answer options), onSuperseded, onTitle, onDone, onError.
  * Pass an AbortSignal to stop generation; the server keeps what was written.
  */
 export async function streamAgentReply({ conversationId, message, signal }, handlers = {}) {
@@ -39,6 +39,7 @@ export async function streamAgentReply({ conversationId, message, signal }, hand
       token: handlers.onToken,
       status: handlers.onStatus,
       action: handlers.onAction,
+      ask: handlers.onAsk,
       superseded: handlers.onSuperseded,
       title: handlers.onTitle,
       done: handlers.onDone,
@@ -64,11 +65,17 @@ export async function streamAgentReply({ conversationId, message, signal }, hand
 
 const enc = encodeURIComponent;
 
-/** Chat history and action cards. The student is identified by the session, not by these arguments. */
+/**
+ * Chat history, action cards and the learner profile. The student is
+ * identified by the session, not by these arguments.
+ * decide body: {decision: 'create'|'accept'|'confirm'|'dismiss', args?, remember?}
+ */
 export const agentApi = {
   list: (userId) => apiJson(`/api/agent/conversations/user/${enc(userId)}`),
   get: (id) => apiJson(`/api/agent/conversations/${enc(id)}`),
   rename: (id, userId, title) => apiJson(`/api/agent/conversations/${enc(id)}`, { method: 'PATCH', body: { title } }),
   remove: (id) => apiJson(`/api/agent/conversations/${enc(id)}`, { method: 'DELETE' }),
   decide: (id, actionId, body) => apiJson(`/api/agent/conversations/${enc(id)}/actions/${enc(actionId)}`, { method: 'POST', body }),
+  getProfile: () => apiJson('/api/agent/profile'),
+  saveProfile: (profile) => apiJson('/api/agent/profile', { method: 'PUT', body: profile }),
 };

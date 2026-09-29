@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MarkdownView from '../MarkdownView';
 import AgentAvatar from './AgentAvatar';
 import ActionCard from './ActionCard';
+import AskCard from './AskCard';
 
 const CopyButton = ({ text }) => {
   const [copied, setCopied] = useState(false);
@@ -24,8 +25,11 @@ const CopyButton = ({ text }) => {
   );
 };
 
-/** One turn in the conversation. Assistant turns render Markdown and their action cards. */
-const AgentMessage = ({ message, streaming = false, status = '', onDecide }) => {
+/**
+ * One turn in the conversation. Assistant turns render Markdown, their cards,
+ * and any questions the agent asked (answerable only on the latest turn).
+ */
+const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer }) => {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -63,7 +67,9 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide }) => 
           </p>
         )}
 
-        {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} onDecide={onDecide} />)}
+        {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} onDecide={onDecide} busy={busy} />)}
+
+        {message.ask && <AskCard ask={message.ask} active={canAnswer} onAnswer={onAnswer} />}
 
         {!streaming && message.content && (
           <div className="mt-1.5 flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

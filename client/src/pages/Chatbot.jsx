@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
+import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
 import { BotMark } from '../components/ChatbotButton';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
 import { currentEmail, currentName } from '../lib/session';
@@ -11,14 +12,16 @@ const STARTERS = [
   { icon: '💡', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
   { icon: '🗺️', title: 'Plan my career', text: 'What should I do to become a DevOps engineer? I already know Linux and Git.' },
   { icon: '🎬', title: 'Find a video', text: 'Find me a good video to learn Docker basics' },
-  { icon: '🗓️', title: 'Build a study plan', text: 'Make me a 14-day plan to learn SQL from scratch' },
+  { icon: '🗓️', title: 'Build a study plan', text: 'Make me a study plan to learn SQL' },
 ];
 
 /**
  * The Novard Agent, laid out like ChatGPT / Claude: chat history on the left,
- * the conversation in the middle. Replies stream in; when the agent offers to
- * create something (a doubt, video, roadmap, plan…) it appears as a card the
- * student confirms or declines. The agent remembers the whole conversation.
+ * the conversation in the middle. Replies stream in. To create something (a
+ * doubt, video, roadmap, plan…) the agent asks what it needs - questions with
+ * tap-to-answer options - then shows an editable draft; nothing is created
+ * until the student presses Create. The agent remembers the whole
+ * conversation, and a learner profile across chats.
  */
 const Chatbot = () => {
   const { user } = useAuth();
@@ -40,6 +43,7 @@ const Chatbot = () => {
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -172,16 +176,17 @@ const Chatbot = () => {
           if (!frame) frame = requestAnimationFrame(flush);
         },
         onStatus: ({ text: s }) => setStatus(s),
-        // A card arrives when proposed or started, and again as a task finishes.
+        onAsk: ({ ask }) => updateLast((m) => ({ ...m, ask })),
+        // A card arrives when it is offered or drafted.
         onAction: ({ action }) => updateLast((m) => {
           const list = m.actions || [];
           return { ...m, actions: list.some((a) => a.id === action.id) ? list.map((a) => (a.id === action.id ? action : a)) : [...list, action] };
         }),
-        // The student asked for something the agent had only suggested earlier: that old card is now moot.
-        onSuperseded: ({ type, except }) => setMessages((list) => list.map((m) => (!m.actions?.some((a) => a.type === type && a.status === 'proposed' && a.id !== except) ? m : {
-          ...m,
-          actions: m.actions.map((a) => (a.type === type && a.status === 'proposed' && a.id !== except ? { ...a, status: 'superseded' } : a)),
-        }))),
+        // A new draft replaces earlier, unanswered offers and drafts of the same kind.
+        onSuperseded: ({ type, except }) => {
+          const moot = (a) => a.type === type && (a.status === 'proposed' || a.status === 'draft') && a.id !== except;
+          setMessages((list) => list.map((m) => (!m.actions?.some(moot) ? m : { ...m, actions: m.actions.map((a) => (moot(a) ? { ...a, status: 'superseded' } : a)) })));
+        },
         onTitle: ({ title: t }) => {
           setChats((list) => list.map((c) => (c._id === conversationId ? { ...c, title: t } : c)));
           if (activeRef.current === conversationId) setTitle(t);
@@ -239,18 +244,27 @@ const Chatbot = () => {
     actions: m.actions.map((a) => (a.id === actionId ? { ...a, ...patch } : a)),
   })));
 
-  const decide = async (action, decision) => {
+  /**
+   * create (a draft, with the student's edits) · accept (an offer: the chat
+   * continues and the agent gathers the details) · confirm ("remember this?") · dismiss
+   */
+  const decide = async (action, decision, { args, remember } = {}) => {
     const convId = activeRef.current;
-    if (!convId) return;
-    const before = action.status;
-    setAction(action.id, decision === 'confirm' ? { status: 'running', error: null } : { status: 'dismissed' });
+    if (!convId || (decision === 'accept' && streaming)) return;
+    const before = { status: action.status, error: action.error };
+    const optimistic = { create: 'running', confirm: 'running', accept: 'accepted', dismiss: 'dismissed' }[decision];
+    setAction(action.id, { status: optimistic, error: null, ...(args ? { args: { ...action.args, ...args } } : {}) });
     try {
-      const { action: updated } = await agentApi.decide(convId, action.id, { decision });
-      if (activeRef.current === convId) setAction(action.id, updated);
+      const { action: updated } = await agentApi.decide(convId, action.id, { decision, ...(args ? { args } : {}), ...(remember ? { remember: true } : {}) });
+      if (activeRef.current !== convId) return;
+      setAction(action.id, updated);
+      if (decision === 'accept') send(updated.meta?.followUp || 'Yes, please set it up.');
     } catch (err) {
       if (activeRef.current !== convId) return;
       if (err.data?.action) setAction(action.id, err.data.action);
-      else setAction(action.id, decision === 'confirm' ? { status: 'failed', error: err.message } : { status: before });
+      // A rejected edit keeps the draft open, with the reason shown.
+      else if (decision === 'create' && err.status === 400) { setAction(action.id, before); setError(err.message); }
+      else setAction(action.id, optimistic === 'running' ? { status: 'failed', error: err.message } : before);
     }
   };
 
@@ -299,7 +313,7 @@ const Chatbot = () => {
           )}
         </div>
       </form>
-      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent creates what you ask for and asks before anything it only suggests. It can make mistakes - check important information.</p>
+      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent asks what it needs, then shows you a draft - nothing is created until you press Create. It can make mistakes - check important information.</p>
     </div>
   );
 
@@ -317,6 +331,7 @@ const Chatbot = () => {
           onDelete={deleteChat}
           user={user}
           onClose={() => setSidebarOpen(false)}
+          onProfile={() => { setSidebarOpen(false); setProfileOpen(true); }}
         />
       </div>
       {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
@@ -344,7 +359,7 @@ const Chatbot = () => {
               {firstName ? `Hi ${firstName}, how can I help?` : 'How can I help you today?'}
             </h2>
             <p className="mt-2 max-w-lg text-center text-sm text-gray-500">
-              Ask me anything about what you're learning and I'll suggest a next step - or just tell me to create a doubt, add a video, or build a roadmap or study plan, and I'll do it.
+              Ask me anything about what you're learning and I'll suggest a next step - or tell me what you want to create (a doubt, a video, a roadmap, a study plan). I'll ask a few quick questions so it fits you, then show you a draft to check.
             </p>
             <div className="mt-8 w-full">{composer}</div>
             <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 px-4 sm:grid-cols-2">
@@ -384,6 +399,9 @@ const Chatbot = () => {
                     streaming={streaming && i === messages.length - 1 && m.role === 'assistant'}
                     status={status}
                     onDecide={decide}
+                    busy={streaming}
+                    canAnswer={!streaming && i === messages.length - 1 && m.role === 'assistant'}
+                    onAnswer={send}
                   />
                 ))}
               </div>
@@ -399,6 +417,7 @@ const Chatbot = () => {
           </>
         )}
       </main>
+      <LearnerProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 };
