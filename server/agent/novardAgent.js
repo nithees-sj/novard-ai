@@ -7,43 +7,37 @@ const Roadmap = require('../models/roadmap');
 const SkillPlan = require('../models/skillPlan');
 const SkillGapSession = require('../models/skillGapSession');
 const { chatModel, MongoChatHistory } = require('../ai/conversation');
-const { withRateLimitRetry, friendlyAIError } = require('../ai/errors');
+const { withRateLimitRetry } = require('../ai/errors');
 const { FORMAT_RULES } = require('../ai/prompts');
 const { searchVideos } = require('../services/youtubeService');
 const { loadActivity } = require('../services/analyticsService');
+const { getProfile, profileForPrompt } = require('../services/learnerProfileService');
 const logger = require('../utils/logger');
-const { ACTIONS, TOOL_TO_ACTION } = require('./actions');
+const { ACTIONS, PROFILE_UPDATE, TOOL_TO_ACTION, defFor, summarize, withMeta, prepareArgs } = require('./actions');
 
 /**
  * The Novard Agent: a tool-using assistant on LangChain.
  *
  * Each turn is a small agent loop. The model answers, and may call:
  *   - read tools, run straight away: get_my_workspace, search_youtube_videos
- *   - propose_* tools (agent/actions.js): suggestions after answering a
- *     question; they become cards the student accepts or declines
- *   - do tools (create_doubt, add_video, ...): the student asked for it, so it
- *     is created straight away and the card shows the result. The server only
- *     allows these when the student's message is actually a request.
- * Tool results go back to the model, which then writes (or finishes) its
- * reply. Text is streamed to the client as it is generated.
+ *   - suggest_* (agent/actions.js): a small offer card after answering a
+ *     question; "Yes" continues in the chat
+ *   - prepare_*: when the student wants something created. The server checks
+ *     what the item needs against the conversation and the learner profile,
+ *     and either reports what is missing or shows an editable DRAFT card
+ *   - ask_student: the missing details as questions with tap-to-answer
+ *     options; the turn ends there
+ *   - remember_about_student: a "Remember this?" card for the learner profile
+ * Nothing is created during a turn: the student presses Create on a draft
+ * (agent/conversations.js). Text is streamed to the client as it is generated.
  *
  * Memory is the same summary-buffer history as every other chat in the app,
- * with each message's action cards and their status included, so the agent
- * knows what it offered and what the student accepted.
+ * with each message's cards, drafts and questions included, so the agent
+ * knows where each request stands.
  */
 
 const MAX_STEPS = 5;               // model calls per turn
 const MAX_ACTIONS_PER_TURN = 2;
-// A message that asks the agent to do something ("create…", "add…", "fetch me…", "yes").
-// Do tools are refused unless this or the previous student message is such a request,
-// so a plain question can never create something without a Yes.
-const TASK_INTENT = /\b(create|add|make|generate|build|save|post|start|run|set ?up|fetch|find|get|give|show|recommend|put|assign|analy[sz]e|plan|schedule|yes|yeah|yep|ok|okay|sure|do it|go ahead|confirm)\b/i;
-// A COMMAND to create something in the app ("create a doubt about…", "fetch me a video on…",
-// "make a roadmap…"), or "yes" to a suggestion. Commands are done - or the one missing detail
-// asked for - and never explained: the reply is a fixed confirmation (see DONE_LINES).
-const COMMAND = /\b(create|make|add|generate|build|save|post|start|run|set ?up|fetch|find|get|give|put|assign|schedule)\b[\s\S]{0,80}?\b(doubts?|videos?|roadmaps?|plans?|schedule|analysis|skill ?gaps?|forum|discussion|post)\b/i;
-const AFFIRM = /^\s*(yes|yeah|yep|ok|okay|sure|do it|go ahead|please do|create it|add it|make it)\b/i;
-const COMMAND_NOTE = 'The next student message is a COMMAND to do something in the app. Call the matching do tool now - or, only if the essential detail is missing (the specific concept for a doubt, the role for a roadmap or skill gap, the skill for a plan), ask ONE short question. Do not explain or teach anything and do not suggest anything.';
 
 // A learning question (as opposed to small talk), which should come with a suggestion.
 const LEARNING_QUESTION = /(\?|\b(what|how|why|when|where|which|explain|difference|doubt|confus|understand|learn|teach|should i|help me|tell me)\b)/i;
@@ -55,12 +49,14 @@ const NO_SUGGESTION = {
 const CARD_MENTION = /\b(confirm(ing)? (it )?below|card below|(click|press|tap) (yes|confirm)|just confirm)\b/i;
 const CARD_SENTENCE = /[^.!?\n]*\b(confirm(ing)? (it )?below|card below|(click|press|tap) (yes|confirm)|just confirm)\b[^.!?\n]*[.!?]?/gi;
 
+const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+
 const READ_TOOLS = [
   {
     type: 'function',
     function: {
       name: 'get_my_workspace',
-      description: 'See what the student already has in Novard-AI: their doubts, videos, roadmaps, learning plans with progress, skill-gap analyses and recent quiz scores. Use it to personalise advice, refer to their progress, and avoid proposing something they already have.',
+      description: 'See what the student already has in Novard-AI: their doubts, videos, roadmaps, learning plans with progress, skill-gap analyses and recent quiz scores. Use it to personalise advice, refer to their progress, and suggest what to do next.',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -68,7 +64,7 @@ const READ_TOOLS = [
     type: 'function',
     function: {
       name: 'search_youtube_videos',
-      description: 'Search YouTube for tutorial videos. Returns up to 5 results with videoId, title, channel and duration. Required before propose_add_video.',
+      description: 'Search YouTube for tutorial videos. Returns up to 5 results with videoId, title, channel and duration.',
       parameters: {
         type: 'object',
         properties: { query: { type: 'string', description: 'Specific search, e.g. "React useEffect hook explained"' } },
@@ -78,60 +74,128 @@ const READ_TOOLS = [
   },
 ];
 
-const TOOLS = [...READ_TOOLS, ...Object.values(ACTIONS).flatMap((a) => [a.tool, a.doTool])];
+const ASK_TOOL = {
+  type: 'function',
+  function: {
+    name: 'ask_student',
+    description: 'Ask the student for the details you need, shown as questions with tap-to-answer options (they can also type their own answer). Put everything a prepare_* result reports as missing into ONE call. Your reply ends after this.',
+    parameters: {
+      type: 'object',
+      properties: {
+        intro: { type: 'string', description: 'Optional one short, friendly sentence shown above the questions' },
+        questions: {
+          type: 'array',
+          maxItems: 3,
+          items: {
+            type: 'object',
+            properties: {
+              key: { type: 'string', description: 'The field it fills, e.g. "level"' },
+              question: { type: 'string', description: 'Short and clear, e.g. "Where are you starting from?"' },
+              options: { type: 'array', items: { type: 'string' }, description: '3-5 short answers tailored to this student, most likely first' },
+              multiSelect: { type: 'boolean', description: 'true when several options can apply (e.g. skills they know)' },
+            },
+            required: ['question', 'options'],
+          },
+        },
+      },
+      required: ['questions'],
+    },
+  },
+};
 
-function systemPrompt({ userName }) {
+const TOOLS = [...READ_TOOLS, ASK_TOOL, PROFILE_UPDATE.tool, ...Object.values(ACTIONS).flatMap((a) => [a.suggestTool, a.prepareTool])];
+
+function systemPrompt({ userName, profileText }) {
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  return `You are Novard Agent, the AI learning and career assistant inside the Novard-AI platform. You can teach, and you can also do things in the app for the student.
+  return `You are Novard Agent, the AI learning and career assistant inside the Novard-AI platform. You teach, and you create things in the app for the student - accurately, built around what they actually need.
 Today is ${today}.${userName ? ` The student's name is ${userName}.` : ''}
 
-WHAT YOU CAN DO IN THE APP
-- Doubt Clearance: save a doubt (they keep chatting about it, get a summary, videos and a quiz).
-- Video Summarizer: add a YouTube video to their library (search_youtube_videos first; never invent a video id).
-- Smart Roadmap: generate a personalised career roadmap towards a role.
-- Skill Unlocker: build a day-by-day learning plan for one skill.
-- Skill Gap Analysis: compare their skills with a target role.
-- AI Forum: start a discussion when other students' experience would help.
-Each has two tools: propose_* (a suggestion card they confirm with Yes / No) and a do tool (create_doubt, add_video, generate_roadmap, create_skill_plan, run_skill_gap_analysis, post_to_forum) that does it immediately.
-You can also look at their workspace (get_my_workspace) and search YouTube (search_youtube_videos).
+WHAT YOU KNOW ABOUT THE STUDENT (their learner profile)
+${profileText}
+Use it to personalise answers and drafts. Values marked "not confirmed" are only hints.
+
+WHAT YOU CAN CREATE IN THE APP
+- Doubt Clearance: a doubt they keep chatting about, with a summary, videos and a quiz.
+- Video Summarizer: a YouTube video in their library (chat, summary, quiz).
+- Smart Roadmap: a personalised, staged career roadmap towards a role.
+- Skill Unlocker: a day-by-day learning plan for one skill (10-60 days).
+- Skill Gap Analysis: their skills compared with a target role.
+- AI Forum: a public discussion when other students' experience would help.
+Each has suggest_* (a small offer card after an answer) and prepare_* (a draft the student reviews). You never create anything yourself: the student presses Create on the draft.
+You can also look at their workspace (get_my_workspace), search YouTube (search_youtube_videos), ask questions with tap-to-answer options (ask_student) and offer to remember facts about them (remember_about_student).
 
 FIRST DECIDE WHAT THE MESSAGE IS
 
 A) A QUESTION or learning request - "what is Docker?", "I have a doubt in React hooks", "how do I become a DevOps engineer?", "explain volumes".
-   1. Every real learning question gets ONE suggestion - it is expected, not optional. Call the matching propose_* tool FIRST (only a tool call creates the card; words alone do not):
-      concept doubt -> propose_create_doubt · career direction -> propose_generate_roadmap · wants to learn a skill over time -> propose_create_skill_plan · readiness for a role -> propose_skill_gap_analysis · a video would help -> search_youtube_videos then propose_add_video · wants others' experience -> propose_forum_post.
-   2. Then answer fully - a suggestion never makes the answer shorter. For a concept: a clear explanation, a small code or real-world example, common mistakes.
-   3. End with one short sentence pointing to the card, e.g. "Want to keep going on this? I can save it as a doubt - just confirm below." If you did not call a propose_* tool, do not mention a card.
-   Do not suggest anything for small talk, and do not suggest again something they declined in this chat.
+   1. Every real learning question gets ONE offer - it is expected, not optional. Call the matching suggest_* tool (only a tool call creates the card; words alone do not):
+      concept doubt -> suggest_doubt · career direction -> suggest_roadmap · wants to learn a skill over time -> suggest_skill_plan · readiness for a role -> suggest_skill_gap_analysis · a video would help -> suggest_video · wants others' experience -> suggest_forum_post.
+   2. Answer fully - an offer never makes the answer shorter. For a concept: a clear explanation, a small code or real-world example, common mistakes.
+   3. End with one short sentence pointing to the card, e.g. "Want to keep going on this? I can save it as a doubt - just confirm below." If you did not call a suggest_* tool, do not mention a card.
+   No offers for small talk, and never offer again something they declined in this chat.
 
-B) A TASK - they tell you to do something in the app: "create a doubt about…", "add / fetch / find me a video on…", "make me a roadmap for…", "make a 14-day plan for…", "analyse my skills for…", "post this in the forum", or "yes" / "go ahead" to your suggestion.
-   1. Check you have what the task needs:
-      - doubt: a SPECIFIC concept or question. "Create a doubt about Docker" is too broad - ask which concept (offer 3-4 options such as images vs containers, volumes, networking, writing a Dockerfile) and wait for the answer. "Create a doubt about Docker volumes" is enough.
-      - video: a topic. Call search_youtube_videos, pick the single best result.
-      - roadmap or skill gap: the target role. Learning plan: the skill. Forum post: the actual question.
-      Infer everything else (level, hours, timeline, known skills) from the conversation or use sensible defaults - never ask about those.
-   2. When you have it, call the do tool straight away - no suggestion card, no Yes/No, no lecture.
-   3. Then reply in one or two short sentences: what you created and where (the card below shows it with an Open button). Only explain the topic if they also asked a question.
-   If they only answered your clarifying question (e.g. "volumes"), that completes the task - create it now.
+B) A REQUEST TO CREATE something - "create a doubt about…", "make me a roadmap", "find me a video on…", "make a 14-day plan for…", "analyse my skills for…", "post this in the forum", or "yes" to your offer.
+   1. Call the matching prepare_* tool straight away with everything you know from this conversation, and list in \`stated\` only the fields the student actually told you. Never invent values to complete the form - leave unknown fields out; the server fills them from the profile or asks.
+   2. The result says what to do next:
+      - needs_info: call ask_student ONCE with all the missing questions (at most 3), each with 3-5 short options tailored to what you know (for a broad doubt topic like "Docker", offer its 4 most likely sub-concepts; use a "hint" as the first option). Write one short, friendly sentence before it. Do not teach, and do not create anything else in that reply.
+      - exists: tell them they already have it, with its progress and where it is, and ask (ask_student) whether to continue that one or create a new one. For a new one, call prepare_* again with allowDuplicate true.
+      - drafted: the draft card is shown. Reply in one or two short sentences: what you prepared, that they can change any field and press Create, and any assumption worth checking.
+      - error or invalid: fix what it says, or - when it is the student's to decide (e.g. a value out of the allowed range) - explain the limit and ask.
+   3. When they answer your questions, call prepare_* again with ALL the details so far, including the new ones in \`stated\`.
+   4. To change a draft ("make it 20 days", "add Kubernetes"), call prepare_* again with the change; the new draft replaces the old one.
+   Ask only what the result reports as missing, or something that genuinely changes the result. Never ask about what you already know.
 
 ALWAYS
-- Never say something was created unless a tool result says it was, or the conversation shows its card with status "done".
-- If a task fails, say so briefly; the card has a Try again button.
-- Use get_my_workspace when their existing work matters (progress, scores, or to avoid a duplicate); if they already have that exact item, point them to it.
+- Never say something was created unless the conversation shows its card with status "done". A draft is not created yet.
+- If they mention a lasting fact about themselves (level, experience, skills, weekly time, goal, preferred language or style) outside a draft, you may offer remember_about_student - once per fact.
+- Use get_my_workspace when their existing work matters (progress, scores, what to do next).
 - Be warm, specific and concise. Use their name occasionally.
 
 ${FORMAT_RULES}`;
 }
 
-/** What the model remembers of a stored message: its text plus the status of its action cards. */
+const CARD_STATUS = {
+  proposed: (a) => (a.type === 'profile_update' ? 'waiting for the student to say Yes' : 'offered, waiting for Yes / No'),
+  accepted: () => 'the student said Yes - gather the details and call prepare_*',
+  draft: () => 'draft shown, NOT created yet - waiting for the student to press Create (for changes, call prepare_* again)',
+  running: () => 'being created',
+  done: (a) => `created${a.result?.note ? ` (${a.result.note})` : ''}`,
+  dismissed: () => 'declined by the student',
+  superseded: () => 'replaced by a newer draft',
+  failed: (a) => `failed: ${a.error || 'unknown error'}`,
+};
+
+/** A draft's details, so the agent can revise it. */
+const draftDetails = (args) => {
+  const { candidates, ...rest } = args || {};
+  const out = { ...rest, ...(candidates ? { videoChoices: candidates.map((c) => c.title) } : {}) };
+  return JSON.stringify(out).slice(0, 900);
+};
+
+/** What the model remembers of a stored message: its text plus its cards and questions. */
 function messageForModel(m) {
   const cards = (m.actions || []).map((a) => {
-    const def = ACTIONS[a.type];
-    const what = def ? `${def.label}: ${def.summary(a.args || {})}` : a.type;
-    const status = { proposed: 'suggested, waiting for the student to confirm', running: 'being created', done: `done${a.result?.note ? ` (${a.result.note})` : ''}`, dismissed: 'declined by the student', superseded: 'replaced by a later request', failed: `failed: ${a.error || 'unknown error'}` }[a.status] || a.status;
-    return `[Action card - ${what} - status: ${status}]`;
+    const def = defFor(a.type);
+    const kind = a.status === 'draft' || a.origin === 'requested' ? 'Draft' : 'Offer';
+    const what = def ? `${def.label}: ${summarize(a.type, a.args || {})}` : a.type;
+    const status = (CARD_STATUS[a.status] || (() => a.status))(a);
+    return `[${kind} - ${what} - status: ${status}${a.status === 'draft' ? ` - details: ${draftDetails(a.args)}` : ''}]`;
   });
-  return [m.content, ...cards].filter(Boolean).join('\n\n');
+  const ask = m.ask?.questions?.length ? [`[You asked, with tap-to-answer options: ${m.ask.questions.map((q) => q.question).join(' | ')}]`] : [];
+  return [m.content, ...cards, ...ask].filter(Boolean).join('\n\n');
+}
+
+/** The agent's questions, cleaned; null when there are none. */
+function readAsk(args) {
+  const questions = (Array.isArray(args.questions) ? args.questions : []).slice(0, 3)
+    .filter((q) => q && typeof q === 'object')
+    .map((q) => ({
+      key: clean(q.key, 40),
+      question: clean(q.question, 300),
+      options: (Array.isArray(q.options) ? q.options : []).map((o) => clean(o, 80)).filter(Boolean).slice(0, 6),
+      multiSelect: q.multiSelect === true,
+    }))
+    .filter((q) => q.question);
+  return questions.length ? { intro: clean(args.intro, 300), questions } : null;
 }
 
 // ── read tools ─────────────────────────────────────────────────────────────
@@ -173,58 +237,59 @@ const newActionId = () => crypto.randomBytes(6).toString('hex');
 
 /**
  * Run one turn. `emit(event, data)` streams to the client:
- *   token {text} · status {text} · action {action} · done {message}
+ *   token {text} · status {text} · action {action} · ask {ask} · superseded {type, except} · done {message}
  */
 async function runTurn({ conversationId, userId, userName, input, emit, signal }) {
   const filter = { _id: conversationId, userId };
   const history = new MongoChatHistory({ Model: ChatbotConversation, filter, field: 'messages', timeKey: 'createdAt', toText: messageForModel });
-  const past = await history.getMessages();
+  const [past, learner] = await Promise.all([
+    history.getMessages(),
+    getProfile(userId).catch(() => ({ profile: {}, derivedKeys: [] })),
+  ]);
 
   const userMessage = { role: 'user', content: input, createdAt: new Date() };
   await ChatbotConversation.updateOne(filter, { $push: { messages: userMessage } });
 
-  const lastOf = (type) => String([...past].reverse().find((m) => m._getType?.() === type)?.content || '');
-  const lastStudentMessage = lastOf('human');
-  const isTask = TASK_INTENT.test(input) || TASK_INTENT.test(lastStudentMessage);
-  // A command, "yes" to a suggestion, or the answer to the question the agent asked about a command.
-  const isCommand = COMMAND.test(input) || AFFIRM.test(input)
-    || (COMMAND.test(lastStudentMessage) && /\?/.test(lastOf('ai')) && lastOf('ai').length < 800); // a short clarifying question, often followed by options
-
   const messages = [
-    new SystemMessage(systemPrompt({ userName })),
+    new SystemMessage(systemPrompt({ userName, profileText: profileForPrompt(learner) })),
     ...past,
-    ...(isCommand ? [new SystemMessage(COMMAND_NOTE)] : []),
     new HumanMessage(input),
   ];
   const base = chatModel({ tier: 'REASONING', maxTokens: 3000, temperature: 0.5 });
   const withTools = base.bindTools(TOOLS);
 
-  const ctx = { userId, searchResults: new Map() };
+  const ctx = { userId, searchResults: new Map(), emit };
+  const actions = [];
+  let ask = null;
+  let text = '';
+  let stopped = false;
 
-  // A task that has now been done makes any earlier, unanswered suggestion of the same kind moot.
+  // A new draft replaces any earlier, unanswered offer or draft of the same kind.
   const supersede = async (type, exceptId) => {
+    const open = ['proposed', 'draft'];
     await ChatbotConversation.updateOne(filter, {
       $set: { 'messages.$[m].actions.$[a].status': 'superseded', 'messages.$[m].actions.$[a].updatedAt': new Date() },
     }, {
-      arrayFilters: [{ 'm.actions': { $elemMatch: { type, status: 'proposed' } } }, { 'a.type': type, 'a.status': 'proposed' }],
+      arrayFilters: [{ 'm.actions': { $elemMatch: { type, status: { $in: open } } } }, { 'a.type': type, 'a.status': { $in: open } }],
     }).catch(() => {});
-    actions.forEach((a) => { if (a.type === type && a.status === 'proposed' && a.id !== exceptId) a.status = 'superseded'; });
+    actions.forEach((a) => { if (a.type === type && open.includes(a.status) && a.id !== exceptId) a.status = 'superseded'; });
     emit('superseded', { type, except: exceptId });
   };
-  const actions = [];
-  let text = '';
-  let stopped = false;
-  let commandDone = false;
+
+  const addCard = (action) => {
+    actions.push(action);
+    emit('action', { action: withMeta(action) });
+  };
 
   const runTool = async (call) => {
     const name = call.name;
-    const args = call.args || {};
+    const args = call.args && typeof call.args === 'object' ? call.args : {};
     if (name === 'get_my_workspace') {
       emit('status', { text: 'Looking at your workspace…' });
       return workspace(userId);
     }
     if (name === 'search_youtube_videos') {
-      const query = String(args.query || '').slice(0, 120);
+      const query = clean(args.query, 120);
       emit('status', { text: `Searching YouTube for “${query}”…` });
       const videos = await searchVideos(query, 5).catch(() => []);
       videos.forEach((v) => ctx.searchResults.set(v.videoId, v));
@@ -232,60 +297,82 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
         ? videos.map(({ videoId, title, channelName, duration }) => ({ videoId, title, channelName, duration }))
         : { error: 'No results. Try a different query.' };
     }
+    if (name === ASK_TOOL.function.name) {
+      if (ask) return { error: 'You already asked your questions this turn. Stop here.' };
+      ask = readAsk(args);
+      if (!ask) return { error: 'Pass at least one question.' };
+      emit('ask', { ask });
+      return { ok: true, note: 'The questions are shown with tap-to-answer options. Stop here; do not repeat them.' };
+    }
+    if (actions.length >= MAX_ACTIONS_PER_TURN) {
+      return { error: 'You have already added enough cards this turn. Finish your reply.' };
+    }
+    if (name === PROFILE_UPDATE.tool.function.name) {
+      let patch;
+      try {
+        patch = PROFILE_UPDATE.normalize(args);
+      } catch (error) {
+        return { error: error.message };
+      }
+      addCard({ id: newActionId(), type: 'profile_update', origin: 'suggested', status: 'proposed', args: patch, updatedAt: new Date() });
+      return { ok: true, note: 'The "Remember this?" card is shown; it is saved only if they press Yes. Continue your reply.' };
+    }
+
     const tool = TOOL_TO_ACTION[name];
     if (!tool) return { error: `Unknown tool ${name}` };
     const { type, mode } = tool;
     const def = ACTIONS[type];
-    if (actions.length >= MAX_ACTIONS_PER_TURN) {
-      return { error: 'You have already done enough this turn. Finish your reply.' };
-    }
-    if (mode === 'propose' && isCommand) {
-      return { error: `The student told you to do this. Call ${def.doTool.function.name} now, or ask the one missing detail. Do not explain.` };
-    }
-    if (mode === 'do' && !isTask) {
-      return { error: `The student asked a question, not for you to create anything. Use ${def.tool.function.name} to suggest it instead.` };
-    }
 
-    let clean;
-    try {
-      clean = def.normalize(args, ctx);
-    } catch (error) {
-      return { error: error.message };
-    }
-
-    if (mode === 'propose') {
-      const action = { id: newActionId(), type, origin: 'suggested', status: 'proposed', args: clean, updatedAt: new Date() };
-      actions.push(action);
-      emit('action', { action });
+    if (mode === 'suggest') {
+      const topic = clean(args.topic, 160);
+      if (topic.length < 2) return { error: 'Say what the suggestion is about (topic).' };
+      addCard({ id: newActionId(), type, origin: 'suggested', status: 'proposed', args: { topic, ...(args.reason ? { reason: clean(args.reason, 240) } : {}) }, updatedAt: new Date() });
       return {
         ok: true,
-        note: 'The suggestion card is shown; it is NOT created until they press Yes. Now write your COMPLETE answer to their message - teach it as thoroughly as you would without the card. End with one short sentence pointing to the card.',
+        note: 'The offer card is shown; nothing happens unless they press Yes. Now write your COMPLETE answer to their message - teach it as thoroughly as you would without the card. End with one short sentence pointing to the card.',
       };
     }
 
-    // The student asked for it: do it now and show the result on the card.
-    const action = { id: newActionId(), type, origin: 'requested', status: 'running', args: clean, updatedAt: new Date() };
-    actions.push(action);
-    emit('action', { action: { ...action } });
-    try {
-      const result = await def.run(clean, { userId, userName });
-      Object.assign(action, { status: 'done', result, updatedAt: new Date() });
-      emit('action', { action: { ...action } });
-      await supersede(type, action.id);
-      return {
-        done: true,
-        created: `${def.label}: ${def.summary(clean)}`,
-        where: def.section,
-        ...(result.note ? { details: result.note } : {}),
-        note: 'It is created and shown on a card with an Open button. Confirm in one or two short sentences what you created and where. Do not explain the topic unless they also asked a question.',
-      };
-    } catch (error) {
-      logger.error(`Agent task ${type} failed`, error.cause || error);
-      const reason = friendlyAIError(error.cause || error, error.status === 502 && error.message ? error.message : 'Something went wrong while creating it.');
-      Object.assign(action, { status: 'failed', error: reason, updatedAt: new Date() });
-      emit('action', { action: { ...action } });
-      return { error: `It could not be created: ${reason} Tell the student briefly; the card has a Try again button.` };
+    // prepare: check the requirements, then show a draft.
+    const prepared = prepareArgs(def, args, { stated: args.stated, profile: learner.profile, derivedKeys: learner.derivedKeys });
+    if (prepared.autoMissing.length) {
+      return { error: `Write ${prepared.autoMissing.join(', ')} yourself (you fill these in), then call ${name} again.` };
     }
+    if (prepared.missing.length || prepared.invalid.length) {
+      return {
+        status: 'needs_info',
+        ...(prepared.invalid.length ? { invalid: prepared.invalid } : {}),
+        missing: prepared.missing,
+        next: 'Call ask_student once with these questions (tailor the options to this student), after one short sentence. Then stop.',
+      };
+    }
+    if (def.findExisting && args.allowDuplicate !== true) {
+      const existing = await def.findExisting(prepared.args, userId).catch(() => null);
+      if (existing) {
+        return {
+          status: 'exists',
+          existing: { what: existing.label, progress: existing.progress, where: def.section },
+          next: 'Tell them, and ask (ask_student) whether to continue that one or create a new one.',
+        };
+      }
+    }
+    if (def.complete) {
+      try {
+        await def.complete(prepared.args, args, ctx);
+      } catch (error) {
+        return { error: error.message };
+      }
+    }
+    const action = { id: newActionId(), type, origin: 'requested', status: 'draft', args: prepared.args, provenance: prepared.provenance, updatedAt: new Date() };
+    await supersede(type, action.id);
+    addCard(action);
+    const assumed = Object.keys(prepared.provenance).filter((k) => prepared.provenance[k] === 'assumed');
+    return {
+      status: 'drafted',
+      draft: `${def.label}: ${summarize(type, prepared.args)}`,
+      ...(assumed.length ? { assumed } : {}),
+      note: 'The draft card is shown; every field is editable and nothing is created until they press Create. Reply in one or two short sentences.',
+    };
   };
 
   try {
@@ -305,13 +392,11 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
           if (delta) {
             if (!stepText && text) {
               text += '\n\n';
-              if (!isCommand) emit('token', { text: '\n\n' });
+              emit('token', { text: '\n\n' });
             }
             stepText += delta;
             text += delta;
-            // A command's reply is held back: it is either a fixed confirmation or one short
-            // question, and a stray explanation must never flash on screen.
-            if (!isCommand) emit('token', { text: delta });
+            emit('token', { text: delta });
           }
         }
       }, {
@@ -332,16 +417,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
         messages.push(new ToolMessage({ content: JSON.stringify(result).slice(0, 6000), tool_call_id: call.id }));
       }
       emit('status', { text: '' });
-
-      // A commanded task has run: the reply is its confirmation, with no further model call.
-      const finished = actions.filter((a) => a.origin === 'requested' && (a.status === 'done' || a.status === 'failed'));
-      if (isCommand && finished.length) {
-        text = finished.map((a) => (a.status === 'done'
-          ? ACTIONS[a.type].doneLine(a.args, a.result)
-          : `I couldn't ${ACTIONS[a.type].label.toLowerCase()}: ${a.error} You can try again from the card.`)).join('\n\n');
-        commandDone = true;
-        break;
-      }
+      if (ask) break; // the reply ends with the questions
     }
   } catch (error) {
     // Stopped by the student: keep what was written so far instead of losing the turn.
@@ -349,25 +425,27 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
     stopped = true;
   }
 
-  if (isCommand && text && !stopped) emit('token', { text: commandDone ? text : text.trim() });
+  if (ask && !text.trim()) {
+    text = ask.intro || 'A few quick questions so I get this exactly right:';
+    emit('token', { text });
+  }
 
   // Safety nets, one extra (small) model call at most:
   //  - the reply points to a card ("confirm below") but no tool was called; or
-  //  - a real learning question was answered without the suggestion it should come with.
+  //  - a real learning question was answered without the offer it should come with.
   const mentionsCard = CARD_MENTION.test(text);
-  const missingSuggestion = !isTask && text.length > 300 && LEARNING_QUESTION.test(input);
-  if (!stopped && !isCommand && !actions.length && (mentionsCard || missingSuggestion)) {
+  const missingSuggestion = text.length > 300 && LEARNING_QUESTION.test(input);
+  if (!stopped && !ask && !actions.length && (mentionsCard || missingSuggestion)) {
     try {
-      // propose_add_video is left out: it needs a search first.
-      const tools = Object.entries(ACTIONS).filter(([type]) => type !== 'add_video').map(([, a]) => a.tool);
+      const tools = Object.values(ACTIONS).map((a) => a.suggestTool);
       const forced = await withRateLimitRetry(() => base.bindTools([...tools, NO_SUGGESTION], { tool_choice: 'required' }).invoke([
         ...messages,
         new AIMessage(text),
         new HumanMessage(mentionsCard
-          ? '(system) Your reply refers to a confirmation card, but you did not call a propose_* tool. Call the one that matches what you offered. Do not write text.'
-          : '(system) Pick the ONE suggestion that would help this student most next, by calling its propose_* tool. If nothing fits, or they declined it earlier in this chat, call no_suggestion. Do not write text.'),
+          ? '(system) Your reply refers to a confirmation card, but you did not call a suggest_* tool. Call the one that matches what you offered. Do not write text.'
+          : '(system) Pick the ONE offer that would help this student most next, by calling its suggest_* tool. If nothing fits, or they declined it earlier in this chat, call no_suggestion. Do not write text.'),
       ], { signal }));
-      for (const call of (forced.tool_calls || []).filter((c) => c.name !== NO_SUGGESTION.function.name).slice(0, 1)) await runTool(call); // eslint-disable-line no-await-in-loop
+      for (const call of (forced.tool_calls || []).filter((c) => c.name !== NO_SUGGESTION.function.name && TOOL_TO_ACTION[c.name]?.mode === 'suggest').slice(0, 1)) await runTool(call); // eslint-disable-line no-await-in-loop
     } catch (error) {
       logger.warn('Agent: could not add the suggestion card', { error: error.message });
     }
@@ -380,21 +458,18 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
   }
 
   text = text.trim();
-  if (stopped) {
-    const partial = { role: 'assistant', content: text ? `${text}\n\n*(stopped)*` : '*(stopped)*', createdAt: new Date() };
-    if (actions.length) partial.actions = actions;
-    await ChatbotConversation.updateOne(filter, { $push: { messages: partial } });
-    return partial;
-  }
+  const save = async (content) => {
+    const stored = { role: 'assistant', content, createdAt: new Date() };
+    if (actions.length) stored.actions = actions;
+    if (ask) stored.ask = ask;
+    await ChatbotConversation.updateOne(filter, { $push: { messages: stored } });
+    return { ...stored, ...(actions.length ? { actions: actions.map(withMeta) } : {}) };
+  };
+  if (stopped) return save(text ? `${text}\n\n*(stopped)*` : '*(stopped)*');
   if (!text && !actions.length) {
     throw Object.assign(new Error('The agent did not reply. Please try again.'), { status: 502 });
   }
-  if (!text) text = 'Here is what I can set up for you:';
-
-  const reply = { role: 'assistant', content: text, createdAt: new Date() };
-  if (actions.length) reply.actions = actions;
-  await ChatbotConversation.updateOne(filter, { $push: { messages: reply } });
-  return reply;
+  return save(text || 'Here is what I prepared for you:');
 }
 
 /** A short title for a new chat, from its first message. */
@@ -411,4 +486,4 @@ async function titleFor(input) {
   }
 }
 
-module.exports = { runTurn, titleFor, messageForModel, _internal: { systemPrompt, workspace } };
+module.exports = { runTurn, titleFor, messageForModel, _internal: { systemPrompt, workspace, readAsk } };

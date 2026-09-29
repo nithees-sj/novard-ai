@@ -1,5 +1,6 @@
 const { runTurn, titleFor } = require('../agent/novardAgent');
 const conversations = require('../agent/conversations');
+const learnerProfile = require('../services/learnerProfileService');
 const { friendlyAIError } = require('../ai/errors');
 const { currentUserId } = require('../middleware/auth');
 const { badRequest, HttpError } = require('../utils/httpError');
@@ -14,7 +15,7 @@ const MAX_MESSAGE = 6000;
 
 /**
  * POST /api/agent/chat  {message, conversationId?}
- * Streams Server-Sent Events: meta, token, status, action, superseded, title, done, error.
+ * Streams Server-Sent Events: meta, token, status, action, ask, superseded, title, done, error.
  * Validation errors are ordinary JSON responses; once streaming has started,
  * failures arrive as an `error` event.
  */
@@ -69,7 +70,10 @@ exports.chat = async (req, res) => {
   }
 };
 
-/** POST /api/agent/conversations/:id/actions/:actionId  {decision: 'confirm'|'dismiss'} -> {action} */
+/**
+ * POST /api/agent/conversations/:id/actions/:actionId
+ *   {decision: 'create'|'accept'|'confirm'|'dismiss', args?, remember?} -> {action}
+ */
 exports.decideAction = async (req, res) => {
   try {
     const action = await conversations.decideAction({
@@ -78,6 +82,8 @@ exports.decideAction = async (req, res) => {
       conversationId: req.params.id,
       actionId: req.params.actionId,
       decision: req.body.decision,
+      args: req.body.args,
+      remember: req.body.remember === true,
     });
     res.json({ action });
   } catch (error) {
@@ -88,6 +94,16 @@ exports.decideAction = async (req, res) => {
     }
     throw error;
   }
+};
+
+/** GET /api/agent/profile -> {profile, derivedKeys, saved, updatedAt} */
+exports.getProfile = async (req, res) => {
+  res.json(await learnerProfile.getProfile(currentUserId(req)));
+};
+
+/** PUT /api/agent/profile {field: value | null, ...} -> the updated profile */
+exports.updateProfile = async (req, res) => {
+  res.json(await learnerProfile.updateProfile(currentUserId(req), req.body?.profile ?? req.body));
 };
 
 exports.listConversations = async (req, res) => {
