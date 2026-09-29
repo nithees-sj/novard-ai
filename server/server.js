@@ -3,6 +3,7 @@ const { env, missingEnv } = require('./config/env');
 const { connectDB } = require('./config/db');
 const { createApp } = require('./app');
 const logger = require('./utils/logger');
+const { terminateOcr } = require('./services/ocrService');
 
 const missing = missingEnv();
 if (missing.length > 0) {
@@ -37,7 +38,7 @@ async function start() {
   const shutdown = (signal) => () => {
     logger.info(`${signal} received - shutting down.`);
     server.close(() => {
-      mongoose.connection.close(false).finally(() => process.exit(0));
+      Promise.allSettled([mongoose.connection.close(false), terminateOcr()]).finally(() => process.exit(0));
     });
     setTimeout(() => process.exit(1), 10000).unref();
   };

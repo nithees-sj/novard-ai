@@ -117,6 +117,19 @@ describe('notes', () => {
     expect(notes.relevantNoteText('short', 'q')).toBe('short');
   });
 
+  it('sends only pages without a real text layer to OCR, up to the cap', () => {
+    const typed = 'A full paragraph of typed lecture notes.';
+    const pages = [
+      { num: 1, text: typed },
+      { num: 2, text: '' },
+      { num: 3, text: '  12  ' }, // just a page number over a scan
+      { num: 4, text: typed },
+    ];
+    expect(notes.pagesNeedingOcr(pages)).toEqual([2, 3]);
+    const many = Array.from({ length: 50 }, (_, i) => ({ num: i + 1, text: '' }));
+    expect(notes.pagesNeedingOcr(many)).toHaveLength(30);
+  });
+
   it('validates quiz scores and answers', () => {
     expect(notes.readScore({ correct: 3, total: 4 })).toEqual({ correct: 3, total: 4, percentage: 75 });
     expect(() => notes.readScore({ correct: 5, total: 4 })).toThrow();

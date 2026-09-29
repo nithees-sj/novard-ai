@@ -5,6 +5,7 @@ const { MODELS } = require('../config/ai');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { complete } = require('../ai/groqClient');
 const { converse } = require('../ai/conversation');
+const { recognizePage } = require('./ocrService');
 const { readQuizOptions, generateQuiz, sampleContent } = require('./quizService');
 const { toStoredPath, removeUpload, hasSignature } = require('../utils/uploads');
 const { badRequest, notFound, unprocessable, unsupportedMediaType } = require('../utils/httpError');
@@ -88,7 +89,54 @@ async function findOwnNote(userId, noteId, select) {
 
 // ── upload ─────────────────────────────────────────────────────────────────
 
+// A page whose text layer has fewer visible characters than this is treated as
+// a scan (or a page number / header over a scan) and read with OCR instead.
+const MIN_TEXT_LAYER_CHARS = 25;
+const MAX_OCR_PAGES = 30;
+// Below this Tesseract is usually reading a photo or diagram, not text.
+const MIN_OCR_CONFIDENCE = 40;
+const OCR_BUDGET_MS = 90 * 1000;
+// A4 width at 300 DPI, the resolution Tesseract is tuned for.
+const OCR_RENDER_WIDTH = 2480;
+
+const visibleChars = (value) => String(value || '').replace(/\s/g, '').length;
+
+/** Page numbers whose text layer is too thin to be the page's real text, up to the OCR cap. */
+function pagesNeedingOcr(pages) {
+  return pages.filter((page) => visibleChars(page.text) < MIN_TEXT_LAYER_CHARS).slice(0, MAX_OCR_PAGES).map((page) => page.num);
+}
+
+/** Render each page and OCR it, replacing its text in `texts` when Tesseract is confident. */
+async function ocrPages(parser, pageNums, texts) {
+  const started = Date.now();
+  const confidences = [];
+  for (const num of pageNums) {
+    if (Date.now() - started > OCR_BUDGET_MS) {
+      logger.warn('OCR time budget reached; remaining scanned pages were skipped', { pagesSkipped: pageNums.length - confidences.length });
+      break;
+    }
+    try {
+      // One page at a time keeps only one large bitmap in memory.
+      // eslint-disable-next-line no-await-in-loop
+      const shot = await parser.getScreenshot({ partial: [num], desiredWidth: OCR_RENDER_WIDTH, imageDataUrl: false, imageBuffer: true });
+      const image = shot.pages[0] && shot.pages[0].data;
+      if (!image) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const { text: ocrText, confidence } = await recognizePage(image);
+      confidences.push(confidence);
+      if (confidence >= MIN_OCR_CONFIDENCE && visibleChars(ocrText) > visibleChars(texts.get(num))) texts.set(num, ocrText);
+    } catch (error) {
+      logger.warn(`OCR failed on page ${num}`, error);
+    }
+  }
+  const meanConfidence = confidences.length ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length) : null;
+  logger.info('OCR finished', { pagesOcrd: confidences.length, meanConfidence, ms: Date.now() - started });
+}
+
 /**
+ * The PDF's text layer, with pages that have none (scans, photos of notes)
+ * read by OCR. Typed PDFs never touch OCR, so they stay fast.
+ *
  * pdf-parse v1 bundled a 2018 build of pdf.js that threw "bad XRef entry" on
  * ordinary modern PDFs (anything LibreOffice or Word produces), so uploads
  * failed for most real files. v2 uses a current pdf.js.
@@ -98,11 +146,20 @@ async function extractPdfText(filePath) {
   try {
     const buffer = await fs.promises.readFile(filePath);
     parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const pdfData = await parser.getText();
-    return (pdfData.text || '').trim();
+    const { pages, total } = await parser.getText({ pageJoiner: '' });
+    const texts = new Map(pages.map((page) => [page.num, (page.text || '').trim()]));
+
+    const scanned = pagesNeedingOcr(pages);
+    if (scanned.length) await ocrPages(parser, scanned, texts);
+
+    return [...texts]
+      .filter(([, pageText]) => pageText)
+      .map(([num, pageText]) => `${pageText}\n\n-- ${num} of ${total} --`)
+      .join('\n\n')
+      .trim();
   } catch (error) {
     logger.warn('PDF text extraction failed', error);
-    throw unprocessable('Could not read text from that PDF. If it is a scanned document it has no text layer to extract.');
+    throw unprocessable('Could not read that PDF. It may be damaged or password-protected.');
   } finally {
     if (parser && typeof parser.destroy === 'function') await parser.destroy().catch(() => {});
   }
@@ -117,7 +174,7 @@ async function createNote({ userId, file, title }) {
 
     const extractedText = await extractPdfText(file.path);
     if (!extractedText) {
-      throw unprocessable('That PDF contains no extractable text (it is most likely a scan or images only).');
+      throw unprocessable('Could not find any readable text in that PDF, even with OCR. If it is a scan, try a clearer, higher-resolution copy.');
     }
 
     const note = await Notes.create({
@@ -312,5 +369,5 @@ module.exports = {
   generateNoteQuiz,
   saveNoteQuizResult,
   deleteNote,
-  _internal: { chunkText, relevantNoteText, readScore, readAnswers },
+  _internal: { chunkText, relevantNoteText, readScore, readAnswers, pagesNeedingOcr, extractPdfText },
 };

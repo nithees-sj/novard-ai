@@ -7,16 +7,18 @@ jest.mock('../../ai/conversation', () => ({
   ...jest.requireActual('../../ai/conversation'),
   converse: jest.fn(),
 }));
+jest.mock('../../services/ocrService', () => ({ recognizePage: jest.fn(), terminateOcr: jest.fn() }));
 
 const { complete } = require('../../ai/groqClient');
 const { converse } = require('../../ai/conversation');
+const { recognizePage } = require('../../services/ocrService');
 const { createApp } = require('../../app');
 const Notes = require('../../models/notes');
 const { env } = require('../../config/env');
 const { resolveStoredPath } = require('../../utils/uploads');
 const { useTestDatabase } = require('../helpers/db');
 const { ALICE, BOB, bearer } = require('../helpers/auth');
-const { makePdf } = require('../helpers/pdf');
+const { makePdf, makeBlankPdf } = require('../helpers/pdf');
 const { quizJson } = require('../helpers/fixtures');
 
 useTestDatabase();
@@ -50,6 +52,37 @@ describe('Notes & Quiz workflow', () => {
     expect(note.extractedText).toMatch(/Photosynthesis/);
     expect(fs.existsSync(resolveStoredPath(note.filePath))).toBe(true);
     expect(resolveStoredPath(note.filePath).startsWith(env.uploadDir)).toBe(true);
+  });
+
+  it('reads typed PDFs from their text layer without OCR', async () => {
+    expect((await upload()).status).toBe(201);
+    expect(recognizePage).not.toHaveBeenCalled();
+  });
+
+  it('reads a scanned PDF (no text layer) with OCR', async () => {
+    recognizePage.mockResolvedValueOnce({ text: 'Mitochondria is the powerhouse of the cell.', confidence: 91 });
+    const res = await upload(ALICE, makeBlankPdf(), 'scan.pdf');
+
+    expect(res.status).toBe(201);
+    expect(recognizePage).toHaveBeenCalledTimes(1);
+    expect(Buffer.from(recognizePage.mock.calls[0][0]).subarray(1, 4).toString()).toBe('PNG');
+    const note = await Notes.findById(res.body._id);
+    expect(note.extractedText).toMatch(/^Mitochondria is the powerhouse of the cell\./);
+  });
+
+  it('refuses a scan when OCR finds no confident text, and deletes it', async () => {
+    recognizePage.mockResolvedValueOnce({ text: '~ ,. |', confidence: 12 });
+    const res = await upload(ALICE, makeBlankPdf(), 'blurry.pdf');
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toMatch(/even with OCR/);
+    expect(await Notes.countDocuments()).toBe(0);
+  });
+
+  it('refuses a scan when the OCR engine fails, instead of crashing', async () => {
+    recognizePage.mockRejectedValueOnce(new Error('worker died'));
+    const res = await upload(ALICE, makeBlankPdf(), 'scan.pdf');
+    expect(res.status).toBe(422);
   });
 
   it('refuses a file that only claims to be a PDF, and deletes it', async () => {
