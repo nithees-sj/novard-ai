@@ -60,7 +60,7 @@ function TestButton({ id }) {
   );
 }
 
-const WindowTable = ({ windows, ai }) => (
+const WindowTable = ({ windows, ai, rejected }) => (
   <DataTable
     rowKey={(r) => r.range}
     rows={Object.entries(windows || {}).map(([range, w]) => ({ range, ...w }))}
@@ -78,6 +78,7 @@ const WindowTable = ({ windows, ai }) => (
       { key: 'events', label: 'Calls', className: 'tabular-nums' },
       { key: 'ok', label: 'OK', className: 'tabular-nums' },
       { key: 'failed', label: 'Failed', className: 'tabular-nums' },
+      ...(rejected ? [{ key: 'rejected', label: 'Rejected tokens', className: 'tabular-nums' }] : []),
       { key: 'failureRate', label: 'Failure rate', render: (w) => pct(w.failureRate, 1) },
       { key: 'p95Ms', label: 'p95', render: (w) => ms(w.p95Ms) },
     ]}
@@ -112,7 +113,7 @@ export function GatewayDetail() {
       {loading && !g ? <Loading /> : g && (
         <div className="space-y-6">
           {g.key && <p className="text-sm text-gray-600">API key: {g.key.configured ? <>set, ends in <span className="font-mono">…{g.key.last4}</span></> : <span className="text-red-600">missing</span>}. {KEY_NOTE}</p>}
-          {g.windows && <Section title="Health"><WindowTable windows={g.windows} ai={ai} /></Section>}
+          {g.windows && <Section title="Health"><WindowTable windows={g.windows} ai={ai} rejected={g.id === 'oauth'} /></Section>}
 
           {ai && (
             <div className="grid gap-6 lg:grid-cols-2">

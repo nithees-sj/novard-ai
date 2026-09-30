@@ -39,10 +39,10 @@ const GATEWAYS = {
   mongodb: { name: 'MongoDB', kind: 'database' },
 };
 
-function lightFor(total, failures, { off = false, missing = false } = {}) {
+function lightFor(total, failures, { off = false, missing = false, idle = 'idle' } = {}) {
   if (missing) return 'missing';
   if (off) return 'off';
-  if (!total) return 'idle';
+  if (!total) return idle;
   const rate = failures / total;
   if (rate > 0.5) return 'down';
   if (rate > 0.1) return 'degraded';
@@ -68,7 +68,8 @@ async function gatewayLights() {
     const [row] = await lastHour(g);
     const off = (g.provider && providers[g.provider] === false) || (id === 'youtube' && !youtube.enabled);
     const missing = (id === 'groq' && !env.groqApiKey) || (id === 'gemini' && !env.geminiApiKey) || (id === 'oauth' && !env.googleClientIds.length);
-    out[id] = lightFor(row?.n || 0, row?.bad || 0, { off, missing });
+    // Google sign-in is configured and has nothing wrong to show: green, not "no traffic".
+    out[id] = lightFor(row?.n || 0, row?.bad || 0, { off, missing, idle: id === 'oauth' ? 'ok' : 'idle' });
   }));
   return out;
 }
@@ -156,6 +157,7 @@ async function eventDetail(gateway) {
       failed: list.filter((r) => r.outcome === 'fail').length,
       missing: list.filter((r) => r.outcome === 'missing').length,
       disabled: list.filter((r) => r.outcome === 'disabled').length,
+      rejected: list.filter((r) => r.outcome === 'rejected').length,
       failureRate: tried.length ? list.filter((r) => r.outcome === 'fail').length / tried.length : 0,
       p95Ms: lat.length ? Math.round(percentile(lat, 95)) : null,
     };

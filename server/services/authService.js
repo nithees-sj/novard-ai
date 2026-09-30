@@ -35,7 +35,9 @@ async function googleJson(url, options = {}) {
     throw upstreamError('Could not reach Google to verify your sign-in. Please try again.', { cause: error });
   }
   const body = await response.json().catch(() => ({}));
-  gatewayEvent({ operation, outcome: response.ok ? 'ok' : 'fail', latencyMs: Date.now() - started, area: 'sign-in' });
+  // A 4xx is Google working and turning down a bad or expired token, not Google failing.
+  const outcome = response.ok ? 'ok' : response.status < 500 ? 'rejected' : 'fail';
+  gatewayEvent({ operation, outcome, latencyMs: Date.now() - started, area: 'sign-in' });
   return { ok: response.ok, body };
 }
 

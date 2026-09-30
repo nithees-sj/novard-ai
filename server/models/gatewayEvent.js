@@ -9,7 +9,8 @@ const { RETENTION_DAYS } = require('./modelCall');
 const gatewayEventSchema = new mongoose.Schema({
   gateway: { type: String, enum: ['youtube', 'oauth', 'pdf'], required: true },
   operation: { type: String, required: true }, // search | captions | metadata | session | tokeninfo | extract | ocr
-  outcome: { type: String, enum: ['ok', 'fail', 'missing', 'disabled'], required: true },
+  // rejected: the service answered but refused the input (an expired or fake sign-in token): not a failure of the service
+  outcome: { type: String, enum: ['ok', 'fail', 'missing', 'disabled', 'rejected'], required: true },
   latencyMs: { type: Number, default: 0 },
   area: String,
   error: String,

@@ -250,10 +250,24 @@ describe('gateway events', () => {
     expect(events[0]).toMatchObject({ outcome: 'ok', area: 'video-library' });
   });
 
-  it('records Google sign-in checks', async () => {
+  it('records Google sign-in checks: a refused token is "rejected", only Google erroring is a failure', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(new Response('{}', { status: 400 }));
     await request(app).post('/api/auth/google').send({ accessToken: 'bad' });
     await new Promise((r) => { setTimeout(r, 20); });
+    expect(await GatewayEvent.findOne({ gateway: 'oauth', operation: 'tokeninfo', outcome: 'rejected' })).toBeTruthy();
+
+    global.fetch.mockResolvedValue(new Response('{}', { status: 503 }));
+    await request(app).post('/api/auth/google').send({ accessToken: 'bad' });
+    await new Promise((r) => { setTimeout(r, 20); });
     expect(await GatewayEvent.findOne({ gateway: 'oauth', operation: 'tokeninfo', outcome: 'fail' })).toBeTruthy();
+  });
+
+  it('shows Google sign-in green when nothing is wrong, even with rejected tokens or no traffic', async () => {
+    const { gatewayLights } = require('../../services/admin/gatewayService');
+    expect((await gatewayLights()).oauth).toBe('ok');
+    await GatewayEvent.create([{ gateway: 'oauth', operation: 'tokeninfo', outcome: 'ok' }, { gateway: 'oauth', operation: 'tokeninfo', outcome: 'rejected' }, { gateway: 'oauth', operation: 'tokeninfo', outcome: 'rejected' }]);
+    expect((await gatewayLights()).oauth).toBe('ok');
+    await GatewayEvent.create([{ gateway: 'oauth', operation: 'tokeninfo', outcome: 'fail' }, { gateway: 'oauth', operation: 'tokeninfo', outcome: 'fail' }]);
+    expect((await gatewayLights()).oauth).toBe('down');
   });
 });
