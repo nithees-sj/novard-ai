@@ -27,5 +27,6 @@ router.get('/api/admin/audit-log', h(audit.list));
 router.post('/api/admin/users/:id/role', requireSuperadmin(), h(users.setRole));
 router.post('/api/admin/users/:id/suspend', h(users.suspend));
 router.post('/api/admin/users/:id/reactivate', h(users.reactivate));
+router.post('/api/admin/users/:id/reset-quota', h(users.resetQuota));
 
 module.exports = router;

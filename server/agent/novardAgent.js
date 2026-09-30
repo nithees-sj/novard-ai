@@ -13,6 +13,7 @@ const { searchVideos } = require('../services/youtubeService');
 const { loadActivity } = require('../services/analyticsService');
 const { getProfile, profileForPrompt } = require('../services/learnerProfileService');
 const logger = require('../utils/logger');
+const { runWithAi } = require('../ai/aiContext');
 const { ACTIONS, PROFILE_UPDATE, SUGGEST_TOOL, KIND_TO_TYPE, PREPARE_TO_TYPE, defFor, summarize, withMeta, prepareArgs, draftLine } = require('./actions');
 
 /**
@@ -520,10 +521,10 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
 /** A short title for a new chat, from its first message. */
 async function titleFor(input) {
   try {
-    const res = await chatModel({ tier: 'FAST', maxTokens: 400, temperature: 0.3 }).invoke([
+    const res = await runWithAi({ feature: 'agent.title' }, () => chatModel({ tier: 'FAST', maxTokens: 400, temperature: 0.3 }).invoke([
       new SystemMessage('Write a 2-6 word title for a chat that starts with the message below. Title case, no quotes, no trailing punctuation. Return only the title.'),
       new HumanMessage(String(input).slice(0, 1000)),
-    ]);
+    ]));
     const title = String(res.content || '').replace(/["'`*#]/g, '').replace(/\s+/g, ' ').trim();
     return title && title.length <= 80 ? title : null;
   } catch {

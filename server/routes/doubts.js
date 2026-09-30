@@ -3,6 +3,7 @@ const h = require('../middleware/asyncHandler');
 const { requireAuth } = require('../middleware/auth');
 const { aiLimiter } = require('../middleware/rateLimit');
 const doubts = require('../controllers/doubtController');
+const { aiFeature, toolGate } = require('../middleware/featureGate');
 
 /** Doubt Clearance */
 const router = Router();
@@ -12,12 +13,12 @@ router.use([
 ], requireAuth());
 
 router.get('/doubt-clearances/:userId', h(doubts.list));
-router.post('/doubt-clearances', aiLimiter, h(doubts.create));
+router.post('/doubt-clearances', aiLimiter, toolGate('doubts'), aiFeature('doubts.title', { gate: false }), h(doubts.create));
 router.delete('/doubt-clearances/:doubtId', h(doubts.remove));
-router.post('/chat-with-doubt-clearance', aiLimiter, h(doubts.chat));
-router.post('/summarize-doubt-clearance', aiLimiter, h(doubts.summarize));
-router.post('/generate-doubt-quiz', aiLimiter, h(doubts.generateQuiz));
+router.post('/chat-with-doubt-clearance', aiLimiter, aiFeature('doubts.chat'), h(doubts.chat));
+router.post('/summarize-doubt-clearance', aiLimiter, aiFeature('doubts.summary'), h(doubts.summarize));
+router.post('/generate-doubt-quiz', aiLimiter, aiFeature('doubts.quiz'), h(doubts.generateQuiz));
 router.post('/save-doubt-quiz-results', h(doubts.saveQuizResults));
-router.post('/get-youtube-recommendations', aiLimiter, h(doubts.recommendVideos));
+router.post('/get-youtube-recommendations', aiLimiter, aiFeature('doubts.videos'), h(doubts.recommendVideos));
 
 module.exports = router;

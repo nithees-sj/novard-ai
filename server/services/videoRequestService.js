@@ -7,6 +7,7 @@ const { findCourses } = require('./courseCatalog');
 const { badRequest, notFound } = require('../utils/httpError');
 const { objectId, text, oneOf } = require('../utils/validate');
 const logger = require('../utils/logger');
+const gateway = require('./gatewayEvents');
 
 /**
  * Video Library: "what I want to learn" requests, and the videos (or, for
@@ -58,7 +59,8 @@ function bestThumbnail(item) {
 }
 
 async function searchYouTube(keyword, count) {
-  const result = await youtubeSearch.GetListByKeyword(keyword, false, count);
+  await gateway.assertYoutubeEnabled('search');
+  const result = await gateway.track({ gateway: 'youtube', operation: 'search' }, () => youtubeSearch.GetListByKeyword(keyword, false, count));
   return (result?.items || [])
     .filter((item) => item.type === 'video' && !item.isLive)
     .map((item) => ({

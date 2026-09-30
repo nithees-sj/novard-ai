@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const { env } = require('./config/env');
 const routes = require('./routes');
 const { apiLimiter } = require('./middleware/rateLimit');
+const { maintenanceGate } = require('./middleware/featureGate');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 
@@ -42,6 +43,7 @@ function createApp() {
   app.get('/', (req, res) => res.status(200).send('NOVARD-AI API is running'));
 
   app.use(apiLimiter);
+  app.use(maintenanceGate);
   app.use(routes);
 
   app.use(notFoundHandler);

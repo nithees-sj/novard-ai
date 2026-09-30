@@ -1,4 +1,5 @@
 const { geminiGenerate } = require('../ai/gemini');
+const { runWithAi } = require('../ai/aiContext');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { httpUrl } = require('../utils/validate');
 const logger = require('../utils/logger');
@@ -158,7 +159,7 @@ function knownCourses(platform, keyword, count) {
 async function findCourses(platform, keyword, count) {
   if (!PLATFORM_PROMPT_DETAILS[platform]) return [];
   try {
-    const parsed = parseModelJson(await geminiGenerate(coursePrompt(platform, keyword, count)), { context: 'course list' });
+    const parsed = parseModelJson(await runWithAi({ feature: 'library.courses' }, () => geminiGenerate(coursePrompt(platform, keyword, count))), { context: 'course list' });
     if (!Array.isArray(parsed)) throw new Error('Gemini response is not an array');
     const seen = new Set();
     const courses = parsed

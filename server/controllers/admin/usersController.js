@@ -17,3 +17,8 @@ exports.suspend = async (req, res) => {
 exports.reactivate = async (req, res) => {
   res.json({ user: await users.reactivate(req.admin, target(req), { ip: req.ip }) });
 };
+
+/** POST /api/admin/users/:id/reset-quota -> {user} */
+exports.resetQuota = async (req, res) => {
+  res.json({ user: await users.resetQuota(req.admin, target(req), { ip: req.ip }) });
+};

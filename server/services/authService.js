@@ -25,14 +25,24 @@ const ADMIN_JWT_OPTIONS = { ...JWT_OPTIONS, audience: 'novard-ai-admin' };
 const SUSPENDED_MESSAGE = 'Your Novard-AI account has been suspended. If you think this is a mistake, please contact support.';
 
 async function googleJson(url, options = {}) {
+  const operation = url.startsWith(TOKENINFO_URL) ? 'tokeninfo' : 'userinfo';
+  const started = Date.now();
   let response;
   try {
     response = await fetch(url, { ...options, signal: AbortSignal.timeout(GOOGLE_TIMEOUT_MS) });
   } catch (error) {
+    gatewayEvent({ operation, outcome: 'fail', latencyMs: Date.now() - started, error });
     throw upstreamError('Could not reach Google to verify your sign-in. Please try again.', { cause: error });
   }
   const body = await response.json().catch(() => ({}));
+  gatewayEvent({ operation, outcome: response.ok ? 'ok' : 'fail', latencyMs: Date.now() - started, area: 'sign-in' });
   return { ok: response.ok, body };
+}
+
+/** Sign-in success/failure counts for the admin console's Google OAuth page. */
+function gatewayEvent(event) {
+  // Required lazily: this module loads before the settings layer in some tests.
+  require('./gatewayEvents').record({ gateway: 'oauth', area: 'sign-in', ...event });
 }
 
 /** Verify a Google access token and return the account it belongs to. */

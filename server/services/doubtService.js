@@ -12,6 +12,7 @@ const { contextualTitle } = require('./doubtTitle');
 const { badRequest, notFound, upstreamError } = require('../utils/httpError');
 const { objectId, text, integer, httpUrl } = require('../utils/validate');
 const logger = require('../utils/logger');
+const gateway = require('./gatewayEvents');
 
 /** Doubt Clearance: a student's questions, each with a tutoring chat, summary, quizzes and videos. */
 
@@ -199,7 +200,8 @@ async function saveDoubtQuizResult({ userId, doubtId, quizIndex, score }) {
 
 async function searchYouTube(query, maxResults) {
   try {
-    const results = await youtubeSearch.GetListByKeyword(query, false, maxResults, [{ type: 'video' }]);
+    await gateway.assertYoutubeEnabled('search');
+    const results = await gateway.track({ gateway: 'youtube', operation: 'search' }, () => youtubeSearch.GetListByKeyword(query, false, maxResults, [{ type: 'video' }]));
     return (results.items || [])
       .slice(0, maxResults)
       .filter((video) => video.type === 'video' && video.id)

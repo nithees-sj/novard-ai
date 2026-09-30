@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const gateway = require('./gatewayEvents');
 
 /**
  * YouTube lookups (video details, transcripts, search) through youtubei.js.
@@ -17,10 +18,11 @@ let session = null; // { promise, createdAt }
 function getInnertube() {
   if (!session || Date.now() - session.createdAt > SESSION_TTL_MS) {
     // youtubei.js is an ES module; import() loads it from this CommonJS file on every Node version.
-    const promise = import('youtubei.js').then(({ Innertube }) => Innertube.create()).catch((error) => {
-      session = null; // do not cache a failed handshake
-      throw error;
-    });
+    const promise = gateway.track({ gateway: 'youtube', operation: 'session' }, () => import('youtubei.js').then(({ Innertube }) => Innertube.create()))
+      .catch((error) => {
+        session = null; // do not cache a failed handshake
+        throw error;
+      });
     session = { promise, createdAt: Date.now() };
   }
   return session.promise;
@@ -59,7 +61,7 @@ function pickCaptionTrack(tracks = []) {
 async function fetchCaptions(track) {
   if (!track?.base_url) return '';
   const response = await fetch(track.base_url, { signal: AbortSignal.timeout(CAPTION_TIMEOUT_MS) });
-  if (!response.ok) return '';
+  if (!response.ok) throw new Error(`Caption download failed (${response.status})`);
   return parseTranscriptXml(await response.text());
 }
 
@@ -72,19 +74,25 @@ async function fetchCaptions(track) {
  * token), and youtubei.js's own getTranscript endpoint returns 400.
  */
 async function fetchVideoDetails(videoId) {
+  await gateway.assertYoutubeEnabled('metadata');
   let title = `YouTube Video ${videoId}`;
   let description = 'Unable to fetch video details';
   let transcript = '';
 
   try {
     const yt = await getInnertube();
-    const info = await yt.getBasicInfo(videoId, { client: 'IOS' });
+    const info = await gateway.track({ gateway: 'youtube', operation: 'metadata' }, () => yt.getBasicInfo(videoId, { client: 'IOS' }));
     title = info.basic_info?.title || title;
     description = info.basic_info?.short_description || info.basic_info?.description || 'No description available';
-    transcript = await fetchCaptions(pickCaptionTrack(info.captions?.caption_tracks)).catch((error) => {
-      logger.warn('Could not download captions', { videoId, error: error.message });
-      return '';
-    });
+    const track = pickCaptionTrack(info.captions?.caption_tracks);
+    if (!track?.base_url) gateway.record({ gateway: 'youtube', operation: 'captions', outcome: 'missing' });
+    else {
+      transcript = await gateway.track({ gateway: 'youtube', operation: 'captions', classify: (t) => (t ? 'ok' : 'missing') }, () => fetchCaptions(track))
+        .catch((error) => {
+          logger.warn('Could not download captions', { videoId, error: error.message });
+          return '';
+        });
+    }
   } catch (error) {
     logger.warn('Could not fetch YouTube video details', { videoId, error: error.message });
   }
@@ -97,8 +105,9 @@ async function fetchVideoDetails(videoId) {
 
 /** Top YouTube search results for a query: id, title, thumbnail, duration, channel. */
 async function searchVideos(query, maxResults = 3) {
+  await gateway.assertYoutubeEnabled('search');
   const yt = await getInnertube();
-  const results = await yt.search(String(query), { type: 'video' });
+  const results = await gateway.track({ gateway: 'youtube', operation: 'search' }, () => yt.search(String(query), { type: 'video' }));
   return (results.videos || [])
     .filter((video) => video.id)
     .slice(0, maxResults)

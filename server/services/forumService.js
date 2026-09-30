@@ -4,6 +4,7 @@ const { generateAICommentForIssue, generateAIResponseToComment } = require('./fo
 const { badRequest, forbidden, notFound, conflict } = require('../utils/httpError');
 const { isObjectId, objectId, text } = require('../utils/validate');
 const logger = require('../utils/logger');
+const { runWithAi } = require('../ai/aiContext');
 
 /** AI Forum: discussions, threaded replies, and the AI participant's answers. */
 
@@ -49,9 +50,11 @@ async function findIssue(issueId) {
 
 /** Fire-and-forget AI reply: the request that triggered it has already been answered. */
 function replyWithAI(issue, parentComment = null) {
-  const generate = parentComment
+  // Always the forum's AI feature (also when the Novard Agent opened the
+  // discussion), so the admin's "AI Forum replies" switch applies.
+  const generate = runWithAi({ feature: 'forum.ai', area: 'forum' }, () => (parentComment
     ? generateAIResponseToComment(parentComment, issue)
-    : generateAICommentForIssue(issue);
+    : generateAICommentForIssue(issue)));
 
   return generate
     .then((content) => ForumComment.create({
@@ -60,7 +63,11 @@ function replyWithAI(issue, parentComment = null) {
       content,
       parentCommentId: parentComment ? parentComment._id.toString() : null,
     }))
-    .catch((error) => logger.error('Could not post the AI forum reply', error));
+    .catch((error) => {
+      // Switched off or paused by an admin: expected, not an error.
+      if (error?.status === 503) logger.debug('AI forum reply skipped', { reason: error.code });
+      else logger.error('Could not post the AI forum reply', error);
+    });
 }
 
 // ── issues ────────────────────────────────────────────────────────────────

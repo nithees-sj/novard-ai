@@ -121,4 +121,15 @@ async function reactivate(actor, idOrEmail, { ip } = {}) {
   return view(updated);
 }
 
-module.exports = { findUser, setRole, suspend, reactivate, view };
+/** Give a student back today's AI allowance. */
+async function resetQuota(actor, idOrEmail, { ip } = {}) {
+  const user = await findUser(idOrEmail);
+  // Required lazily: the AI layer is not needed by the rest of this module.
+  const { studentUsageToday, resetStudentQuota } = require('../ai/usageGuard');
+  const before = await studentUsageToday(user.email);
+  await resetStudentQuota(user.email);
+  await audit.record({ actor, action: 'user.quota.reset', target: { type: 'user', id: user.email }, before: { requestsToday: before }, after: { requestsToday: 0 }, ip });
+  return { ...view(user), aiRequestsToday: 0 };
+}
+
+module.exports = { findUser, setRole, suspend, reactivate, resetQuota, view };

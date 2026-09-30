@@ -7,6 +7,10 @@ const { HumanMessage, AIMessage, SystemMessage } = require('@langchain/core/mess
 const { MODELS } = require('../config/ai');
 const { env } = require('../config/env');
 const { withRateLimitRetry } = require('./errors');
+const { beforeCall } = require('./usageGuard');
+const { ModelCallHandler } = require('./modelCallLog');
+const { withFailover, logged, chainFor, liveModelSettings } = require('./modelGateway');
+const settings = require('../services/settingsService');
 
 /**
  * Conversation engine for every chatbot in the app, built on LangChain.
@@ -41,15 +45,50 @@ const MEMORY_INSTRUCTIONS = [
   '- Stay consistent with what you told them earlier unless they give you new information.',
 ].join('\n');
 
+/**
+ * ChatGroq with the app's model layer at its one HTTP choke point: the admin's
+ * switches and limits are checked, a model whose daily quota is used up fails
+ * over to the next, and failed attempts are logged. (Successful calls are
+ * logged, with their token counts, by ModelCallHandler.)
+ */
+class NovardChatGroq extends ChatGroq {
+  async completionWithRetry(request, options) {
+    await beforeCall({ provider: 'groq' }, this.novardContext);
+    const live = await liveModelSettings();
+    return withFailover(chainFor(request.model, live), async (model, attempt) => {
+      if (model === request.model) return this.loggedFailure(model, attempt, () => super.completionWithRetry(request, options));
+      return this.loggedFailure(model, attempt, () => super.completionWithRetry({ ...request, model }, options));
+    }, { serverTries: 1 }); // LangChain's caller already retries 5xx
+  }
+
+  /** Log an attempt only when it fails; success is logged with its tokens by the callback. */
+  async loggedFailure(model, attempt, call) {
+    try {
+      return await call();
+    } catch (error) {
+      await logged({ provider: 'groq', model, attempt, routedBy: attempt > 1 ? 'failover' : 'default', context: this.novardContext }, () => Promise.reject(error))
+        .catch(() => {});
+      throw error;
+    }
+  }
+}
+
 function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6 } = {}) {
-  return new ChatGroq({
+  // Cached settings (no await here): at their defaults this is the old model, 'low' effort and the given limits.
+  const tiers = settings.peek('ai.tiers');
+  const params = settings.peek('ai.params');
+  const handler = new ModelCallHandler();
+  const model = new NovardChatGroq({
     apiKey: env.groqApiKey || 'missing-key',
-    model: MODELS[tier] || MODELS.REASONING,
-    temperature,
-    maxTokens,
+    model: tiers[tier] || MODELS[tier] || MODELS.REASONING,
+    temperature: params.temperature ?? temperature,
+    maxTokens: Math.max(64, Math.round(maxTokens * params.maxTokensScale)),
     // gpt-oss models are reasoning models; keep the token budget for the answer.
-    reasoningEffort: 'low',
+    reasoningEffort: params.reasoningEffort || 'low',
+    callbacks: [handler],
   });
+  model.novardContext = handler.context;
+  return model;
 }
 
 const toLangChain = (m) => (m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content));

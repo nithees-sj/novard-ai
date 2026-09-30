@@ -9,6 +9,7 @@ const analytics = require('../controllers/analyticsController');
 const profile = require('../controllers/profileController');
 const quizHistory = require('../controllers/quizHistoryController');
 const usage = require('../controllers/usageController');
+const { aiFeature, toolGate } = require('../middleware/featureGate');
 
 /** Skill Unlocker, career tools, analytics, profile, quiz history and study time. */
 const router = express.Router();
@@ -36,25 +37,25 @@ router.use([
 ], requireAuth());
 
 // Skill Unlocker
-router.post('/api/skill-unlocker/generate-plan', aiLimiter, h(plans.generatePlan));
-router.post('/api/skill-unlocker/generate-quiz', aiLimiter, h(plans.generateQuiz));
+router.post('/api/skill-unlocker/generate-plan', aiLimiter, aiFeature('skillplan.create'), h(plans.generatePlan));
+router.post('/api/skill-unlocker/generate-quiz', aiLimiter, aiFeature('skillplan.quiz'), h(plans.generateQuiz));
 router.get('/api/skill-unlocker/plans/:userId', h(plans.getUserPlans));
 router.post('/api/skill-unlocker/save-quiz-result', h(plans.saveQuizResult));
 router.post('/api/skill-unlocker/toggle-day-completion', h(plans.toggleDayCompletion));
 router.delete('/api/skill-unlocker/plans/:planId', h(plans.deletePlan));
-router.post('/api/skill-unlocker/refresh-video', aiLimiter, h(plans.refreshVideo));
+router.post('/api/skill-unlocker/refresh-video', aiLimiter, toolGate('skillUnlocker', { area: 'skill-unlocker' }), h(plans.refreshVideo));
 
 // Smart Roadmap
-router.post('/api/roadmaps/generate', aiLimiter, h(roadmaps.generate));
+router.post('/api/roadmaps/generate', aiLimiter, aiFeature('roadmap.generate'), h(roadmaps.generate));
 router.get('/api/roadmaps/user/:userId', h(roadmaps.listForUser));
 router.get('/api/roadmaps/:id', h(roadmaps.getOne));
 router.delete('/api/roadmaps/:id', h(roadmaps.remove));
 
 // Skill Gap coach
-router.post('/api/skill-gap/sessions', aiLimiter, h(skillGap.createSession));
+router.post('/api/skill-gap/sessions', aiLimiter, aiFeature('skillgap.analyse'), h(skillGap.createSession));
 router.get('/api/skill-gap/sessions/user/:userId', h(skillGap.listSessions));
 router.get('/api/skill-gap/sessions/:id', h(skillGap.getSession));
-router.post('/api/skill-gap/sessions/:id/messages', aiLimiter, h(skillGap.sendMessage));
+router.post('/api/skill-gap/sessions/:id/messages', aiLimiter, aiFeature('skillgap.coach'), h(skillGap.sendMessage));
 router.delete('/api/skill-gap/sessions/:id', h(skillGap.deleteSession));
 
 // Dashboard, profile and previous quiz marks

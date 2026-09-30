@@ -11,6 +11,7 @@ const { toStoredPath, removeUpload, hasSignature } = require('../utils/uploads')
 const { badRequest, notFound, unprocessable, unsupportedMediaType } = require('../utils/httpError');
 const { objectId, text } = require('../utils/validate');
 const logger = require('../utils/logger');
+const gateway = require('./gatewayEvents');
 
 /** Notes & Quiz: a student's PDFs, chat about them, summaries and quizzes. */
 
@@ -131,6 +132,12 @@ async function ocrPages(parser, pageNums, texts) {
   }
   const meanConfidence = confidences.length ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length) : null;
   logger.info('OCR finished', { pagesOcrd: confidences.length, meanConfidence, ms: Date.now() - started });
+  gateway.record({
+    gateway: 'pdf',
+    operation: 'ocr',
+    outcome: meanConfidence !== null && meanConfidence >= MIN_OCR_CONFIDENCE ? 'ok' : 'fail',
+    latencyMs: Date.now() - started,
+  });
 }
 
 /**
@@ -142,6 +149,7 @@ async function ocrPages(parser, pageNums, texts) {
  * failed for most real files. v2 uses a current pdf.js.
  */
 async function extractPdfText(filePath) {
+  const started = Date.now();
   let parser;
   try {
     const buffer = await fs.promises.readFile(filePath);
@@ -152,12 +160,15 @@ async function extractPdfText(filePath) {
     const scanned = pagesNeedingOcr(pages);
     if (scanned.length) await ocrPages(parser, scanned, texts);
 
-    return [...texts]
+    const text = [...texts]
       .filter(([, pageText]) => pageText)
       .map(([num, pageText]) => `${pageText}\n\n-- ${num} of ${total} --`)
       .join('\n\n')
       .trim();
+    gateway.record({ gateway: 'pdf', operation: 'extract', outcome: text ? 'ok' : 'missing', latencyMs: Date.now() - started });
+    return text;
   } catch (error) {
+    gateway.record({ gateway: 'pdf', operation: 'extract', outcome: 'fail', latencyMs: Date.now() - started, error });
     logger.warn('PDF text extraction failed', error);
     throw unprocessable('Could not read that PDF. It may be damaged or password-protected.');
   } finally {
@@ -362,6 +373,7 @@ async function deleteNote({ userId, noteId }) {
 }
 
 module.exports = {
+  extractPdfText,
   listNotes,
   createNote,
   chatWithNote,
