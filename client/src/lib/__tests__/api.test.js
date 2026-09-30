@@ -21,6 +21,20 @@ describe('API client', () => {
     window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   });
 
+  it('announces a suspended account with the API message, but not other 403s', async () => {
+    const onExpired = jest.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    const reject = (data) => api.get('/x', {
+      adapter: async (config) => Promise.reject(Object.assign(new Error('403'), { config, response: { status: 403, data } })),
+    }).catch(() => {});
+    await reject({ error: 'You can only access your own data.', code: 'FORBIDDEN' });
+    expect(onExpired).not.toHaveBeenCalled();
+    await reject({ error: 'Your account has been suspended.', code: 'ACCOUNT_SUSPENDED' });
+    expect(onExpired).toHaveBeenCalledTimes(1);
+    expect(onExpired.mock.calls[0][0].detail.message).toBe('Your account has been suspended.');
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  });
+
   it('apiJson sends JSON with the token and surfaces the API error message', async () => {
     saveSession({ token: 'tok', user: { email: 'a@b.c' } });
     global.fetch = jest.fn(async () => ({ ok: false, status: 400, json: async () => ({ error: 'Title is required.', code: 'BAD_REQUEST' }) }));

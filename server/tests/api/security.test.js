@@ -23,7 +23,11 @@ function allRoutes() {
   return routes.map(([method, path]) => [method, fill(path)]);
 }
 
-const PUBLIC = new Set(['get /health', 'get /', 'post /api/auth/google']);
+const PUBLIC = new Set([
+  'get /health', 'get /', 'post /api/auth/google',
+  'get /api/app-status', // feature switches and maintenance, shown before sign-in
+  'post /api/admin/auth/google', // admin console sign-in (checks the role itself)
+]);
 
 describe('authentication on every route', () => {
   const routes = allRoutes().filter(([method, path]) => !PUBLIC.has(`${method} ${path}`));
@@ -35,7 +39,15 @@ describe('authentication on every route', () => {
   it.each(routes)('%s %s requires a session', async (method, path) => {
     const res = await request(app)[method](path).send({});
     expect(res.status).toBe(401);
-    expect(res.body.code).toBe('UNAUTHORIZED');
+    // Admin console routes ask for an admin sign-in instead.
+    expect(res.body.code).toBe(path.startsWith('/api/admin/') ? 'ADMIN_SIGN_IN' : 'UNAUTHORIZED');
+  });
+
+  it('refuses a student session on every admin route', async () => {
+    const adminRoutes = routes.filter(([, path]) => path.startsWith('/api/admin/'));
+    expect(adminRoutes.length).toBeGreaterThan(5);
+    const results = await Promise.all(adminRoutes.map(([method, path]) => request(app)[method](path).set('Authorization', bearer()).send({})));
+    results.forEach((res) => expect(res.status).toBe(401));
   });
 });
 

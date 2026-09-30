@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { env } = require('../config/env');
-const { unauthorized, upstreamError } = require('../utils/httpError');
+const { ADMIN_ROLES } = require('../config/admin');
+const { unauthorized, forbidden, upstreamError } = require('../utils/httpError');
 const logger = require('../utils/logger');
 
 /**
@@ -17,6 +18,11 @@ const TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
 const USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 const GOOGLE_TIMEOUT_MS = 8000;
 const JWT_OPTIONS = { issuer: 'novard-ai', audience: 'novard-ai-web', algorithm: 'HS256' };
+// Admin console sessions are a different audience: a student token never
+// passes an admin check, and an admin token is never a student session.
+const ADMIN_JWT_OPTIONS = { ...JWT_OPTIONS, audience: 'novard-ai-admin' };
+
+const SUSPENDED_MESSAGE = 'Your Novard-AI account has been suspended. If you think this is a mistake, please contact support.';
 
 async function googleJson(url, options = {}) {
   let response;
@@ -57,13 +63,38 @@ async function verifyGoogleAccessToken(accessToken) {
 /** Create the account on first sign-in. An existing account keeps the name the student set on their profile. */
 async function upsertUser({ email, name, picture }) {
   const update = { $setOnInsert: { email, name, picture } };
+  let user;
   try {
-    return await User.findOneAndUpdate({ email }, update, { upsert: true, new: true }).lean();
+    user = await User.findOneAndUpdate({ email }, update, { upsert: true, new: true }).lean();
   } catch (error) {
     // Two sign-ins racing on the unique email index: the other one created it.
-    if (error?.code === 11000) return User.findOne({ email }).lean();
-    throw error;
+    if (error?.code !== 11000) throw error;
+    user = await User.findOne({ email }).lean();
   }
+  return bootstrapSuperadmin(user);
+}
+
+/**
+ * SUPERADMIN_EMAILS: these accounts become superadmin when they sign in, so the
+ * first admin can be created without touching the database.
+ */
+async function bootstrapSuperadmin(user) {
+  if (!user || user.role === 'superadmin' || !env.superadminEmails.includes(String(user.email).toLowerCase())) return user;
+  const updated = await User.findOneAndUpdate(
+    { _id: user._id },
+    { $set: { role: 'superadmin', status: 'active' }, $unset: { suspendedAt: 1, suspendedReason: 1 } },
+    { new: true }
+  ).lean();
+  // Required lazily: the audit service is not needed by the student sign-in path otherwise.
+  await require('./auditService').record({
+    actor: 'env',
+    action: 'user.role.bootstrap',
+    target: { type: 'user', id: user.email },
+    before: { role: user.role || 'student', status: user.status || 'active' },
+    after: { role: 'superadmin', status: 'active' },
+  });
+  logger.info('SUPERADMIN_EMAILS: promoted an account to superadmin', { email: user.email });
+  return updated;
 }
 
 function issueSessionToken({ email, name }) {
@@ -81,20 +112,70 @@ function verifySessionToken(token) {
   return { email: payload.sub, name: payload.name || '' };
 }
 
+function issueAdminToken({ email, name, role }) {
+  return jwt.sign({ name: name || '', role }, env.jwtSecret, { ...ADMIN_JWT_OPTIONS, subject: email, expiresIn: env.adminJwtExpiresIn });
+}
+
+/**
+ * @returns {{ email: string, name: string, role: string }} from an admin token.
+ * The role in the token is a hint only: requireAdmin re-reads it from the DB.
+ */
+function verifyAdminToken(token) {
+  const payload = jwt.verify(token, env.jwtSecret, {
+    issuer: ADMIN_JWT_OPTIONS.issuer,
+    audience: ADMIN_JWT_OPTIONS.audience,
+    algorithms: [ADMIN_JWT_OPTIONS.algorithm],
+  });
+  if (!payload.sub) throw new Error('Admin token has no subject');
+  return { email: payload.sub, name: payload.name || '', role: payload.role || '' };
+}
+
 const publicUser = (user, fallback = {}) => ({
   name: user?.name || fallback.name || '',
   email: user?.email || fallback.email,
   picture: user?.picture || fallback.picture || '',
   mobile: user?.mobile || '',
   bio: user?.bio || '',
+  role: user?.role || 'student',
 });
+
+const suspended = () => forbidden(SUSPENDED_MESSAGE, { code: 'ACCOUNT_SUSPENDED' });
 
 /** Exchange a Google access token for a Novard-AI session. */
 async function signInWithGoogle(accessToken) {
   const account = await verifyGoogleAccessToken(accessToken);
   const user = await upsertUser(account);
+  if (user?.status === 'suspended') throw suspended();
   const profile = publicUser(user, account);
   return { token: issueSessionToken(profile), user: profile };
 }
 
-module.exports = { signInWithGoogle, verifyGoogleAccessToken, issueSessionToken, verifySessionToken, publicUser };
+/**
+ * Admin console sign-in: the same Google OAuth client, then the role is
+ * checked on the server. A non-admin never receives an admin token.
+ */
+async function signInAsAdmin(accessToken) {
+  const account = await verifyGoogleAccessToken(accessToken);
+  const user = await upsertUser(account);
+  if (!user || !ADMIN_ROLES.includes(user.role)) {
+    logger.warn('Admin sign-in refused: not an admin', { email: account.email });
+    throw forbidden('This Google account is not a Novard-AI admin. Ask a superadmin to grant you access.', { code: 'NOT_ADMIN' });
+  }
+  if (user.status !== 'active') {
+    throw forbidden('This admin account is suspended.', { code: 'ACCOUNT_SUSPENDED' });
+  }
+  const profile = publicUser(user, account);
+  return { token: issueAdminToken(profile), admin: profile };
+}
+
+module.exports = {
+  signInWithGoogle,
+  signInAsAdmin,
+  verifyGoogleAccessToken,
+  issueSessionToken,
+  verifySessionToken,
+  issueAdminToken,
+  verifyAdminToken,
+  publicUser,
+  SUSPENDED_MESSAGE,
+};

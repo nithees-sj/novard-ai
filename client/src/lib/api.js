@@ -8,8 +8,10 @@ import { getToken, SESSION_EXPIRED_EVENT } from './session';
  *              are applied to every request
  *   apiFetch   the same for fetch() (streaming responses, keepalive requests)
  *
- * A 401 from the API means the session is missing or expired: the app is told
- * (SESSION_EXPIRED_EVENT) and signs the student out.
+ * A 401 from the API means the session is missing or expired, and a 403
+ * ACCOUNT_SUSPENDED that the account was suspended: either way the app is told
+ * (SESSION_EXPIRED_EVENT, with the API's message when there is one) and signs
+ * the student out.
  */
 
 export const API_URL = process.env.REACT_APP_API_ENDPOINT || '';
@@ -22,7 +24,14 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const notifyExpired = () => window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+const notifyExpired = (message) => window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }));
+
+/** Does this response end the session? Returns { message } when it does. */
+const endsSession = (status, data) => {
+  if (status === 401) return { message: undefined };
+  if (status === 403 && data?.code === 'ACCOUNT_SUSPENDED') return { message: data.error };
+  return null;
+};
 
 export const api = axios.create({ baseURL: API_URL, timeout: TIMEOUT_MS });
 
@@ -34,7 +43,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) notifyExpired();
+    const ended = endsSession(error.response?.status, error.response?.data);
+    if (ended) notifyExpired(ended.message);
     return Promise.reject(error);
   },
 );
@@ -43,6 +53,12 @@ api.interceptors.response.use(
 export async function apiFetch(path, { headers, ...init } = {}) {
   const response = await fetch(`${API_URL}${path}`, { ...init, headers: { ...authHeaders(), ...headers } });
   if (response.status === 401) notifyExpired();
+  if (response.status === 403) {
+    // Read a copy, so the caller can still read the body.
+    const data = await response.clone().json().catch(() => ({}));
+    const ended = endsSession(403, data);
+    if (ended) notifyExpired(ended.message);
+  }
   return response;
 }
 

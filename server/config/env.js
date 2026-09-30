@@ -51,6 +51,14 @@ const env = Object.freeze({
   jwtSecret,
   jwtSecretGenerated: !configuredJwtSecret && !isProduction,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  // Admin console sessions are separate tokens with a shorter lifetime.
+  adminJwtExpiresIn: process.env.ADMIN_JWT_EXPIRES_IN || '12h',
+  // These accounts become superadmin when they sign in (bootstrap the first admin).
+  superadminEmails: list(process.env.SUPERADMIN_EMAILS).map((e) => e.toLowerCase()),
+  // Shared secret for Cloud Scheduler's POST /api/internal/risk/rescan. Unset = endpoint disabled.
+  riskCronSecret: process.env.RISK_CRON_SECRET || '',
+  // How long runtime settings are cached per instance before checking for changes.
+  settingsCacheMs: int(process.env.SETTINGS_CACHE_MS, isTest ? 0 : 30000),
   // The Google OAuth client ID(s) whose sign-in tokens this API accepts.
   googleClientIds: list(process.env.GOOGLE_CLIENT_ID),
   // Browser origins allowed to call the API. Empty = any origin (the API uses
@@ -64,6 +72,7 @@ const env = Object.freeze({
     apiPerMinute: int(process.env.RATE_LIMIT_API_PER_MINUTE, 300),
     aiPerMinute: int(process.env.RATE_LIMIT_AI_PER_MINUTE, 30),
     authPer15Minutes: int(process.env.RATE_LIMIT_AUTH_PER_15_MIN, 30),
+    adminAuthPer15Minutes: int(process.env.RATE_LIMIT_ADMIN_AUTH_PER_15_MIN, 10),
   },
 });
 

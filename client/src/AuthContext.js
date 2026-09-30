@@ -32,15 +32,23 @@ export function AuthProvider({ children }) {
     setUser(stored);
     setLoading(false);
     if (stored) {
-      api.get('/api/auth/me').catch((error) => {
-        if (error.response?.status !== 401) logger.warn('Could not verify the session', error);
-      });
+      api.get('/api/auth/me')
+        .then(({ data }) => {
+          // Keep the stored profile (and role) in step with the account.
+          if (data?.user?.email === stored.email) setUser(saveSession({ user: data.user }));
+        })
+        .catch((error) => {
+          if (![401, 403].includes(error.response?.status)) logger.warn('Could not verify the session', error);
+        });
     }
   }, []);
 
-  // Any 401 from the API (expired or revoked session) signs the student out.
+  // A 401 (expired or revoked session) or a suspended account signs the student out.
   useEffect(() => {
-    const onExpired = () => signOut();
+    const onExpired = (event) => {
+      signOut();
+      if (event.detail?.message) setAuthError(event.detail.message);
+    };
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, [signOut]);

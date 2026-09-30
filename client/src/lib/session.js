@@ -3,7 +3,7 @@
  * signed in.
  *
  *   auth_token   the API session token (sent as "Authorization: Bearer ...")
- *   auth_user    { name, email, picture, displayName, photoURL }
+ *   auth_user    { name, email, picture, role, displayName, photoURL }
  *   name, email, profilePic   older keys that some pages still read directly
  */
 
@@ -45,6 +45,8 @@ export function saveSession({ token, user }) {
     name: user.name || '',
     email: user.email,
     picture: user.picture || '',
+    // 'student', 'admin' or 'superadmin': admins see a link to the admin console.
+    role: user.role || 'student',
     // Older components read these names.
     displayName: user.name || '',
     photoURL: user.picture || '',

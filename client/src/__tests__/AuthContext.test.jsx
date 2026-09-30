@@ -71,3 +71,25 @@ describe('AuthProvider', () => {
     expect(screen.getByTestId('user')).toHaveTextContent('signed out');
   });
 });
+
+describe('AuthProvider: account changes', () => {
+  beforeEach(() => api.get.mockResolvedValue({ data: {} }));
+
+  it('keeps the role from /api/auth/me, so admins can see the console link', async () => {
+    saveSession({ token: 'tok', user: { name: 'Ada', email: 'ada@example.com' } });
+    api.get.mockResolvedValue({ data: { user: { name: 'Ada', email: 'ada@example.com', role: 'admin' } } });
+    renderAuth();
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('auth_user')).role).toBe('admin'));
+    expect(localStorage.getItem('auth_token')).toBe('tok');
+  });
+
+  it('signs a suspended student out and says why', async () => {
+    saveSession({ token: 'tok', user: { name: 'Alice', email: 'alice@example.com' } });
+    renderAuth();
+    act(() => {
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message: 'Your Novard-AI account has been suspended.' } }));
+    });
+    await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('signed out'));
+    expect(screen.getByTestId('error')).toHaveTextContent('suspended');
+  });
+});

@@ -1,4 +1,6 @@
-const { verifySessionToken } = require('../services/authService');
+const mongoose = require('mongoose');
+const User = require('../models/user');
+const { verifySessionToken, SUSPENDED_MESSAGE } = require('../services/authService');
 const { unauthorized, forbidden } = require('../utils/httpError');
 
 /**
@@ -24,10 +26,14 @@ function requireAuth({ allowBodyToken = false } = {}) {
     if (!token) return next(unauthorized('Please sign in to continue.'));
     try {
       req.user = verifySessionToken(token);
-      return next();
     } catch {
       return next(unauthorized('Your session has expired. Please sign in again.', { code: 'SESSION_EXPIRED' }));
     }
+    // A suspended account is signed out on its next request (one indexed read).
+    if (mongoose.connection.readyState !== 1) return next();
+    return User.findOne({ email: req.user.email }).select('status').lean()
+      .then((user) => next(user?.status === 'suspended' ? forbidden(SUSPENDED_MESSAGE, { code: 'ACCOUNT_SUSPENDED' }) : undefined))
+      .catch(next);
   };
 }
 
@@ -49,4 +55,4 @@ function currentUserId(req, ...claimed) {
   return me;
 }
 
-module.exports = { requireAuth, currentUserId, sameUser };
+module.exports = { requireAuth, currentUserId, sameUser, bearerToken };
