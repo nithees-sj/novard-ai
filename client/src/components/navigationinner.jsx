@@ -12,7 +12,7 @@ const ADMIN_ROLES = ["admin", "superadmin"];
  * account menu. The admin console reuses it with its own account (`account`,
  * `menuLinks`, `onSignOut`) and no bell.
  */
-export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, showBell = true, account, menuLinks, onSignOut, actions = null }) => {
+export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, sidebarOffset = 'ml-64', showBell = true, account, menuLinks, onSignOut, actions = null }) => {
   const auth = useAuth();
   const user = account || auth.user;
   const navigate = useNavigate();
@@ -33,8 +33,8 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, sh
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? 'ml-64' : ''}`}>
-      <div className="relative flex justify-between items-center gap-6 px-6 h-14">
+    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
+      <div className="relative flex justify-between items-center gap-3 sm:gap-6 px-4 sm:px-6 h-14">
         {/* Logo - conditionally rendered */}
         {!hideLogo && (
           <div className="flex items-center space-x-3">

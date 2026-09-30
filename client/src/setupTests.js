@@ -10,3 +10,14 @@ beforeEach(() => localStorage.clear());
 
 // jsdom does not implement layout; chat panels scroll their newest message into view.
 if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = () => {};
+
+// jsdom has no ResizeObserver; the hand-built SVG charts measure their width with it.
+if (typeof global.ResizeObserver === 'undefined') {
+  global.ResizeObserver = class {
+    observe() {}
+
+    unobserve() {}
+
+    disconnect() {}
+  };
+}

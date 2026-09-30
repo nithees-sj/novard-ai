@@ -10,6 +10,7 @@ import { Donut, Heatmap, LineChart } from '../components/profile/charts';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import { currentEmail } from '../lib/session';
+import { Card, SectionTitle, Stat } from '../components/profile/blocks';
 
 
 const MIX_COLORS = {
@@ -27,37 +28,6 @@ const formatMinutes = (m) => {
   const h = Math.floor(mins / 60);
   return mins % 60 ? `${h}h ${mins % 60}m` : `${h}h`;
 };
-
-const Stat = ({ label, value, sub, accent }) => (
-  <div className="bg-white rounded-xl border border-gray-200 p-5 relative overflow-hidden">
-    <span className={`absolute left-0 top-0 bottom-0 w-1 ${accent}`} aria-hidden="true" />
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-    <p className="mt-2 text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
-    <p className="mt-1 text-xs text-gray-500 truncate" title={typeof sub === 'string' ? sub : undefined}>{sub}</p>
-  </div>
-);
-
-const SectionTitle = ({ title, subtitle }) => (
-  <div className="flex items-end justify-between gap-4 pt-4">
-    <div>
-      <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-      {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-    </div>
-  </div>
-);
-
-const Card = ({ title, subtitle, right, children, className = '' }) => (
-  <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h3 className="text-base font-bold text-gray-900">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
-      </div>
-      {right}
-    </div>
-    <div className="mt-5">{children}</div>
-  </div>
-);
 
 const LIBRARY = [
   { key: 'notes', label: 'Notes', icon: '📄' },

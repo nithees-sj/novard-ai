@@ -27,15 +27,17 @@ const niceMax = (v, steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000]) => steps
 /**
  * Line/area chart with hover. points: [{ label, value, sub? }].
  * `max` fixes the y-axis (e.g. 100 for percentages); otherwise it rounds up.
+ * `thresholds` draws dashed reference lines: [{ value, label, color }].
+ * `decimals` keeps fractional axis ticks (for 0-1 scores).
  */
-export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284c7', emptyText = 'No data yet', caption }) => {
+export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284c7', emptyText = 'No data yet', caption, thresholds = [], decimals = 0 }) => {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState(null);
   const pad = { top: 16, right: 12, bottom: 26, left: 36 };
   const w = Math.max(0, width - pad.left - pad.right);
   const h = height - pad.top - pad.bottom;
   const top = max || niceMax(Math.max(1, ...points.map((p) => p.value)));
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(top * f));
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => (decimals ? Number((top * f).toFixed(decimals)) : Math.round(top * f)));
   const x = (i) => pad.left + (points.length <= 1 ? w / 2 : (i / (points.length - 1)) * w);
   const y = (v) => pad.top + h - (v / top) * h;
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ');
@@ -62,6 +64,12 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284
             </g>
           ))}
           {area && <path d={area} fill={`url(#${gradientId})`} />}
+          {thresholds.filter((t) => t.value <= top).map((t) => (
+            <g key={t.label}>
+              <line x1={pad.left} x2={pad.left + w} y1={y(t.value)} y2={y(t.value)} stroke={t.color || '#9ca3af'} strokeDasharray="4 4" />
+              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="text-[10px]" fill={t.color || '#6b7280'}>{t.label}</text>
+            </g>
+          ))}
           <path d={line} fill="none" stroke={color} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((p, i) => (
             <g key={i}>
@@ -246,6 +254,66 @@ export const Heatmap = ({ days }) => {
           Less {HEAT.map((c) => <span key={c} className={`w-3 h-3 rounded-[3px] ${c}`} aria-hidden="true" />)} More
         </span>
       </div>
+    </div>
+  );
+};
+
+/** A tiny trend line for tables and cards. values: numbers (oldest first). */
+export const Sparkline = ({ values = [], width = 96, height = 28, max, color = '#0284c7', label }) => {
+  if (!values.length) return <span className="text-xs text-gray-400">no data</span>;
+  const top = max ?? Math.max(...values, 0.0001);
+  const x = (i) => (values.length === 1 ? width / 2 : (i / (values.length - 1)) * (width - 4) + 2);
+  const y = (v) => height - 3 - (Math.min(v, top) / top) * (height - 6);
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  return (
+    <svg width={width} height={height} role="img" aria-label={label || `trend, latest ${values[values.length - 1]}`} className="shrink-0 overflow-visible">
+      <path d={d} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r="2.5" fill={color} />
+    </svg>
+  );
+};
+
+/** Vertical bars with hover. bars: [{ label, value, sub?, color? }]. */
+export const ColumnChart = ({ bars = [], height = 180, unit = '', color = '#0284c7', emptyText = 'No data yet', caption, format = (v) => v }) => {
+  const [ref, width] = useWidth();
+  const [hover, setHover] = useState(null);
+  const pad = { top: 12, right: 8, bottom: 24, left: 8 };
+  const w = Math.max(0, width - pad.left - pad.right);
+  const h = height - pad.top - pad.bottom;
+  const top = Math.max(...bars.map((b) => b.value), 0) || 1;
+  const slot = bars.length ? w / bars.length : 0;
+  const barW = Math.max(2, Math.min(28, slot * 0.7));
+  const labelEvery = Math.max(1, Math.ceil(bars.length / Math.max(1, Math.floor(w / 56))));
+  return (
+    <div ref={ref} className="relative w-full" style={{ height }}>
+      {!bars.length ? (
+        <div className="flex h-full items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500">{emptyText}</div>
+      ) : width > 0 && (
+        <svg width={width} height={height} role="img" aria-label={caption} onMouseLeave={() => setHover(null)}>
+          <line x1={pad.left} x2={pad.left + w} y1={pad.top + h} y2={pad.top + h} stroke="#e5e7eb" />
+          {bars.map((b, i) => {
+            const bh = (b.value / top) * h;
+            const cx = pad.left + slot * i + slot / 2;
+            return (
+              <g key={`${b.label}-${i}`} onMouseEnter={() => setHover(i)}>
+                <rect x={cx - slot / 2} y={pad.top} width={slot} height={h} fill="transparent" />
+                <rect x={cx - barW / 2} y={pad.top + h - bh} width={barW} height={Math.max(bh, b.value ? 1 : 0)} rx="2" fill={b.color || color} opacity={hover === null || hover === i ? 1 : 0.55} />
+                {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-gray-500 text-[10px]">{b.label}</text>}
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      {hover !== null && bars[hover] && (
+        <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 shadow-lg" style={{ left: pad.left + slot * hover + slot / 2 }}>
+          <span className="block text-sm font-bold tabular-nums text-white">{format(bars[hover].value)}{unit}</span>
+          <span className="block text-[11px] text-gray-300">{bars[hover].sub || bars[hover].label}</span>
+        </div>
+      )}
+      <table className="sr-only">
+        {caption && <caption>{caption}</caption>}
+        <tbody>{bars.map((b, i) => <tr key={i}><td>{b.sub || b.label}</td><td>{format(b.value)}{unit}</td></tr>)}</tbody>
+      </table>
     </div>
   );
 };

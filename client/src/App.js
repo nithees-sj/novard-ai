@@ -20,6 +20,7 @@ const Forum = lazy(() => import("./pages/Forum"));
 const Video = lazy(() => import("./pages/Video"));
 const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
 const Reports = lazy(() => import("./pages/Reports"));
+const AdminApp = lazy(() => import("./pages/admin/AdminApp"));
 
 const LEGACY_ROUTES = {
   '/roadmap': '/career?tool=roadmap',
@@ -68,6 +69,9 @@ function AppRoutes() {
         <Route path="/video" element={protectedRoute(<Video />)} />
         <Route path="/reports" element={protectedRoute(<Reports />)} />
         <Route path="/reports/:ref" element={protectedRoute(<Reports />)} />
+
+        {/* The admin console: its own sign-in and session (pages/admin). */}
+        <Route path="/admin/*" element={<AdminApp />} />
 
         {/* Old standalone copies of the hub tools were removed; their URLs (bookmarks,
             links in earlier Novard Agent chats) now open the same tool inside its hub. */}
