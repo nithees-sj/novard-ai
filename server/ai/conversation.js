@@ -73,14 +73,14 @@ class NovardChatGroq extends ChatGroq {
   }
 }
 
-function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6 } = {}) {
+function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6, model: explicitModel } = {}) {
   // Cached settings (no await here): at their defaults this is the old model, 'low' effort and the given limits.
   const tiers = settings.peek('ai.tiers');
   const params = settings.peek('ai.params');
   const handler = new ModelCallHandler();
   const model = new NovardChatGroq({
     apiKey: env.groqApiKey || 'missing-key',
-    model: tiers[tier] || MODELS[tier] || MODELS.REASONING,
+    model: explicitModel || tiers[tier] || MODELS[tier] || MODELS.REASONING,
     temperature: params.temperature ?? temperature,
     maxTokens: Math.max(64, Math.round(maxTokens * params.maxTokensScale)),
     // gpt-oss models are reasoning models; keep the token budget for the answer.

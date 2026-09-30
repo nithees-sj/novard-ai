@@ -61,3 +61,5 @@ const chatbotConversationSchema = new mongoose.Schema({
 chatbotConversationSchema.index({ userId: 1, updatedAt: -1 });
 
 module.exports = mongoose.model('ChatbotConversation', chatbotConversationSchema);
+// The admin assistant's conversations reuse the card schema (models/adminConversation.js).
+module.exports.actionSchema = actionSchema;

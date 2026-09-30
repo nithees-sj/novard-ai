@@ -9,6 +9,7 @@ const users = require('../../controllers/admin/usersController');
 const reports = require('../../controllers/admin/reportsController');
 const risk = require('../../controllers/admin/riskController');
 const c = require('../../controllers/admin/consoleController');
+const assistant = require('../../controllers/admin/assistantController');
 
 /**
  * The admin console API. Sign-in is the only route without an admin session;
@@ -79,5 +80,12 @@ router.get('/api/admin/moderation/flagged', h(c.flagged));
 
 router.get('/api/admin/announcements', h(c.announcements));
 router.post('/api/admin/announcements', h(c.announce));
+
+router.post('/api/admin/assistant/chat', aiLimiter, h(assistant.chat));
+router.get('/api/admin/assistant/conversations', h(assistant.list));
+router.get('/api/admin/assistant/conversations/:id', h(assistant.get));
+router.patch('/api/admin/assistant/conversations/:id', h(assistant.rename));
+router.delete('/api/admin/assistant/conversations/:id', h(assistant.remove));
+router.post('/api/admin/assistant/conversations/:id/actions/:actionId', h(assistant.decide));
 
 module.exports = router;

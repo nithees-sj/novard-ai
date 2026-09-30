@@ -144,3 +144,33 @@ describe('gateway settings', () => {
     expect(adminPost).not.toHaveBeenCalled();
   });
 });
+
+describe('admin assistant', () => {
+  it('shows the reply with its confirmation card, and Confirm runs it', async () => {
+    signedIn();
+    const reply = { role: 'assistant', content: 'Video Summarizer is CRITICAL. I prepared an investigation.', tools: [{ name: 'risk_board', ok: true }], actions: [{ id: 'abc123', type: 'start_investigation', status: 'proposed', args: { area: 'video-summarizer', summary: 'Investigate video-summarizer' } }] };
+    adminGet.mockImplementation(async (path) => {
+      if (path === '/api/admin/assistant/conversations') return { conversations: [] };
+      // After the first reply the page opens the saved chat.
+      if (path === '/api/admin/assistant/conversations/c1') return { messages: [{ role: 'user', content: 'What is at risk right now?' }, reply] };
+      return { open: [] };
+    });
+    const encoder = new TextEncoder();
+    const frames = [
+      ['meta', { conversationId: 'c1', isNew: true }],
+      ['tool', { name: 'risk_board', args: {} }],
+      ['done', { message: reply }],
+    ];
+    adminFetch.mockResolvedValue({ ok: true, body: new ReadableStream({ start(c) { frames.forEach(([e, d]) => c.enqueue(encoder.encode(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`))); c.close(); } }) });
+    adminPost.mockResolvedValue({ action: { id: 'abc123', type: 'start_investigation', status: 'done', args: { summary: 'Investigate video-summarizer' }, result: { route: '/admin/runs/run_1', label: 'Watch it run' } } });
+
+    renderAt('/admin/assistant');
+    fireEvent.click(await screen.findByText('What is at risk right now?'));
+    expect(await screen.findByText('Video Summarizer is CRITICAL. I prepared an investigation.')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for you')).toBeInTheDocument();
+    expect(JSON.parse(adminFetch.mock.calls[0][1].body)).toMatchObject({ message: 'What is at risk right now?' });
+    fireEvent.click(screen.getByText('Confirm'));
+    expect(await screen.findByText('Watch it run')).toBeInTheDocument();
+    expect(adminPost).toHaveBeenCalledWith('/api/admin/assistant/conversations/c1/actions/abc123', { decision: 'confirm' });
+  });
+});
