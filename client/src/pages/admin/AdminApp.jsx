@@ -23,7 +23,8 @@ const AuditLog = lazy(() => import('./AuditLog'));
 const Assistant = lazy(() => import('./Assistant'));
 
 function AdminRoutes() {
-  const { admin } = useAdminAuth();
+  const { admin, restoring } = useAdminAuth();
+  if (restoring) return <RouteFallback />;
   // Like the student app's protectedRoute, for admins: no admin session, back to the admin sign-in.
   const guarded = (element) => (admin ? element : <Navigate to="/admin/login" replace />);
   return (

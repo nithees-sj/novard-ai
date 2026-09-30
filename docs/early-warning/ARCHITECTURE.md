@@ -100,7 +100,8 @@ supervisor ─(analyze)→ rootCause → verifier ─(revise, ≤1)→ rootCause
 
 ## 6. Admin auth, settings and the console
 
-- `POST /api/admin/auth/google`: same Google verification and user upsert as students (`SUPERADMIN_EMAILS` promotion), then `role ∈ {admin, superadmin}` and `status = active`, else 403 `NOT_ADMIN`. Admin JWT: audience `novard-ai-admin`, `ADMIN_JWT_EXPIRES_IN`.
+- One Google sign-in: `POST /api/auth/google` also returns `admin: {token, admin}` for an active admin, and `POST /api/auth/admin-session` swaps a valid app session for an admin one (role and status re-read). The client stores both and signs out of both together.
+- `POST /api/admin/auth/google` (the `/admin/login` fallback): same Google verification and user upsert as students (`SUPERADMIN_EMAILS` promotion), then `role ∈ {admin, superadmin}` and `status = active`, else 403 `NOT_ADMIN`. Admin JWT: audience `novard-ai-admin`, `ADMIN_JWT_EXPIRES_IN`.
 - `requireAdmin()` reads role and status from the DB on every request; `requireSuperadmin()` for role changes; critical settings are superadmin-only in `settingsService.set()`. Last active superadmin: protected in `adminUserService`.
 - `requireAuth()` does one indexed read: a suspended account gets 403 `ACCOUNT_SUSPENDED` and the client signs out with the server's message.
 - Settings registry in `config/admin.js` (default, validator, group, critical). `settingsService` caches per instance and checks a `__version` document (counter + random stamp) after 30 s. Rate limiters read their limit per request.

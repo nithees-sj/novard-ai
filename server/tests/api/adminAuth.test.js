@@ -187,3 +187,52 @@ describe('GET /api/admin/audit-log', () => {
     expect(filtered.body.entries.map((e) => e.action)).toEqual(['user.role']);
   });
 });
+
+describe('one Google sign-in for students and admins', () => {
+  it('a student gets only the student session, exactly as before', async () => {
+    await User.create({ email: ALICE.email, name: ALICE.name });
+    mockGoogle(ALICE.email);
+    const res = await request(app).post('/api/auth/google').send({ accessToken: 'g' });
+    expect(res.status).toBe(200);
+    expect(Object.keys(res.body).sort()).toEqual(['token', 'user']);
+    expect(res.body.user.role).toBe('student');
+  });
+
+  it('an admin also gets an admin console session from "Continue with Google"', async () => {
+    await User.create({ email: ADA.email, name: ADA.name, role: 'admin' });
+    mockGoogle(ADA.email);
+    const res = await request(app).post('/api/auth/google').send({ accessToken: 'g' });
+    expect(res.body.user.role).toBe('admin');
+    expect(res.body.admin.admin).toMatchObject({ email: ADA.email, role: 'admin' });
+    // Two separate sessions: each works only where it belongs.
+    expect((await request(app).get('/api/admin/auth/me').set('Authorization', `Bearer ${res.body.admin.token}`)).status).toBe(200);
+    expect((await request(app).get('/api/admin/auth/me').set('Authorization', `Bearer ${res.body.token}`)).status).toBe(401);
+    expect((await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.admin.token}`)).status).toBe(401);
+  });
+
+  it('a SUPERADMIN_EMAILS account is an admin from its very first sign-in', async () => {
+    mockGoogle('boss@example.com');
+    const res = await request(app).post('/api/auth/google').send({ accessToken: 'g' });
+    expect(res.body.user.role).toBe('superadmin');
+    expect(res.body.admin.admin.role).toBe('superadmin');
+  });
+
+  it('POST /api/auth/admin-session: admins only, read from the database', async () => {
+    await User.create([{ email: ADA.email, name: ADA.name, role: 'admin' }, { email: ALICE.email, name: ALICE.name }]);
+    const ok = await request(app).post('/api/auth/admin-session').set('Authorization', bearer(ADA));
+    expect(ok.status).toBe(200);
+    expect(ok.body.admin.role).toBe('admin');
+    expect((await request(app).get('/api/admin/auth/me').set('Authorization', `Bearer ${ok.body.token}`)).status).toBe(200);
+
+    const student = await request(app).post('/api/auth/admin-session').set('Authorization', bearer(ALICE));
+    expect(student.status).toBe(403);
+    expect(student.body.code).toBe('NOT_ADMIN');
+    expect(student.body.token).toBeUndefined();
+
+    await User.updateOne({ email: ADA.email }, { role: 'student' });
+    expect((await request(app).post('/api/auth/admin-session').set('Authorization', bearer(ADA))).status).toBe(403);
+    await User.updateOne({ email: ADA.email }, { role: 'admin', status: 'suspended' });
+    expect((await request(app).post('/api/auth/admin-session').set('Authorization', bearer(ADA))).status).toBe(403);
+    expect((await request(app).post('/api/auth/admin-session')).status).toBe(401);
+  });
+});

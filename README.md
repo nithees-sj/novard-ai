@@ -165,7 +165,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 ```
 ┌──────────────────────┐        ┌───────────────────────────┐
-│  React 18 SPA        │ HTTPS  │  Express API (132 routes) │
+│  React 18 SPA        │ HTTPS  │  Express API (133 routes) │
 │  CRA + Tailwind      │ Bearer │  routes → controllers →   │
 │  react-router v6     ├───────►│  services → Mongoose      │
 │  Google OAuth (impl.)│ token  │  JWT sessions, rate limits│
@@ -208,7 +208,7 @@ Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI
 - **Rate limiting** ([middleware/rateLimit.js](server/middleware/rateLimit.js)): 300 requests/min per IP, 30 AI requests/min per student, 30 sign-in attempts per 15 min per IP (all configurable).
 - **Headers & CORS.** `helmet` sets standard security headers; `CORS_ORIGINS` restricts which sites may call the API. Sessions are bearer tokens, not cookies, so there is no CSRF surface.
 - **XSS.** AI output is rendered by `react-markdown` without raw HTML, and Mermaid runs with `securityLevel: 'strict'`.
-- **Admin console.** Admins sign in at `/admin/login` with the same Google client; the server checks `User.role` and issues a separate admin token (its own audience, `ADMIN_JWT_EXPIRES_IN`, default 12h). A student token never passes an admin check and vice versa. Every admin request re-reads the role and status from the database, so a demoted or suspended admin loses access on the next request. Only superadmins grant or revoke admin, and the last active superadmin can never be demoted or suspended. Suspended students are signed out on their next request.
+- **Admin console.** There is one "Continue with Google": when the account is an active admin, `POST /api/auth/google` also returns a separate admin token, so admins reach `/admin` without signing in again (an admin whose admin token expired gets a new one from `POST /api/auth/admin-session` while the app session is valid; `/admin/login` stays as a fallback). Signing out of either signs out of both. The admin token has its own audience and `ADMIN_JWT_EXPIRES_IN` (default 12h). A student token never passes an admin check and vice versa. Every admin request re-reads the role and status from the database, so a demoted or suspended admin loses access on the next request. Only superadmins grant or revoke admin, and the last active superadmin can never be demoted or suspended. Suspended students are signed out on their next request.
 - **Audit log.** Every admin change (settings, gateways, users, reports, approvals, announcements, moderation, email reveals, the assistant's confirmed actions) is written to `AdminAuditLog` with who, what, before and after. The console shows it read-only.
 - **Secrets.** API keys are never returned by any endpoint; the console shows only whether a key is set and its last four characters. Students' emails are masked in the console; revealing one is audited.
 
@@ -298,14 +298,14 @@ Students report problems; Novard-AI turns those reports and its own logs into a 
 
 ```bash
 # 1. Make yourself superadmin (either one)
-#    - put SUPERADMIN_EMAILS=you@gmail.com in server/.env and sign in once, or
+#    - put SUPERADMIN_EMAILS=you@gmail.com in server/.env, restart the API and sign in once, or
 npm run admin:grant --prefix server -- --email you@gmail.com --role superadmin
 
 # 2. Seed a genuine incident in one area (a quiet baseline everywhere, then a spike)
 npm run risk:seed-demo --prefix server -- --area video-summarizer --student you@gmail.com
 ```
 
-Then open `/admin/login` → the risk board shows Video Summarizer at CRITICAL → open it → **Run investigation** and watch the live view → on the findings page approve "known issue notice" (students of that tool now see it; the audit log has the change) → resolve the area's reports with a note (Reports inbox, or approve the recommendation) → sign in to the app as `you@gmail.com`: the bell shows one notification. `npm run risk:seed-demo --prefix server -- --clear` removes everything the demo created.
+Then sign in to the app as `you@gmail.com` and open **Admin console** from the sidebar (or go to `/admin`) → the risk board shows Video Summarizer at CRITICAL → open it → **Run investigation** and watch the live view → on the findings page approve "known issue notice" (students of that tool now see it; the audit log has the change) → resolve the area's reports with a note (Reports inbox, or approve the recommendation) → back in the app, the bell shows one notification. `npm run risk:seed-demo --prefix server -- --clear` removes everything the demo created.
 
 **Scripts:** `admin:grant`, `risk:score` (features → scores → alerts → lifecycle; idempotent), `reports:enrich` and `reports:embed` (resumable batch passes), `db:vector-index` (creates or updates the Atlas Vector Search index; says so if the cluster has no Atlas Search), `risk:seed-demo`.
 
@@ -561,8 +561,9 @@ Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for re
 | --- | --- | --- |
 | `GET` | `/health` | *Public.* Liveness probe; reports whether the database is connected. |
 | `GET` | `/` | *Public.* Plain-text banner. |
-| `POST` | `/api/auth/google` | *Public.* `{accessToken}` from Google → `{token, user}`. Creates the account on first sign-in. |
+| `POST` | `/api/auth/google` | *Public.* `{accessToken}` from Google → `{token, user}`, plus `admin: {token, admin}` when the account is an active admin. Creates the account on first sign-in. |
 | `GET` | `/api/auth/me` | The signed-in student's account. |
+| `POST` | `/api/auth/admin-session` | An admin's app session → `{token, admin}` for the console (role and status re-read; 403 `NOT_ADMIN` otherwise). |
 | `POST` | `/updateUserProfile` | `{name?, mobile?, bio?}` → `{success, user, token}` (a fresh token carrying the new name). |
 
 </details>

@@ -83,6 +83,33 @@ describe('AuthProvider: account changes', () => {
     expect(localStorage.getItem('auth_token')).toBe('tok');
   });
 
+  it('one Google sign-in also opens the admin console for an admin, and sign-out ends both', async () => {
+    api.post.mockResolvedValue({ data: {
+      token: 'app-tok',
+      user: { name: 'Ada', email: 'ada@example.com', role: 'superadmin' },
+      admin: { token: 'admin-tok', admin: { name: 'Ada', email: 'ada@example.com', role: 'superadmin' } },
+    } });
+    let auth;
+    const Grab = () => { auth = useAuth(); return null; };
+    render(<AuthProvider><Grab /></AuthProvider>);
+    await act(async () => { await googleOptions.onSuccess({ access_token: 'g' }); });
+    expect(localStorage.getItem('auth_token')).toBe('app-tok');
+    expect(localStorage.getItem('admin_token')).toBe('admin-tok');
+
+    act(() => auth.signOut());
+    expect(localStorage.getItem('auth_token')).toBeNull();
+    expect(localStorage.getItem('admin_token')).toBeNull();
+  });
+
+  it('a student sign-in leaves no admin session behind', async () => {
+    localStorage.setItem('admin_token', 'old-admin-tok');
+    api.post.mockResolvedValue({ data: { token: 'app-tok', user: { name: 'Sam', email: 'sam@example.com', role: 'student' } } });
+    renderAuth();
+    await act(async () => { await googleOptions.onSuccess({ access_token: 'g' }); });
+    expect(localStorage.getItem('auth_token')).toBe('app-tok');
+    expect(localStorage.getItem('admin_token')).toBeNull();
+  });
+
   it('signs a suspended student out and says why', async () => {
     saveSession({ token: 'tok', user: { name: 'Alice', email: 'alice@example.com' } });
     renderAuth();

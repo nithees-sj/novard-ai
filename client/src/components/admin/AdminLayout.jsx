@@ -4,6 +4,7 @@ import { Navigationinner } from '../navigationinner';
 import Sidebar from '../Sidebar';
 import { Icon } from '../learning/LearningUI';
 import { useAdminAuth } from '../../AdminAuthContext';
+import { useAuth } from '../../AuthContext';
 import { adminGet, adminPost } from '../../lib/adminApi';
 
 const item = (name, icon, route) => ({ name, route, icon: <Icon name={icon} className="h-5 w-5" /> });
@@ -63,6 +64,7 @@ function AlertBanner() {
  */
 export default function AdminLayout({ title, children, wide = false }) {
   const { admin, signOut } = useAdminAuth();
+  const { signOut: signOutOfApp } = useAuth();
   const navigate = useNavigate();
   const [drawer, setDrawer] = useState(false);
   return (
@@ -74,7 +76,12 @@ export default function AdminLayout({ title, children, wide = false }) {
         showBell={false}
         account={admin ? { ...admin, displayName: admin.name } : null}
         menuLinks={[{ label: 'Back to Novard-AI', onClick: () => navigate('/home') }]}
-        onSignOut={() => signOut()}
+        onSignOut={() => {
+          // One session: leaving the console signs out of the app too.
+          signOut();
+          signOutOfApp();
+          navigate('/');
+        }}
         actions={(
           <button type="button" onClick={() => setDrawer(true)} className="-ml-2 rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden" aria-label="Open the menu">
             <Icon name="menu" className="h-5 w-5" />

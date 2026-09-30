@@ -151,13 +151,37 @@ const publicUser = (user, fallback = {}) => ({
 
 const suspended = () => forbidden(SUSPENDED_MESSAGE, { code: 'ACCOUNT_SUSPENDED' });
 
-/** Exchange a Google access token for a Novard-AI session. */
+const isActiveAdmin = (user) => Boolean(user) && ADMIN_ROLES.includes(user.role) && user.status !== 'suspended';
+
+/**
+ * Exchange a Google access token for a Novard-AI session. One sign-in for
+ * everyone: an active admin also gets an admin console session (`admin`), so
+ * "Continue with Google" is all an admin needs. Students get exactly the
+ * session they always did.
+ */
 async function signInWithGoogle(accessToken) {
   const account = await verifyGoogleAccessToken(accessToken);
   const user = await upsertUser(account);
   if (user?.status === 'suspended') throw suspended();
   const profile = publicUser(user, account);
-  return { token: issueSessionToken(profile), user: profile };
+  return {
+    token: issueSessionToken(profile),
+    user: profile,
+    ...(isActiveAdmin(user) ? { admin: { token: issueAdminToken(profile), admin: profile } } : {}),
+  };
+}
+
+/**
+ * An admin console session for someone already signed in to the app (their
+ * admin token expired, but their app session did not). The role is read from
+ * the database, never from the token.
+ */
+async function adminSessionFor(email) {
+  const user = await User.findOne({ email }).lean();
+  if (user?.status === 'suspended') throw suspended();
+  if (!isActiveAdmin(user)) throw forbidden('This account is not a Novard-AI admin.', { code: 'NOT_ADMIN' });
+  const profile = publicUser(user);
+  return { token: issueAdminToken(profile), admin: profile };
 }
 
 /**
@@ -181,6 +205,7 @@ async function signInAsAdmin(accessToken) {
 module.exports = {
   signInWithGoogle,
   signInAsAdmin,
+  adminSessionFor,
   verifyGoogleAccessToken,
   issueSessionToken,
   verifySessionToken,

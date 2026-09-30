@@ -1,4 +1,4 @@
-const { signInWithGoogle } = require('../services/authService');
+const { signInWithGoogle, adminSessionFor } = require('../services/authService');
 const { getProfile } = require('../services/userService');
 const { text } = require('../utils/validate');
 
@@ -11,4 +11,9 @@ exports.googleSignIn = async (req, res) => {
 /** GET /api/auth/me -> {user}. Lets the client check that its session is still valid. */
 exports.me = async (req, res) => {
   res.json({ user: await getProfile(req.user.email) });
+};
+
+/** POST /api/auth/admin-session -> {token, admin} for a signed-in admin (403 NOT_ADMIN otherwise). */
+exports.adminSession = async (req, res) => {
+  res.json(await adminSessionFor(req.user.email));
 };

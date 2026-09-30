@@ -1,17 +1,24 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { adminApi, clearAdminSession, getAdminToken, getStoredAdmin, saveAdminSession, ADMIN_SESSION_EVENT } from './lib/adminApi';
-import { errorMessage } from './lib/api';
+import { api, errorMessage } from './lib/api';
+import { getStoredUser, getToken } from './lib/session';
+
+const ADMIN_ROLES = ['admin', 'superadmin'];
 
 const AdminAuthContext = createContext(null);
 
 /**
- * The admin console's session: signed in with Google through the same OAuth
- * client as the app; the server checks the role and returns a separate,
- * shorter admin token. A non-admin gets a clear message and no token.
+ * The admin console's session. Normally it comes with the app's own
+ * "Continue with Google" (the API returns an admin session for admins); an
+ * admin still signed in to the app whose admin session expired gets a new one
+ * here without signing in again. /admin/login remains for everything else.
+ * The server checks the role every time; a non-admin never gets a token.
  */
 export function AdminAuthProvider({ children }) {
   const [admin, setAdmin] = useState(() => (getAdminToken() ? getStoredAdmin() : null));
+  // Signed in to the app as an admin, but no admin session yet: fetch one before deciding.
+  const [restoring, setRestoring] = useState(() => !getAdminToken() && Boolean(getToken()) && ADMIN_ROLES.includes(getStoredUser()?.role));
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,6 +27,14 @@ export function AdminAuthProvider({ children }) {
     setAdmin(null);
     if (message) setError(message);
   }, []);
+
+  useEffect(() => {
+    if (!restoring) return;
+    api.post('/api/auth/admin-session')
+      .then(({ data }) => setAdmin(saveAdminSession(data)))
+      .catch(() => {}) // not (or no longer) an admin: the admin sign-in page is shown
+      .finally(() => setRestoring(false));
+  }, [restoring]);
 
   // Confirm the stored session (and the current role) with the server.
   useEffect(() => {
@@ -60,11 +75,11 @@ export function AdminAuthProvider({ children }) {
     googleLogin();
   }, [googleLogin]);
 
-  const value = useMemo(() => ({ admin, signingIn, error, signIn, signOut }), [admin, signingIn, error, signIn, signOut]);
+  const value = useMemo(() => ({ admin, restoring, signingIn, error, signIn, signOut }), [admin, restoring, signingIn, error, signIn, signOut]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }
 
-/** { admin, signingIn, error, signIn, signOut } */
+/** { admin, restoring, signingIn, error, signIn, signOut } */
 export function useAdminAuth() {
   const context = useContext(AdminAuthContext);
   if (!context) throw new Error('useAdminAuth must be used within an AdminAuthProvider');

@@ -2,7 +2,10 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useGoogleLogin } from '@react-oauth/google';
 import { api, errorMessage } from './lib/api';
 import { clearSession, restoreSession, saveSession, SESSION_EXPIRED_EVENT } from './lib/session';
+import { clearAdminSession, saveAdminSession } from './lib/adminApi';
 import logger from './lib/logger';
+
+const ADMIN_ROLES = ['admin', 'superadmin'];
 
 const AuthContext = createContext(null);
 
@@ -20,8 +23,10 @@ export function AuthProvider({ children }) {
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState(null);
 
+  // One session: signing out of the app also ends the admin console session.
   const signOut = useCallback(() => {
     clearSession();
+    clearAdminSession();
     setUser(null);
     window.google?.accounts?.id?.disableAutoSelect();
   }, []);
@@ -35,7 +40,11 @@ export function AuthProvider({ children }) {
       api.get('/api/auth/me')
         .then(({ data }) => {
           // Keep the stored profile (and role) in step with the account.
-          if (data?.user?.email === stored.email) setUser(saveSession({ user: data.user }));
+          if (data?.user?.email === stored.email) {
+            setUser(saveSession({ user: data.user }));
+            // No longer an admin: drop any admin console session too.
+            if (!ADMIN_ROLES.includes(data.user.role)) clearAdminSession();
+          }
         })
         .catch((error) => {
           if (![401, 403].includes(error.response?.status)) logger.warn('Could not verify the session', error);
@@ -61,6 +70,10 @@ export function AuthProvider({ children }) {
       try {
         const { data } = await api.post('/api/auth/google', { accessToken: tokenResponse.access_token });
         setUser(saveSession(data));
+        // "Continue with Google" is the only sign-in an admin needs: the API returns
+        // an admin console session too when the account is an admin.
+        if (data.admin?.token) saveAdminSession(data.admin);
+        else clearAdminSession();
       } catch (error) {
         logger.error('Sign-in failed', error);
         setAuthError(errorMessage(error, 'Sign-in failed. Please try again.'));

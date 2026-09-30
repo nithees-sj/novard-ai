@@ -33,6 +33,7 @@ jest.mock('../../../lib/api', () => ({
 }));
 
 const { adminApi } = require('../../../lib/adminApi');
+const { api } = require('../../../lib/api');
 
 const signedIn = () => {
   localStorage.setItem('admin_token', 'tok');
@@ -73,6 +74,7 @@ beforeEach(() => {
     return {};
   });
   adminApi.get.mockResolvedValue({ data: { admin: { email: 'ada@example.com', role: 'admin', name: 'Ada Admin' } } });
+  api.get.mockResolvedValue({ data: {} });
 });
 
 describe('admin console routing', () => {
@@ -89,6 +91,24 @@ describe('admin console routing', () => {
     await Promise.all(mockGoogleHooks.slice(-2).map((o) => o.onSuccess({ access_token: 'g' })));
     expect(await screen.findByRole('alert')).toHaveTextContent('not a Novard-AI admin');
     expect(localStorage.getItem('admin_token')).toBeNull();
+  });
+
+  it('opens straight into the console for an admin signed in to the app', async () => {
+    localStorage.setItem('auth_token', 'app-tok');
+    localStorage.setItem('auth_user', JSON.stringify({ email: 'ada@example.com', name: 'Ada Admin', role: 'superadmin' }));
+    api.post.mockResolvedValue({ data: { token: 'admin-tok', admin: { email: 'ada@example.com', name: 'Ada Admin', role: 'superadmin' } } });
+    renderAt('/admin/risk');
+    expect(await screen.findByText('Video Summarizer')).toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledWith('/api/auth/admin-session');
+    expect(localStorage.getItem('admin_token')).toBe('admin-tok');
+  });
+
+  it('still shows the admin sign-in to a student signed in to the app', async () => {
+    localStorage.setItem('auth_token', 'app-tok');
+    localStorage.setItem('auth_user', JSON.stringify({ email: 'sam@example.com', name: 'Sam', role: 'student' }));
+    renderAt('/admin/risk');
+    expect(await screen.findByText('Sign in to NOVARD-AI admin')).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalledWith('/api/auth/admin-session');
   });
 
   it('renders the console inside the app\'s own shell: the same sidebar and header', async () => {
