@@ -42,6 +42,9 @@ function messageForModel(m) {
   return [m.content, ...cards].filter(Boolean).join('\n\n');
 }
 
+/** gpt-oss sometimes leaves tool-citation markers like "【functions.risk_board】" in its text. */
+const cleanReply = (content) => (typeof content === 'string' ? content.replace(/【[^】]{0,80}】/g, '').replace(/[ \t]+\n/g, '\n').trim() : '');
+
 const trimResult = (result, max) => {
   const json = JSON.stringify(result ?? null);
   return json.length > max ? `${json.slice(0, max)}…(truncated)` : json;
@@ -146,7 +149,7 @@ async function runTurn({ conversationId, admin, input, emit = () => {}, signal, 
         onWait: (seconds) => emit('status', { text: `The AI is busy - continuing in ${seconds}s…` }),
       });
       const calls = reply.tool_calls || [];
-      const content = typeof reply.content === 'string' ? reply.content.trim() : '';
+      const content = cleanReply(reply.content);
 
       if (!calls.length) {
         // Evidence guard (EWDI): live data answered without looking anything up -> look it up, once.
@@ -179,7 +182,7 @@ async function runTurn({ conversationId, admin, input, emit = () => {}, signal, 
             new AIMessage(text),
             new HumanMessage(`(system) These figures are not in any tool result: ${bad.join(', ')}. Rewrite your answer using only figures from the tool results (or none). Reply with the answer only.`),
           ], { signal }));
-          const candidate = typeof fixed.content === 'string' ? fixed.content.trim() : '';
+          const candidate = cleanReply(fixed.content);
           if (candidate) {
             text = candidate;
             bad = unsupportedFigures(text, toolResults);
@@ -206,4 +209,4 @@ async function runTurn({ conversationId, admin, input, emit = () => {}, signal, 
   });
 }
 
-module.exports = { runTurn, messageForModel, systemPrompt, spentSince };
+module.exports = { runTurn, messageForModel, systemPrompt, spentSince, cleanReply };

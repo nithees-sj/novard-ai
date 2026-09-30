@@ -184,9 +184,16 @@ function cleanHypotheses(raw, allowed) {
   return hyps.map((h) => ({ ...h, confidence: Math.min(h.confidence, 0.35), uncited: true }));
 }
 
+/** A revision that could not run keeps the earlier, cited analysis rather than downgrading it. */
+const keepEarlier = (state, reason) => ((state.hypotheses || []).some((h) => !h.degraded)
+  ? { runErrors: [`root cause (revision): ${reason}`], _trace: `revision failed (${reason}): kept the earlier analysis` }
+  : null);
+
 function makeRootCause(deps) {
   return async (state) => {
     if (exhausted(state.usage, state.budget)) {
+      const kept = keepEarlier(state, 'budget spent');
+      if (kept) return kept;
       return { hypotheses: [statisticalHypothesis(state)], recommendations: [], degraded: true, runErrors: ['root cause: budget spent'], _trace: 'budget spent: statistical explanation' };
     }
     const evidence = state.evidence || [];
@@ -218,6 +225,8 @@ Give 1-3 hypotheses and 2-4 recommendations. JSON only.`;
         _trace: `${hypotheses.length} hypothesis(es), ${recommendations.length} recommendation(s) by ${res.model}`,
       };
     } catch (error) {
+      const kept = keepEarlier(state, error.message);
+      if (kept) return kept;
       return { hypotheses: [statisticalHypothesis(state)], recommendations: [], degraded: true, runErrors: [`root cause: ${error.message}`], _trace: 'model unavailable: statistical explanation' };
     }
   };

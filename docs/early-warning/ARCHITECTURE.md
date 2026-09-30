@@ -42,6 +42,7 @@ This document describes the code as it was shipped (branch `feature/early-warnin
 | Choke points | `ai/groqClient.complete()`, a `ChatGroq` subclass at its `completionWithRetry()` (all LangChain chat: chats, memory summaries, agent, forum, titles) with a callback handler for token counts, `ai/gemini.geminiGenerate()`, plus the new `callJson()`, `transcribe()` and `embedTexts()`. |
 | Fail-over | A 429 that waiting will not fix (daily quota, or "try again in" > 30 s) moves to the next model of the tier (`ai.failover` setting). The per-minute "try again in N s" is still waited out by `withRateLimitRetry`, as before. |
 | 5xx | Exponential backoff, 3 tries per model (the SDK's own retries are kept for the existing features). |
+| Gemini | 30 s request timeout (the SDK has none), 2 tries per model, then `GEMINI_FALLBACKS`, then Groq. Found in a live run: an unbounded Gemini call held the verifier for 3.5 minutes. |
 | JSON | New tasks use Groq `json_object` mode (no strict schema: Groq rejects a whole reply that breaks one), `parseModelJson`, and one retry with "not valid JSON" in context. |
 | Final error | `AIUnavailableError` (502, `AI_UNAVAILABLE`), so callers degrade deterministically. |
 | Admin switches | `usageGuard.beforeCall()` before every call: provider on, the feature's tool on, and for non-essential features the global daily USD cap (`UsageCounter spend:<day>`). `aiFeature()` also counts the student's daily quota. All off by default. |

@@ -14,7 +14,7 @@ let client;
 function embedModel() {
   if (!client) {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
-    client = new GoogleGenerativeAI(env.geminiApiKey).getGenerativeModel({ model: MODELS.EMBED });
+    client = new GoogleGenerativeAI(env.geminiApiKey).getGenerativeModel({ model: MODELS.EMBED }, { timeout: 30000 });
   }
   return client;
 }

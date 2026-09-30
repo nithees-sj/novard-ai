@@ -125,6 +125,16 @@ describe('fail-over and retries', () => {
     expect((await ModelCall.find().sort({ createdAt: 1 }).lean()).map((c) => c.outcome)).toEqual(['invalid_json', 'ok']);
   });
 
+  it('logs JSON calls against the caller\'s run and waits out the per-minute limit', async () => {
+    mockCreate.mockRejectedValueOnce(apiError(429, 'Rate limit reached on tokens per minute (TPM). Please try again in 0.1s.'))
+      .mockResolvedValueOnce(reply('{"finding":"ok"}'));
+    const out = await runWithAi({ feature: 'risk.investigation', runId: 'run_abc', stepSeq: 4 }, () => callJson({ task: 'risk_lane', system: 's', user: 'u' }));
+    expect(out.data).toEqual({ finding: 'ok' });
+    expect(mockCreate.mock.calls.map((c) => c[0].model)).toEqual([MODELS.FAST, MODELS.FAST]);
+    const rows = await ModelCall.find().sort({ createdAt: 1 }).lean();
+    expect(rows.map((r) => [r.outcome, r.runId, r.stepSeq, r.task])).toEqual([['429', 'run_abc', 4, 'risk_lane'], ['ok', 'run_abc', 4, 'risk_lane']]);
+  }, 10000);
+
   it('routes the verifier away from the model that wrote the analysis', async () => {
     mockCreate.mockResolvedValue(reply('{"verdict":"accept"}'));
     await callJson({ task: 'risk_verifier', system: 's', user: 'u', avoid: MODELS.FAST });

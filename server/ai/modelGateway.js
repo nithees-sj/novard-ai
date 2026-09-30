@@ -1,7 +1,8 @@
 const { MODELS, route, costUsd } = require('../config/ai');
 const { env } = require('../config/env');
 const settings = require('../services/settingsService');
-const { rateLimitWait } = require('./errors');
+const { rateLimitWait, withRateLimitRetry } = require('./errors');
+const { currentAi } = require('./aiContext');
 const { recordModelCall, outcomeOf } = require('./modelCallLog');
 const { beforeCall } = require('./usageGuard');
 const { parseModelJson } = require('../utils/parseModelJson');
@@ -25,6 +26,8 @@ const logger = require('../utils/logger');
  */
 
 const BACKOFF_BASE_MS = env.isTest ? 1 : 1000;
+// Gemini's SDK has no default timeout; a stuck call once held an investigation for 3.5 minutes.
+const GEMINI_TIMEOUT_MS = 30000;
 const MAX_5XX_TRIES = 3;
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
@@ -164,7 +167,7 @@ async function geminiJson({ model, system, user, maxTokens, temperature }) {
     model,
     systemInstruction: system,
     generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens, temperature },
-  }).generateContent(user);
+  }, { timeout: GEMINI_TIMEOUT_MS }).generateContent(user);
   const usage = response.response.usageMetadata || {};
   return { result: response.response.text(), tokensIn: usage.promptTokenCount || 0, tokensOut: usage.candidatesTokenCount || 0 };
 }
@@ -178,7 +181,9 @@ async function geminiJson({ model, system, user, maxTokens, temperature }) {
  *
  * @returns {Promise<{data: object, model: string, provider: string, tokensIn: number, tokensOut: number, usd: number, attempts: number}>}
  */
-async function callJson({ task, system, user, maxTokens = 800, temperature = 0.2, attempt = 0, confidence, avoid, context }) {
+async function callJson({ task, system, user, maxTokens = 800, temperature = 0.2, attempt = 0, confidence, avoid, context, onWait }) {
+  // The caller's AI context (feature, run id, step, conversation), so every call is logged against it.
+  const ctx = { ...currentAi(), ...(context || {}), task };
   const live = await liveModelSettings();
   const geminiAvailable = Boolean(env.geminiApiKey) && live['ai.providers'].gemini !== false;
   const pick = route(task, { attempt, confidence, overrides: live['ai.routes'], avoid, geminiAvailable });
@@ -194,38 +199,42 @@ async function callJson({ task, system, user, maxTokens = 800, temperature = 0.2
   const usage = { tokensIn: 0, tokensOut: 0, usd: 0, attempts: 0 };
   let lastError;
   for (const candidate of candidates) {
+    // Groq: the tier's fail-over chain. Gemini: its configured fallbacks (flash-lite), as ai/gemini.js does.
     const chain = candidate.provider === 'groq'
       ? unique([candidate.model, ...chainFor(candidate.model, live)]).filter((m) => m !== avoid)
-      : [candidate.model];
+      : unique([candidate.model, ...MODELS.GEMINI_FALLBACKS]).filter((m) => m !== avoid);
     let repair = '';
     for (let jsonTry = 0; jsonTry < 2; jsonTry += 1) {
       try {
         // eslint-disable-next-line no-await-in-loop
-        await beforeCall({ provider: candidate.provider }, context);
+        await beforeCall({ provider: candidate.provider }, ctx);
         // eslint-disable-next-line no-await-in-loop
         const out = await withFailover(chain, (model) => {
-          usage.attempts += 1;
-          return logged({ provider: candidate.provider, model, attempt: usage.attempts, routedBy: candidate.routedBy, context: { ...context, task } }, async () => {
-            const res = candidate.provider === 'gemini'
-              ? await geminiJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp })
-              : await groqJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp, reasoningEffort: candidate.reasoningEffort || params.reasoningEffort });
-            usage.tokensIn += res.tokensIn;
-            usage.tokensOut += res.tokensOut;
-            usage.usd += costUsd(model, res.tokensIn, res.tokensOut);
-            let data;
-            try {
-              data = parseModelJson(res.result, { context: task });
-            } catch (parseError) {
-              throw Object.assign(new Error(`${task}: the model did not return valid JSON (${String(parseError.message).slice(0, 120)})`), {
-                code: 'INVALID_JSON', tokensIn: res.tokensIn, tokensOut: res.tokensOut,
-              });
-            }
-            if (!data || typeof data !== 'object' || Array.isArray(data)) {
-              throw Object.assign(new Error(`${task}: the model did not return a JSON object`), { code: 'INVALID_JSON', tokensIn: res.tokensIn, tokensOut: res.tokensOut });
-            }
-            return { ...res, result: { data, model } };
-          });
-        });
+          // The per-minute limit ("try again in N s") is waited out, as everywhere else in the app.
+          return withRateLimitRetry(() => {
+            usage.attempts += 1;
+            return logged({ provider: candidate.provider, model, attempt: usage.attempts, routedBy: candidate.routedBy, context: ctx }, async () => {
+              const res = candidate.provider === 'gemini'
+                ? await geminiJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp })
+                : await groqJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp, reasoningEffort: candidate.reasoningEffort || params.reasoningEffort });
+              usage.tokensIn += res.tokensIn;
+              usage.tokensOut += res.tokensOut;
+              usage.usd += costUsd(model, res.tokensIn, res.tokensOut);
+              let data;
+              try {
+                data = parseModelJson(res.result, { context: task });
+              } catch (parseError) {
+                throw Object.assign(new Error(`${task}: the model did not return valid JSON (${String(parseError.message).slice(0, 120)})`), {
+                  code: 'INVALID_JSON', tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+                });
+              }
+              if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw Object.assign(new Error(`${task}: the model did not return a JSON object`), { code: 'INVALID_JSON', tokensIn: res.tokensIn, tokensOut: res.tokensOut });
+              }
+              return { ...res, result: { data, model } };
+            });
+          }, { retries: 2, onWait });
+        }, { serverTries: candidate.provider === 'gemini' ? 2 : MAX_5XX_TRIES });
         return { data: out.data, model: out.model, provider: candidate.provider, ...usage };
       } catch (error) {
         lastError = error;

@@ -133,6 +133,18 @@ describe('the investigation graph', () => {
     expect(more.calls.filter((c) => c.task === 'risk_root_cause').length).toBe(2);
   }, 60000);
 
+  it('a revision that fails keeps the earlier, cited analysis', async () => {
+    await seed();
+    const { callJson, calls } = fakeModels({ ...SCRIPT, risk_root_cause: [citingRootCause, new Error('502 AI unavailable')], risk_verifier: [{ verdict: 'revise', note: 'tighten it' }] });
+    const run = await runAssessment({ area: 'video-summarizer', windowEnd: WINDOW, actor: 'system', deps: { callJson } });
+    expect(calls.filter((c) => c.task === 'risk_root_cause')).toHaveLength(2);
+    expect(run.outcome).toBe('investigated');
+    expect(run.assessment.hypotheses[0]).toMatchObject({ confidence: 0.8 });
+    expect(run.assessment.hypotheses[0].degraded).toBeUndefined();
+    expect(run.assessment.recommendations.length).toBe(3);
+    expect(run.assessment.runErrors.join(' ')).toMatch(/revision/);
+  }, 60000);
+
   it('a full model outage still ends with a degraded, cited, statistics-only assessment', async () => {
     await seed();
     const down = new Error('502 AI unavailable');

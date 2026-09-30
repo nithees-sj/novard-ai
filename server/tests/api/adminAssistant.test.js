@@ -74,6 +74,12 @@ describe('numbers must come from tool results', () => {
     expect(bad.message.content).toMatch(/could not be verified/);
   });
 
+  it('removes gpt-oss tool-citation markers from the reply', async () => {
+    await seedReports(3);
+    const { message } = await chat('How many reports are open?', [{ tools: [{ name: 'platform_stats' }] }, { text: 'There are 3 open reports【functions.platform_stats】.' }]);
+    expect(message.content).toBe('There are 3 open reports.');
+  });
+
   it('understands rounding and percentages', () => {
     const results = [{ errorRate: 0.4567, usd: 0.012345, calls: 1234 }];
     expect(unsupportedFigures('Errors are 46% on 1,234 calls costing $0.0123.', results)).toEqual([]);
