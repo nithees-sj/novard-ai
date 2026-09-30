@@ -4,7 +4,7 @@ import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
 } from './learning/LearningUI';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
@@ -13,6 +13,7 @@ import { countCorrect } from '../lib/quiz';
 
 const NotesInlineView = () => {
   const [notes, setNotes] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -59,6 +60,8 @@ const NotesInlineView = () => {
     } catch (error) {
       logger.error('Error loading notes', error);
       showToast(errorMessage(error, 'Could not load your notes.'));
+    } finally {
+      setLoaded(true);
     }
   };
 
@@ -123,7 +126,7 @@ const NotesInlineView = () => {
       });
       if (!response.data?.response) throw new Error('Invalid response from server');
       setChatMessages([...updatedMessages, { role: 'assistant', content: response.data.response }]);
-      await loadUserNotes();
+      loadUserNotes(); // refresh the list in the background - the result is already on screen
       return true;
     } catch (error) {
       logger.error('Error sending message', error);
@@ -149,7 +152,7 @@ const NotesInlineView = () => {
         noteId: selectedNote._id
       });
       setSummary(response.data.summary);
-      await loadUserNotes();
+      loadUserNotes(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error generating summary', error);
       showToast(errorMessage(error, 'Error generating summary. Please try again.'));
@@ -181,7 +184,7 @@ const NotesInlineView = () => {
       setCurrentQuizId(response.data.quizId);
       setQuizAnswers({});
       setQuizScore(null);
-      await loadUserNotes();
+      loadUserNotes(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error generating quiz', error);
       setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
@@ -267,6 +270,7 @@ const NotesInlineView = () => {
       <Workspace
         side={(
           <SideList
+            loading={!loaded && sidebarTab === 'notes'}
             title={sidebarTab === 'notes' ? 'Your notes' : 'Quizzes'}
             count={sidebarTab === 'notes' ? notes.length : (selectedNote?.quizzes?.length || 0)}
             action={(
@@ -385,6 +389,8 @@ const NotesInlineView = () => {
               )}
             </ItemFrame>
           </>
+        ) : !loaded ? (
+          <LoadingPanel label="Loading your notes…" />
         ) : (
           <Panel fill>
             <EmptyState icon="book" title="Welcome to Notes & Quiz" text="Upload a PDF to chat with it, get a summary and test yourself with a quiz."

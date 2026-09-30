@@ -206,7 +206,7 @@ async function searchYouTube(query, maxResults) {
       .map((video) => ({
         title: video.title || 'No title',
         description: video.description || 'No description',
-        thumbnail: video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url || `https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`,
+        thumbnail: video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url || `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`, // hqdefault always exists; maxresdefault often does not
         url: `https://www.youtube.com/watch?v=${video.id}`,
         duration: video.length?.text || 'Unknown',
         reason: `Found using keywords: ${query}`,

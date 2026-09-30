@@ -50,7 +50,7 @@ const formatDuration = (length) => {
 
 function bestThumbnail(item) {
   const thumbnails = Array.isArray(item.thumbnail) ? item.thumbnail : [];
-  const fallback = `https://img.youtube.com/vi/${item.id}/maxresdefault.jpg`;
+  const fallback = `https://img.youtube.com/vi/${item.id}/hqdefault.jpg`; // always exists, unlike maxresdefault
   if (!thumbnails.length) return fallback;
   return ['maxresdefault', 'hqdefault', 'mqdefault']
     .map((size) => thumbnails.find((t) => t.url?.includes(size))?.url)

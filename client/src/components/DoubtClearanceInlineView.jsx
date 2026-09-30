@@ -5,7 +5,7 @@ import { currentEmail } from '../lib/session';
 import NewDoubtForm from './NewDoubtForm';
 import {
   Workspace, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
 } from './learning/LearningUI';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
@@ -16,6 +16,7 @@ import { readOpenParam, clearOpenParam } from '../lib/openParam';
 const DoubtClearanceInlineView = () => {
   const [openId] = useState(readOpenParam); // ?open=<id>, e.g. from the Novard Agent
   const [doubts, setDoubts] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [selectedDoubt, setSelectedDoubt] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,6 +61,8 @@ const DoubtClearanceInlineView = () => {
       logger.error('Error loading doubts', error);
       showToast(errorMessage(error, 'Could not load your doubts.'), 'error');
       return [];
+    } finally {
+      setLoaded(true);
     }
   };
 
@@ -114,8 +117,7 @@ const DoubtClearanceInlineView = () => {
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
-      // One reload brings the stored chat (and message count) back in step.
-      await loadUserDoubts();
+      loadUserDoubts(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error sending message', error);
       showToast(errorMessage(error, 'Could not send your message. Please try again.'), 'error');
@@ -142,7 +144,7 @@ const DoubtClearanceInlineView = () => {
         userId: currentEmail()
       });
       setSummary(response.data.summary);
-      await loadUserDoubts();
+      loadUserDoubts(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error summarizing doubt', error);
       showToast(errorMessage(error, 'Error generating summary'), 'error');
@@ -181,7 +183,7 @@ const DoubtClearanceInlineView = () => {
       );
       setQuizAnswers({});
       setQuizScore(null);
-      await loadUserDoubts();
+      loadUserDoubts(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error generating quiz', error);
       setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
@@ -200,7 +202,7 @@ const DoubtClearanceInlineView = () => {
         userId: currentEmail()
       });
       setYoutubeRecommendations(response.data.recommendations);
-      await loadUserDoubts();
+      loadUserDoubts(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error getting recommendations', error);
       showToast(errorMessage(error, 'Error getting recommendations'), 'error');
@@ -273,7 +275,8 @@ const DoubtClearanceInlineView = () => {
   };
 
   const quizResult = quizScore ? { correct: quizScore.score, total: quizScore.totalQuestions } : null;
-  const writing = showAddDoubtForm || !selectedDoubt;
+  // The form opens by itself only once we know there is no doubt to show.
+  const writing = showAddDoubtForm || (loaded && !selectedDoubt);
   const messageCount = chatMessages.length;
 
   return (
@@ -281,6 +284,7 @@ const DoubtClearanceInlineView = () => {
       <Workspace
         side={(
           <SideList
+            loading={!loaded}
             title="Your doubts"
             count={doubts.length}
             action={(
@@ -308,7 +312,9 @@ const DoubtClearanceInlineView = () => {
           </SideList>
         )}
       >
-        {!writing ? (
+        {!writing && !selectedDoubt ? (
+          <LoadingPanel label="Loading your doubts…" />
+        ) : !writing ? (
           <>
             <ItemFrame
               icon="doubt"
@@ -405,7 +411,20 @@ const DoubtClearanceInlineView = () => {
                         {youtubeRecommendations.map((video, index) => (
                           <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
                             <div className="relative aspect-video bg-gray-100">
-                              {video.thumbnail && <img src={video.thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />}
+                              {video.thumbnail && (
+                              <img
+                                src={video.thumbnail}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                // Older saved results point at maxresdefault.jpg, which many videos lack.
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (/maxresdefault\.jpg$/.test(img.src)) img.src = img.src.replace('maxresdefault', 'hqdefault');
+                                  else img.style.visibility = 'hidden';
+                                }}
+                              />
+                            )}
                               {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">{video.duration}</span>}
                             </div>
                             <div className="p-3">

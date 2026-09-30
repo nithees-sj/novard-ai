@@ -58,10 +58,12 @@ let diagramSeq = 0;
 const MermaidDiagram = ({ chart }) => {
   const containerRef = useRef(null);
   const [failed, setFailed] = useState(false);
+  const [drawn, setDrawn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setFailed(false);
+    setDrawn(false);
 
     Promise.all([loadMermaid(), whenDiagramFontReady()])
       .then(async ([mermaid]) => {
@@ -72,6 +74,7 @@ const MermaidDiagram = ({ chart }) => {
           const { svg } = await mermaid.render(id, chart.trim());
           if (!cancelled && containerRef.current) {
             containerRef.current.innerHTML = svg;
+            setDrawn(true);
           }
         } catch (error) {
           logger.warn('Mermaid diagram could not be rendered', error?.message || error);
@@ -107,9 +110,16 @@ const MermaidDiagram = ({ chart }) => {
         Auto margins collapse to 0 once the child no longer fits, so a wide
         diagram stays fully scrollable.
       */}
+      {/* The diagram library loads on first use and waits for the page font; say so instead of an empty box. */}
+      {!drawn && (
+        <div className="flex h-24 items-center justify-center gap-2 text-xs text-gray-400" role="status">
+          <span className="h-3.5 w-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" aria-hidden="true" />
+          Drawing diagram…
+        </div>
+      )}
       <div
         ref={containerRef}
-        className="min-h-[60px] [&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto [&>svg]:max-w-full [&_foreignObject]:overflow-visible"
+        className="[&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto [&>svg]:max-w-full [&_foreignObject]:overflow-visible"
       />
     </div>
   );

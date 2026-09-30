@@ -3,7 +3,7 @@ import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import {
-  Workspace, Panel, ItemFrame, GeneratingState, EmptyState, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn,
+  Workspace, Panel, ItemFrame, GeneratingState, EmptyState, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, btn,
 } from './learning/LearningUI';
 import NewVideoRequestForm from './learning/NewVideoRequestForm';
 
@@ -87,12 +87,13 @@ const VideoLibraryInlineView = () => {
     setAddError(null);
     try {
       const { data: created } = await api.post('/educational-video-requests', request);
-      setShowAddVideoRequest(false);
-      await loadUserVideoRequests();
+      // Open the new request and start searching first, then refresh the list.
       if (created) {
         setSelectedVideoRequest(created);
         getRecommendedVideos(created, true);
       }
+      setShowAddVideoRequest(false);
+      await loadUserVideoRequests();
       return true;
     } catch (error) {
       logger.error('Error adding video request', error);
@@ -142,6 +143,7 @@ const VideoLibraryInlineView = () => {
       <Workspace
         side={(
           <SideList
+            loading={!loaded}
             title="Your requests"
             count={videoRequests.length}
             action={(
@@ -222,11 +224,11 @@ const VideoLibraryInlineView = () => {
             </ItemFrame>
           </>
         ) : (
-          <Panel fill>
-            {loaded
-              ? <EmptyState icon="video" title="Pick a request" text="Choose one of your requests, or start a new one." />
-              : <div className="flex h-full items-center justify-center text-blue-600"><Spinner className="h-6 w-6" /></div>}
-          </Panel>
+          loaded ? (
+            <Panel fill>
+              <EmptyState icon="video" title="Pick a request" text="Choose one of your requests, or start a new one." />
+            </Panel>
+          ) : <LoadingPanel label="Loading your requests…" />
         )}
       </Workspace>
       <Toast toast={toast} onClose={() => setToast(null)} />

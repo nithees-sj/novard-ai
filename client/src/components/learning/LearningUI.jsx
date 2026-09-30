@@ -423,7 +423,29 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
 // ── side list ──────────────────────────────────────────────────────────────
 
 /** The right-hand list of the student's items (notes, doubts, videos, requests). */
-export const SideList = ({ title, count, action, children, className = '' }) => (
+/** Placeholder rows while a side list is loading, instead of a false "nothing yet". */
+const ListSkeleton = () => (
+  <div className="space-y-2" role="status" aria-label="Loading">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="animate-pulse rounded-lg border border-gray-100 p-3" style={{ animationDelay: `${i * 120}ms` }}>
+        <div className="h-3.5 w-4/5 rounded bg-gray-200" />
+        <div className="mt-2 h-3 w-1/2 rounded bg-gray-100" />
+      </div>
+    ))}
+  </div>
+);
+
+/** The main area while the student's items are first loaded. */
+export const LoadingPanel = ({ label = 'Loading…' }) => (
+  <Panel fill>
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-gray-500" role="status">
+      <Spinner className="h-7 w-7 text-blue-600" />
+      {label}
+    </div>
+  </Panel>
+);
+
+export const SideList = ({ title, count, action, children, loading = false, className = '' }) => (
   <aside className={`flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${className}`}>
     <div className="border-b border-gray-100 p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -432,7 +454,7 @@ export const SideList = ({ title, count, action, children, className = '' }) => 
       </div>
       {action}
     </div>
-    <div className="flex-1 space-y-2 overflow-y-auto p-3 pb-28">{children}</div>
+    <div className="flex-1 space-y-2 overflow-y-auto p-3 pb-28">{loading ? <ListSkeleton /> : children}</div>
   </aside>
 );
 

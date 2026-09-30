@@ -4,7 +4,7 @@ import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, SideList, ListItem, ListEmpty, Toast, Icon, Spinner, btn, formatDate,
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
 } from './learning/LearningUI';
 import NewVideoForm from './learning/NewVideoForm';
 import QuizSetup from './quiz/QuizSetup';
@@ -79,9 +79,10 @@ const VideoSummarizerInlineView = () => {
     setAddError(null);
     try {
       const { data: created } = await api.post('/youtube-videos', { videoUrl, title: title || undefined, userId: currentEmail() });
+      // Open the new video first, then refresh the list, so the old selection never flashes.
+      if (created) { setSelectedVideo(created); setActiveTab('chat'); }
       setShowAddVideoForm(false);
       await loadUserVideos();
-      if (created) { setSelectedVideo(created); setActiveTab('chat'); }
       showToast('Video added - ask it anything.', 'success');
       return true;
     } catch (error) {
@@ -114,8 +115,7 @@ const VideoSummarizerInlineView = () => {
       });
       const aiResponse = { role: 'assistant', content: response.data.response, timestamp: new Date() };
       setChatMessages(prev => [...prev, aiResponse]);
-      // One reload brings the stored chat back in step.
-      await loadUserVideos();
+      loadUserVideos(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error sending message', error);
       showToast(errorMessage(error, 'Could not send your message. Please try again.'), 'error');
@@ -142,7 +142,7 @@ const VideoSummarizerInlineView = () => {
         userId: currentEmail()
       });
       setSummary(response.data.summary);
-      await loadUserVideos();
+      loadUserVideos(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error summarizing video', error);
       showToast(errorMessage(error, 'Error generating summary'), 'error');
@@ -181,7 +181,7 @@ const VideoSummarizerInlineView = () => {
       );
       setQuizAnswers({});
       setQuizScore(null);
-      await loadUserVideos();
+      loadUserVideos(); // refresh the list in the background - the result is already on screen
     } catch (error) {
       logger.error('Error generating quiz', error);
       setQuizError(errorMessage(error, 'Could not generate the quiz. Please try again.'));
@@ -256,6 +256,7 @@ const VideoSummarizerInlineView = () => {
       <Workspace
         side={(
           <SideList
+            loading={!loaded}
             title="Your videos"
             count={videos.length}
             action={(
@@ -366,11 +367,11 @@ const VideoSummarizerInlineView = () => {
             </ItemFrame>
           </>
         ) : (
-          <Panel fill>
-            {loaded
-              ? <EmptyState icon="video" title="Pick a video" text="Choose a video from your list, or add a new one." />
-              : <div className="flex h-full items-center justify-center text-blue-600"><Spinner className="h-6 w-6" /></div>}
-          </Panel>
+          loaded ? (
+            <Panel fill>
+              <EmptyState icon="video" title="Pick a video" text="Choose a video from your list, or add a new one." />
+            </Panel>
+          ) : <LoadingPanel label="Loading your videos…" />
         )}
       </Workspace>
       <Toast toast={toast} onClose={() => setToast(null)} />
