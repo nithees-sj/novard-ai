@@ -33,7 +33,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
       <div className="relative flex justify-between items-center gap-3 sm:gap-6 px-4 sm:px-6 h-14">
         {/* Logo - conditionally rendered */}
         {!hideLogo && (
@@ -77,7 +77,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
 
         {/* Popup */}
         {showPopup && user && (
-          <div className="absolute top-16 right-6 w-80 p-8 bg-white/97 backdrop-blur-lg border border-gray-200 
+          <div className="absolute top-16 right-6 w-80 p-8 bg-white border border-gray-200 
                        rounded-3xl shadow-hard z-[60] animate-slide-down text-center">
             {/* Close Button */}
             <button
@@ -113,7 +113,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
                   key={link.label}
                   type="button"
                   onClick={() => { setShowPopup(false); link.onClick(); }}
-                  className="w-full rounded-full border border-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-primary-300 hover:bg-primary-50"
+                  className="w-full rounded-full border border-gray-200 bg-white px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-primary-300 hover:bg-primary-50"
                 >
                   {link.label}
                 </button>
