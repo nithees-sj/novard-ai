@@ -23,6 +23,11 @@ services:
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET}
       - GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
       - CORS_ORIGINS=http://localhost:3000
+      # Admin console and early warning (all optional)
+      - SUPERADMIN_EMAILS=${SUPERADMIN_EMAILS:-}
+      - ADMIN_JWT_EXPIRES_IN=${ADMIN_JWT_EXPIRES_IN:-12h}
+      - RISK_CRON_SECRET=${RISK_CRON_SECRET:-}
+      - VECTOR_SEARCH=${VECTOR_SEARCH:-auto}
     ports:
       - "8080:8080"
     restart: unless-stopped

@@ -13,6 +13,7 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 ## Table of Contents
 
 - [Features](#features)
+- [Early warning & admin console](#early-warning--admin-console)
 - [Architecture](#architecture)
 - [Security](#security)
 - [Tech Stack](#tech-stack)
@@ -146,6 +147,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 ### Everywhere else
 
 - A floating **Novard Agent** button available across the app (see [Novard Agent](#novard-agent) below).
+- **Report a problem** from any AI answer, summary, quiz question, agent or coach message, forum AI reply or roadmap, from the sidebar or from the user menu (with an optional screenshot, voice note or PDF). A **notification bell** in the header and a **My reports** page (`/reports`) show the Novard team's replies and fixes. See [Early warning & admin console](#early-warning--admin-console).
 - Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output.
 - Tailwind layouts with a persistent sidebar. Every student page is reachable from it:
   - Home, Profile and Settings;
@@ -163,7 +165,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 ```
 ┌──────────────────────┐        ┌───────────────────────────┐
-│  React 18 SPA        │ HTTPS  │  Express API (63 routes)  │
+│  React 18 SPA        │ HTTPS  │  Express API (132 routes) │
 │  CRA + Tailwind      │ Bearer │  routes → controllers →   │
 │  react-router v6     ├───────►│  services → Mongoose      │
 │  Google OAuth (impl.)│ token  │  JWT sessions, rate limits│
@@ -173,7 +175,7 @@ The charts are small SVG components written for this app ([components/profile/ch
               ▼                           ▼                          ▼
       ┌───────────────┐          ┌─────────────────┐        ┌────────────────┐
       │ MongoDB Atlas │          │ Groq (gpt-oss)  │        │ YouTube        │
-      │ 12 collections│          │ Gemini Flash    │        │ (Innertube +   │
+      │ 31 collections│          │ Gemini Flash    │        │ (Innertube +   │
       └───────────────┘          └─────────────────┘        │  search API)   │
                                                             └────────────────┘
 ```
@@ -186,7 +188,9 @@ The charts are small SVG components written for this app ([components/profile/ch
 | `MODELS.FAST` | `openai/gpt-oss-20b` | Notes chat, summarization, video Q&A, doubt and chat titles, chat-memory summaries. |
 | `MODELS.GEMINI` | `gemini-flash-latest` | Third-party course discovery only. If it is overloaded (503) or rate-limited (429), it is retried once and then `MODELS.GEMINI_FALLBACKS` (default `gemini-flash-lite-latest`; set with `GEMINI_FALLBACK_MODELS`) is used ([ai/gemini.js](server/ai/gemini.js)). |
 
-Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI_MODEL` without touching code. The gpt-oss models are *reasoning* models: they spend completion tokens on an internal `reasoning` field before emitting `content`, so every Groq call sends `reasoning_effort: "low"` to keep the token budget available for the answer.
+The early-warning tasks are routed by `route(task, attempt, confidence)` in the same file (report triage and investigation lanes on FAST, root cause on REASONING with more effort on a retry, the verifier on Gemini or another model than the one that wrote the analysis, Whisper for voice notes, `gemini-embedding-001` for report embeddings). Every call in the app, old features included, goes through one model layer ([ai/modelGateway.js](server/ai/modelGateway.js)): it is logged as a `ModelCall` (feature, student, model, tokens, USD from the `PRICING` table, latency, outcome), a model whose **daily** quota is used up fails over to the next (`GROQ_FAILOVER_*`), the per-minute "try again in N s" limit is still waited out, 5xx errors back off, and admins can switch providers and tools off, cap daily spend and set per-student quotas from the console.
+
+Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI_MODEL` without touching code (or, at runtime, from the admin console's gateway pages). The gpt-oss models are *reasoning* models: they spend completion tokens on an internal `reasoning` field before emitting `content`, so every Groq call sends `reasoning_effort: "low"` to keep the token budget available for the answer.
 
 **Server layers.** A request passes through [app.js](server/app.js) (security headers, CORS, JSON body limit, global rate limit) to a router in [routes/](server/routes/), which applies `requireAuth()` and, for AI-backed endpoints, the per-student AI rate limit. Controllers in [controllers/](server/controllers/) only translate HTTP: they read the request, take the student's id from the session, call a service and shape the response. Business logic and data access live in [services/](server/services/) (the Novard Agent's in [agent/](server/agent/)), and every error — thrown anywhere — is turned into one JSON format by [middleware/errorHandler.js](server/middleware/errorHandler.js):
 
@@ -198,12 +202,15 @@ Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI
 
 ## Security
 
-- **Authentication.** Every route except `GET /health`, `GET /` and `POST /api/auth/google` requires a valid session token ([middleware/auth.js](server/middleware/auth.js)). Google tokens issued to any other OAuth client are rejected.
+- **Authentication.** Every route except `GET /health`, `GET /`, `POST /api/auth/google`, `GET /api/app-status` (switches and banners, no secrets), `POST /api/admin/auth/google` (checks the role itself) and `POST /api/internal/risk/rescan` (its own `RISK_CRON_SECRET`) requires a valid session token ([middleware/auth.js](server/middleware/auth.js)). Google tokens issued to any other OAuth client are rejected.
 - **Authorization.** The student's id always comes from the session. Routes that still carry a user id in the URL or body (kept for compatibility) must match it, or the request is refused with 403. Every read, update and delete of a note, doubt, video, plan, roadmap, analysis or chat is scoped to its owner; forum posts and replies are attributed to the signed-in student, and only the author can change a discussion's status or delete it.
 - **Input validation.** Ids must be valid ObjectIds (which also blocks `{"$ne": …}`-style operator injection), text fields are length-bounded, numbers are range-checked, uploads must really be PDFs (the file signature is checked, not just the MIME type), and links that come from model output must be `http(s)`.
 - **Rate limiting** ([middleware/rateLimit.js](server/middleware/rateLimit.js)): 300 requests/min per IP, 30 AI requests/min per student, 30 sign-in attempts per 15 min per IP (all configurable).
 - **Headers & CORS.** `helmet` sets standard security headers; `CORS_ORIGINS` restricts which sites may call the API. Sessions are bearer tokens, not cookies, so there is no CSRF surface.
 - **XSS.** AI output is rendered by `react-markdown` without raw HTML, and Mermaid runs with `securityLevel: 'strict'`.
+- **Admin console.** Admins sign in at `/admin/login` with the same Google client; the server checks `User.role` and issues a separate admin token (its own audience, `ADMIN_JWT_EXPIRES_IN`, default 12h). A student token never passes an admin check and vice versa. Every admin request re-reads the role and status from the database, so a demoted or suspended admin loses access on the next request. Only superadmins grant or revoke admin, and the last active superadmin can never be demoted or suspended. Suspended students are signed out on their next request.
+- **Audit log.** Every admin change (settings, gateways, users, reports, approvals, announcements, moderation, email reveals, the assistant's confirmed actions) is written to `AdminAuditLog` with who, what, before and after. The console shows it read-only.
+- **Secrets.** API keys are never returned by any endpoint; the console shows only whether a key is set and its last four characters. Students' emails are masked in the console; revealing one is audited.
 
 ---
 
@@ -272,6 +279,37 @@ The assistant behind the floating button (`/chatbot`) is an **agent**: it teache
 Other pages can open the agent with a question already sent: *Start Mock Interview* (Career) and *Explore New Topics* (Doubts & Learning) do this with `navigate('/chatbot', { state: { prompt } })`.
 
 Routes: see [Novard Agent in the API Reference](#api-reference).
+
+## Early warning & admin console
+
+Students report problems; Novard-AI turns those reports and its own logs into a risk score per area of the app, raises an alert when an area gets worse, can investigate why with a LangGraph pipeline that cites its evidence, and gives admins a console to act. The ideas and algorithms are ported from EWDI (an early-warning system for support tickets); the design and code are Novard's. Full write-up: [docs/early-warning/ARCHITECTURE.md](docs/early-warning/ARCHITECTURE.md).
+
+**Reports.** "Report a problem" opens from every AI answer (with that message attached), the sidebar, the user menu and the Novard Agent (`prepare_report_problem` → an editable draft → Create). A report has a reference (`NV-1A2B3C4D`), an area of the app, text and optionally a screenshot, a Whisper-transcribed voice note (hidden when voice is off) or a PDF; every file is checked by its real bytes. A student may have 2 open reports per area (configurable); the quota is checked before any upload is parsed and held atomically. Each report is triaged right away (area, urgency, sentiment, intent, topic, repeat) in Groq JSON mode; if the model is down the report is still saved and `npm run reports:enrich` catches up. Resolving reports notifies each student exactly once, under the bell.
+
+**Early warning.** Per area and day ([services/earlyWarning/](server/services/earlyWarning/)): report volume, students reporting, unanswered share (48 h after the day), time to first reply, sentiment, urgent share and repeat reporters, plus automatic signals: the AI error and rate-limit rates and latency of the area's features (from the model-call log), AI answers reported per 1,000 calls, and YouTube / PDF failures. Each window (7 days) is compared with its own 21-day baseline using EWDI's robust z (median/MAD, clipped at ±6, signed so positive is always worse); the score is `sigmoid(mean of the top 3 z − 2)` with a per-signal attribution. Levels come from percentiles of the observed scores (P85/P95/P99, never below z = 1.5/3/4.5), or fixed thresholds while history is short. An alert is raised once per escalation episode (and again if it worsens); a risk object tracks the problem by area and topic (new → ongoing → escalated → resolved → recurring). The scoring functions are tested against outputs of EWDI's own Python ([tests/fixtures/ewdi-golden.json](server/tests/fixtures/ewdi-golden.json)).
+
+**Investigation.** For a HIGH or CRITICAL area, a LangGraph.js graph ([services/earlyWarning/graph/](server/services/earlyWarning/graph/)): a zero-token spine; a supervisor that opens up to five lanes in parallel (trend, peers, history, what students say via Atlas Vector Search or text search, and telemetry: AI provider, YouTube or PDF vs the product); a root cause whose every claim cites report refs, model calls or evidence ids (uncited claims are capped); a verifier on a different model; a what-if outlook by re-scoring; and recommendations. Only flagging the area runs by itself; everything else (a known-issue notice, switching a tool off, rerouting a model, resolving reports, an announcement) waits for an admin's approval and then runs through the console's own control. Budget per run and parallel lanes are capped for Groq's per-minute limits; with no model at all it still ends with a cited, statistics-only answer.
+
+**Admin console** (`/admin`, same look and components as the app): overview, risk board, area and investigation pages, the live investigation (nodes light up over SSE), run history, reports inbox, gateways (Groq, Gemini, YouTube, Google sign-in, MongoDB: health, spend, settings, a Test button; API keys are never shown), users, moderation, features & limits (every runtime setting: tool switches, maintenance, rate limits, quotas, areas, thresholds, budgets, model routes), announcements, the admin assistant and the audit log. Runtime settings are stored in MongoDB and layered DB > env > default, cached 30 s per instance.
+
+**Admin assistant.** The Novard Agent's engine with admin-only tools: it reads the live platform (risk board, areas, reports, search, gateways, costs, runs, findings, users) and proposes investigations, report resolutions, tool switches and model routes as confirmation cards. It must look live data up before answering, every figure must come from a tool result, and it refuses to touch API keys, admin roles or account suspensions.
+
+**Become superadmin and run the demo:**
+
+```bash
+# 1. Make yourself superadmin (either one)
+#    - put SUPERADMIN_EMAILS=you@gmail.com in server/.env and sign in once, or
+npm run admin:grant --prefix server -- --email you@gmail.com --role superadmin
+
+# 2. Seed a genuine incident in one area (a quiet baseline everywhere, then a spike)
+npm run risk:seed-demo --prefix server -- --area video-summarizer --student you@gmail.com
+```
+
+Then open `/admin/login` → the risk board shows Video Summarizer at CRITICAL → open it → **Run investigation** and watch the live view → on the findings page approve "known issue notice" (students of that tool now see it; the audit log has the change) → resolve the area's reports with a note (Reports inbox, or approve the recommendation) → sign in to the app as `you@gmail.com`: the bell shows one notification. `npm run risk:seed-demo --prefix server -- --clear` removes everything the demo created.
+
+**Scripts:** `admin:grant`, `risk:score` (features → scores → alerts → lifecycle; idempotent), `reports:enrich` and `reports:embed` (resumable batch passes), `db:vector-index` (creates or updates the Atlas Vector Search index; says so if the cluster has no Atlas Search), `risk:seed-demo`.
+
+---
 
 ## Personalised roadmaps
 
@@ -358,11 +396,11 @@ is inert text rather than something that has to be sanitised.
 
 **Frontend** — React 18.3, React Router 6 (route-level code splitting), `@react-oauth/google`, Axios, Tailwind CSS 3 + `@tailwindcss/typography`, `react-markdown` + `remark-gfm`, `mermaid` (lazy-loaded), `react-icons`, Create React App (`react-scripts` 5).
 
-**Backend** — Node.js 20, Express 4, Mongoose 8, LangChain (`@langchain/core`, `@langchain/groq`), `groq-sdk`, `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `jsonwebtoken`, `helmet`, `express-rate-limit`, CORS.
+**Backend** — Node.js 20, Express 4, Mongoose 8, LangChain (`@langchain/core`, `@langchain/groq`, `@langchain/langgraph` for the risk investigation graph), `groq-sdk` (chat and Whisper), `@google/generative-ai`, `youtubei.js`, `youtube-search-api`, `pdf-parse`, Multer, `jsonwebtoken`, `helmet`, `express-rate-limit`, CORS.
 
 **Quality** — Jest + Supertest + `mongodb-memory-server` (server), Jest + React Testing Library (client), ESLint on both.
 
-**Infrastructure** — MongoDB Atlas, Docker + Docker Compose, Nginx (client image), Google Cloud Run + Artifact Registry + Cloud Build, Vercel (client-only SPA deploy via [vercel.json](vercel.json)).
+**Infrastructure** — MongoDB Atlas (with Atlas Vector Search for report embeddings; `mongodb-atlas-local` in Docker), Docker + Docker Compose, Nginx (client image), Google Cloud Run + Artifact Registry + Cloud Build, Vercel (client-only SPA deploy via [vercel.json](vercel.json)).
 
 ---
 
@@ -449,6 +487,16 @@ See [server/.env.example](server/.env.example) for a commented template.
 | `LOG_LEVEL` / `LOG_FORMAT` | no | `error`, `warn`, `info`, `debug` or `silent`; `LOG_FORMAT=json` forces JSON lines. |
 | `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` | no | Model overrides (see [config/ai.js](server/config/ai.js)). |
 | `MEMORY_SUMMARIZE_AT_TOKENS`, `MEMORY_KEEP_RECENT_TOKENS` | no | When chat memory is summarised (see [Conversational AI](#conversational-ai-langchain)). |
+| `SUPERADMIN_EMAILS` | no | Comma-separated accounts that become superadmin when they sign in (the easiest way to create the first admin). |
+| `ADMIN_JWT_EXPIRES_IN` | no | Admin console session lifetime, default `12h`. |
+| `RATE_LIMIT_ADMIN_AUTH_PER_15_MIN` | no | Admin sign-in attempts per IP (default 10). |
+| `RISK_CRON_SECRET` | no | Shared secret for Cloud Scheduler's `POST /api/internal/risk/rescan` (header `X-Risk-Cron-Secret`). Unset = that endpoint is off. |
+| `SETTINGS_CACHE_MS` | no | How long each instance caches runtime settings (default 30000). |
+| `GROQ_FAILOVER_REASONING`, `GROQ_FAILOVER_FAST` | no | Models to try, in order, when one has used up its daily quota. |
+| `GROQ_TRANSCRIBE_MODEL` | no | Whisper model for voice notes on reports (default `whisper-large-v3-turbo`). Voice is hidden when Groq is not available. |
+| `GEMINI_EMBED_MODEL`, `EMBED_DIM` | no | Report embeddings (default `gemini-embedding-001`, 768 dimensions). Without a Gemini key, semantic search falls back to MongoDB text search and topics to the triage intent. |
+| `VECTOR_SEARCH` | no | `auto` (default: use Atlas Vector Search when the cluster has it), `on` or `off`. Create the index with `npm run db:vector-index`. |
+| `MODEL_CALL_RETENTION_DAYS` | no | Days model-call and gateway logs are kept (default 45; the risk features need 28). |
 
 > The server refuses to start if `MONGO_URI`, `GROQ_API_KEY`, `GOOGLE_CLIENT_ID` or (in production) `JWT_SECRET` is missing.
 
@@ -465,7 +513,7 @@ Create React App inlines `REACT_APP_*` values **at build time**, not at runtime 
 
 ## Running with Docker
 
-The development stack ([docker-compose.yml](docker-compose.yml)) brings up three containers — MongoDB 7, the API, and the React build served by Nginx:
+The development stack ([docker-compose.yml](docker-compose.yml)) brings up three containers — MongoDB (the `mongodb/mongodb-atlas-local` image, so report vector search works locally too), the API, and the React build served by Nginx:
 
 ```bash
 export REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
@@ -474,7 +522,7 @@ docker compose up --build
 
 - Client → <http://localhost:3000>
 - API → <http://localhost:5001>
-- MongoDB → `localhost:27018` (persisted in the `mongodb_data` volume)
+- MongoDB → `localhost:27018` (use `?directConnection=true`; persisted in the `mongodb_atlas_data` / `mongodb_atlas_config` volumes). Coming from the old `mongo:7.0` container? Its volume is kept; copy your data across with the two commands in [DOCKER_SETUP.md](DOCKER_SETUP.md#moving-your-data-from-the-old-mongo70-container).
 
 Both services declare health checks, and `server/uploads` is bind-mounted so uploaded PDFs survive container restarts.
 
@@ -498,11 +546,13 @@ The client image is a two-stage build (Node build → Nginx) whose config templa
 
 Remember to add your deployed client URL to the **Authorized JavaScript origins** of your Google OAuth client.
 
+**Risk scoring on a schedule.** Cloud Run scales to zero, so nothing runs on a timer inside the app. Set `RISK_CRON_SECRET` on the server and create a Cloud Scheduler job that calls `POST /api/internal/risk/rescan` hourly with that secret in the `X-Risk-Cron-Secret` header; `deploy.sh` does this when `RISK_CRON_SECRET` is set (see [CLOUD_RUN_SETUP.md](CLOUD_RUN_SETUP.md#risk-scoring-schedule-optional)). Without it, scores are refreshed when an admin opens the risk board and they are over an hour old. Investigations run in the background after `POST …/assess` returns: keep the console's live view open while one runs, or deploy the server with `--no-cpu-throttling` so they finish unattended.
+
 ---
 
 ## API Reference
 
-Routes live in [server/routes/](server/routes/) (63 in total). Base URL is `REACT_APP_API_ENDPOINT`. Except where marked *public*, every route needs `Authorization: Bearer <session token>`; the `:userId` path segments and `userId` body fields that some routes still accept must be the signed-in student's email. Errors use the format shown under [Architecture](#architecture); AI-backed routes (marked **AI**) share a per-student rate limit.
+Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for reports, notifications and the admin console). Base URL is `REACT_APP_API_ENDPOINT`. Except where marked *public*, every route needs `Authorization: Bearer <session token>`; the `:userId` path segments and `userId` body fields that some routes still accept must be the signed-in student's email. Errors use the format shown under [Architecture](#architecture); AI-backed routes (marked **AI**) share a per-student rate limit.
 
 <details>
 <summary><b>Health, sign-in & account</b></summary>
@@ -622,15 +672,63 @@ Routes live in [server/routes/](server/routes/) (63 in total). Base URL is `REAC
 
 </details>
 
+<details>
+<summary><b>Reports, notifications and app status</b></summary>
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/reports?area=` | **AI.** Multipart: `text` (10-4,000 chars), `source` (JSON: page, tool, itemType, itemId, messageIndex, excerpt), optional `screenshot`, `voice`, `pdf`. The open-report quota (2 per area) is checked **before** the upload is parsed → 429 `REPORT_QUOTA`. → 201 `{ref: "NV-XXXXXXXX", …}`. |
+| `GET` | `/api/reports/mine`, `/api/reports/:ref` | The student's own reports (public notes only). |
+| `POST` | `/api/reports/:ref/notes` | `{body}`: add to a report; reopens a resolved one. |
+| `GET` | `/api/reports/:ref/attachments/:n` | An attachment of the student's own report. |
+| `GET` | `/api/notifications` | `{notifications, unread}` for the bell. |
+| `POST` | `/api/notifications/read` | `{ids?}`; no ids = all. |
+| `GET` | `/api/app-status` | *Public.* Tool switches, known-issue notices, maintenance, dashboard banner, report areas and whether voice is enabled. |
+
+</details>
+
+<details>
+<summary><b>Admin console</b> (admin token; ★ superadmin)</summary>
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/admin/auth/google` | *Public, strict rate limit.* `{accessToken}` → `{token, admin}`; 403 `NOT_ADMIN` for anyone else. |
+| `GET` | `/api/admin/auth/me` | The admin, with the role as it is in the database now. |
+| `GET` | `/api/admin/overview` | Users, reports, risk levels, AI spend vs cap, gateway lights, alerts, recent runs. |
+| `GET` | `/api/admin/risk/board` | Every area: level, score, 28-day sparkline, drivers, open reports (rescans if scores are over an hour old). |
+| `GET` | `/api/admin/risk/areas/:area` | 28-day series, attribution, thresholds in force, open reports, risk objects, investigations, precedents. |
+| `POST` | `/api/admin/risk/areas/:area/assess` | **AI.** Start an investigation → 202 `{runId}`. |
+| `POST` | `/api/admin/risk/rescan` | Features → scores → alerts → lifecycle, now. |
+| `GET` / `POST` | `/api/admin/risk/alerts`, `/api/admin/risk/alerts/:id/ack` | Open alerts; acknowledge one. |
+| `GET` | `/api/admin/risk/assessments/:id` | Findings, evidence, review, outlook, recommendations, feedback. |
+| `POST` | `…/assessments/:id/recommendations/:recId/approve` \| `dismiss` | Approve (runs the console's own control, once, audited) or dismiss. |
+| `POST` | `…/assessments/:id/feedback`, `…/assessments/:id/whatif` | `{label: accurate\|not_accurate, note?}`; `{deltas: {feature: multiplier}}` → re-scored. |
+| `GET` | `/api/admin/risk/runs`, `/api/admin/risk/runs/:id`, `/api/admin/risk/runs/:id/stream` | Run history; steps and model calls; **SSE** live view (`snapshot`, `step`, `call`, `done`). |
+| `GET` | `/api/admin/reports`, `/api/admin/reports/:ref`, `/api/admin/reports/:ref/attachments/:n` | Inbox (`?area&status&urgency&intent&q&from&to&page&limit`), one report, its files. |
+| `POST` | `/api/admin/reports/:ref/status` \| `notes` \| `assign` \| `reporter-email` | Status, internal note or reply (notifies), assignment, audited email reveal. |
+| `POST` | `/api/admin/reports/resolve`, `/api/admin/areas/:area/resolve` | Resolve by refs or a whole area; each student is notified once. |
+| `GET` / `PUT` / `POST` | `/api/admin/gateways`, `/api/admin/gateways/:id`, `…/:id/settings`, `…/:id/test` | Groq, Gemini, YouTube, Google sign-in, MongoDB: health, settings, one test call (**AI**). |
+| `GET` | `/api/admin/costs` | Spend by model, feature and day (`?range=24h\|7d\|30d`). |
+| `GET` / `POST` | `/api/admin/users`, `/api/admin/users/:id`, `…/:id/suspend` \| `reactivate` \| `reset-quota` \| `reveal-email`, `…/:id/role` ★ | Accounts (emails masked), actions on them. |
+| `GET` / `PUT` / `DELETE` | `/api/admin/forum/issues[/:issueId]`, `…/issues/:issueId/status`, `/api/admin/forum/comments/:commentId`, `…/comments/:commentId/hidden`, `/api/admin/moderation/flagged` | Forum moderation and AI messages students flagged. |
+| `GET` / `PUT` | `/api/admin/settings`, `/api/admin/settings/:key` | Every runtime setting; `{value}` or `{reset: true}` (★ for critical ones). |
+| `GET` / `POST` | `/api/admin/announcements` | Sent announcements; send one (`{audience: all\|area_reporters, area?, title, body?, banner?}`). |
+| `POST` | `/api/admin/assistant/chat` | **AI.** `{message, conversationId?}` → SSE: `meta`, `status`, `tool`, `action`, `token`, `done`, `error`. |
+| `GET` / `PATCH` / `DELETE` / `POST` | `/api/admin/assistant/conversations[/:id]`, `…/:id/actions/:actionId` | Chats; confirm or dismiss a proposed action. |
+| `GET` | `/api/admin/audit-log` | `?adminId&action&targetType&targetId&from&to&page&limit`. |
+| `POST` | `/api/internal/risk/rescan` | *Machine-to-machine.* Header `X-Risk-Cron-Secret`; 404 unless `RISK_CRON_SECRET` is set. |
+
+</details>
+
 ---
 
 ## Data Models
 
-Twelve Mongoose schemas in [server/models/](server/models/), each indexed on the fields its list queries filter and sort by:
+Thirty-one Mongoose schemas in [server/models/](server/models/), each indexed on the fields its list queries filter and sort by:
 
 | Model | Holds |
 | --- | --- |
-| `User` | Name, unique email, picture, mobile, bio. |
+| `User` | Name, unique email, picture, mobile, bio, `role` (student / admin / superadmin) and `status` (active / suspended). |
 | `Notes` | Uploaded PDF metadata, extracted text, summary, chat history and memory, quiz attempts. |
 | `YouTubeVideo` | URL/`videoId`, transcript, summary, chat history and memory, quizzes (older records may be uploaded files). |
 | `DoubtClearance` | Title, description, optional image link, chat history and memory, summary, quizzes, YouTube recommendations. |
@@ -641,6 +739,17 @@ Twelve Mongoose schemas in [server/models/](server/models/), each indexed on the
 | `SkillGapSession` | A skill-gap analysis and its coaching chat. |
 | `ChatbotConversation` | Novard Agent chats, with action cards and their status. |
 | `AppUsage` | Tracked study seconds per student per local day. |
+| `LearnerProfile` | What the Novard Agent knows about the student. |
+| `Report` | A student's problem report (`NV-…`): text, transcript, attachments, the AI message it is about, triage, status, notes, quota slot. |
+| `ReportEmbedding` / `ReportTopic` | One vector per report (Atlas Vector Search index `report_vec`); greedy-cosine topics per area. |
+| `Notification` | The bell: resolved reports, replies, announcements. |
+| `AreaFeature` / `RiskScore` | Per area and day: raw metrics and the 7-day-vs-baseline features; score, level and attribution. |
+| `RiskObject` / `RiskAlert` / `RiskPrecedent` | A tracked risk (area + topic) and its lifecycle; escalation alerts (one per episode); what fixed earlier risks. |
+| `RiskAssessment` / `RiskStep` / `RiskFeedback` | An investigation run (evidence, findings, review, outlook, recommendations, budget); its trace; admins' accuracy verdicts. |
+| `ModelCall` / `GatewayEvent` | Every AI call and every YouTube / Google sign-in / PDF call (45-day TTL). |
+| `UsageCounter` | Today's AI spend, students' daily AI requests, locks. |
+| `Setting` / `AdminAuditLog` | Runtime settings changed from the console; the audit log. |
+| `AdminConversation` | The admin assistant's chats. |
 
 ---
 
@@ -655,7 +764,9 @@ novard-ai/
 │   │   ├── lib/api.js             # Axios/fetch client: base URL, timeout, session token, 401 handling
 │   │   ├── lib/session.js         # Session storage (token + profile)
 │   │   ├── pages/                 # Route-level pages
-│   │   ├── components/            # Sidebar, hub views, analytics widgets, agent, forum
+│   │   ├── components/            # Sidebar, hub views, analytics widgets, agent, forum, reports, admin
+│   │   ├── pages/admin/           # The admin console (lazy-loaded)
+│   │   ├── context/               # App status (switches, notices) and the "Report a problem" dialog
 │   │   ├── hooks/                 # useStudyTimeTracker
 │   │   └── **/__tests__/          # Jest + React Testing Library
 │   ├── .env.example
@@ -669,6 +780,10 @@ novard-ai/
 │   ├── controllers/               # HTTP in/out only
 │   ├── services/                  # Business logic and data access
 │   ├── agent/                     # Novard Agent: turn loop, actions, conversations
+│   ├── services/earlyWarning/     # Scoring (EWDI port), features, escalation, lifecycle, rescan, demo seed
+│   ├── services/earlyWarning/graph/ # The LangGraph.js investigation
+│   ├── services/adminAssistant/   # The admin assistant: turn loop, tools, guards, cards
+│   ├── services/admin/            # Console read models: overview, risk board, gateways, costs, users, moderation
 │   ├── ai/                        # Groq client, LangChain memory, Gemini, AI error handling
 │   ├── middleware/                # auth, rate limits, async wrapper, error handler
 │   ├── models/                    # Mongoose schemas
@@ -684,6 +799,7 @@ novard-ai/
 ├── cloudbuild.yaml                # Cloud Build pipeline
 ├── deploy.sh                      # One-command Cloud Run deploy
 ├── CLOUD_RUN_SETUP.md             # Cloud Run guide
+├── docs/early-warning/            # PLAN.md and ARCHITECTURE.md for reports, risk and the admin console
 ├── DOCKER_SETUP.md                # Docker guide
 └── vercel.json                    # Client-only SPA deploy config
 ```
@@ -702,6 +818,14 @@ Worth knowing before you build on this:
 - **YouTube captions are not always available** (and YouTube changes its private API regularly); without captions the summarizer falls back to title + description.
 - **Two PDF size limits:** the Notes page rejects files over 2 MB, while the API accepts up to 10 MB.
 - **Scanned PDFs have no text layer**, so notes upload rejects them with a 422 rather than running OCR.
+- **Report attachments are on local disk too** (screenshots, voice notes, PDFs), with the same Cloud Run caveat.
+- **Announcements to "all students" write one notification per student.** Fine for thousands of students; a much larger audience would want a shared announcement read at request time.
+- **Investigations run in the background of the instance that started them.** On Cloud Run with CPU throttling, keep the live view open (the stream keeps the instance busy) or deploy with `--no-cpu-throttling`; a run stuck for over 15 minutes shows as interrupted.
+- **Groq's free tier allows about 8,000 tokens per minute per model.** A full investigation uses 15-30k tokens spread over two or three models, so it takes a minute or two and may wait on a rate limit once. The per-run budget (40k tokens / $0.03) is editable by superadmins.
+- **USD prices are approximate** (the `PRICING` table in [config/ai.js](server/config/ai.js)); free-tier keys are billed $0.
+- **Settings reach every instance within 30 seconds** (the cache TTL), and the rate limits are still per instance.
+- **Vector search needs Atlas** (or the atlas-local image) and a Gemini key; without them similar reports are found with MongoDB text search.
+- **Risk levels need history.** An area with less than a week of baseline is scored against fixed thresholds only; percentile levels start after 120 scored windows.
 
 ---
 

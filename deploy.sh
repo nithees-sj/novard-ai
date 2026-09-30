@@ -78,6 +78,10 @@ MONGO_URI=""
 GROQ_API_KEY=""
 GOOGLE_API_KEY=""
 JWT_SECRET=""
+# Optional (admin console and risk scoring)
+SUPERADMIN_EMAILS=""
+ADMIN_JWT_EXPIRES_IN=""
+RISK_CRON_SECRET=""
 
 if [[ -f "$ENV_FILE" ]]; then
   while IFS='=' read -r key value; do
@@ -91,6 +95,9 @@ if [[ -f "$ENV_FILE" ]]; then
       GROQ_API_KEY)    GROQ_API_KEY="$value" ;;
       GOOGLE_API_KEY)  GOOGLE_API_KEY="$value" ;;
       JWT_SECRET)      JWT_SECRET="$value" ;;
+      SUPERADMIN_EMAILS)    SUPERADMIN_EMAILS="$value" ;;
+      ADMIN_JWT_EXPIRES_IN) ADMIN_JWT_EXPIRES_IN="$value" ;;
+      RISK_CRON_SECRET)     RISK_CRON_SECRET="$value" ;;
     esac
   done < "$ENV_FILE"
 fi
@@ -114,6 +121,11 @@ docker push "${AR_REPO}/${SERVER_IMAGE}:latest"
 ok "Server image pushed"
 
 # ── Step 7: Deploy server to Cloud Run ──
+# "^##^" makes "##" the separator, because SUPERADMIN_EMAILS holds commas and MONGO_URI can hold "@".
+SERVER_ENV="^##^NODE_ENV=production##MONGO_URI=${MONGO_URI}##GROQ_API_KEY=${GROQ_API_KEY}##GOOGLE_API_KEY=${GOOGLE_API_KEY}##JWT_SECRET=${JWT_SECRET}##GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+[[ -n "$SUPERADMIN_EMAILS" ]] && SERVER_ENV="${SERVER_ENV}##SUPERADMIN_EMAILS=${SUPERADMIN_EMAILS}"
+[[ -n "$ADMIN_JWT_EXPIRES_IN" ]] && SERVER_ENV="${SERVER_ENV}##ADMIN_JWT_EXPIRES_IN=${ADMIN_JWT_EXPIRES_IN}"
+[[ -n "$RISK_CRON_SECRET" ]] && SERVER_ENV="${SERVER_ENV}##RISK_CRON_SECRET=${RISK_CRON_SECRET}"
 info "Deploying server to Cloud Run..."
 gcloud run deploy "$SERVER_SERVICE" \
   --image="${AR_REPO}/${SERVER_IMAGE}:latest" \
@@ -125,7 +137,7 @@ gcloud run deploy "$SERVER_SERVICE" \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=10 \
-  --set-env-vars="NODE_ENV=production,MONGO_URI=${MONGO_URI},GROQ_API_KEY=${GROQ_API_KEY},GOOGLE_API_KEY=${GOOGLE_API_KEY},JWT_SECRET=${JWT_SECRET},GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+  --set-env-vars="${SERVER_ENV}" \
   --quiet
 
 # ── Step 8: Get server URL ──
@@ -133,6 +145,23 @@ SERVER_URL=$(gcloud run services describe "$SERVER_SERVICE" \
   --region="$REGION" \
   --format='value(status.url)')
 ok "Server deployed at: $SERVER_URL"
+
+# ── Step 8b (optional): score risk every hour with Cloud Scheduler ──
+# Cloud Run scales to zero, so the app runs nothing on a timer itself.
+if [[ -n "$RISK_CRON_SECRET" ]]; then
+  info "Scheduling the hourly risk rescan (Cloud Scheduler)..."
+  gcloud services enable cloudscheduler.googleapis.com --project="$PROJECT_ID" --quiet
+  SCHEDULER_ARGS=(--location="$REGION" --project="$PROJECT_ID" --schedule="15 * * * *" --http-method=POST
+    --uri="${SERVER_URL}/api/internal/risk/rescan" --headers="X-Risk-Cron-Secret=${RISK_CRON_SECRET}" --attempt-deadline=300s --quiet)
+  if gcloud scheduler jobs describe novard-risk-rescan --location="$REGION" --project="$PROJECT_ID" >/dev/null 2>&1; then
+    gcloud scheduler jobs update http novard-risk-rescan "${SCHEDULER_ARGS[@]}"
+  else
+    gcloud scheduler jobs create http novard-risk-rescan "${SCHEDULER_ARGS[@]}"
+  fi
+  ok "Risk rescan scheduled hourly"
+else
+  warn "RISK_CRON_SECRET not set: risk scores refresh when an admin opens the risk board (see CLOUD_RUN_SETUP.md)."
+fi
 
 # ── Step 9: Build & push client image (with server URL baked in) ──
 info "Building client image (API → $SERVER_URL)..."

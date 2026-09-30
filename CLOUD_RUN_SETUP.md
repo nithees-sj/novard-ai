@@ -153,6 +153,36 @@ app.use(cors({
 }));
 ```
 
+## Admin console and early warning
+
+**First admin.** Add `SUPERADMIN_EMAILS=you@gmail.com` to `server/.env` before running `./deploy.sh` (or set it on the service), then sign in once at `https://<client-url>/admin/login`. Alternatively run `npm run admin:grant --prefix server -- --email you@gmail.com --role superadmin` against the production `MONGO_URI` from your machine. Optional: `ADMIN_JWT_EXPIRES_IN` (default `12h`).
+
+**Vector search.** Report similarity search uses Atlas Vector Search when the cluster supports it. Create the index once (idempotent) from your machine:
+
+```bash
+MONGO_URI="mongodb+srv://…" npm run db:vector-index --prefix server
+```
+
+Without it (or without `GOOGLE_API_KEY`), the app uses MongoDB text search instead.
+
+### Risk scoring schedule (optional)
+
+Cloud Run scales to zero, so the app never runs anything on a timer by itself. To score risk hourly, set a long random `RISK_CRON_SECRET` in `server/.env`; `./deploy.sh` then sets it on the service and creates (or updates) a Cloud Scheduler job `novard-risk-rescan`. By hand:
+
+```bash
+gcloud services enable cloudscheduler.googleapis.com
+gcloud scheduler jobs create http novard-risk-rescan \
+  --location="$GCP_REGION" --schedule="15 * * * *" --http-method=POST \
+  --uri="$SERVER_URL/api/internal/risk/rescan" \
+  --headers="X-Risk-Cron-Secret=$RISK_CRON_SECRET" --attempt-deadline=300s
+```
+
+The endpoint returns 404 unless `RISK_CRON_SECRET` is set, and 401 for a wrong secret. Without a schedule, scores are refreshed whenever an admin opens the risk board and they are over an hour old. Turning on **Features & limits → Risk → auto-investigate** makes the scheduled rescan investigate newly raised alerts (it spends AI tokens).
+
+**Investigations and CPU.** An investigation keeps running after `POST …/assess` has returned. With Cloud Run's default CPU throttling, the instance only has CPU while a request is open, so keep the console's live view open until it finishes (the stream is an open request), or deploy the server with `--no-cpu-throttling` (billed per instance-second) for unattended runs. A run still "running" after 15 minutes is shown as interrupted.
+
+---
+
 ## CI/CD with Cloud Build
 
 For automated deployments on git push, use the included `cloudbuild.yaml`:
