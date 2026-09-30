@@ -71,9 +71,12 @@ Pure functions, constants as parameters (defaults = EWDI's), checked against out
 | Robust z | `(v − median) / max(1.4826·MAD, 0.25·|median|, floor)`, clip ±6, signed by `DIRECTIONS` | per-feature `ABS_FLOORS` (EWDI 1e-3 for all) |
 | Score | `anomaly_z` = mean of top-3 positive; `score = sigmoid(z − 2)`; attribution = z and share | same |
 | Levels | percentiles P85/P95/P99 of observed scores | only after 120 scored windows; never below z 1.5/3/4.5; fixed 0.50/0.82/0.95 before that and for `insufficient_baseline` areas (< 7 active baseline days) |
+| Complaint rule (new) | an area's unresolved complaints of the last 7 days, whatever its history: 3 → MEDIUM, 5 or 3 severe → HIGH, 5 severe → CRITICAL, from ≥ 2 students; the higher of this and the score's level wins (`anomalyLevel` keeps the score's own) | `risk.complaints`; see below |
 | Escalation | alert at the start of a HIGH+ episode and on each worsening; latest must still be HIGH+; unique `(area, windowEnd, level)` | same |
 | Lifecycle | new → ongoing → escalated (2 rises while alerting, cumulative) → resolved (3 low cycles) → recurring | a cycle is one complete day, applied once (`lastWindowEnd`); non-dominant topics get quiet cycles; the precedent is written once |
 | Topics | greedy cosine clustering, τ 0.75 | per area, `minCluster` 3 (EWDI 15), ids kept when a centroid moves < cos 0.9 |
+
+**Complaint rule** (`services/earlyWarning/complaints.js`). Each report is read as `severe`, `complaint` or `none`. After the triage: a complaint is urgent, or has sentiment ≤ −0.3 (not a feature request), or is a bug / wrong AI answer / account problem that is not low urgency; severe = urgent or sentiment ≤ −0.6. Before the triage (or with no model), a word list reads the text. Counts are stored per window (`AreaFeature.complaints`, `RiskScore.complaints`); a report counts while it was unresolved at the window's end. Filing, resolving or reopening a report (and the enrichment batch) marks the scores stale (`risk:changedAt`), so the next risk board view rescans. The area page shows each open report's reading.
 
 Metrics per area and day: report volume, reporters, unanswered share (48 h grace), p50/p90 time to first reply (log1p hours), mean sentiment, negative / urgent / repeat shares, and the automatic signals AI error rate, AI 429 rate, AI p95 latency, AI answers reported per 1,000 calls and YouTube/PDF failure rate. Slopes: volume, sentiment, unanswered, AI errors.
 
@@ -144,3 +147,4 @@ Retention: `ModelCall` and `GatewayEvent` expire after 45 days (TTL); `AreaFeatu
 | Copilot mutations run immediately; spend not logged | confirmation cards; every call logged | admin control, cost visibility |
 | No numeric check | figures must match tool results | trustworthy answers |
 | Uncited cap only when all uncited (kept) | kept, faithfully | the code was the source of truth |
+| Risk only from deviation against the baseline | plus an absolute complaint rule | a young platform has no baseline; a handful of angry students is a risk anyway |

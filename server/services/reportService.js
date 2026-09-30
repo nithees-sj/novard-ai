@@ -287,6 +287,7 @@ async function createReport({ user, area: requestedArea, body = {}, files }) {
     const current = { ...saved.toObject(), ...updates };
     await require('./reportEnrichment').enrichOne(current);
     require('./reportEmbeddings').embedReportSoon(saved._id);
+    riskChanged();
 
     return presentForStudent(await Report.findById(saved._id).lean(), await areaLabels());
   } catch (error) {
@@ -294,6 +295,9 @@ async function createReport({ user, area: requestedArea, body = {}, files }) {
     throw error;
   }
 }
+
+/** Complaint counts changed: rescan risk on the next board view (required lazily: the scorer is heavy). */
+const riskChanged = () => require('./earlyWarning/rescan').markStale();
 
 // ── the student's view ─────────────────────────────────────────────────────
 
@@ -372,6 +376,7 @@ async function addStudentNote(user, ref, body) {
       }
     }
     if (!reopened) throw quotaExceeded(await areaLabel(report.area), maxOpenPerArea);
+    riskChanged();
   }
   return getMine(user.email, report.ref);
 }
@@ -491,6 +496,7 @@ async function resolveReports({ refs, area, note, status = 'resolved', actor, ip
   await Report.updateMany({ resolveBatchId: batchId, firstResponseAt: null }, { $set: { firstResponseAt: now } });
 
   const changed = await Report.find({ resolveBatchId: batchId }).select('ref userId area').lean();
+  if (changed.length) riskChanged();
   const labels = await areaLabels();
   const byStudent = new Map();
   changed.forEach((r) => byStudent.set(r.userId, [...(byStudent.get(r.userId) || []), r]));

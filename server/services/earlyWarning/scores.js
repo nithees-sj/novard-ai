@@ -2,6 +2,7 @@ const AreaFeature = require('../../models/areaFeature');
 const RiskScore = require('../../models/riskScore');
 const settings = require('../settingsService');
 const { scoreWindow, levelsFromPercentiles, classify, dayKey, addDays } = require('./scoring');
+const { complaintLevel, worse } = require('./complaints');
 const EW = require('../../config/earlyWarning');
 
 /**
@@ -11,6 +12,10 @@ const EW = require('../../config/earlyWarning');
  * Levels: percentile cut-offs over the observed scores (P85/P95/P99) once
  * there is enough history; fixed thresholds before that, and always for an
  * area whose baseline is too thin (`insufficient_baseline`).
+ *
+ * The complaint rule then applies on top: enough unresolved complaints raise
+ * the level whatever the baseline says (complaints.js). `anomalyLevel` keeps
+ * what the baseline alone said.
  */
 
 const sigmoid = (x) => 1 / (1 + Math.exp(-x));
@@ -49,10 +54,11 @@ function thresholdsFor(scores, config) {
  */
 async function scoreAll({ now = new Date(), demo } = {}) {
   const since = new Date(`${addDays(dayKey(now), -EW.HISTORY_DAYS)}T00:00:00Z`);
-  const [rows, thresholdConfig, coldStart] = await Promise.all([
+  const [rows, thresholdConfig, coldStart, complaintCfg] = await Promise.all([
     AreaFeature.find({ windowEnd: { $gte: since } }).sort({ windowEnd: 1 }).lean(),
     settings.get('risk.thresholds'),
     settings.get('risk.coldStart'),
+    settings.get('risk.complaints'),
   ]);
 
   const scored = rows.map((row) => {
@@ -64,7 +70,9 @@ async function scoreAll({ now = new Date(), demo } = {}) {
 
   const ops = scored.map((s) => {
     const useFixed = s.status === 'insufficient_baseline';
-    const level = classify(s.score, useFixed ? thresholdConfig.fixed : thresholds);
+    const anomalyLevel = classify(s.score, useFixed ? thresholdConfig.fixed : thresholds);
+    const byComplaints = complaintLevel(s.row.complaints, complaintCfg);
+    const level = worse(anomalyLevel, byComplaints);
     return {
       updateOne: {
         filter: { area: s.row.area, windowEnd: s.row.windowEnd },
@@ -76,6 +84,8 @@ async function scoreAll({ now = new Date(), demo } = {}) {
             attribution: s.attribution,
             status: s.status,
             levelsFrom: useFixed ? 'fixed' : from,
+            anomalyLevel,
+            complaints: s.row.complaints ? { ...s.row.complaints, level: byComplaints, raised: level !== anomalyLevel } : null,
             modelVersion: 'anomaly-v1',
             ...(demo !== undefined ? { demo } : {}),
           },

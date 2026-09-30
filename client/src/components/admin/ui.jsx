@@ -72,7 +72,10 @@ export const when = (d) => (d ? new Date(d).toLocaleString(undefined, { day: 'nu
 export const DriverList = ({ drivers = [] }) => (drivers.length
   ? (
     <ul className="flex flex-wrap gap-1.5">
-      {drivers.map((d) => <li key={d.feature} className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">{d.label} {d.z > 0 ? '+' : ''}{Number(d.z).toFixed(1)}σ</li>)}
+      {drivers.map((d) => (d.text
+        // The complaint count: a plain sentence, not a deviation.
+        ? <li key={d.feature} className="rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">{d.label}</li>
+        : <li key={d.feature} className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">{d.label} {d.z > 0 ? '+' : ''}{Number(d.z).toFixed(1)}σ</li>))}
     </ul>
   )
   : <span className="text-xs text-gray-400">no unusual signal</span>);

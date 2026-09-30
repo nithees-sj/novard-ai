@@ -34,7 +34,7 @@ export default function RiskBoard() {
 
   const columns = [
     { key: 'label', label: 'Area', render: (r) => <span className="font-semibold text-gray-900">{r.label}</span> },
-    { key: 'level', label: 'Level', render: (r) => <span className="flex items-center gap-2"><LevelBadge level={r.level} />{r.status === 'insufficient_baseline' && <Badge>new area</Badge>}</span> },
+    { key: 'level', label: 'Level', render: (r) => <span className="flex items-center gap-2"><LevelBadge level={r.level} />{r.complaints?.raised && <Badge tone="red">complaints</Badge>}{r.status === 'insufficient_baseline' && !r.complaints?.raised && <Badge>new area</Badge>}</span> },
     { key: 'score', label: 'Score', className: 'tabular-nums', render: (r) => r.score.toFixed(3) },
     { key: 'trend', label: '28-day trend', render: (r) => <Sparkline values={r.sparkline.map((p) => p.score)} max={1} color={SPARK_COLOR[r.level]} label={`${r.label} risk trend`} /> },
     { key: 'drivers', label: 'Driven by', render: (r) => <DriverList drivers={r.drivers} /> },

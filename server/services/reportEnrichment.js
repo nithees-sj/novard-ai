@@ -186,6 +186,8 @@ async function enrichPending({ limit = 500, batchSize = REPORTS.enrichBatchSize,
       if (error?.code === 'AI_UNAVAILABLE' || error?.status === 503) break; // no point hammering a down provider
     }
   }
+  // New sentiment readings change the complaint counts: rescan on the next board view.
+  if (done) require('./earlyWarning/rescan').markStale();
   return { considered: todo.length, done, failed };
 }
 

@@ -12,6 +12,20 @@ import { errorMessage } from '../../lib/api';
 const short = (d) => d.slice(5);
 
 /** One area: 28 days of signals, what drives its score, its reports, and its investigations. */
+const VERDICT = { severe: ['red', 'Severe complaint'], complaint: ['amber', 'Complaint'], none: ['gray', 'Not a risk'] };
+/** What the report's text says, as the complaint rule reads it. */
+const RiskVerdict = ({ risk }) => {
+  const [tone, label] = VERDICT[risk] || VERDICT.none;
+  return <Badge tone={tone}>{label}</Badge>;
+};
+
+/** "5 unresolved complaints in 7 days (3 severe) from 4 students: HIGH by the complaint rule." */
+function complaintNote(c) {
+  if (!c?.complaints) return '';
+  const rule = c.level && c.level !== 'LOW' ? `: ${c.level} by the complaint rule` : '';
+  return `${c.complaints} unresolved complaint${c.complaints === 1 ? '' : 's'} in ${c.windowDays} days${c.severe ? ` (${c.severe} severe)` : ''} from ${c.reporters} student${c.reporters === 1 ? '' : 's'}${rule}. Newest first.`;
+}
+
 export default function AreaDetail() {
   const { area } = useParams();
   const navigate = useNavigate();
@@ -81,7 +95,7 @@ export default function AreaDetail() {
             </Section>
           </div>
 
-          <Section title="Open reports" subtitle="Newest first" right={<Link to={`/admin/reports?area=${area}`} className="text-xs font-semibold text-blue-600 hover:underline">Inbox</Link>}>
+          <Section title="Open reports" subtitle={complaintNote(data.latest?.complaints) || 'Newest first'} right={<Link to={`/admin/reports?area=${area}`} className="text-xs font-semibold text-blue-600 hover:underline">Inbox</Link>}>
             <DataTable
               rowKey={(r) => r.ref}
               onRowClick={(r) => navigate(`/admin/reports/${r.ref}`)}
@@ -90,6 +104,7 @@ export default function AreaDetail() {
               columns={[
                 { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-gray-900">{r.ref}</span> },
                 { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-xl text-gray-700">{r.text}</span> },
+                { key: 'risk', label: 'Counts as', render: (r) => <RiskVerdict risk={r.risk} /> },
                 { key: 'urgency', label: 'Urgency', render: (r) => r.enrichment?.urgency || '–' },
                 { key: 'topic', label: 'Topic', render: (r) => r.enrichment?.topic || '–' },
                 { key: 'createdAt', label: 'Sent', render: (r) => when(r.createdAt) },

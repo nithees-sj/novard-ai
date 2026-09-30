@@ -12,6 +12,8 @@ const areaFeatureSchema = new mongoose.Schema({
   daily: { type: mongoose.Schema.Types.Mixed, default: {} },
   f: { type: mongoose.Schema.Types.Mixed, default: null },
   baselineActiveDays: { type: Number, default: 0 },
+  // The complaint rule's count for this window: { complaints, severe, reporters, windowDays }
+  complaints: { type: mongoose.Schema.Types.Mixed, default: null },
   demo: Boolean,
 }, { timestamps: true, minimize: false });
 

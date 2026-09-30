@@ -2,6 +2,7 @@ const RiskScore = require('../../models/riskScore');
 const RiskAlert = require('../../models/riskAlert');
 const { areaLabels } = require('../reportAreas');
 const { detectEscalations, alertMessage, dayKey, addDays } = require('./scoring');
+const { complaintDrivers } = require('./complaints');
 const { FEATURE_LABELS, HISTORY_DAYS } = require('../../config/earlyWarning');
 
 /**
@@ -11,7 +12,7 @@ const { FEATURE_LABELS, HISTORY_DAYS } = require('../../config/earlyWarning');
  * (area, windowEnd, level), so re-running the scorer never re-alerts.
  */
 
-const plain = (drivers) => drivers.map((d) => ({ ...d, feature: FEATURE_LABELS[d.feature] || d.feature }));
+const plain = (drivers) => drivers.map((d) => (d.text ? d : { ...d, feature: FEATURE_LABELS[d.feature] || d.feature }));
 
 async function detectAll({ now = new Date(), areas, demo } = {}) {
   const since = new Date(`${addDays(dayKey(now), -HISTORY_DAYS)}T00:00:00Z`);
@@ -25,7 +26,7 @@ async function detectAll({ now = new Date(), areas, demo } = {}) {
   const made = [];
   for (const [area, history] of byArea) {
     for (const { row, prevLevel, prevScore } of detectEscalations(history)) {
-      const drivers = (row.attribution || []).slice(0, 6);
+      const drivers = [...complaintDrivers(row.complaints), ...(row.attribution || []).filter((a) => a.z > 0).slice(0, 6)];
       const doc = {
         area,
         windowEnd: row.windowEnd,

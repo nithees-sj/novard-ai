@@ -159,7 +159,7 @@ function allowedIds(evidence) {
 function statisticalHypothesis(state) {
   const cite = (state.evidence || []).filter((e) => e.kind !== 'error').slice(0, 6).map((e) => e.id);
   return {
-    cause: `Statistical anomaly: ${driversText(state.risk) || 'no single driver'}. Narrative analysis unavailable.`,
+    cause: `${state.risk?.complaints?.raised ? 'Student complaints' : 'Statistical anomaly'}: ${driversText(state.risk) || 'no single driver'}. Narrative analysis unavailable.`,
     confidence: 0.3,
     evidenceIds: cite,
     contradictingIds: [],

@@ -122,6 +122,24 @@ const THRESHOLDS = {
  */
 const LEVEL_MIN_Z = { MEDIUM: 1.5, HIGH: 3, CRITICAL: 4.5 };
 
+/**
+ * The complaint rule (services/earlyWarning/complaints.js): an area's level
+ * from its unresolved complaints in the last `windowDays` days, whatever its
+ * history. A complaint is a report whose text reads as a problem (sentiment,
+ * urgency and intent from the AI triage); a severe one is urgent or very
+ * negative. The higher of this level and the baseline score's level wins.
+ */
+const COMPLAINTS = {
+  enabled: true,
+  windowDays: 7,
+  medium: 3, // complaints -> MEDIUM
+  high: 5, // complaints -> HIGH
+  severeHigh: 3, // severe complaints -> HIGH
+  severeCritical: 5, // severe complaints -> CRITICAL
+  // One student alone never puts an area at risk.
+  minReporters: 2,
+};
+
 const COLD_START = {
   // An area whose 21-day baseline has fewer active days than this is
   // `insufficient_baseline` and only ever classified by fixed thresholds.
@@ -301,6 +319,7 @@ module.exports = {
   LEVELS,
   THRESHOLDS,
   LEVEL_MIN_Z,
+  COMPLAINTS,
   COLD_START,
   BUDGET,
   AUTO_INVESTIGATE,

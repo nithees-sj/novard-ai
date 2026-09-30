@@ -250,7 +250,8 @@ function detectEscalations(rows) {
 
 /** The alert text (escalation.py _message). */
 function alertMessage(name, level, prev, score, drivers = []) {
-  const top = drivers.slice(0, 3).map((d) => `${d.feature} ${d.z >= 0 ? '+' : ''}${d.z.toFixed(1)}σ`).join(', ') || 'no single driver';
+  // Novard: a text driver (the complaint count) reads as it is.
+  const top = drivers.slice(0, 3).map((d) => (d.text ? d.label : `${d.feature} ${d.z >= 0 ? '+' : ''}${d.z.toFixed(1)}σ`)).join(', ') || 'no single driver';
   const moved = prev ? `${prev} → ${level}` : `now ${level}`;
   return `${name} risk has risen (${moved}, score ${Number(score).toFixed(3)}). Driven by ${top}.`;
 }

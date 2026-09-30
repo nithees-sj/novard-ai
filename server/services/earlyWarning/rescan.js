@@ -19,16 +19,30 @@ const logger = require('../../utils/logger');
 const LOCK_MS = 10 * 60 * 1000;
 const STALE_MS = 60 * 60 * 1000;
 const LAST_KEY = 'risk:lastRescan';
+const DIRTY_KEY = 'risk:changedAt';
 
 async function lastRescanAt() {
   const row = await UsageCounter.findOne({ key: LAST_KEY }).lean();
   return row ? new Date(row.value) : null;
 }
 
-/** Are the scores older than an hour (or missing)? */
+/**
+ * A report was filed, resolved or reopened: the complaint counts are out of
+ * date, so the next risk board view rescans instead of waiting out the hour.
+ * Fire-and-forget: never fails the caller.
+ */
+function markStale(now = new Date()) {
+  return UsageCounter.updateOne(
+    { key: DIRTY_KEY },
+    { $set: { value: now.getTime(), expiresAt: new Date(now.getTime() + 400 * 24 * 3600 * 1000) } },
+    { upsert: true }
+  ).catch((error) => logger.warn('Could not mark risk scores stale', { error: error.message }));
+}
+
+/** Are the scores older than an hour (or missing), or has a report changed since? */
 async function isStale(now = new Date()) {
-  const last = await lastRescanAt();
-  return !last || now - last > STALE_MS;
+  const [last, changed] = await Promise.all([lastRescanAt(), UsageCounter.findOne({ key: DIRTY_KEY }).lean()]);
+  return !last || now - last > STALE_MS || Boolean(changed && changed.value > last.getTime());
 }
 
 /**
@@ -73,4 +87,4 @@ async function rescanAll({ now = new Date(), full = false, trigger = 'admin', de
   return result;
 }
 
-module.exports = { rescanAll, isStale, lastRescanAt };
+module.exports = { rescanAll, isStale, lastRescanAt, markStale };

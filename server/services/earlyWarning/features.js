@@ -5,6 +5,7 @@ const AreaFeature = require('../../models/areaFeature');
 const settings = require('../settingsService');
 const { areas: allAreas } = require('../reportAreas');
 const { buildFeatures, percentile, dayKey, addDays } = require('./scoring');
+const { countWindow } = require('./complaints');
 const EW = require('../../config/earlyWarning');
 
 /**
@@ -164,6 +165,18 @@ async function firstDataDay() {
   return dates.length ? dayKey(new Date(Math.min(...dates))) : null;
 }
 
+/** Each area's reports (for the complaint rule), from `from` on: { area: [report] }. */
+async function reportsByArea(from, to, resolve) {
+  const reports = await Report.find({ createdAt: { $gte: from, $lt: to } })
+    .select('area userId createdAt open resolvedAt enrichment.status enrichment.sentiment enrichment.urgency enrichment.intent text transcript').lean();
+  const out = {};
+  reports.forEach((r) => {
+    const area = resolve(r.area);
+    if (area) (out[area] = out[area] || []).push(r);
+  });
+  return out;
+}
+
 /** Days in the baseline part of a window with any activity (cold start). */
 function baselineActiveDays(days, windowEnd) {
   let n = 0;
@@ -183,8 +196,12 @@ async function computeFeatures({ now = new Date(), recomputeDays = 35, demo } = 
   const firstWindow = addDays(today, -(recomputeDays - 1));
   const from = new Date(`${addDays(firstWindow, -EW.BASELINE_DAYS)}T00:00:00Z`);
   const to = new Date(startOfDay(now).getTime() + DAY_MS);
-  const [daily, coldStart, { ids }, dataStart] = await Promise.all([dailyMetrics({ from, to, now }), settings.get('risk.coldStart'), areaMap(), firstDataDay()]);
+  const [daily, coldStart, complaintCfg, { ids, resolve }, dataStart] = await Promise.all([
+    dailyMetrics({ from, to, now }), settings.get('risk.coldStart'), settings.get('risk.complaints'), areaMap(), firstDataDay(),
+  ]);
   const cfg = { ...metricConfig(coldStart), dataStart };
+  const complaintDays = complaintCfg.windowDays;
+  const reports = await reportsByArea(new Date(`${addDays(firstWindow, -(complaintDays - 1))}T00:00:00Z`), to, resolve);
 
   const ops = [];
   ids.forEach((area) => {
@@ -199,6 +216,7 @@ async function computeFeatures({ now = new Date(), recomputeDays = 35, demo } = 
               daily: days[we] || blank(),
               f: buildFeatures(days, we, cfg),
               baselineActiveDays: baselineActiveDays(days, we),
+              complaints: { ...countWindow(reports[area] || [], we, complaintDays), windowDays: complaintDays },
               ...(demo !== undefined ? { demo } : {}),
             },
           },

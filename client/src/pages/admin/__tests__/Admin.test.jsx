@@ -53,7 +53,7 @@ const BOARD = {
   lastRescanAt: '2026-09-30T10:00:00Z',
   areas: [
     { area: 'video-summarizer', label: 'Video Summarizer', level: 'CRITICAL', score: 0.982, status: 'scored', drivers: [{ feature: 'n_reports', label: 'report volume', z: 6 }], sparkline: [{ d: '2026-09-29', score: 0.2 }, { d: '2026-09-30', score: 0.98 }], openReports: 40, urgentReports: 30, riskObject: { topic: 'missing video captions', state: 'new' }, openAlerts: 1 },
-    { area: 'notes', label: 'Notes & PDF chat', level: 'LOW', score: 0.12, status: 'scored', drivers: [], sparkline: [], openReports: 0, urgentReports: 0, riskObject: null, openAlerts: 0 },
+    { area: 'notes', label: 'Notes & PDF chat', level: 'HIGH', score: 0.12, status: 'insufficient_baseline', drivers: [{ feature: 'complaints', label: '5 complaints in 7 days (3 severe)', text: true }], complaints: { complaints: 5, severe: 3, reporters: 4, level: 'HIGH', raised: true }, sparkline: [], openReports: 5, urgentReports: 3, riskObject: null, openAlerts: 0 },
   ],
 };
 
@@ -121,6 +121,9 @@ describe('admin console routing', () => {
     expect(screen.getByText('ADMIN · RISK BOARD')).toBeInTheDocument();
     expect(screen.getByText('CRITICAL')).toBeInTheDocument();
     expect(screen.getByText('report volume +6.0σ')).toBeInTheDocument();
+    // An area raised by the complaint rule says so in words, not in σ.
+    expect(screen.getByText('5 complaints in 7 days (3 severe)')).toBeInTheDocument();
+    expect(screen.getByText('complaints')).toBeInTheDocument();
   });
 });
 

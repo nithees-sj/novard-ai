@@ -6,6 +6,7 @@ const { computeFeatures } = require('../features');
 const { scoreFeatures } = require('../scores');
 const { dominantTopic } = require('../lifecycle');
 const { classify } = require('../scoring');
+const { complaintDrivers } = require('../complaints');
 const { FEATURE_LABELS, HORIZON_DAYS } = require('../../../config/earlyWarning');
 
 /**
@@ -15,8 +16,11 @@ const { FEATURE_LABELS, HORIZON_DAYS } = require('../../../config/earlyWarning')
  */
 
 const ALERT = ['HIGH', 'CRITICAL'];
-const driversText = (risk) => (risk?.attribution || []).slice(0, 5)
-  .map((a) => `${FEATURE_LABELS[a.feature] || a.feature} ${a.z >= 0 ? '+' : ''}${Number(a.z).toFixed(1)}σ`).join(', ');
+// The complaint count (when it called for MEDIUM or worse) first, then the baseline signals.
+const driversText = (risk) => [
+  ...complaintDrivers(risk?.complaints).map((d) => `${d.label} from ${d.reporters} students`),
+  ...(risk?.attribution || []).slice(0, 5).map((a) => `${FEATURE_LABELS[a.feature] || a.feature} ${a.z >= 0 ? '+' : ''}${Number(a.z).toFixed(1)}σ`),
+].join(', ');
 
 async function buildFeatures(state) {
   let row = await AreaFeature.findOne({ area: state.area, windowEnd: state.windowEnd }).lean();
@@ -32,7 +36,7 @@ async function scoreRisk(state) {
   const row = await RiskScore.findOne({ area: state.area, windowEnd: state.windowEnd }).lean();
   let risk;
   if (row) {
-    risk = { score: row.score, level: row.level, anomalyZ: row.anomalyZ, attribution: row.attribution, status: row.status };
+    risk = { score: row.score, level: row.level, anomalyZ: row.anomalyZ, attribution: row.attribution, status: row.status, complaints: row.complaints || null };
   } else {
     const s = scoreFeatures(state.features);
     const { fixed } = await settings.get('risk.thresholds');

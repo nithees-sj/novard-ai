@@ -161,3 +161,57 @@ describe('rescan endpoints', () => {
     expect(await AdminAuditLog.findOne({ action: 'risk.rescan' })).toBeTruthy();
   });
 });
+
+describe('complaint rule: enough complaints put an area at risk, whatever its history', () => {
+  const HOUR = 3600 * 1000;
+  let n = 0;
+  const complaint = (userId, fields, extra = {}) => {
+    n += 1;
+    return {
+      ref: `NV-C${String(n).padStart(7, '0')}`, userId, area: 'notes', text: 'The notes chat does not work.', createdAt: new Date(Date.now() - n * HOUR),
+      quotaSlot: n % 2, enrichment: { status: 'done', sentiment: -0.4, urgency: 'medium', intent: 'bug', ...fields }, ...extra,
+    };
+  };
+
+  it('5 complaints from several students on a brand-new platform: HIGH, and the board says why', async () => {
+    await Report.insertMany(['a', 'b', 'c', 'd', 'e'].map((s) => complaint(`${s}@example.com`, {})));
+    const admin = await adminBearer();
+    const res = await request(app).get('/api/admin/risk/board').set('Authorization', admin);
+    expect(res.status).toBe(200);
+    const notes = res.body.areas.find((a) => a.area === 'notes');
+    expect(notes.level).toBe('HIGH');
+    expect(notes.complaints).toMatchObject({ complaints: 5, severe: 0, reporters: 5, level: 'HIGH', raised: true });
+    expect(notes.drivers[0]).toMatchObject({ feature: 'complaints', label: '5 complaints in 7 days', text: true });
+    // It is at the top of the board, and an alert explains it.
+    expect(res.body.areas[0].area).toBe('notes');
+    const alert = await RiskAlert.findOne({ area: 'notes' }).lean();
+    expect(alert.message).toMatch(/5 complaints in 7 days/);
+
+    // The area page says how each report was read.
+    const detail = await request(app).get('/api/admin/risk/areas/notes').set('Authorization', admin);
+    expect(detail.body.openReports.map((r) => r.risk)).toEqual(Array(5).fill('complaint'));
+    expect(detail.body.openReports[0].userId).toBeUndefined();
+  });
+
+  it('3 severe complaints are enough; suggestions and praise never count', async () => {
+    await Report.insertMany([
+      ...['a', 'b', 'c'].map((s) => complaint(`${s}@example.com`, { sentiment: -0.85, urgency: 'high' })),
+      ...['d', 'e', 'f', 'g', 'h', 'i'].map((s) => complaint(`${s}@example.com`, { intent: 'feature_request', sentiment: 0.3, urgency: 'low' }, { area: 'quizzes' })),
+    ]);
+    await rescanAll();
+    const latest = async (area) => RiskScore.findOne({ area }).sort({ windowEnd: -1 }).lean();
+    expect(await latest('notes')).toMatchObject({ level: 'HIGH', complaints: expect.objectContaining({ severe: 3 }) });
+    expect((await latest('quizzes')).level).toBe('LOW');
+  });
+
+  it('resolving the complaints brings the level down on the next board view', async () => {
+    await Report.insertMany(['a', 'b', 'c', 'd', 'e'].map((s) => complaint(`${s}@example.com`, {})));
+    const admin = await adminBearer();
+    const level = async () => (await request(app).get('/api/admin/risk/board').set('Authorization', admin)).body.areas.find((a) => a.area === 'notes').level;
+    expect(await level()).toBe('HIGH');
+    const { resolveReports } = require('../../services/reportService');
+    await resolveReports({ area: 'notes', note: 'Fixed the notes chat.', actor: 'ada@example.com' });
+    await new Promise((r) => { setTimeout(r, 20); });
+    expect(await level()).toBe('LOW');
+  });
+});

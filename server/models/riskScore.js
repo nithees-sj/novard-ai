@@ -11,6 +11,9 @@ const riskScoreSchema = new mongoose.Schema({
   // scored = normal; insufficient_baseline = too little history, fixed thresholds only
   status: { type: String, enum: ['scored', 'insufficient_baseline'], default: 'scored' },
   levelsFrom: { type: String, enum: ['percentile', 'fixed'], default: 'fixed' },
+  // The complaint rule: its count, the level it calls for, and whether it set `level`.
+  complaints: { type: mongoose.Schema.Types.Mixed, default: null },
+  anomalyLevel: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
   modelVersion: { type: String, default: 'anomaly-v1' },
   demo: Boolean,
 }, { timestamps: true });

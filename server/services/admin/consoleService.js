@@ -15,6 +15,7 @@ const { isStale, rescanAll, lastRescanAt } = require('../earlyWarning/rescan');
 const { openAlerts } = require('../earlyWarning/escalation');
 const { present: presentRun } = require('../earlyWarning/runs');
 const { percentileThresholds } = require('../earlyWarning/scores');
+const { complaintDrivers, verdict } = require('../earlyWarning/complaints');
 const { todaysSpend } = require('../../ai/usageGuard');
 const { gatewayLights } = require('./gatewayService');
 const { FEATURE_LABELS, GRAPH } = require('../../config/earlyWarning');
@@ -30,8 +31,10 @@ const logger = require('../../utils/logger');
 const DAY_MS = 24 * 3600 * 1000;
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const midnight = (key) => new Date(`${key}T00:00:00Z`);
-const plainDrivers = (attribution = [], n = 3) => attribution.filter((a) => a.z > 0).slice(0, n)
-  .map((a) => ({ feature: a.feature, label: FEATURE_LABELS[a.feature] || a.feature, z: a.z, share: a.share }));
+const plainDrivers = (attribution = [], n = 3) => attribution.filter((a) => a.text || a.z > 0).slice(0, n)
+  .map((a) => (a.text ? a : { feature: a.feature, label: FEATURE_LABELS[a.feature] || a.feature, z: a.z, share: a.share }));
+/** A score's drivers: the complaint count first (when it matters), then the baseline signals. */
+const scoreDrivers = (score, n = 3) => plainDrivers([...complaintDrivers(score?.complaints), ...(score?.attribution || [])], n);
 
 /** Rescan when the scores are over an hour old (Cloud Run may have been idle). Never fails the page. */
 async function freshen() {
@@ -68,7 +71,8 @@ async function board({ rescan = true } = {}) {
       score: latest?.score ?? 0,
       status: latest?.status || 'insufficient_baseline',
       windowEnd: latest?.windowEnd || null,
-      drivers: plainDrivers(latest?.attribution),
+      drivers: scoreDrivers(latest),
+      complaints: latest?.complaints || null,
       sparkline: history.map((h) => ({ d: h.windowEnd.toISOString().slice(0, 10), score: h.score, level: h.level })),
       openReports: reportsBy.get(id)?.open || 0,
       urgentReports: reportsBy.get(id)?.urgent || 0,
@@ -90,7 +94,7 @@ async function areaDetail(areaId) {
     areaLabels(),
     AreaFeature.find({ area, windowEnd: { $gte: midnight(since.toISOString().slice(0, 10)) } }).sort({ windowEnd: 1 }).lean(),
     RiskScore.find({ area, windowEnd: { $gte: midnight(since.toISOString().slice(0, 10)) } }).sort({ windowEnd: 1 }).lean(),
-    Report.find({ area, open: true }).sort({ createdAt: -1 }).limit(25).select('ref text status enrichment createdAt source.excerpt').lean(),
+    Report.find({ area, open: true }).sort({ createdAt: -1 }).limit(25).select('ref userId text transcript status enrichment createdAt source.excerpt').lean(),
     RiskObject.find({ area }).sort({ lastSeenAt: -1 }).limit(10).lean(),
     RiskAssessment.find({ area }).sort({ startedAt: -1 }).limit(10).select('runId status outcome trigger startedAt endedAt degraded risk.level risk.score hypotheses budget').lean(),
     RiskPrecedent.find({ area }).sort({ closedAt: -1 }).limit(5).lean(),
@@ -104,7 +108,7 @@ async function areaDetail(areaId) {
   return {
     area,
     label: labels[area] || area,
-    latest: latest && { ...latest, drivers: plainDrivers(latest.attribution, 8), attribution: latest.attribution.map((a) => ({ ...a, label: FEATURE_LABELS[a.feature] || a.feature })) },
+    latest: latest && { ...latest, drivers: scoreDrivers(latest, 8), attribution: latest.attribution.map((a) => ({ ...a, label: FEATURE_LABELS[a.feature] || a.feature })) },
     thresholds: inForce,
     series: features.map((f) => ({
       d: f.windowEnd.toISOString().slice(0, 10),
@@ -116,7 +120,13 @@ async function areaDetail(areaId) {
       gatewayFailureRate: f.daily?.gateway_failure_rate ?? null,
     })),
     scores: scores.map((s) => ({ d: s.windowEnd.toISOString().slice(0, 10), score: s.score, level: s.level, status: s.status })),
-    openReports: reports,
+    // Each report's reading for the complaint rule: severe, complaint or none. Student emails stay out.
+    openReports: reports.map((r) => {
+      const shown = { ...r, risk: verdict(r) };
+      delete shown.userId;
+      delete shown.transcript;
+      return shown;
+    }),
     riskObjects: objects,
     assessments: runs.map((r) => ({ ...presentRun(r), topCause: (r.hypotheses || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]?.cause || null, hypotheses: undefined })),
     precedents,

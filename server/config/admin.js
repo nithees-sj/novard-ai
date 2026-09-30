@@ -241,6 +241,25 @@ const SETTINGS = {
     default: () => JSON.parse(JSON.stringify(EW.THRESHOLDS)),
     validate: v.shape({ fixed: levels(0.01, 0.999), percentiles: levels(50, 99.9), minScoredWindows: v.int(10, 100000) }),
   },
+  'risk.complaints': {
+    group: 'risk',
+    description: 'Complaint rule: an area\'s level from its unresolved complaints in the last few days (a report counts when its text reads as a problem; severe = urgent or very negative). The higher of this and the baseline score wins.',
+    default: () => ({ ...EW.COMPLAINTS }),
+    validate: (x, label, current) => {
+      const out = v.shape({
+        enabled: v.bool(),
+        windowDays: v.int(1, 30),
+        medium: v.int(1, 1000),
+        high: v.int(1, 1000),
+        severeHigh: v.int(1, 1000),
+        severeCritical: v.int(1, 1000),
+        minReporters: v.int(1, 100),
+      })(x, label, current);
+      if (out.medium > out.high) fail(label, 'needs medium <= high');
+      if (out.severeHigh > out.severeCritical) fail(label, 'needs severeHigh <= severeCritical');
+      return out;
+    },
+  },
   'risk.coldStart': {
     group: 'risk',
     description: 'Minimum baseline history and daily event counts before a rate metric is trusted.',
