@@ -173,19 +173,20 @@ async function getIssue(issueId) {
   return { ...issue, category: issue.category || 'general' };
 }
 
-async function updateIssueStatus({ issueId, status, userEmail }) {
+/** Owner only, or an admin moderating (`asAdmin`). */
+async function updateIssueStatus({ issueId, status, userEmail, asAdmin = false }) {
   if (!STATUSES.includes(status)) throw badRequest('Invalid status. Must be open, resolved, or closed');
   const issue = await findIssue(issueId);
-  assertOwner(issue, userEmail);
+  if (!asAdmin) assertOwner(issue, userEmail);
   issue.status = status;
   await issue.save();
   return issue;
 }
 
-/** Owner-only. Removes the discussion and every reply in it. */
-async function deleteIssue({ issueId, userEmail }) {
+/** Owner only, or an admin moderating (`asAdmin`). Removes the discussion and every reply in it. */
+async function deleteIssue({ issueId, userEmail, asAdmin = false }) {
   const issue = await findIssue(issueId);
-  assertOwner(issue, userEmail);
+  if (!asAdmin) assertOwner(issue, userEmail);
   // The issue goes first: if removing the replies then fails, they are orphans nobody can see,
   // rather than a discussion that lost its replies.
   await issue.deleteOne();
@@ -195,11 +196,11 @@ async function deleteIssue({ issueId, userEmail }) {
 
 // ── comments ──────────────────────────────────────────────────────────────
 
-/** All replies in a thread, oldest first. */
-async function listComments(issueId, { limit } = {}) {
+/** All replies in a thread, oldest first. Replies an admin hid are left out (moderation sees them). */
+async function listComments(issueId, { limit, includeHidden = false } = {}) {
   if (typeof issueId !== 'string' || !issueId) throw badRequest('A valid issue id is required.');
   const max = Math.min(1000, Math.max(1, parseInt(limit, 10) || 1000));
-  const comments = await ForumComment.find({ issueId }).sort({ createdAt: 1 }).limit(max).lean();
+  const comments = await ForumComment.find({ issueId, ...(includeHidden ? {} : { hidden: { $ne: true } }) }).sort({ createdAt: 1 }).limit(max).lean();
   return { comments, total: comments.length };
 }
 
@@ -247,7 +248,28 @@ async function aiReplyToComment(commentId) {
   });
 }
 
+/** Moderation: remove one reply and the replies to it. */
+async function deleteComment(commentId) {
+  const comment = await ForumComment.findById(commentId);
+  if (!comment) throw notFound('Comment not found');
+  const { deletedCount } = await ForumComment.deleteMany({ $or: [{ _id: comment._id }, { parentCommentId: String(comment._id) }] });
+  return { success: true, commentId: String(comment._id), issueId: comment.issueId, deletedComments: deletedCount };
+}
+
+/** Moderation: hide (or show again) one reply, e.g. a wrong AI answer. */
+async function setCommentHidden(commentId, hidden, by) {
+  const comment = await ForumComment.findByIdAndUpdate(
+    commentId,
+    hidden ? { $set: { hidden: true, hiddenBy: by, hiddenAt: new Date() } } : { $set: { hidden: false }, $unset: { hiddenBy: 1, hiddenAt: 1 } },
+    { new: true }
+  ).lean();
+  if (!comment) throw notFound('Comment not found');
+  return comment;
+}
+
 module.exports = {
+  deleteComment,
+  setCommentHidden,
   CATEGORIES,
   STATUSES,
   openIssue,

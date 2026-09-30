@@ -22,6 +22,13 @@ const forumCommentSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Hidden by an admin (e.g. a wrong AI reply): kept for the record, not shown to students.
+  hidden: {
+    type: Boolean,
+    default: false
+  },
+  hiddenBy: String,
+  hiddenAt: Date,
   parentCommentId: {
     type: String,
     default: null // For nested replies

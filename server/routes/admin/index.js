@@ -8,6 +8,7 @@ const audit = require('../../controllers/admin/auditController');
 const users = require('../../controllers/admin/usersController');
 const reports = require('../../controllers/admin/reportsController');
 const risk = require('../../controllers/admin/riskController');
+const c = require('../../controllers/admin/consoleController');
 
 /**
  * The admin console API. Sign-in is the only route without an admin session;
@@ -51,5 +52,32 @@ router.post('/api/admin/risk/assessments/:id/whatif', h(risk.whatIf));
 router.get('/api/admin/risk/runs', h(risk.listRuns));
 router.get('/api/admin/risk/runs/:id', h(risk.getRun));
 router.get('/api/admin/risk/runs/:id/stream', h(risk.streamRun));
+
+router.get('/api/admin/overview', h(c.overview));
+router.get('/api/admin/risk/board', h(c.board));
+router.get('/api/admin/risk/areas/:area', h(c.area));
+router.get('/api/admin/risk/alerts', h(c.alerts));
+router.post('/api/admin/risk/alerts/:id/ack', h(c.ackAlert));
+
+router.get('/api/admin/gateways', h(c.gateways));
+router.get('/api/admin/gateways/:id', h(c.gateway));
+router.put('/api/admin/gateways/:id/settings', h(c.gatewaySettings));
+router.post('/api/admin/gateways/:id/test', aiLimiter, h(c.gatewayTest));
+router.get('/api/admin/costs', h(c.costs));
+
+router.get('/api/admin/users', h(c.users));
+router.get('/api/admin/users/:id', h(c.user));
+router.post('/api/admin/users/:id/reveal-email', h(c.revealEmail));
+
+router.get('/api/admin/forum/issues', h(c.forumIssues));
+router.get('/api/admin/forum/issues/:issueId', h(c.forumIssue));
+router.put('/api/admin/forum/issues/:issueId/status', h(c.forumIssueStatus));
+router.delete('/api/admin/forum/issues/:issueId', h(c.forumIssueDelete));
+router.delete('/api/admin/forum/comments/:commentId', h(c.forumCommentDelete));
+router.put('/api/admin/forum/comments/:commentId/hidden', h(c.forumCommentHidden));
+router.get('/api/admin/moderation/flagged', h(c.flagged));
+
+router.get('/api/admin/announcements', h(c.announcements));
+router.post('/api/admin/announcements', h(c.announce));
 
 module.exports = router;
