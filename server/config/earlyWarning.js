@@ -36,6 +36,64 @@ const REPORTS = {
   // EWDI: TICKETS_PER_DEPARTMENT = 2. Counted over OPEN reports here, so a
   // student can report again once their earlier report is dealt with.
   maxOpenPerArea: 2,
+  textMin: 10,
+  textMax: 4000,
+  excerptMax: 4000,
+  pdfTextMax: 20000,
+  // Upload limits (bytes). Checked by multer, then each file's first bytes.
+  maxScreenshotBytes: 5 * 1024 * 1024,
+  maxVoiceBytes: 10 * 1024 * 1024,
+  maxPdfBytes: 10 * 1024 * 1024,
+  // EWDI enrich.py: 75 per call; smaller here to stay under Groq's ~8k tokens/minute.
+  enrichBatchSize: 20,
+  embedBatchSize: 50,
+};
+
+/**
+ * Keyword routing for a report filed under "Other" (EWDI's intake routing).
+ * The report form usually knows the area from the page it was opened on;
+ * this only runs when it does not. First area with a matching word wins.
+ */
+const AREA_KEYWORDS = [
+  ['sign-in', /\b(sign(ed)?[ -]?in|log(ged)?[ -]?in|log ?out|google account|session|password|account)\b/i],
+  ['video-summarizer', /\b(summar(y|ise|ize)[a-z]* (of|for) (the |a |my )?video|video summar|caption|transcript|youtube (link|video) (won'?t|doesn'?t|not))\b/i],
+  ['video-library', /\b(video library|recommend(ed|ation)s? (video|course)|udemy|coursera|edureka)\b/i],
+  ['notes', /\b(pdf|notes?|upload(ed|ing)?|ocr|scann?ed)\b/i],
+  ['quizzes', /\b(quiz(zes)?|question|answer key|wrong option|mcq)\b/i],
+  ['doubts', /\b(doubt)\b/i],
+  ['skill-unlocker', /\b(skill unlocker|learning plan|day \d+|daily plan)\b/i],
+  ['roadmap', /\b(roadmap)\b/i],
+  ['skill-gap', /\b(skill[ -]?gap|coach|readiness)\b/i],
+  ['forum', /\b(forum|discussion|comment|thread)\b/i],
+  ['agent', /\b(agent|novard agent|chatbot)\b/i],
+  ['dashboard', /\b(dashboard|profile|streak|analytics|study time|heatmap)\b/i],
+];
+
+// Enrichment (EWDI enrich.py, adapted). Bump the version when the prompt changes.
+const ENRICH = {
+  promptVersion: 'nv-enrich-v1',
+  intents: ['bug', 'wrong_ai_answer', 'content_quality', 'feature_request', 'account', 'other'],
+  urgencies: ['low', 'medium', 'high'],
+  // A student who reported in the same area within this many days is a repeat reporter.
+  repeatWindowDays: 30,
+};
+
+// Topic clustering (EWDI ingest/embed.py cluster()).
+const TOPICS = {
+  tau: 0.75, // cosine similarity to join an existing cluster
+  minCluster: 3, // EWDI: 15, far above a Novard area's weekly volume
+  maxCentroids: 50,
+  windowDays: 90,
+  // Re-clustering keeps a topic's id and label when its new centroid is this close.
+  keepIdAbove: 0.9,
+};
+
+// Semantic lane (EWDI graph/tools.py search_similar).
+const SEMANTIC = {
+  // EWDI: 50 vectors before trusting cosine search over full-text.
+  minVectors: 30,
+  k: 12,
+  vectorIndex: 'report_vec',
 };
 
 // Risk levels ---------------------------------------------------------------
@@ -79,6 +137,10 @@ module.exports = {
   AREAS,
   AREA_ID,
   REPORTS,
+  AREA_KEYWORDS,
+  ENRICH,
+  TOPICS,
+  SEMANTIC,
   LEVELS,
   THRESHOLDS,
   COLD_START,

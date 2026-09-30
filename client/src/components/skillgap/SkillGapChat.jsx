@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MarkdownView from '../MarkdownView';
+import { ReportAction } from '../learning/LearningUI';
+import { useReportProblem } from '../../context/ReportContext';
 
 const PRIORITY = {
   high: { label: 'High', badge: 'bg-red-100 text-red-700' },
@@ -72,10 +74,10 @@ const GapReport = ({ analysis, startOpen = true }) => {
   );
 };
 
-const Bubble = ({ message }) => {
+const Bubble = ({ message, onReport }) => {
   const mine = message.role === 'user';
   return (
-    <div className={`flex gap-3 ${mine ? 'justify-end' : 'justify-start'}`}>
+    <div className={`group flex gap-3 ${mine ? 'justify-end' : 'justify-start'}`}>
       {!mine && <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>}
       <div className={`max-w-[85%] min-w-0 rounded-2xl px-4 py-3 ${mine
         ? 'bg-blue-600 text-white rounded-br-md'
@@ -83,6 +85,11 @@ const Bubble = ({ message }) => {
         {mine
           ? <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
           : <MarkdownView content={message.content} />}
+        {!mine && onReport && (
+          <div className="-mb-1 mt-1 -ml-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+            <ReportAction onClick={onReport} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -98,6 +105,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const { profile, analysis, messages } = session;
+  const openReport = useReportProblem();
 
   // Opening a chat jumps straight to the latest message; new messages then scroll smoothly.
   // (A smooth scroll through a long history was still mid-way when the chat appeared.)
@@ -165,7 +173,13 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
       <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-4" aria-live="polite">
         {/* Expanded for a fresh analysis; collapsed once the conversation is under way. */}
         <GapReport key={session._id} analysis={analysis} startOpen={messages.length <= 1} />
-        {messages.map((m, i) => <Bubble key={`${m.createdAt}-${i}`} message={m} />)}
+        {messages.map((m, i) => (
+          <Bubble
+            key={`${m.createdAt}-${i}`}
+            message={m}
+            onReport={() => openReport({ area: 'skill-gap', source: { tool: 'skillGap', itemType: 'skillgap_message', itemId: session._id, messageIndex: i, excerpt: m.content } })}
+          />
+        ))}
         {sending && (
           <div className="flex gap-3">
             <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>

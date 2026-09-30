@@ -11,6 +11,7 @@ const Roadmap = require('../models/roadmap');
 const SkillPlan = require('../models/skillPlan');
 const SkillGapSession = require('../models/skillGapSession');
 const { badRequest } = require('../utils/httpError');
+const { AREAS } = require('../config/earlyWarning');
 
 /**
  * Things the Novard Agent can create in the app, and what each one needs.
@@ -430,6 +431,30 @@ const ACTIONS = {
       return { itemId: issue.issueId, route: `/forum?open=${issue.issueId}`, label: 'Open discussion' };
     },
   },
+
+  report_problem: {
+    tool: 'report_problem',
+    label: 'Report a problem to the Novard team',
+    section: 'My reports',
+    suggestable: false, // only when the student says something is wrong, never as an offer
+    prepareHint: 'which part of Novard-AI went wrong and what happened.',
+    fields: [
+      { key: 'area', label: 'Part of the app', type: 'select', need: 'must', ask: 'Which part of Novard-AI is it about?', options: opts(...AREAS.map((a) => [a.id, a.label])) },
+      { key: 'description', label: 'What went wrong', type: 'textarea', need: 'must', min: 10, max: 4000, ask: 'What happened, and what did you expect instead?', describe: 'What went wrong and what they expected, in the student\'s words, with every detail they gave' },
+    ],
+    summary: (a) => `${AREAS.find((x) => x.id === a.area)?.label || a.area}: "${clean(a.description, 60)}${String(a.description || '').length > 60 ? '…' : ''}"`,
+    async run(a, ctx) {
+      // The same function as the "Report a problem" form: same quota, triage and notifications.
+      const { createReport } = require('../services/reportService');
+      const report = await createReport({
+        user: { email: ctx.userId, name: ctx.userName },
+        area: a.area,
+        body: { text: a.description, source: { page: '/chatbot', tool: 'agent' } },
+        files: {},
+      });
+      return { itemId: report.ref, route: `/reports/${report.ref}`, label: 'Open report', note: report.ref };
+    },
+  },
 };
 
 /** "Remember this about me?" - saves to the learner profile once the student says Yes. */
@@ -488,8 +513,8 @@ Object.entries(ACTIONS).forEach(([type, a]) => {
   );
 });
 
-/** kind (what the model passes) <-> action type */
-const KIND_TO_TYPE = Object.fromEntries(Object.entries(ACTIONS).map(([type, a]) => [a.tool, type]));
+/** kind (what the model passes) <-> action type, for the actions that can be offered */
+const KIND_TO_TYPE = Object.fromEntries(Object.entries(ACTIONS).filter(([, a]) => a.suggestable !== false).map(([type, a]) => [a.tool, type]));
 
 const SUGGEST_TOOL = fn(
   'suggest_next_step',

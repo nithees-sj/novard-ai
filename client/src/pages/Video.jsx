@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import { readParam, clearParam } from '../lib/openParam';
 import VideoLibraryInlineView from '../components/VideoLibraryInlineView';
 import VideoSummarizerInlineView from '../components/VideoSummarizerInlineView';
+import FeatureNotice from '../components/FeatureNotice';
 
 const Video = () => {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ const Video = () => {
       <div className="flex bg-gray-50 min-h-screen pt-14">
         <Sidebar />
         <div className="ml-64 flex-1 p-8">
+          <FeatureNotice tool={{ videoLibrary: 'videoLibrary', videoSummarizer: 'videoSummarizer' }[activeView]} />
 
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-4">

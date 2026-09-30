@@ -7,6 +7,7 @@ import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
 import { BotMark } from '../components/ChatbotButton';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
 import { currentEmail, currentName } from '../lib/session';
+import { useReportProblem } from '../context/ReportContext';
 
 const STARTERS = [
   { icon: '💡', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
@@ -44,6 +45,7 @@ const Chatbot = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const openReport = useReportProblem();
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -402,6 +404,7 @@ const Chatbot = () => {
                     busy={streaming}
                     canAnswer={!streaming && i === messages.length - 1 && m.role === 'assistant'}
                     onAnswer={send}
+                    onReport={activeId ? (msg) => openReport({ area: 'agent', source: { tool: 'agent', itemType: 'agent_message', itemId: activeId, messageIndex: i, excerpt: msg.content } }) : undefined}
                   />
                 ))}
               </div>

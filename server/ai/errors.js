@@ -44,6 +44,8 @@ const BUSY_MESSAGE = 'The AI is busy right now (usage limit reached). Please try
 
 /** A message safe to show the student for an AI failure; never the raw provider error. */
 function friendlyAIError(error, fallback) {
+  // Our own errors (a report quota, a tool an admin switched off) are written for the student.
+  if (error?.name === 'HttpError' && error.expose !== false) return error.message;
   if (isRateLimit(error)) return BUSY_MESSAGE;
   const own = error?.status && error.status < 500 && !isProviderError(error);
   return own ? error.message : fallback;

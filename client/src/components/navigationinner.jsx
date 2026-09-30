@@ -1,16 +1,36 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import mainlogo from "../images/mainlogo.png";
+import NotificationBell from "./NotificationBell";
+import { useReportProblem } from "../context/ReportContext";
 
-export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) => {
-  const { user, signOut } = useAuth();
+const ADMIN_ROLES = ["admin", "superadmin"];
+
+/**
+ * The header of every signed-in page: title, the notification bell and the
+ * account menu. The admin console reuses it with its own account (`account`,
+ * `menuLinks`, `onSignOut`) and no bell.
+ */
+export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, showBell = true, account, menuLinks, onSignOut, actions = null }) => {
+  const auth = useAuth();
+  const user = account || auth.user;
+  const navigate = useNavigate();
+  const openReport = useReportProblem();
   const [showPopup, setShowPopup] = useState(false);
 
   const handleLogout = () => {
-    signOut();
+    setShowPopup(false);
+    (onSignOut || auth.signOut)();
   };
 
   const togglePopup = () => setShowPopup(!showPopup);
+
+  const links = menuLinks || [
+    { label: "My reports", onClick: () => navigate("/reports") },
+    { label: "Report a problem", onClick: () => openReport({}) },
+    ...(ADMIN_ROLES.includes(user?.role) ? [{ label: "Admin console", onClick: () => navigate("/admin") }] : []),
+  ];
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? 'ml-64' : ''}`}>
@@ -29,6 +49,9 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
         <div className="flex-1 text-xl font-semibold text-gray-700 truncate">
           {title}
         </div>
+
+        {actions}
+        {showBell && user && <NotificationBell />}
 
         {/* User Info */}
         <div
@@ -82,6 +105,20 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true }) 
             <p className="text-sm text-gray-600 mb-5">
               {user.email}
             </p>
+
+            {/* Account links */}
+            <div className="mb-4 space-y-1.5">
+              {links.map((link) => (
+                <button
+                  key={link.label}
+                  type="button"
+                  onClick={() => { setShowPopup(false); link.onClick(); }}
+                  className="w-full rounded-full border border-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-primary-300 hover:bg-primary-50"
+                >
+                  {link.label}
+                </button>
+              ))}
+            </div>
 
             {/* Logout Button */}
             <button

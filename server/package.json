@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "retitle-doubts": "node scripts/retitleDoubts.js",
-    "admin:grant": "node scripts/adminGrant.js"
+    "admin:grant": "node scripts/adminGrant.js",
+    "reports:enrich": "node scripts/reportsEnrich.js",
+    "reports:embed": "node scripts/reportsEmbed.js",
+    "db:vector-index": "node scripts/vectorIndex.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

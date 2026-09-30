@@ -11,6 +11,7 @@ import { USAGE_EVENT } from '../hooks/useStudyTimeTracker';
 import { apiJson } from '../lib/api';
 import { currentEmail, currentName } from '../lib/session';
 import logger from '../lib/logger';
+import { DashboardBanner } from '../components/FeatureNotice';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ const HomePage = () => {
         {/* Main Content */}
         <div className="ml-64 flex-1">
           <div className="p-8">
+            <DashboardBanner />
             {/* Welcome Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">

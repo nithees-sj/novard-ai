@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import RoadmapDiagram from './RoadmapDiagram';
+import { ReportAction } from '../learning/LearningUI';
+import { useReportProblem } from '../../context/ReportContext';
 
 const LEVEL_LABEL = { beginner: 'Complete beginner', intermediate: 'Knows the basics', experienced: 'Switching roles' };
 
@@ -100,6 +102,7 @@ const StageCard = ({ stage, index, defaultOpen }) => {
 
 /** A generated roadmap: overview, the flow diagram, then the stage-by-stage plan. */
 const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
+  const openReport = useReportProblem();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const inputs = roadmap.inputs || {};
   const projects = roadmap.stages.filter((s) => s.project).length;
@@ -118,6 +121,10 @@ const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ReportAction
+            label="Report a problem"
+            onClick={() => openReport({ area: 'roadmap', source: { tool: 'roadmap', itemType: 'roadmap', itemId: roadmap._id, excerpt: roadmap.summary || roadmap.role } })}
+          />
           <button type="button" onClick={onRegenerate} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
             Adjust & regenerate
           </button>

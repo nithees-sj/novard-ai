@@ -30,6 +30,13 @@ const PATHS = {
   x: 'M6 18L18 6M6 6l12 12',
   link: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
   upload: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
+  flag: 'M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9',
+  bell: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  mic: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z',
+  image: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+  paperclip: 'M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13',
+  shield: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+  stop: 'M6 6h12v12H6z',
 };
 
 export const Icon = ({ name, className = 'h-4 w-4', strokeWidth = 2 }) => (
@@ -50,6 +57,19 @@ export const btn = {
   ghost: 'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100',
 };
 export const inputClass = 'w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+
+/** The small "Report" action shown under AI output when a tool passes onReport. */
+export const ReportAction = ({ onClick, label = 'Report', className = '' }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus:opacity-100 ${className}`}
+    title="Report a problem with this"
+  >
+    <Icon name="flag" className="h-3.5 w-3.5" />
+    {label}
+  </button>
+);
 
 // ── layout ─────────────────────────────────────────────────────────────────
 
@@ -163,18 +183,19 @@ export const GeneratingState = ({ icon = 'sparkles', title, hint }) => {
   );
 };
 
-/** A generated summary with its title row. */
-export const SummaryView = ({ icon = 'summary', title, subtitle, content }) => (
+/** A generated summary with its title row. `onReport` adds a "Report" action for a wrong summary. */
+export const SummaryView = ({ icon = 'summary', title, subtitle, content, onReport }) => (
   <div className="h-full overflow-y-auto">
     <div className="mx-auto max-w-3xl px-6 py-6">
       <div className="mb-5 flex items-center gap-3 border-b border-gray-100 pb-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
           <Icon name={icon} className="h-5 w-5" />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-gray-900">{title}</h3>
           {subtitle && <p className="truncate text-xs text-gray-500">{subtitle}</p>}
         </div>
+        {onReport && <ReportAction onClick={onReport} label="Report a problem" />}
       </div>
       <MarkdownView content={content} size="base" />
     </div>
@@ -193,9 +214,10 @@ const Avatar = () => (
  * The conversation with the AI about one item, laid out like ChatGPT / Claude:
  * a centred reading column, your messages as blue bubbles, the assistant's as
  * plain 16px text beside its avatar. `onSend(text)` returns a promise; the
- * typed text is restored if it rejects or resolves to false.
+ * typed text is restored if it rejects or resolves to false. `onReport(message,
+ * index)` adds a "Report" action under each AI answer.
  */
-export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder, emptyTitle, emptyText, suggestions = [], startPrompt = null }) => {
+export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder, emptyTitle, emptyText, suggestions = [], startPrompt = null, onReport }) => {
   const [draft, setDraft] = useState('');
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -248,10 +270,15 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
                 </div>
               </div>
             ) : (
-              <div key={i} className="flex gap-4">
+              <div key={i} className="group flex gap-4">
                 <Avatar />
                 <div className="min-w-0 flex-1 pt-0.5">
                   <MarkdownView content={m.content} size="base" />
+                  {onReport && (
+                    <div className="mt-1 -ml-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                      <ReportAction onClick={() => onReport(m, i)} />
+                    </div>
+                  )}
                 </div>
               </div>
             )))}
@@ -307,8 +334,9 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
  * Take a quiz, then see the score and every answer marked right or wrong
  * with its explanation.
  * result: null while answering; { correct, total } after submitting.
+ * onReport(question, index): a "Report" action on each question.
  */
-export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onRetry }) => {
+export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onRetry, onReport }) => {
   const answered = Object.keys(answers).filter((k) => answers[k] !== undefined).length;
   const total = questions.length;
 
@@ -344,7 +372,8 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
                     <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white ${right ? 'bg-emerald-500' : 'bg-red-500'}`}>
                       <Icon name={right ? 'check' : 'x'} className="h-3 w-3" strokeWidth={3} />
                     </span>
-                    <p className="text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+                    <p className="flex-1 text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+                    {onReport && <ReportAction onClick={() => onReport(q, qi)} className="-mt-1 shrink-0" />}
                   </div>
                   <div className="space-y-1.5">
                     {q.options.map((o, oi) => {
@@ -385,7 +414,10 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
         <ol className="mx-auto max-w-3xl space-y-4 px-6 py-6">
           {questions.map((q, qi) => (
             <li key={qi} className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="mb-3 text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+              <div className="mb-3 flex items-start gap-2">
+                <p className="flex-1 text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+                {onReport && <ReportAction onClick={() => onReport(q, qi)} className="-mt-1 shrink-0" />}
+              </div>
               <div className="space-y-2" role="radiogroup" aria-label={`Question ${qi + 1}`}>
                 {q.options.map((o, oi) => {
                   const on = answers[qi] === oi;
@@ -464,6 +496,7 @@ export const Badge = ({ tone = 'gray', children }) => {
     blue: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100',
     green: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
     amber: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+    red: 'bg-red-50 text-red-700 ring-1 ring-red-100', // status only (errors, critical risk)
   };
   return <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}>{children}</span>;
 };

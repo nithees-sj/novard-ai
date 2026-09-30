@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "./AuthContext";
 import RouteFallback from "./components/RouteFallback";
 import useStudyTimeTracker from "./hooks/useStudyTimeTracker";
+import { AppStatusProvider } from "./context/AppStatusContext";
+import { ReportProvider } from "./context/ReportContext";
+import { MaintenanceNotice } from "./components/FeatureNotice";
 
 // Routes are code-split: the entry bundle previously contained every page,
 // so the landing screen paid the download cost of the whole application.
@@ -16,6 +19,7 @@ const Doubts = lazy(() => import("./pages/Doubts"));
 const Forum = lazy(() => import("./pages/Forum"));
 const Video = lazy(() => import("./pages/Video"));
 const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
+const Reports = lazy(() => import("./pages/Reports"));
 
 const LEGACY_ROUTES = {
   '/roadmap': '/career?tool=roadmap',
@@ -47,6 +51,7 @@ function AppRoutes() {
 
   return (
     <Suspense fallback={<RouteFallback />}>
+      <MaintenanceNotice />
       <Routes>
         {/* Public route */}
         <Route path="/" element={user ? <Navigate to="/home" replace /> : <Landing />} />
@@ -61,6 +66,8 @@ function AppRoutes() {
         <Route path="/doubts" element={protectedRoute(<Doubts />)} />
         <Route path="/forum" element={protectedRoute(<Forum />)} />
         <Route path="/video" element={protectedRoute(<Video />)} />
+        <Route path="/reports" element={protectedRoute(<Reports />)} />
+        <Route path="/reports/:ref" element={protectedRoute(<Reports />)} />
 
         {/* Old standalone copies of the hub tools were removed; their URLs (bookmarks,
             links in earlier Novard Agent chats) now open the same tool inside its hub. */}
@@ -79,7 +86,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <AppStatusProvider>
+          <ReportProvider>
+            <AppRoutes />
+          </ReportProvider>
+        </AppStatusProvider>
       </AuthProvider>
     </BrowserRouter>
   );

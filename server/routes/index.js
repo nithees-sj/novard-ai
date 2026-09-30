@@ -10,6 +10,7 @@ router.use(require('./forum'));
 router.use(require('./learning'));
 router.use(require('./agent'));
 router.use(require('./appStatus'));
+router.use(require('./reports'));
 router.use(require('./admin'));
 
 module.exports = router;

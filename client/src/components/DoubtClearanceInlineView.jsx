@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
+import { useReportProblem } from '../context/ReportContext';
 import NewDoubtForm from './NewDoubtForm';
 import {
   Workspace, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
@@ -26,6 +27,12 @@ const DoubtClearanceInlineView = () => {
   const [isGettingRecommendations, setIsGettingRecommendations] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const [summary, setSummary] = useState('');
+  // "Report a problem" on an AI answer, the summary or a quiz question.
+  const openReport = useReportProblem();
+  const reportSource = (itemType, extra) => ({ tool: 'doubts', itemType, itemId: selectedDoubt?._id, ...extra });
+  const reportMessage = (m, i) => openReport({ area: 'doubts', source: reportSource('doubt_chat', { messageIndex: i, excerpt: m.content }) });
+  const reportSummary = () => openReport({ area: 'doubts', source: reportSource('doubt_summary', { excerpt: summary }) });
+  const reportQuestion = (q) => openReport({ area: 'quizzes', source: reportSource('doubt_quiz', { excerpt: q.question }) });
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [currentQuizId, setCurrentQuizId] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
@@ -344,6 +351,7 @@ const DoubtClearanceInlineView = () => {
             >
               {activeTab === 'chat' && (
                 <ChatPanel
+                  onReport={reportMessage}
                   messages={chatMessages}
                   sending={isLoading}
                   onSend={handleSendMessage}
@@ -359,7 +367,7 @@ const DoubtClearanceInlineView = () => {
                   {isSummarizing ? (
                     <GeneratingState icon="summary" title="Summarizing your doubt" hint="Turning the conversation into a clear, structured summary with a diagram. This usually takes 10-20 seconds." />
                   ) : summary ? (
-                    <SummaryView icon="summary" title="Summary" content={summary} />
+                    <SummaryView icon="summary" title="Summary" content={summary} onReport={reportSummary} />
                   ) : (
                     <EmptyState icon="summary" title="No summary yet" text="Summarize this doubt into a structured recap of the conversation." action={<button type="button" onClick={handleSummarize} className={btn.primary}>Summarize</button>} />
                   )}
@@ -372,6 +380,7 @@ const DoubtClearanceInlineView = () => {
                     <GeneratingState icon="quiz" title="Building your quiz" hint="Writing questions from what was explained in this doubt. This usually takes 10-30 seconds." />
                   ) : currentQuiz ? (
                     <QuizRunner
+                      onReport={reportQuestion}
                       questions={currentQuiz}
                       answers={quizAnswers}
                       onAnswer={(qi, oi) => setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}

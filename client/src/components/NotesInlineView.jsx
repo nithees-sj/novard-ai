@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
+import { useReportProblem } from '../context/ReportContext';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
   QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
@@ -22,6 +23,12 @@ const NotesInlineView = () => {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [activeTab, setActiveTab] = useState('read');
   const [summary, setSummary] = useState('');
+  // "Report a problem" on an AI answer, the summary or a quiz question.
+  const openReport = useReportProblem();
+  const reportSource = (itemType, extra) => ({ tool: 'notes', itemType, itemId: selectedNote?._id, ...extra });
+  const reportMessage = (m, i) => openReport({ area: 'notes', source: reportSource('note_chat', { messageIndex: i, excerpt: m.content }) });
+  const reportSummary = () => openReport({ area: 'notes', source: reportSource('note_summary', { excerpt: summary }) });
+  const reportQuestion = (q) => openReport({ area: 'quizzes', source: reportSource('note_quiz', { excerpt: q.question }) });
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [currentQuizId, setCurrentQuizId] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
@@ -345,6 +352,7 @@ const NotesInlineView = () => {
             >
               {activeTab === 'read' && (
                 <ChatPanel
+                  onReport={reportMessage}
                   messages={chatMessages}
                   sending={isLoading}
                   onSend={handleSendMessage}
@@ -360,7 +368,7 @@ const NotesInlineView = () => {
                   {isSummarizing ? (
                     <GeneratingState icon="summary" title="Summarising your notes" hint="Reading the PDF and writing a structured summary with a diagram. Longer notes can take up to 30 seconds." />
                   ) : summary ? (
-                    <SummaryView icon="summary" title="Summary" content={summary} />
+                    <SummaryView icon="summary" title="Summary" content={summary} onReport={reportSummary} />
                   ) : (
                     <EmptyState icon="summary" title="No summary yet" text="Generate a structured summary of this note." action={<button type="button" onClick={handleSummarize} className={btn.primary}>Generate summary</button>} />
                   )}
@@ -373,6 +381,7 @@ const NotesInlineView = () => {
                     <GeneratingState icon="quiz" title="Building your quiz" hint="Writing questions from across your notes. This usually takes 10-30 seconds." />
                   ) : currentQuiz ? (
                     <QuizRunner
+                      onReport={reportQuestion}
                       questions={currentQuiz}
                       answers={quizAnswers}
                       onAnswer={handleQuizAnswer}

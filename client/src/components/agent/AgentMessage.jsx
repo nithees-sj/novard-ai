@@ -3,6 +3,7 @@ import MarkdownView from '../MarkdownView';
 import AgentAvatar from './AgentAvatar';
 import ActionCard from './ActionCard';
 import AskCard from './AskCard';
+import { ReportAction } from '../learning/LearningUI';
 
 const CopyButton = ({ text }) => {
   const [copied, setCopied] = useState(false);
@@ -29,7 +30,7 @@ const CopyButton = ({ text }) => {
  * One turn in the conversation. Assistant turns render Markdown, their cards,
  * and any questions the agent asked (answerable only on the latest turn).
  */
-const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer }) => {
+const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer, onReport }) => {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -74,6 +75,7 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
         {!streaming && message.content && (
           <div className="mt-1.5 flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
             <CopyButton text={message.content} />
+            {onReport && <ReportAction onClick={() => onReport(message)} />}
           </div>
         )}
       </div>

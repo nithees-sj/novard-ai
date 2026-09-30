@@ -9,6 +9,7 @@ import { currentEmail } from '../lib/session';
 import QuizSetup from '../components/quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { MdDeleteOutline, MdAdd } from "react-icons/md";
+import FeatureNotice from '../components/FeatureNotice';
 
 
 const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
@@ -347,6 +348,7 @@ const SkillUnlocker = () => {
         {/* Main Content */}
         <div className="flex-1 min-w-0 ml-64 overflow-y-auto p-6 md:p-8">
           <div className="max-w-5xl mx-auto">
+            <FeatureNotice tool="skillUnlocker" />
             
             {/* Header */}
             {(

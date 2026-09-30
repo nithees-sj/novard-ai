@@ -3,6 +3,8 @@ import MarkdownView from './MarkdownView';
 import { categoryMeta, statusMeta, isOwner, currentUserEmail } from '../lib/forum';
 import { apiJson } from '../lib/api';
 import logger from '../lib/logger';
+import { ReportAction } from './learning/LearningUI';
+import { useReportProblem } from '../context/ReportContext';
 
 const POLL_MS = 10000;
 const POLL_WHILE_AI_PENDING_MS = 4000;
@@ -55,6 +57,7 @@ const CommentBody = ({ comment }) =>
   );
 
 const Comment = ({ comment, issueOwnerEmail, nested = false, footer = null }) => {
+  const openReport = useReportProblem();
   const byAuthor = !comment.isAI && sameEmail(comment.userEmail, issueOwnerEmail);
   const byMe = !comment.isAI && sameEmail(comment.userEmail, currentUserEmail());
   return (
@@ -79,6 +82,11 @@ const Comment = ({ comment, issueOwnerEmail, nested = false, footer = null }) =>
         <time className="text-xs text-gray-500 whitespace-nowrap" dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
       </header>
       <CommentBody comment={comment} />
+      {comment.isAI && (
+        <div className="mt-1 -ml-1.5">
+          <ReportAction onClick={() => openReport({ area: 'forum', source: { tool: 'forumAi', itemType: 'forum_comment', itemId: comment._id, excerpt: comment.content } })} />
+        </div>
+      )}
       {footer}
     </article>
   );

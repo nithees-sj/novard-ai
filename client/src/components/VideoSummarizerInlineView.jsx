@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
+import { useReportProblem } from '../context/ReportContext';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
   QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
@@ -23,6 +24,12 @@ const VideoSummarizerInlineView = () => {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const [summary, setSummary] = useState('');
+  // "Report a problem" on an AI answer, the summary or a quiz question.
+  const openReport = useReportProblem();
+  const reportSource = (itemType, extra) => ({ tool: 'videoSummarizer', itemType, itemId: selectedVideo?._id, ...extra });
+  const reportMessage = (m, i) => openReport({ area: 'video-summarizer', source: reportSource('video_chat', { messageIndex: i, excerpt: m.content }) });
+  const reportSummary = () => openReport({ area: 'video-summarizer', source: reportSource('video_summary', { excerpt: summary }) });
+  const reportQuestion = (q) => openReport({ area: 'quizzes', source: reportSource('video_quiz', { excerpt: q.question }) });
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [currentQuizId, setCurrentQuizId] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
@@ -322,6 +329,7 @@ const VideoSummarizerInlineView = () => {
             >
               {activeTab === 'chat' && (
                 <ChatPanel
+                  onReport={reportMessage}
                   messages={chatMessages}
                   sending={isLoading}
                   onSend={handleSendMessage}
@@ -337,7 +345,7 @@ const VideoSummarizerInlineView = () => {
                   {isSummarizing ? (
                     <GeneratingState icon="summary" title="Summarising the video" hint="Reading the transcript and writing a structured summary with a diagram. This usually takes 10-20 seconds." />
                   ) : summary ? (
-                    <SummaryView icon="video" title="Video summary" content={summary} />
+                    <SummaryView icon="video" title="Video summary" content={summary} onReport={reportSummary} />
                   ) : (
                     <EmptyState icon="summary" title="No summary yet" text="Generate a structured summary of this video." action={<button type="button" onClick={handleSummarize} className={btn.primary}>Generate summary</button>} />
                   )}
@@ -350,6 +358,7 @@ const VideoSummarizerInlineView = () => {
                     <GeneratingState icon="quiz" title="Building your quiz" hint="Writing questions from the video. This usually takes 10-30 seconds." />
                   ) : currentQuiz ? (
                     <QuizRunner
+                      onReport={reportQuestion}
                       questions={currentQuiz}
                       answers={quizAnswers}
                       onAnswer={(qi, oi) => setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}

@@ -57,6 +57,8 @@ const env = Object.freeze({
   superadminEmails: list(process.env.SUPERADMIN_EMAILS).map((e) => e.toLowerCase()),
   // Shared secret for Cloud Scheduler's POST /api/internal/risk/rescan. Unset = endpoint disabled.
   riskCronSecret: process.env.RISK_CRON_SECRET || '',
+  // Atlas Vector Search for report embeddings: auto (use it when the cluster has it), on, off.
+  vectorSearch: ['auto', 'on', 'off'].includes(process.env.VECTOR_SEARCH) ? process.env.VECTOR_SEARCH : 'auto',
   // How long runtime settings are cached per instance before checking for changes.
   settingsCacheMs: int(process.env.SETTINGS_CACHE_MS, isTest ? 0 : 30000),
   // The Google OAuth client ID(s) whose sign-in tokens this API accepts.

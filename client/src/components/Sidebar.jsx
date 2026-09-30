@@ -2,11 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import mainlogo from '../images/mainlogo.png';
+import { useReportProblem } from '../context/ReportContext';
 
-const Sidebar = ({ isHoverMode = false }) => {
+/**
+ * The left navigation of every signed-in page.
+ *
+ * The admin console uses the same sidebar with its own sections:
+ *   items       [{ name, icon, route, badge? }] instead of the student menu
+ *   footer      replaces the student's profile card
+ *   subtitle    a small label under the logo (e.g. "Admin console")
+ *   matchPrefix an item is active on its sub-pages too (/admin/risk/...)
+ *   drawer      on small screens the sidebar becomes a drawer (opened by
+ *               `drawerOpen`, closed with `onDrawerClose`), like the agent chat's
+ * Without these props it is exactly the student sidebar.
+ */
+const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = false, drawer = false, drawerOpen = false, onDrawerClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const openReport = useReportProblem();
   // Sidebar visibility state - starts hidden if in hover mode
   const [showSidebar, setShowSidebar] = useState(!isHoverMode);
 
@@ -36,7 +50,7 @@ const Sidebar = ({ isHoverMode = false }) => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [isHoverMode]);
 
-  const menuItems = [
+  const studentItems = [
     {
       name: 'Home',
       icon: (
@@ -112,20 +126,36 @@ const Sidebar = ({ isHoverMode = false }) => {
     }
   ];
 
+  const menuItems = items || studentItems;
+
   const isActive = (route) => {
+    if (matchPrefix && route !== menuItems[0]?.route) return location.pathname === route || location.pathname.startsWith(`${route}/`);
     return location.pathname === route;
   };
 
+  const go = (route) => {
+    navigate(route);
+    if (drawer) onDrawerClose?.();
+  };
+
+  // As a drawer (small screens only): hidden off-canvas until opened.
+  const drawerClasses = drawer ? `${drawerOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0` : '';
+  const visibility = drawer ? drawerClasses : (showSidebar ? 'translate-x-0' : '-translate-x-full');
+
   return (
+    <>
+    {drawer && drawerOpen && <div className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={onDrawerClose} aria-hidden="true" />}
     <div
-      className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-30 transition-transform duration-300 ease-out ${showSidebar ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-30 transition-transform duration-300 ease-out ${visibility}`}
     >
       {/* Logo Section */}
       <div className="px-4 border-b border-gray-200 h-14 flex items-center shrink-0">
         <div className="flex items-center space-x-2">
           <img src={mainlogo} alt="NOVARD-AI" className="h-8 w-8 rounded-lg" />
-          <span className="text-xl font-bold text-gray-900">NOVARD-AI</span>
+          <span className="leading-tight">
+            <span className="block text-xl font-bold text-gray-900">NOVARD-AI</span>
+            {subtitle && <span className="block text-[11px] font-semibold uppercase tracking-wide text-blue-600">{subtitle}</span>}
+          </span>
         </div>
       </div>
 
@@ -136,7 +166,7 @@ const Sidebar = ({ isHoverMode = false }) => {
             key={item.route}
             type="button"
             aria-current={isActive(item.route) ? 'page' : undefined}
-            onClick={() => navigate(item.route)}
+            onClick={() => go(item.route)}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
               isActive(item.route)
                 ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
@@ -146,13 +176,30 @@ const Sidebar = ({ isHoverMode = false }) => {
             <span className={isActive(item.route) ? 'text-blue-600' : 'text-gray-500'}>
               {item.icon}
             </span>
-            <span className="text-sm">{item.name}</span>
+            <span className="flex-1 text-sm">{item.name}</span>
+            {item.badge ? <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white tabular-nums">{item.badge}</span> : null}
           </button>
         ))}
       </nav>
 
+      {footer}
+
       {/* User Info Footer */}
-      {user && (
+      {!items && user && (
+        <div className="px-4 pt-3">
+          <button
+            type="button"
+            onClick={() => openReport({})}
+            className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-left text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+            </svg>
+            <span>Report a problem</span>
+          </button>
+        </div>
+      )}
+      {!items && user && (
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                onClick={() => navigate('/profile')}>
@@ -173,6 +220,7 @@ const Sidebar = ({ isHoverMode = false }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

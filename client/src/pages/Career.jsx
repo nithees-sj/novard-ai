@@ -6,6 +6,7 @@ import { readParam, clearParam } from '../lib/openParam';
 import ChatbotButton from '../components/ChatbotButton';
 import RoadmapInlineView from '../components/RoadmapInlineView';
 import SkillsInlineView from '../components/SkillsInlineView';
+import FeatureNotice from '../components/FeatureNotice';
 
 const careerTools = [
   {
@@ -50,6 +51,7 @@ const Career = () => {
       <div className="flex bg-gray-50 min-h-screen pt-14">
         <Sidebar />
         <div className="ml-64 flex-1 p-8">
+          <FeatureNotice tool={{ roadmap: 'roadmap', skills: 'skillGap' }[activeView]} />
 
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-6">
