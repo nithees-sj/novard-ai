@@ -112,6 +112,16 @@ const THRESHOLDS = {
   minScoredWindows: 120,
 };
 
+/**
+ * Percentile cut-offs never fall below these anomaly levels. With many quiet
+ * windows (z = 0, score 0.12) a percentile can land on the quiet score itself,
+ * which would make every quiet window MEDIUM; and P95 alone makes 1 window in
+ * 20 HIGH even when nothing is wrong. Measured on the demo's quiet baseline,
+ * random noise peaks at z ~ 2.9 (score 0.70), while a real incident clips at
+ * z = 6; HIGH therefore needs z >= 3 (score >= 0.73).
+ */
+const LEVEL_MIN_Z = { MEDIUM: 1.5, HIGH: 3, CRITICAL: 4.5 };
+
 const COLD_START = {
   // An area whose 21-day baseline has fewer active days than this is
   // `insufficient_baseline` and only ever classified by fixed thresholds.
@@ -121,7 +131,121 @@ const COLD_START = {
   minDailyReports: 3,
   // AI / gateway rate metrics need more events to be stable.
   minDailyCalls: 20,
+  minDailyGatewayEvents: 10,
 };
+
+// Scoring (EWDI app/config.py + app/risk/anomaly.py) ---------------------
+
+const WINDOW_DAYS = 7; // the window each score describes
+const BASELINE_DAYS = 28; // window + 21-day baseline before it (EWDI build_features)
+const HORIZON_DAYS = 7; // the predictor's outlook
+const HISTORY_DAYS = 180; // how far back scores are recomputed
+// A day's reports count as "unresolved" when they had no admin response this
+// long after the day ended. Younger days are left out of that metric, or every
+// area would look worse on its newest days.
+const RESPONSE_GRACE_HOURS = 48;
+
+/**
+ * The daily metrics per area. `kind: 'count'` treats a missing day as 0;
+ * a 'rate' is used only on days where its `gate` count reaches its minimum
+ * (the COLD_START minimums above, by name).
+ */
+const METRICS = [
+  // from reports (EWDI: volume, authors, no-response, latency, sentiment, urgency, repeat)
+  { name: 'n_reports', kind: 'count' },
+  { name: 'n_reporters', kind: 'count' },
+  { name: 'pct_unresolved', kind: 'rate', gate: 'n_reports_settled', min: 'minDailyReports' },
+  { name: 'p50_first_response_h', kind: 'rate', gate: 'n_responded', min: 'minDailyReports' },
+  { name: 'p90_first_response_h', kind: 'rate', gate: 'n_responded', min: 'minDailyReports' },
+  { name: 'mean_sent', kind: 'rate', gate: 'n_enriched', min: 'minDailyReports', enriched: true },
+  { name: 'pct_negative', kind: 'rate', gate: 'n_enriched', min: 'minDailyReports', enriched: true },
+  { name: 'pct_urgent', kind: 'rate', gate: 'n_enriched', min: 'minDailyReports', enriched: true },
+  { name: 'repeat_rate', kind: 'rate', gate: 'n_enriched', min: 'minDailyReports', enriched: true },
+  // automatic signals Novard already produces (new, not in EWDI)
+  { name: 'ai_error_rate', kind: 'rate', gate: 'n_calls', min: 'minDailyCalls' },
+  { name: 'ai_429_rate', kind: 'rate', gate: 'n_calls', min: 'minDailyCalls' },
+  { name: 'ai_p95_latency', kind: 'rate', gate: 'n_calls', min: 'minDailyCalls' },
+  { name: 'ai_report_rate', kind: 'rate', gate: 'n_calls', min: 'minDailyCalls' },
+  { name: 'gateway_failure_rate', kind: 'rate', gate: 'n_gateway', min: 'minDailyGatewayEvents' },
+];
+
+// +1 = higher is worse, -1 = lower is worse. Every feature has one.
+const DIRECTIONS = {
+  n_reports: +1,
+  n_reporters: +1,
+  pct_unresolved: +1,
+  p50_first_response_h: +1,
+  p90_first_response_h: +1,
+  mean_sent: -1,
+  pct_negative: +1,
+  pct_urgent: +1,
+  repeat_rate: +1,
+  ai_error_rate: +1,
+  ai_429_rate: +1,
+  ai_p95_latency: +1,
+  ai_report_rate: +1,
+  gateway_failure_rate: +1,
+};
+
+// slope name -> [base metric, direction] (compared against the base metric's baseline scale)
+const SLOPES = {
+  volume_slope: ['n_reports', +1],
+  sent_slope: ['mean_sent', -1],
+  unresolved_slope: ['pct_unresolved', +1],
+  ai_error_slope: ['ai_error_rate', +1],
+};
+const SLOPE_SERIES = [
+  { name: 'volume_slope', metric: 'n_reports' },
+  { name: 'sent_slope', metric: 'mean_sent', nullIfEmpty: true },
+  { name: 'unresolved_slope', metric: 'pct_unresolved', nullIfEmpty: true },
+  { name: 'ai_error_slope', metric: 'ai_error_rate', nullIfEmpty: true },
+];
+
+/**
+ * Per-feature absolute floor on the robust-z scale. EWDI uses 1e-3 for every
+ * feature; at Novard's volumes an area with a quiet baseline (median 0) would
+ * turn ONE report into +6 sigma. A change must be at least this big to count.
+ */
+const ABS_FLOORS = {
+  n_reports: 1,
+  n_reporters: 1,
+  pct_unresolved: 0.05,
+  p50_first_response_h: 0.1,
+  p90_first_response_h: 0.1,
+  mean_sent: 0.1,
+  pct_negative: 0.05,
+  pct_urgent: 0.05,
+  repeat_rate: 0.05,
+  ai_error_rate: 0.02,
+  ai_429_rate: 0.02,
+  ai_p95_latency: 0.1,
+  ai_report_rate: 1,
+  gateway_failure_rate: 0.05,
+};
+
+// Plain words for the risk board ("driven by ...").
+const FEATURE_LABELS = {
+  n_reports: 'report volume',
+  n_reporters: 'students reporting',
+  pct_unresolved: 'unanswered reports',
+  p50_first_response_h: 'time to first reply',
+  p90_first_response_h: 'slowest replies',
+  mean_sent: 'student sentiment',
+  pct_negative: 'negative reports',
+  pct_urgent: 'urgent reports',
+  repeat_rate: 'repeat reporters',
+  ai_error_rate: 'AI errors',
+  ai_429_rate: 'AI rate limits',
+  ai_p95_latency: 'AI slowness',
+  ai_report_rate: 'AI answers reported',
+  gateway_failure_rate: 'YouTube / PDF failures',
+  volume_slope: 'rising report volume',
+  sent_slope: 'worsening sentiment',
+  unresolved_slope: 'growing backlog',
+  ai_error_slope: 'rising AI errors',
+};
+
+const ANOMALY = { relFloor: 0.25, clip: 6, topK: 3 };
 
 // Investigation budget (docs/early-warning/PLAN.md §6.4). Groq's free tier is
 // ~8k tokens/minute per model, so the budget is sized in tokens first.
@@ -143,7 +267,20 @@ module.exports = {
   SEMANTIC,
   LEVELS,
   THRESHOLDS,
+  LEVEL_MIN_Z,
   COLD_START,
   BUDGET,
   AUTO_INVESTIGATE,
+  WINDOW_DAYS,
+  BASELINE_DAYS,
+  HORIZON_DAYS,
+  HISTORY_DAYS,
+  RESPONSE_GRACE_HOURS,
+  METRICS,
+  DIRECTIONS,
+  SLOPES,
+  SLOPE_SERIES,
+  ABS_FLOORS,
+  FEATURE_LABELS,
+  ANOMALY,
 };

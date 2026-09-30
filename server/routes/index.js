@@ -12,5 +12,6 @@ router.use(require('./agent'));
 router.use(require('./appStatus'));
 router.use(require('./reports'));
 router.use(require('./admin'));
+router.use(require('./internal'));
 
 module.exports = router;

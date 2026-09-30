@@ -1,18 +1,18 @@
 services:
   mongo:
-    image: mongo:7.0
+    # MongoDB with Atlas Search, so report vector search works locally too
+    # (npm run db:vector-index). Same port as before. It keeps its data in its
+    # own volumes: it cannot start on the old mongo:7 volume, which is left
+    # untouched (see DOCKER_SETUP.md, "Moving your data").
+    image: mongodb/mongodb-atlas-local:8.3 # tested with mongod 8.3.11
     container_name: novard-ai-mongo
     ports:
       - "27018:27017"
     volumes:
-      - mongodb_data:/data/db
+      - mongodb_atlas_data:/data/db
+      - mongodb_atlas_config:/data/configdb
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
+    # The image has its own health check (mongod and the search process).
 
   server:
     build:
@@ -24,7 +24,7 @@ services:
       - PORT=5001
       - NODE_ENV=production
       # Fallback to containerized mongo or host.docker.internal if MONGO_URI in .env points to localhost
-      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/novard-ai}
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/novard-ai?directConnection=true}
       # Sign-ins must come from the same Google OAuth client the web app is built with.
       - GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
       - CORS_ORIGINS=http://localhost:3000
@@ -60,4 +60,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  mongodb_atlas_data:
+  mongodb_atlas_config:
+  # The pre-atlas-local data (mongo:7). No longer mounted; kept so nothing is lost.
   mongodb_data:

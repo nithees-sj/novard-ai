@@ -7,6 +7,7 @@ const settings = require('../../controllers/admin/settingsController');
 const audit = require('../../controllers/admin/auditController');
 const users = require('../../controllers/admin/usersController');
 const reports = require('../../controllers/admin/reportsController');
+const risk = require('../../controllers/admin/riskController');
 
 /**
  * The admin console API. Sign-in is the only route without an admin session;
@@ -39,5 +40,7 @@ router.post('/api/admin/reports/:ref/status', h(reports.setStatus));
 router.post('/api/admin/reports/:ref/notes', h(reports.addNote));
 router.post('/api/admin/reports/:ref/assign', h(reports.assign));
 router.post('/api/admin/areas/:area/resolve', h(reports.resolveArea));
+
+router.post('/api/admin/risk/rescan', h(risk.rescan));
 
 module.exports = router;

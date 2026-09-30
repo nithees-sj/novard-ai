@@ -1,7 +1,8 @@
 # Docker Setup for Novard-AI
 
-This project runs as 2 containers:
+This project runs as 3 containers:
 
+- `mongo` — MongoDB with Atlas Search (`mongodb/mongodb-atlas-local`) on host port `27018`
 - `server` — Node.js + Express API on port `5001`
 - `client` — React app built and served via Nginx on port `3000`
 
@@ -50,6 +51,50 @@ REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
 Docker Compose reads this automatically and passes it as a build arg to the client container.
+
+## Local MongoDB with vector search
+
+The `mongo` service uses the `mongodb/mongodb-atlas-local` image: an ordinary
+MongoDB 8 plus Atlas Search, so the early-warning feature's semantic search over
+problem reports works locally the same way it does on MongoDB Atlas. Create the
+vector index once (it is idempotent):
+
+```bash
+MONGO_URI="mongodb://localhost:27018/novard-ai?directConnection=true" npm run db:vector-index --prefix server
+```
+
+Connection strings to this container need `directConnection=true` (it runs as a
+one-node replica set). Without the index, or on a MongoDB without Atlas Search,
+the app falls back to MongoDB text search automatically.
+
+### Moving your data from the old `mongo:7.0` container
+
+The atlas-local image cannot start on the old `mongo:7.0` data volume (it
+initialises its own security key on an empty volume), so it uses two new
+volumes. The old volume (`novard-ai_mongodb_data`) is **kept, not deleted**.
+To copy your data across once:
+
+```bash
+# 1. Before switching: dump from the old container (still running mongo:7.0)
+docker exec novard-ai-mongo mongodump --archive --db novard-ai > novard-ai.archive
+
+# 2. Start the new database
+docker compose up -d mongo
+
+# 3. Restore into it (wait until `docker compose ps` shows mongo as healthy)
+docker exec -i novard-ai-mongo mongorestore --archive < novard-ai.archive
+```
+
+If you already switched, start a temporary `mongo:7.0` on the old volume to dump it:
+
+```bash
+docker run -d --name old-mongo -v novard-ai_mongodb_data:/data/db mongo:7.0
+docker exec old-mongo mongodump --archive --db novard-ai | docker exec -i novard-ai-mongo mongorestore --archive
+docker rm -f old-mongo
+```
+
+This path (dump from mongo 7.0, restore into atlas-local 8.3) was tested on a
+copy of a real Novard database: every collection's count matched.
 
 ## 3) Build and Start
 

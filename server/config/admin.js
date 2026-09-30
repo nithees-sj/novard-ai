@@ -245,7 +245,7 @@ const SETTINGS = {
     group: 'risk',
     description: 'Minimum baseline history and daily event counts before a rate metric is trusted.',
     default: () => ({ ...EW.COLD_START }),
-    validate: v.shape({ minBaselineActiveDays: v.int(1, 21), minDailyReports: v.int(1, 100), minDailyCalls: v.int(1, 10000) }),
+    validate: v.shape({ minBaselineActiveDays: v.int(1, 21), minDailyReports: v.int(1, 100), minDailyCalls: v.int(1, 10000), minDailyGatewayEvents: v.int(1, 10000) }),
   },
   'risk.budget': {
     group: 'risk',

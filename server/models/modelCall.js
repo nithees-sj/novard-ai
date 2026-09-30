@@ -27,6 +27,7 @@ const modelCallSchema = new mongoose.Schema({
   stepSeq: Number,
   conversationId: String,
   userId: String,
+  demo: Boolean, // npm run risk:seed-demo
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -38,6 +39,7 @@ modelCallSchema.index({ outcome: 1, createdAt: -1 });
 modelCallSchema.index({ runId: 1, createdAt: 1 });
 modelCallSchema.index({ userId: 1, createdAt: -1 });
 modelCallSchema.index({ conversationId: 1 });
+modelCallSchema.index({ demo: 1 });
 
 module.exports = mongoose.model('ModelCall', modelCallSchema);
 module.exports.RETENTION_DAYS = RETENTION_DAYS;

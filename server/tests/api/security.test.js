@@ -27,6 +27,7 @@ const PUBLIC = new Set([
   'get /health', 'get /', 'post /api/auth/google',
   'get /api/app-status', // feature switches and maintenance, shown before sign-in
   'post /api/admin/auth/google', // admin console sign-in (checks the role itself)
+  'post /api/internal/risk/rescan', // Cloud Scheduler: RISK_CRON_SECRET (tests/api/riskScoring.test.js)
 ]);
 
 describe('authentication on every route', () => {
