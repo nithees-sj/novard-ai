@@ -247,6 +247,39 @@ const FEATURE_LABELS = {
 
 const ANOMALY = { relFloor: 0.25, clip: 6, topK: 3 };
 
+// Investigation graph (EWDI app/graph, app/config.py) --------------------
+
+const GRAPH = {
+  lanes: ['temporal', 'peers', 'history', 'semantic', 'telemetry'],
+  maxSupervisorLoops: 3, // EWDI MAX_SUPERVISOR_LOOPS
+  maxRevisions: 1, // EWDI MAX_REVISIONS
+  recursionLimit: 40,
+  // Small prompts: Groq allows ~8k tokens a minute per model (PLAN.md §6.4).
+  laneToolChars: 1500, // tool output a lane's model reads
+  laneMaxTokens: 300,
+  supervisorMaxTokens: 250,
+  rootCauseMaxTokens: 1200,
+  verifierMaxTokens: 500,
+  maxCiteIds: 40, // ids offered to root cause (EWDI: 40)
+  staleRunMinutes: 15, // a run still "running" after this was interrupted
+  streamMaxMinutes: 10,
+};
+
+/**
+ * What an investigation may recommend. Only `flag_area` runs by itself (it is
+ * internal and reversible); everything else waits for an admin's approval and
+ * then runs through the same service function as the console's own control.
+ */
+const RECOMMENDATION_TYPES = {
+  flag_area: { label: 'Flag the area on the risk board', auto: true, params: 'none' },
+  known_issue_banner: { label: 'Show a "we know about this" notice on a tool', params: '{ "tool": one of the tools, "message": text }' },
+  set_feature_flag: { label: 'Switch a tool off (or on) with a message', params: '{ "tool": one of the tools, "enabled": true|false, "message": text }' },
+  set_model_route: { label: 'Route an AI task to another model', params: '{ "task": one of the AI tasks, "model": model id }' },
+  bulk_resolve: { label: 'Resolve the area\'s open reports with a note', params: '{ "note": text for the students }' },
+  broadcast: { label: 'Send an announcement', params: '{ "audience": "area_reporters" | "all", "title": text, "body": text }' },
+  advice: { label: 'Advice (nothing to run)', params: 'none' },
+};
+
 // Investigation budget (docs/early-warning/PLAN.md §6.4). Groq's free tier is
 // ~8k tokens/minute per model, so the budget is sized in tokens first.
 const BUDGET = {
@@ -283,4 +316,6 @@ module.exports = {
   ABS_FLOORS,
   FEATURE_LABELS,
   ANOMALY,
+  GRAPH,
+  RECOMMENDATION_TYPES,
 };

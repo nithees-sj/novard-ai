@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const h = require('../../middleware/asyncHandler');
 const { requireAdmin, requireSuperadmin } = require('../../middleware/adminAuth');
-const { adminAuthLimiter } = require('../../middleware/rateLimit');
+const { adminAuthLimiter, aiLimiter } = require('../../middleware/rateLimit');
 const auth = require('../../controllers/admin/authController');
 const settings = require('../../controllers/admin/settingsController');
 const audit = require('../../controllers/admin/auditController');
@@ -42,5 +42,14 @@ router.post('/api/admin/reports/:ref/assign', h(reports.assign));
 router.post('/api/admin/areas/:area/resolve', h(reports.resolveArea));
 
 router.post('/api/admin/risk/rescan', h(risk.rescan));
+router.post('/api/admin/risk/areas/:area/assess', aiLimiter, h(risk.assess));
+router.get('/api/admin/risk/assessments/:id', h(risk.getAssessment));
+router.post('/api/admin/risk/assessments/:id/recommendations/:recId/approve', h(risk.approve));
+router.post('/api/admin/risk/assessments/:id/recommendations/:recId/dismiss', h(risk.dismiss));
+router.post('/api/admin/risk/assessments/:id/feedback', h(risk.feedback));
+router.post('/api/admin/risk/assessments/:id/whatif', h(risk.whatIf));
+router.get('/api/admin/risk/runs', h(risk.listRuns));
+router.get('/api/admin/risk/runs/:id', h(risk.getRun));
+router.get('/api/admin/risk/runs/:id/stream', h(risk.streamRun));
 
 module.exports = router;
