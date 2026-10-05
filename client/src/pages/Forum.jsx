@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import AppShell from '../components/layout/AppShell';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
-import { Navigationinner } from "../components/navigationinner";
-import Sidebar from '../components/Sidebar';
-import ChatbotButton from '../components/ChatbotButton';
 import IssueForm from '../components/IssueForm';
 import ForumGrid from '../components/ForumGrid';
 import IssueDetail from '../components/IssueDetail';
@@ -76,13 +74,7 @@ const Forum = () => {
 
   return (
     <>
-      <Navigationinner title={"AI FORUM"} hideLogo={true} hasSidebar={true} />
-      <div className="flex bg-gray-50 min-h-screen pt-14">
-        {/* Main Navigation Sidebar - LEFT */}
-        <Sidebar />
-
-        {/* Main Content Area - Full Width */}
-        <div className="ml-64 flex-1" style={{ height: 'calc(100vh - 56px)' }}>
+      <AppShell page="forum" width={selectedIssue ? 'full' : 'default'} crumbs={selectedIssue ? [{ label: 'Home', to: '/home' }, { label: 'Forum', onClick: handleBackToList }, { label: selectedIssue.title }] : undefined} title={selectedIssue ? `${selectedIssue.title} · Forum` : undefined}>
           {selectedIssue ? (
             <IssueDetail
               issue={selectedIssue}
@@ -96,10 +88,7 @@ const Forum = () => {
                 refreshKey={listVersion}
               />
           )}
-        </div>
-        
-        <ChatbotButton />
-      </div>
+      </AppShell>
 
       <IssueForm
         onSubmit={handleIssueSubmit}

@@ -1,15 +1,20 @@
-import { SegmentedControl } from './ui/Tabs';
 import React, { useEffect, useRef, useState } from 'react';
-import { FiCheck, FiMonitor, FiMoon, FiSun } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
+import { SegmentedControl } from './ui/Tabs';
+import UIIcon from './ui/Icon';
+
+const glyph = (name) => function ThemeGlyph({ className }) { return <UIIcon name={name} className={className} />; };
+const SunIcon = glyph('sun');
+const MoonIcon = glyph('moon');
+const MonitorIcon = glyph('monitor');
+const CheckIcon = glyph('check');
 
 const OPTIONS = [
-  { value: 'light', label: 'Light', Icon: FiSun },
-  { value: 'dark', label: 'Dark', Icon: FiMoon },
-  { value: 'system', label: 'System', Icon: FiMonitor },
+  { value: 'light', label: 'Light', Icon: SunIcon },
+  { value: 'dark', label: 'Dark', Icon: MoonIcon },
+  { value: 'system', label: 'System', Icon: MonitorIcon },
 ];
 
-const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40';
 
 /**
  * The theme switch in the top bar: an icon button showing the current theme,
@@ -56,7 +61,7 @@ export default function ThemeToggle({ className = '' }) {
     buttonRef.current?.focus();
   };
 
-  const Current = resolved === 'dark' ? FiMoon : FiSun;
+  const Current = resolved === 'dark' ? MoonIcon : SunIcon;
   const label = preference === 'system' ? `System (${resolved})` : preference;
   // The menu is placed against this wrapper, unless a caller already positions it.
   const position = /\b(absolute|fixed)\b/.test(className) ? '' : 'relative';
@@ -71,9 +76,9 @@ export default function ThemeToggle({ className = '' }) {
         aria-expanded={open}
         aria-label={`Theme: ${label}. Change theme`}
         title="Change theme"
-        className={`flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-surface text-gray-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 ${focusRing}`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted transition-colors duration-150 hover:bg-sunken hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
-        <Current className="h-[18px] w-[18px]" aria-hidden="true" />
+        <Current className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
       </button>
 
       {open && (
@@ -81,7 +86,7 @@ export default function ThemeToggle({ className = '' }) {
           role="menu"
           aria-label="Theme"
           onKeyDown={onMenuKey}
-          className="absolute right-0 top-full z-[60] mt-2 w-48 rounded-xl border border-gray-200 bg-surface-overlay p-1 shadow-hard animate-slide-down"
+          className="absolute right-0 top-full z-[70] mt-1.5 w-48 rounded-lg bg-overlay p-1 shadow-popover ring-1 ring-line-subtle animate-slide-down"
         >
           {OPTIONS.map(({ value, label: optionLabel, Icon }, i) => {
             const active = preference === value;
@@ -93,14 +98,14 @@ export default function ThemeToggle({ className = '' }) {
                 role="menuitemradio"
                 aria-checked={active}
                 onClick={() => choose(value)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${focusRing} ${active ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                className={`flex w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-body transition-colors focus:outline-none focus-visible:bg-sunken ${active ? 'font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg'}`}
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="flex-1">
                   {optionLabel}
-                  {value === 'system' && <span className="ml-1 text-xs font-normal text-gray-500">({resolved === 'dark' ? 'Dark' : 'Light'})</span>}
+                  {value === 'system' && <span className="ml-1 text-caption font-normal text-fg-subtle">({resolved === 'dark' ? 'Dark' : 'Light'})</span>}
                 </span>
-                {active && <FiCheck className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                {active && <CheckIcon className="h-4 w-4 shrink-0 text-accent-fg" aria-hidden="true" />}
               </button>
             );
           })}

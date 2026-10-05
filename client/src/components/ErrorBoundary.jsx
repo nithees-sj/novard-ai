@@ -31,30 +31,30 @@ class ErrorBoundary extends React.Component {
     if (!error) return this.props.children;
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-surface border border-gray-200 rounded-xl shadow-soft p-8 text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            This page hit an unexpected error. Reloading usually clears it.
+      <div className="min-h-screen bg-canvas px-6">
+        <div className="mx-auto max-w-xl pt-16 sm:pt-24" role="alert">
+          <p className="text-small font-medium text-danger-fg">Something went wrong</p>
+          <h1 className="mt-2 text-display font-semibold text-fg">This page stopped working</h1>
+          <p className="mt-2 text-body text-fg-muted">
+            An unexpected error stopped the page from showing. Your work is saved on the server; reloading usually clears it.
           </p>
           {process.env.NODE_ENV !== 'production' && (
-            <pre className="text-left text-xs bg-code text-code-fg rounded-lg p-3 mb-6 overflow-auto max-h-48">
+            <pre className="mt-6 max-h-48 overflow-auto rounded-lg bg-code p-3 text-left font-mono text-caption text-code-fg">
               {error.message}
             </pre>
           )}
-          <button
-            type="button"
-            onClick={this.handleReload}
-            className="w-full py-3 px-6 bg-ink text-on-ink font-semibold rounded-lg hover:bg-ink-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          >
-            Reload page
-          </button>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={this.handleReload}
+              className="inline-flex h-9 items-center rounded bg-accent px-3.5 text-body font-medium text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              Reload page
+            </button>
+            <a href="/home" className="inline-flex h-9 items-center rounded px-3.5 text-body font-medium text-fg ring-1 ring-inset ring-line transition-colors hover:bg-sunken">
+              Go to Home
+            </a>
+          </div>
         </div>
       </div>
     );

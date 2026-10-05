@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import AppShell from '../components/layout/AppShell';
 import { useNavigate } from 'react-router-dom';
-import { Navigationinner } from "../components/navigationinner";
-import Sidebar from '../components/Sidebar';
-import ChatbotButton from '../components/ChatbotButton';
 import AnalyticsCard from '../components/analytics/AnalyticsCard';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
@@ -82,14 +80,8 @@ const HomePage = () => {
     : null;
 
   return (
-    <>
-      <Navigationinner title={"HOME"} hideLogo={true} />
-      <div className="flex bg-gray-50 min-h-screen pt-14">
-        <Sidebar />
-
-        {/* Main Content */}
-        <div className="ml-64 flex-1">
-          <div className="p-8">
+    <AppShell page="home">
+          <div>
             <DashboardBanner />
             <AiLimitBanner />
             {/* Welcome Header */}
@@ -243,10 +235,7 @@ const HomePage = () => {
               </>
             )}
           </div>
-          <ChatbotButton />
-        </div>
-      </div>
-    </>
+    </AppShell>
   );
 };
 

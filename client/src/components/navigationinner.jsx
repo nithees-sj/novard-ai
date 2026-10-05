@@ -1,145 +1,110 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
-import mainlogo from "../images/mainlogo.png";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { useReportProblem } from "../context/ReportContext";
+import { useTheme } from "../context/ThemeContext";
+import Breadcrumbs from "./layout/Breadcrumbs";
+import Icon from "./ui/Icon";
+import Avatar from "./ui/Avatar";
+import Menu, { MenuItem, MenuSeparator, MenuHeader } from "./ui/Menu";
+import mainlogo from "../images/mainlogo.png";
 
 const ADMIN_ROLES = ["admin", "superadmin"];
 
+const iconButton = "inline-flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted transition-colors duration-150 hover:bg-sunken hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
 /**
- * The header of every signed-in page: title, the theme switch, the
- * notification bell and the account menu. The admin console reuses it with its
- * own account (`account`, `menuLinks`, `onSignOut`) and no bell.
+ * The header of every signed-in page: where you are (breadcrumbs) on the
+ * left; the theme switch, notifications and the one account menu on the
+ * right. The admin console reuses it with its own account (`account`,
+ * `menuLinks`, `onSignOut`) and no bell.
+ *
+ *   crumbs   [{ label, to?, onClick? }]   (falls back to `title`)
+ *   onMenu   opens the sidebar drawer (shown below lg)
+ *   agent    show the Novard Agent button here on phones (where the floating one is hidden)
  */
-export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, sidebarOffset = 'ml-64', showBell = true, account, menuLinks, onSignOut, actions = null }) => {
+export const Navigationinner = ({ crumbs, title, showBell = true, account, menuLinks, onSignOut, actions = null, onMenu, agent = false }) => {
   const auth = useAuth();
   const user = account || auth.user;
   const navigate = useNavigate();
   const openReport = useReportProblem();
-  const [showPopup, setShowPopup] = useState(false);
-
-  const handleLogout = () => {
-    setShowPopup(false);
-    (onSignOut || auth.signOut)();
-  };
-
-  const togglePopup = () => setShowPopup(!showPopup);
+  const { preference, setPreference } = useTheme();
 
   const links = menuLinks || [
-    { label: "My reports", onClick: () => navigate("/reports") },
-    { label: "Report a problem", onClick: () => openReport({}) },
-    ...(ADMIN_ROLES.includes(user?.role) ? [{ label: "Admin console", onClick: () => navigate("/admin") }] : []),
+    { label: "My reports", icon: "inbox", onClick: () => navigate("/reports") },
+    { label: "Report a problem", icon: "flag", onClick: () => openReport({}) },
+    ...(ADMIN_ROLES.includes(user?.role) ? [{ label: "Admin console", icon: "shield", onClick: () => navigate("/admin") }] : []),
   ];
+  const trail = crumbs || (title ? [{ label: title }] : []);
+  const name = user?.displayName || user?.name;
+  const picture = user?.photoURL || user?.picture;
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
-      <div className="relative flex justify-between items-center gap-3 sm:gap-6 px-4 sm:px-6 h-14">
-        {/* Logo - conditionally rendered */}
-        {!hideLogo && (
-          <div className="flex items-center space-x-3">
-            <img src={mainlogo} alt="NOVARD-AI" className="h-8 rounded-lg dark:invert" />
-            <span className="text-2xl font-extrabold text-gray-900 font-display tracking-tight">
-              NOVARD-AI
-            </span>
-          </div>
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-line-subtle bg-canvas/90 backdrop-blur-md lg:left-60">
+      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+        {onMenu && (
+          <button type="button" onClick={onMenu} className={`${iconButton} -ml-1 lg:hidden`} aria-label="Open the menu">
+            <Icon name="menu" className="h-5 w-5" />
+          </button>
         )}
+        {onMenu && <img src={mainlogo} alt="" className="hidden h-6 w-6 rounded-md dark:invert min-[400px]:block lg:hidden" />}
 
-        {/* Title */}
-        <div className="flex-1 text-xl font-semibold text-gray-700 truncate">
-          {title}
-        </div>
+        <Breadcrumbs crumbs={trail} className="flex-1" />
 
-        {actions}
-        <ThemeToggle />
-        {showBell && user && <NotificationBell />}
-
-        {/* User Info */}
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-expanded={showPopup}
-          className="flex items-center space-x-3 px-5 py-2 rounded-full bg-gray-100 border border-gray-200 
-                   cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all duration-300
-                   hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          onClick={togglePopup}
-        >
-          {user && (
-            <>
-              <span className="text-gray-700 font-semibold">{user.displayName || user.name}</span>
-              <img
-                src={user.photoURL || user.picture || "/img/team/user.jpeg"}
-                alt="Profile"
-                className="w-8 h-8 rounded-full border-2 border-gray-300"
-                onError={(e) => {
-                  e.target.src = "/img/team/user.jpeg";
-                }}
-              />
-            </>
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          {actions}
+          {agent && (
+            <button type="button" onClick={() => navigate("/chatbot")} className={`${iconButton} sm:hidden`} aria-label="Open Novard Agent">
+              <Icon name="bot" className="h-5 w-5" />
+            </button>
           )}
-        </button>
+          <div className="hidden sm:block"><ThemeToggle /></div>
+          {showBell && user && <NotificationBell />}
 
-        {/* Popup */}
-        {showPopup && user && (
-          <div className="absolute top-16 right-6 w-80 p-8 bg-surface-overlay border border-gray-200 
-                       rounded-xl shadow-hard z-[60] animate-slide-down text-center">
-            {/* Close Button */}
-            <button
-              type="button"
-              aria-label="Close account menu"
-              className="absolute top-3 right-5 w-8 h-8 flex items-center justify-center rounded-full 
-                       bg-gray-100 text-gray-900 hover:bg-blue-100 hover:scale-110 transition-all duration-300"
-              onClick={togglePopup}
-            >
-              &times;
-            </button>
-
-            {/* Profile Picture */}
-            <img
-              src={user.photoURL || user.picture || "/img/team/user.jpeg"}
-              alt="Profile"
-              className="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-gray-300"
-              onError={(e) => {
-                e.target.src = "/img/team/user.jpeg";
-              }}
-            />
-
-            {/* User Info */}
-            <h4 className="text-xl font-semibold text-gray-800 mb-1">
-              {user.displayName || user.name}
-            </h4>
-            <p className="text-sm text-gray-600 mb-5">
-              {user.email}
-            </p>
-
-            {/* Account links */}
-            <div className="mb-4 space-y-1.5">
-              {links.map((link) => (
-                <button
-                  key={link.label}
-                  type="button"
-                  onClick={() => { setShowPopup(false); link.onClick(); }}
-                  className="w-full rounded-full border border-gray-200 bg-surface px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-                >
-                  {link.label}
+          {user && (
+            <Menu
+              label="Account"
+              width="w-64"
+              className="ml-1"
+              trigger={(props) => (
+                <button type="button" {...props} aria-label={`Account: ${name || "you"}`} className="rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+                  <Avatar src={picture} name={name} size="md" />
                 </button>
-              ))}
-            </div>
-
-            {/* Logout Button */}
-            <button
-              type="button"
-              className="w-full py-3 px-8 bg-ink text-on-ink font-bold rounded-full 
-                       hover:bg-ink-hover hover:-translate-y-0.5 hover:shadow-lg 
-                       transition-all duration-300 uppercase tracking-wider text-sm"
-              onClick={handleLogout}
+              )}
             >
-              Logout
-            </button>
-          </div>
-        )}
+              {(close) => (
+                <>
+                  <MenuHeader>
+                    <div className="flex items-center gap-3">
+                      <Avatar src={picture} name={name} size="lg" />
+                      <div className="min-w-0">
+                        <p className="truncate text-body font-medium text-fg">{name}</p>
+                        {user.email && <p className="truncate text-small text-fg-subtle">{user.email}</p>}
+                      </div>
+                    </div>
+                  </MenuHeader>
+                  <MenuSeparator />
+                  {links.map((link) => (
+                    <MenuItem key={link.label} icon={link.icon || "arrowRight"} onSelect={() => { close(false); link.onClick(); }}>{link.label}</MenuItem>
+                  ))}
+                  {/* The theme lives here on phones, where the header has no room for its own button. */}
+                  <div className="sm:hidden">
+                    <MenuSeparator />
+                    <p className="px-2.5 pb-1 pt-1.5 text-caption text-fg-subtle">Theme</p>
+                    {[["light", "Light", "sun"], ["dark", "Dark", "moon"], ["system", "System", "monitor"]].map(([value, label, icon]) => (
+                      <MenuItem key={value} icon={icon} checked={preference === value} onSelect={() => setPreference(value)}>{label}</MenuItem>
+                    ))}
+                  </div>
+                  <MenuSeparator />
+                  <MenuItem icon="logout" onSelect={() => { close(false); (onSignOut || auth.signOut)(); }}>Sign out</MenuItem>
+                </>
+              )}
+            </Menu>
+          )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 };

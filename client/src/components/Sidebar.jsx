@@ -1,235 +1,140 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import mainlogo from '../images/mainlogo.png';
 import { useReportProblem } from '../context/ReportContext';
+import Icon from './ui/Icon';
+import cx from './ui/cx';
+import useFocusTrap from './ui/useFocusTrap';
+import { NAV_GROUPS, PAGES } from '../lib/pages';
+
+const ADMIN_ROLES = ['admin', 'superadmin'];
+
+const studentGroups = (role) => {
+  const groups = NAV_GROUPS.map((g) => ({ label: g.label, items: g.items.map((key) => ({ name: PAGES[key].name, icon: PAGES[key].icon, route: PAGES[key].path })) }));
+  if (ADMIN_ROLES.includes(role)) groups[groups.length - 1].items.push({ name: 'Admin console', icon: 'shield', route: '/admin' });
+  return groups;
+};
+
+/** True below the `lg` breakpoint, where the sidebar is a drawer. */
+const isSmall = () => typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(min-width: 1024px)').matches;
 
 /**
- * The left navigation of every signed-in page.
+ * The left navigation of every signed-in page. From `lg` up it is fixed on
+ * the left; below that it is a drawer opened from the top bar.
  *
  * The admin console uses the same sidebar with its own sections:
  *   items       [{ name, icon, route, badge? }] instead of the student menu
- *   footer      replaces the student's profile card
+ *               (icon: an Icon name, or an element)
+ *   footer      replaces the student footer
  *   subtitle    a small label under the logo (e.g. "Admin console")
  *   matchPrefix an item is active on its sub-pages too (/admin/risk/...)
- *   drawer      on small screens the sidebar becomes a drawer (opened by
- *               `drawerOpen`, closed with `onDrawerClose`), like the agent chat's
- * Without these props it is exactly the student sidebar.
+ *   drawerOpen / onDrawerClose   the drawer's state, owned by the shell
  */
-const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = false, drawer = false, drawerOpen = false, onDrawerClose }) => {
+const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = false, onDrawerClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const openReport = useReportProblem();
-  // Sidebar visibility state - starts hidden if in hover mode
-  const [showSidebar, setShowSidebar] = useState(!isHoverMode);
+  const panel = useRef(null);
 
-  // Update sidebar visibility when isHoverMode prop changes
+  const groups = items ? [{ label: null, items }] : studentGroups(user?.role);
+  const first = groups[0]?.items[0]?.route;
+
+  // A drawer on small screens: focus stays inside it and Escape closes it.
+  const trapped = drawerOpen && isSmall();
+  useFocusTrap(panel, trapped, onDrawerClose);
+
+  // Closing on navigation: a route change from inside the drawer.
+  const path = location.pathname;
+  const lastPath = useRef(path);
   useEffect(() => {
-    setShowSidebar(!isHoverMode);
-  }, [isHoverMode]);
-
-  // Hover detection for left edge. Registered once per mode - reading the
-  // current value through the state updater keeps showSidebar out of the deps,
-  // which previously tore down and re-attached the listener on every toggle.
-  useEffect(() => {
-    if (!isHoverMode) {
-      setShowSidebar(true);
-      return undefined;
-    }
-
-    const handleMouseMove = (e) => {
-      if (e.clientX < 20) {
-        setShowSidebar(true);
-      } else if (e.clientX > 284) {
-        setShowSidebar((visible) => (visible ? false : visible));
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isHoverMode]);
-
-  const studentItems = [
-    {
-      name: 'Home',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
-      route: '/home'
-    },
-    {
-      name: 'Career Development',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-      route: '/career'
-    },
-    {
-      name: 'Doubts & Learning',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      ),
-      route: '/doubts'
-    },
-    {
-      name: 'AI Forum',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-      route: '/forum'
-    },
-    {
-      name: 'My Learning',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      ),
-      route: '/skill-unlocker'
-    },
-    {
-      name: 'Video Sessions',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      ),
-      route: '/video'
-    },
-    {
-      name: 'Profile',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-      route: '/profile'
-    },
-    {
-      name: 'Settings',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      route: '/settings'
-    }
-  ];
-
-  // Admins signed in to the app see a way into the console.
-  const adminItem = {
-    name: 'Admin console',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
-    route: '/admin',
-  };
-  const menuItems = items || (['admin', 'superadmin'].includes(user?.role) ? [...studentItems, adminItem] : studentItems);
+    if (lastPath.current !== path && drawerOpen) onDrawerClose?.();
+    lastPath.current = path;
+  }, [path, drawerOpen, onDrawerClose]);
 
   const isActive = (route) => {
-    if (matchPrefix && route !== menuItems[0]?.route) return location.pathname === route || location.pathname.startsWith(`${route}/`);
-    return location.pathname === route;
+    if (route === '/admin' && !items) return false;
+    if (matchPrefix && route !== first) return path === route || path.startsWith(`${route}/`);
+    return path === route || (!matchPrefix && route !== '/home' && path.startsWith(`${route}/`));
   };
 
   const go = (route) => {
     navigate(route);
-    if (drawer) onDrawerClose?.();
+    onDrawerClose?.();
   };
 
-  // As a drawer (small screens only): hidden off-canvas until opened.
-  const drawerClasses = drawer ? `${drawerOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0` : '';
-  const visibility = drawer ? drawerClasses : (showSidebar ? 'translate-x-0' : '-translate-x-full');
+  const navItem = (item) => {
+    const active = isActive(item.route);
+    return (
+      <li key={item.route}>
+        <button
+          type="button"
+          aria-current={active ? 'page' : undefined}
+          onClick={() => go(item.route)}
+          className={cx(
+            'group flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-body transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+            active ? 'bg-raised font-medium text-fg shadow-raised ring-1 ring-line-subtle' : 'text-fg-muted hover:bg-raised/60 hover:text-fg',
+          )}
+        >
+          {typeof item.icon === 'string'
+            ? <Icon name={item.icon} className={cx('h-[1.125rem] w-[1.125rem]', active ? 'text-accent-fg' : 'text-fg-subtle group-hover:text-fg-muted')} />
+            : <span className={active ? 'text-accent-fg' : 'text-fg-subtle'}>{item.icon}</span>}
+          <span className="min-w-0 flex-1 truncate">{item.name}</span>
+          {item.badge ? <span className="tabular rounded-full bg-accent px-1.5 text-caption font-medium text-on-accent">{item.badge}</span> : null}
+        </button>
+      </li>
+    );
+  };
 
   return (
     <>
-    {drawer && drawerOpen && <div className="fixed inset-0 z-30 bg-black/30 dark:bg-black/60 md:hidden" onClick={onDrawerClose} aria-hidden="true" />}
-    <div
-      className={`fixed left-0 top-0 h-full w-64 bg-surface border-r border-gray-200 flex flex-col z-30 transition-transform duration-300 ease-out ${visibility}`}
-    >
-      {/* Logo Section */}
-      <div className="px-4 border-b border-gray-200 h-14 flex items-center shrink-0">
-        <div className="flex items-center space-x-2">
-          <img src={mainlogo} alt="NOVARD-AI" className="h-8 w-8 rounded-lg dark:invert" />
-          <span className="leading-tight">
-            <span className="block text-xl font-bold text-gray-900">NOVARD-AI</span>
-            {subtitle && <span className="block text-[11px] font-semibold uppercase tracking-wide text-blue-600">{subtitle}</span>}
+      {drawerOpen && <div className="fixed inset-0 z-40 bg-black/30 animate-fade-in dark:bg-black/60 lg:hidden" onClick={onDrawerClose} aria-hidden="true" />}
+      <aside
+        ref={panel}
+        aria-label="Main navigation"
+        className={cx(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line-subtle bg-sunken transition-transform duration-200 ease-out lg:z-30 lg:w-60 lg:translate-x-0',
+          drawerOpen ? 'translate-x-0 shadow-modal lg:shadow-none' : '-translate-x-full',
+        )}
+      >
+        <div className="flex h-14 shrink-0 items-center gap-2.5 px-4">
+          <img src={mainlogo} alt="" className="h-7 w-7 rounded-md dark:invert" />
+          <span className="min-w-0 leading-none">
+            <span className="block font-display text-lead font-bold tracking-tight text-fg">NOVARD-AI</span>
+            {subtitle && <span className="mt-1 block text-caption text-fg-subtle">{subtitle}</span>}
           </span>
+          {drawerOpen && (
+            <button type="button" onClick={onDrawerClose} className="ml-auto rounded-md p-1.5 text-fg-subtle hover:bg-raised hover:text-fg lg:hidden" aria-label="Close the menu">
+              <Icon name="x" className="h-4 w-4" />
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Navigation Menu */}
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-        {menuItems.map((item) => (
-          <button
-            key={item.route}
-            type="button"
-            aria-current={isActive(item.route) ? 'page' : undefined}
-            onClick={() => go(item.route)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
-              isActive(item.route)
-                ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            <span className={isActive(item.route) ? 'text-blue-600' : 'text-gray-500'}>
-              {item.icon}
-            </span>
-            <span className="flex-1 text-sm">{item.name}</span>
-            {item.badge ? <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white tabular-nums">{item.badge}</span> : null}
-          </button>
-        ))}
-      </nav>
-
-      {footer}
-
-      {/* User Info Footer */}
-      {!items && user && (
-        <div className="px-4 pt-3">
-          <button
-            type="button"
-            onClick={() => openReport({})}
-            className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-left text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-            </svg>
-            <span>Report a problem</span>
-          </button>
-        </div>
-      )}
-      {!items && user && (
-        <div className="p-4 border-t border-gray-200">
-          <button type="button" className="w-full flex items-center space-x-3 p-3 rounded-lg bg-gray-50 text-left hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-               onClick={() => navigate('/profile')}>
-            <img
-              src={user.photoURL || user.picture || '/img/team/user.jpeg'}
-              alt="Profile"
-              className="w-10 h-10 rounded-full border-2 border-gray-300"
-              onError={(e) => {
-                e.target.src = '/img/team/user.jpeg';
-              }}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user.displayName || user.name}
-              </p>
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-2" aria-label="Pages">
+          {groups.map((group, i) => (
+            <div key={group.label || i} className={i > 0 ? 'mt-5' : ''}>
+              {group.label && <p className="mb-1 px-2.5 text-caption font-medium text-fg-subtle">{group.label}</p>}
+              <ul className="space-y-0.5">{group.items.map(navItem)}</ul>
             </div>
-          </button>
-        </div>
-      )}
-    </div>
+          ))}
+        </nav>
+
+        {footer}
+
+        {!items && user && (
+          <div className="border-t border-line-subtle px-3 py-3">
+            <button
+              type="button"
+              onClick={() => { onDrawerClose?.(); openReport({}); }}
+              className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-body text-fg-muted transition-colors hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+            >
+              <Icon name="flag" className="h-[1.125rem] w-[1.125rem] text-fg-subtle" />
+              Report a problem
+            </button>
+          </div>
+        )}
+      </aside>
     </>
   );
 };

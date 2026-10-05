@@ -21,7 +21,7 @@ export const THEMES = ['light', 'dark', 'system'];
 export const THEME_KEY = 'novard_theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 // The browser chrome colour (mobile address bar), as the top bar.
-const CHROME_COLORS = { light: '#ffffff', dark: '#151a21' };
+const CHROME_COLORS = { light: '#f7f8fa', dark: '#0e1217' };
 
 const readStored = () => {
   try {

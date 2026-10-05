@@ -6,7 +6,7 @@ import { buttonClass } from '../ui/Button';
 import { inputClass as uiInputClass, fieldClass as uiFieldClass, Field as UIField } from '../ui/Field';
 import UIBadge from '../ui/Badge';
 import { Tabs } from '../ui/Tabs';
-import { EmptyState as UIEmptyState, SkeletonRows } from '../ui/States';
+import { EmptyState as UIEmptyState, SkeletonRows, Skeleton as SkeletonBar } from '../ui/States';
 import UIToast from '../ui/Toast';
 import cx from '../ui/cx';
 import { isCorrectAnswer } from '../../lib/quiz';
@@ -56,41 +56,41 @@ export const ReportAction = ({ onClick, label = 'Report', className = '' }) => (
 
 // ── layout ─────────────────────────────────────────────────────────────────
 
-/** Main column (header + panel) with the item list on the right, both filling the screen height. */
+/**
+ * The two-pane workspace shared by every learning tool: the student's list on
+ * the left, the open item on the right, in one frame that fills the screen
+ * (AppShell width="full"). On phones the two stack and the page scrolls.
+ */
 export const Workspace = ({ children, side }) => (
-  <div className="flex h-[calc(100vh-160px)] min-h-[560px] gap-5">
-    <div className="flex min-w-0 flex-1 flex-col gap-4">{children}</div>
+  <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row md:gap-0 md:overflow-hidden md:rounded-xl md:bg-raised md:ring-1 md:ring-line-subtle">
     {side}
+    <div className="flex min-h-[28rem] min-w-0 flex-1 flex-col md:min-h-0">{children}</div>
   </div>
 );
 
-/** A white card; `fill` makes it take the remaining height and scroll inside. */
+/** The main pane's surface; `fill` makes it take the remaining height and scroll inside. Framed on its own on phones only. */
 export const Panel = ({ children, fill = false, padded = true, className = '' }) => (
-  <section className={`rounded-xl border border-gray-200 bg-surface shadow-sm ${fill ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''} ${className}`}>
+  <section className={cx('rounded-xl bg-raised ring-1 ring-line-subtle md:rounded-none md:ring-0', fill && 'flex min-h-0 flex-1 flex-col overflow-hidden', className)}>
     {padded && !fill ? <div className="p-5">{children}</div> : children}
   </section>
 );
 
 /**
- * The open item in one container: a slim heading bar (icon, title, one line
- * of detail, tabs or actions on the right) and the active tab's content below.
+ * The open item: a heading bar (title, one line of detail, then its tabs or
+ * actions) and the active tab's content below.
  */
 export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => (
-  <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm">
-    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-100 px-4 py-2.5">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {icon && (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-            <Icon name={icon} className="h-4 w-4" />
-          </span>
-        )}
-        <div className="min-w-0">
-          <h2 className="truncate text-[15px] font-semibold leading-snug text-gray-900">{title}</h2>
-          {meta && <div className="truncate text-xs leading-snug text-gray-500">{meta}</div>}
+  <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:rounded-none md:ring-0">
+    <header className="border-b border-line-subtle px-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-3.5">
+        {icon && <Icon name={icon} className="h-4 w-4 text-fg-subtle" />}
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-lead font-semibold text-fg">{title}</h2>
+          {meta && <div className="truncate text-small text-fg-subtle">{meta}</div>}
         </div>
+        {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
       </div>
-      {tabs}
-      {actions}
+      {tabs ? <div className="mt-1.5">{tabs}</div> : <div className="h-3.5" />}
     </header>
     <div className="flex min-h-0 flex-1 flex-col">{children}</div>
   </section>
@@ -417,23 +417,29 @@ const ListSkeleton = () => <SkeletonRows rows={4} />;
 /** The main area while the student's items are first loaded. */
 export const LoadingPanel = ({ label = 'Loading…' }) => (
   <Panel fill>
-    <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-gray-500" role="status">
-      <Spinner className="h-7 w-7 text-blue-600" />
-      {label}
+    <div className="flex h-full flex-col gap-5 p-6" role="status" aria-label={label}>
+      <div className="space-y-2">
+        <SkeletonBar className="h-5 w-1/3" />
+        <SkeletonBar className="h-3.5 w-1/5" />
+      </div>
+      <div className="space-y-2.5 pt-4">
+        {['w-full', 'w-11/12', 'w-4/5', 'w-2/3'].map((w) => <SkeletonBar key={w} className={`h-3 ${w}`} />)}
+      </div>
     </div>
   </Panel>
 );
 
+/** The student's list (notes, doubts, videos, requests): the left pane of a Workspace. */
 export const SideList = ({ title, count, action, children, loading = false, className = '' }) => (
-  <aside className={`flex w-72 shrink-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm ${className}`}>
-    <div className="border-b border-gray-100 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-bold text-gray-900">{title}</h3>
-        {count > 0 && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600 tabular-nums">{count}</span>}
+  <aside className={cx('flex max-h-[24rem] shrink-0 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:max-h-none md:w-72 md:rounded-none md:border-r md:border-line-subtle md:bg-canvas/60 md:ring-0', className)}>
+    <div className="px-4 pb-3 pt-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="text-body font-semibold text-fg">{title}</h3>
+        {count > 0 && <span className="tabular text-caption text-fg-subtle">{count}</span>}
       </div>
       {action}
     </div>
-    <div className="flex-1 space-y-2 overflow-y-auto p-3 pb-28">{loading ? <ListSkeleton /> : children}</div>
+    <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4">{loading ? <ListSkeleton /> : children}</div>
   </aside>
 );
 

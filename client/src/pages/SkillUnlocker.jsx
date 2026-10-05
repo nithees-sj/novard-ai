@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
-import { Navigationinner } from "../components/navigationinner";
-import Sidebar from '../components/Sidebar';
-import ChatbotButton from '../components/ChatbotButton';
+import AppShell from '../components/layout/AppShell';
+import Icon from '../components/ui/Icon';
+import Button from '../components/ui/Button';
+import cx from '../components/ui/cx';
 import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import QuizSetup from '../components/quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
-import { MdDeleteOutline, MdAdd } from "react-icons/md";
 import FeatureNotice from '../components/FeatureNotice';
 
 
@@ -339,16 +339,21 @@ const SkillUnlocker = () => {
   };
 
   return (
-    <>
-      <Navigationinner title={"SKILL UNLOCKER"} hideLogo={true} hasSidebar={true} />
-      {/* Full viewport height: pt-14 already clears the 56px top bar (border-box). */}
-      <div className="flex bg-gray-50 pt-14 h-screen">
-        <Sidebar />
-        
-        {/* Main Content */}
-        <div className="flex-1 min-w-0 ml-64 overflow-y-auto p-6 md:p-8">
-          <div className="max-w-5xl mx-auto">
-            <FeatureNotice tool="skillUnlocker" />
+    <AppShell
+      page="plans"
+      width="full"
+      crumbs={[
+        { label: 'Home', to: '/home' },
+        currentView === 'form' ? { label: 'Skill Plans' } : { label: 'Skill Plans', onClick: handleAddNewSkill },
+        ...(currentView !== 'form' && currentPlan?.skillName ? [{ label: currentPlan.skillName }] : []),
+      ]}
+      title={currentView !== 'form' && currentPlan?.skillName ? `${currentPlan.skillName} · Skill Plans` : 'Skill Plans'}
+    >
+      <FeatureNotice tool="skillUnlocker" />
+      <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row md:gap-0 md:overflow-hidden md:rounded-xl md:bg-raised md:ring-1 md:ring-line-subtle">
+        {/* The open plan, form or quiz */}
+        <div className="order-last min-h-[28rem] min-w-0 flex-1 rounded-xl bg-raised ring-1 ring-line-subtle md:order-none md:min-h-0 md:overflow-y-auto md:rounded-none md:ring-0">
+          <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8 sm:py-8">
             
             {/* Header */}
             {(
@@ -833,42 +838,40 @@ const SkillUnlocker = () => {
           </div>
         </div>
 
-        {/* Your skills - right-hand panel */}
-        <aside className="w-80 shrink-0 bg-surface border-l border-gray-200 flex flex-col h-full z-10" aria-label="Your skills">
-            <div className="p-5 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Your Skills</h3>
-                <button
+        {/* Your plans - the left pane */}
+        <aside className="order-first flex max-h-[24rem] shrink-0 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:max-h-none md:w-72 md:rounded-none md:border-r md:border-line-subtle md:bg-canvas/60 md:ring-0" aria-label="Your skill plans">
+            <div className="px-4 pb-3 pt-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h3 className="text-body font-semibold text-fg">Your plans</h3>
+                  {plans.length > 0 && <span className="tabular text-caption text-fg-subtle">{plans.length}</span>}
+                </div>
+                <Button
                   onClick={handleAddNewSkill}
                   aria-pressed={currentView === 'form'}
-                  className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-colors ${
-                    currentView === 'form'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                  }`}
+                  variant={currentView === 'form' ? 'secondary' : 'primary'}
+                  icon={currentView === 'form' ? undefined : 'plus'}
+                  block
+                  disabled={currentView === 'form'}
                 >
-                    {currentView === 'form' ? (
-                      <span>Creating a new skill…</span>
-                    ) : (
-                      <>
-                        <MdAdd size={20} />
-                        <span>Add New Skill</span>
-                      </>
-                    )}
-                </button>
+                  {currentView === 'form' ? 'Creating a new plan…' : 'New skill plan'}
+                </Button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+
+            <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4">
                 {plans.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">
-                        <p className="text-sm">No skills yet.</p>
-                        <p className="text-xs mt-1">Fill in the form to create your first plan.</p>
+                    <div className="px-3 py-8 text-center">
+                        <p className="text-body font-medium text-fg">No plans yet</p>
+                        <p className="mt-0.5 text-small text-fg-muted">Fill in the form to create your first one.</p>
                     </div>
                 ) : (
-                    plans.map((plan) => (
-                        <div 
+                    plans.map((plan) => {
+                        const selected = !!(currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id));
+                        return (
+                        <div
                           key={plan.planId || plan._id}
                           role="button"
                           tabIndex={0}
+                          aria-current={selected ? 'true' : undefined}
                           onClick={() => handleSelectPlan(plan)}
                           onKeyDown={(e) => {
                             if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
@@ -876,54 +879,38 @@ const SkillUnlocker = () => {
                               handleSelectPlan(plan);
                             }
                           }}
-                          className={`group relative p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
-                              (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
-                              ? 'bg-blue-50/50 border-blue-200 shadow-sm border-l-4 border-l-blue-600' 
-                              : 'bg-surface border-gray-200 hover:border-gray-300 border-l-4 border-l-transparent'
-                          }`}
+                          className={cx(
+                            'group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+                            selected ? 'bg-accent-soft' : 'hover:bg-sunken',
+                          )}
                         >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                    <h3 className={`font-semibold text-sm truncate pr-2 ${
-                                         (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
-                                         ? 'text-blue-800'
-                                         : 'text-gray-800'
-                                    }`}>
-                                        {plan.skillName}
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-1.5">
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                            {plan.duration} days
-                                        </span>
-                                        {plan.quizCompleted && (
-                                            <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-100">
-                                                ★ Quiz Done
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-center gap-2">
-                                     <CircularProgress value={plan.progress} size={36} strokeWidth={3} />
-                                     <span className="text-[10px] font-medium text-gray-500">{plan.progress}%</span>
-                                </div>
+                            <CircularProgress value={plan.progress} size={32} strokeWidth={3} />
+                            <div className="min-w-0 flex-1">
+                                <h3 className={cx('truncate text-body font-medium', selected ? 'text-accent-fg' : 'text-fg')}>
+                                    {plan.skillName}
+                                </h3>
+                                <p className="mt-0.5 text-caption text-fg-subtle">
+                                    <span className="tabular">{plan.duration} days · {plan.progress}%</span>
+                                    {plan.quizCompleted && <span className="text-success-fg"> · Quiz done</span>}
+                                </p>
                             </div>
-                            
                             <button
+                                type="button"
                                 onClick={(e) => handleDeletePlan(e, plan.planId || plan._id)}
-                                className="absolute -top-2 -right-2 bg-surface text-gray-400 hover:text-red-500 p-1.5 rounded-full shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
-                                title="Delete Plan"
+                                className="shrink-0 rounded p-1 text-fg-subtle opacity-0 transition hover:bg-danger-soft hover:text-danger-fg focus:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+                                title="Delete plan"
                                 aria-label={`Delete the ${plan.skillName} plan`}
                             >
-                                <MdDeleteOutline size={16} />
+                                <Icon name="trash" className="h-4 w-4" />
                             </button>
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </aside>
       </div>
-      <ChatbotButton />
-    </>
+    </AppShell>
   );
 };
 

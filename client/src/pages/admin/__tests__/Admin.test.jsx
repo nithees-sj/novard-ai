@@ -1,6 +1,6 @@
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ReadableStream } from 'stream/web';
 import { adminGet, adminPost, adminPut, adminFetch } from '../../../lib/adminApi';
 import AdminApp from '../AdminApp';
@@ -118,7 +118,8 @@ describe('admin console routing', () => {
     expect(screen.getByText('NOVARD-AI')).toBeInTheDocument();
     expect(screen.getByText('Admin console')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Risk board/ })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText('ADMIN · RISK BOARD')).toBeInTheDocument();
+    // The header shows where you are as a breadcrumb (not a repeated uppercase title).
+    expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getAllByText('Risk board').length).toBeGreaterThan(0);
     expect(screen.getByText('CRITICAL')).toBeInTheDocument();
     expect(screen.getByText('report volume +6.0σ')).toBeInTheDocument();
     // An area raised by the complaint rule says so in words, not in σ.

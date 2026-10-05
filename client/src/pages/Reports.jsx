@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import AppShell from '../components/layout/AppShell';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Navigationinner } from '../components/navigationinner';
-import Sidebar from '../components/Sidebar';
 import { Badge, EmptyState, Icon, Spinner, btn, fieldClass, formatDate } from '../components/learning/LearningUI';
 import { useReportProblem } from '../context/ReportContext';
 import { reportsApi, attachmentUrl, STATUS_LABEL, STATUS_TONE } from '../lib/reports';
@@ -177,12 +176,8 @@ export default function Reports() {
   useEffect(() => { load(); }, [load, ref]);
 
   return (
-    <>
-      <Navigationinner title="MY REPORTS" hideLogo={true} />
-      <div className="flex min-h-screen bg-gray-50 pt-14">
-        <Sidebar />
-        <div className="ml-64 flex-1 p-8">
-          <div className="mx-auto max-w-5xl space-y-6">
+    <AppShell page="reports">
+          <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">My reports</h1>
@@ -199,8 +194,6 @@ export default function Reports() {
               <p className="text-center text-xs text-gray-500">Something else? <Link to="#" onClick={(e) => { e.preventDefault(); openReport({}); }} className="text-blue-600 hover:underline">Send another report</Link></p>
             )}
           </div>
-        </div>
-      </div>
-    </>
+    </AppShell>
   );
 }

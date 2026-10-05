@@ -2,12 +2,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigationinner } from '../navigationinner';
 import Sidebar from '../Sidebar';
-import { Icon } from '../learning/LearningUI';
 import { useAdminAuth } from '../../AdminAuthContext';
 import { useAuth } from '../../AuthContext';
 import { adminGet, adminPost } from '../../lib/adminApi';
 
-const item = (name, icon, route) => ({ name, route, icon: <Icon name={icon} className="h-5 w-5" /> });
+const item = (name, icon, route) => ({ name, route, icon });
 
 export const ADMIN_SECTIONS = [
   item('Overview', 'sparkles', '/admin'),
@@ -62,41 +61,44 @@ function AlertBanner() {
  * student app, with the admin sections. On small screens the sidebar is a
  * drawer (opened from the header).
  */
+/** "ADMIN · RISK BOARD" (the pages' titles) as "Risk board", for the breadcrumb and the tab. */
+const sentence = (text = '') => {
+  const t = text.replace(/^ADMIN\s*·\s*/i, '').trim().toLowerCase();
+  return t ? t[0].toUpperCase() + t.slice(1) : '';
+};
+
 export default function AdminLayout({ title, children, wide = false }) {
   const { admin, signOut } = useAdminAuth();
   const { signOut: signOutOfApp } = useAuth();
   const navigate = useNavigate();
   const [drawer, setDrawer] = useState(false);
+  const closeDrawer = useCallback(() => setDrawer(false), []);
+  const page = sentence(title);
+  useEffect(() => {
+    document.title = [page, 'Admin', 'NOVARD-AI'].filter(Boolean).join(' · ');
+  }, [page]);
   return (
-    <>
+    <div className="min-h-screen bg-canvas">
       <Navigationinner
-        title={title}
-        hideLogo
-        sidebarOffset="md:ml-64"
+        crumbs={[{ label: 'Admin', to: '/admin' }, ...(page && page !== 'Overview' ? [{ label: page }] : [])]}
         showBell={false}
         account={admin ? { ...admin, displayName: admin.name } : null}
-        menuLinks={[{ label: 'Back to Novard-AI', onClick: () => navigate('/home') }]}
+        menuLinks={[{ label: 'Back to Novard-AI', icon: 'arrowLeft', onClick: () => navigate('/home') }]}
         onSignOut={() => {
           // One session: leaving the console signs out of the app too.
           signOut();
           signOutOfApp();
           navigate('/');
         }}
-        actions={(
-          <button type="button" onClick={() => setDrawer(true)} className="-ml-2 rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden" aria-label="Open the menu">
-            <Icon name="menu" className="h-5 w-5" />
-          </button>
-        )}
+        onMenu={() => setDrawer(true)}
       />
-      <div className="flex min-h-screen bg-gray-50 pt-14">
-        <Sidebar items={ADMIN_SECTIONS} subtitle="Admin console" matchPrefix drawer drawerOpen={drawer} onDrawerClose={() => setDrawer(false)} />
-        <main className="min-w-0 flex-1 p-4 sm:p-6 md:ml-64 md:p-8">
-          <div className={wide ? '' : 'mx-auto max-w-7xl'}>
-            <AlertBanner />
-            {children}
-          </div>
-        </main>
-      </div>
-    </>
+      <Sidebar items={ADMIN_SECTIONS} subtitle="Admin console" matchPrefix drawerOpen={drawer} onDrawerClose={closeDrawer} />
+      <main className="min-w-0 px-4 pb-16 pt-20 sm:px-6 lg:pl-[17rem] lg:pr-8">
+        <div className={wide ? '' : 'mx-auto max-w-7xl'}>
+          <AlertBanner />
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }

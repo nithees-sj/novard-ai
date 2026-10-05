@@ -22,6 +22,7 @@ const Video = lazy(() => import("./pages/Video"));
 const SkillUnlocker = lazy(() => import("./pages/SkillUnlocker"));
 const Reports = lazy(() => import("./pages/Reports"));
 const AdminApp = lazy(() => import("./pages/admin/AdminApp"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const LEGACY_ROUTES = {
   '/roadmap': '/career?tool=roadmap',
@@ -81,7 +82,7 @@ function AppRoutes() {
         ))}
 
         {/* Anything else */}
-        <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
+        <Route path="*" element={<NotFound signedIn={!!user} />} />
       </Routes>
     </Suspense>
   );

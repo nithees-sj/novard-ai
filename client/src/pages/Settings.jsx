@@ -1,18 +1,11 @@
 import React from 'react';
-import { Navigationinner } from '../components/navigationinner';
-import Sidebar from '../components/Sidebar';
+import AppShell from '../components/layout/AppShell';
 import { ThemeOptions } from '../components/ThemeToggle';
 
 const Settings = () => {
   return (
-    <>
-      <Navigationinner title="SETTINGS" hideLogo={true} />
-      <div className="flex bg-gray-50 min-h-screen pt-14">
-        <Sidebar />
-        
-        {/* Main Content */}
-        <div className="ml-64 flex-1 p-8">
-          <div className="max-w-4xl mx-auto">
+    <AppShell page="settings">
+          <div>
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
@@ -86,9 +79,7 @@ const Settings = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </>
+    </AppShell>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import AppShell from '../components/layout/AppShell';
 import { api } from '../lib/api';
-import { Navigationinner } from '../components/navigationinner';
-import Sidebar from '../components/Sidebar';
 import { useAuth } from '../AuthContext';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import TestPerformance from '../components/profile/TestPerformance';
@@ -72,12 +71,8 @@ const Profile = () => {
   const scoreChange = trend.length > 1 ? trend[trend.length - 1].value - trend[0].value : 0;
 
   return (
-    <>
-      <Navigationinner title="PROFILE" hideLogo={true} />
-      <div className="flex bg-gray-50 min-h-screen pt-14">
-        <Sidebar />
-        <main className="ml-64 flex-1 p-8 min-w-0">
-          <div className="max-w-7xl mx-auto space-y-6">
+    <AppShell page="profile">
+          <div className="space-y-6">
             {loading && !data ? (
               <div className="flex flex-col items-center justify-center py-32 text-gray-500" role="status">
                 <span className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-primary-600 animate-spin mb-4" aria-hidden="true" />
@@ -195,9 +190,7 @@ const Profile = () => {
               </>
             )}
           </div>
-        </main>
-      </div>
-    </>
+    </AppShell>
   );
 };
 

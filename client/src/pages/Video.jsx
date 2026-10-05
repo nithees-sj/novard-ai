@@ -1,216 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Navigationinner } from "../components/navigationinner";
-import Sidebar from '../components/Sidebar';
 import { readParam, clearParam } from '../lib/openParam';
+import AppShell from '../components/layout/AppShell';
+import ToolIndex from '../components/layout/ToolIndex';
+import { PageHeader } from '../components/ui/Headers';
 import VideoLibraryInlineView from '../components/VideoLibraryInlineView';
 import VideoSummarizerInlineView from '../components/VideoSummarizerInlineView';
 import FeatureNotice from '../components/FeatureNotice';
 
 const Video = () => {
-  const navigate = useNavigate();
   // ?tool=<name> opens a section directly (links from the Novard Agent and the profile page).
   const [activeView, setActiveView] = useState(() => ({ library: 'videoLibrary', summarizer: 'videoSummarizer' })[readParam('tool')] || 'landing'); // 'landing', 'videoLibrary', 'videoSummarizer'
   useEffect(() => clearParam('tool'), []);
 
-  const features = [
-    {
-      id: 'library',
-      title: 'Video Library',
-      description: 'Access curated educational videos with industry experts and tutorials.',
-      icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-        </svg>
-      ),
-      bgColor: 'bg-blue-100',
-      iconColor: 'text-blue-600',
-      route: 'inline' // Changed to trigger inline view
-    },
-    {
-      id: 'summarizer',
-      title: 'Video Summarizer',
-      description: 'Add YouTube videos and interact through chat, summaries, and quizzes.',
-      icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-          <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-        </svg>
-      ),
-      bgColor: 'bg-purple-100',
-      iconColor: 'text-purple-600',
-      route: 'inline' // Changed to trigger inline view
-    }
-  ];
+  const tool = activeView === 'landing' ? undefined : { key: activeView, onBack: () => setActiveView('landing') };
 
   return (
-    <>
-      <Navigationinner title={"VIDEO SESSIONS"} hideLogo={true} hasSidebar={true} />
-      <div className="flex bg-gray-50 min-h-screen pt-14">
-        <Sidebar />
-        <div className="ml-64 flex-1 p-8">
-          <FeatureNotice tool={{ videoLibrary: 'videoLibrary', videoSummarizer: 'videoSummarizer' }[activeView]} />
+    <AppShell page="videos" tool={tool} width={tool ? 'full' : 'default'}>
+      <FeatureNotice tool={{ videoLibrary: 'videoLibrary', videoSummarizer: 'videoSummarizer' }[activeView]} />
 
-          {/* Breadcrumb */}
-          <div className="flex items-center text-sm text-gray-500 mb-4">
-            <button type="button" onClick={() => navigate('/home')} className="flex items-center gap-1.5 hover:text-blue-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Dashboard
-            </button>
-            <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <button type="button"
-              className={`cursor-pointer hover:text-blue-600 ${activeView === 'landing' ? 'text-gray-900 font-medium' : ''}`}
-              onClick={() => setActiveView('landing')}
-            >
-              Video Sessions
-            </button>
-            {activeView === 'videoLibrary' && (
-              <>
-                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="text-gray-900 font-medium">Video Library</span>
-              </>
-            )}
-            {activeView === 'videoSummarizer' && (
-              <>
-                <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="text-gray-900 font-medium">Video Summarizer</span>
-              </>
-            )}
-          </div>
+      {activeView === 'landing' && (
+        <>
+          <PageHeader title="Videos" description="Find videos for what you are learning, or turn a YouTube video into something you can chat with and quiz yourself on." />
+          <ToolIndex
+            tools={[
+              {
+                key: 'videoLibrary',
+                description: 'Ask for videos on a topic and get a curated list from YouTube and course sites, with ratings and prices where they apply.',
+                detail: 'Requests · curated videos · kept for later',
+                onOpen: () => setActiveView('videoLibrary'),
+              },
+              {
+                key: 'videoSummarizer',
+                description: 'Paste a YouTube link. Chat about the video, read a summary of it, and take a quiz on what it covers.',
+                detail: 'YouTube link · chat · summary · quiz',
+                onOpen: () => setActiveView('videoSummarizer'),
+              },
+            ]}
+          />
+        </>
+      )}
 
-          {/* Landing View */}
-          {activeView === 'landing' && (
-            <>
-              {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Video Sessions & Learning
-                </h1>
-                <p className="text-gray-600">
-                  Access videos and AI-powered tools for enhanced learning.
-                </p>
-              </div>
-
-              {/* Feature Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 max-w-4xl">
-                {features.map((feature) => (
-                  <button
-                    type="button"
-                    key={feature.id}
-                    className="w-full text-left bg-surface rounded-xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
-                             transition-all duration-300 cursor-pointer group hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-                    onClick={() => {
-                      if (feature.route === 'inline') {
-                        if (feature.id === 'library') {
-                          setActiveView('videoLibrary');
-                        } else if (feature.id === 'summarizer') {
-                          setActiveView('videoSummarizer');
-                        }
-                      } else {
-                        navigate(feature.route);
-                      }
-                    }}
-                  >
-                    {/* Icon */}
-                    <span className={`w-16 h-16 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4 
-                                  group-hover:scale-110 transition-transform duration-300`}>
-                      <span className={`block ${feature.iconColor}`}>
-                        {feature.icon}
-                      </span>
-                    </span>
-
-                    {/* Title */}
-                    <span className="block text-xl font-bold text-gray-900 mb-3">
-                      {feature.title}
-                    </span>
-
-                    {/* Description */}
-                    <span className="block text-sm text-gray-600 leading-relaxed mb-5">
-                      {feature.description}
-                    </span>
-
-                    {/* Explore Button */}
-                    <span className="w-full py-3 px-4 bg-blue-600 text-white text-sm font-semibold rounded-lg 
-                                     group-hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2">
-                      Explore
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Promotional Banner */}
-              <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-10 relative overflow-hidden max-w-4xl dark:ring-1 dark:ring-white/10">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
-                  <div className="flex-1 mb-6 md:mb-0">
-                    {/* Badge */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 
-                                  border border-blue-500 rounded-full text-blue-400 text-xs font-semibold mb-4">
-                      <span className="text-lg">🎬</span>
-                      NEW VIDEO TUTORIALS AVAILABLE
-                    </div>
-
-                    {/* Heading */}
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-                      Master New Skills with Video
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-slate-300 text-base max-w-2xl">
-                      Our video library is constantly updated with new masterclasses from top-tier industry professionals.
-                    </p>
-                  </div>
-
-                  {/* CTA Button */}
-                  <button
-                    onClick={() => setActiveView('videoLibrary')}
-                    className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg 
-                             hover:bg-blue-700 transition-all duration-200 flex items-center gap-3 
-                             shadow-xl hover:shadow-2xl hover:scale-105"
-                  >
-                    Watch Now
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Video Library Inline View */}
-          {activeView === 'videoLibrary' && (
-            <div>
-
-              <VideoLibraryInlineView />
-            </div>
-          )}
-
-          {/* Video Summarizer Inline View */}
-          {activeView === 'videoSummarizer' && (
-            <div>
-
-              <VideoSummarizerInlineView />
-            </div>
-          )}
-
-        </div>
-      </div>
-    </>
+      {activeView === 'videoLibrary' && <VideoLibraryInlineView />}
+      {activeView === 'videoSummarizer' && <VideoSummarizerInlineView />}
+    </AppShell>
   );
 };
 

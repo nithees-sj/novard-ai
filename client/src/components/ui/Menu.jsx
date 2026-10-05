@@ -11,6 +11,9 @@ import Icon from './Icon';
  *     {(close) => <><MenuItem onSelect={…}>Profile</MenuItem>…</>}
  *   </Menu>
  */
+/** The menu's enabled items that are shown (some only appear at certain widths). */
+const visibleItems = (node) => Array.from(node?.querySelectorAll('[role^="menuitem"]:not([disabled])') || []).filter((el) => el.getClientRects().length > 0);
+
 export default function Menu({ trigger, children, align = 'end', width = 'w-56', className, label, panelClassName }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef(null);
@@ -29,12 +32,12 @@ export default function Menu({ trigger, children, align = 'end', width = 'w-56',
     const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    requestAnimationFrame(() => panel.current?.querySelector('[role^="menuitem"]:not([disabled])')?.focus());
+    requestAnimationFrame(() => visibleItems(panel.current)[0]?.focus());
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [open, close]);
 
   const onPanelKey = (e) => {
-    const items = Array.from(panel.current?.querySelectorAll('[role^="menuitem"]:not([disabled])') || []);
+    const items = visibleItems(panel.current);
     const i = items.indexOf(document.activeElement);
     const go = (n) => { e.preventDefault(); items[(n + items.length) % items.length]?.focus(); };
     if (e.key === 'ArrowDown') go(i + 1);
