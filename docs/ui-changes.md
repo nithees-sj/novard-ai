@@ -117,7 +117,7 @@ Icons are used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand
 - Loading uses skeletons, and errors show an error state with retry.
 
 **Career, Doubts & Notes, Videos**
-- Tool cards: a blue icon chip, the name, one specific sentence, what you get, and a blue "Open …" action; the card outline turns blue on hover. The follow-up aside is a soft blue panel with a primary button.
+- Tool cards, one per row: a large blue icon chip, the name, one specific sentence, what you get as blue tags, and an "Open …" button that turns solid blue (with the outline and a soft blue wash) on hover. The follow-up aside is a soft blue panel with a primary button.
 - The dark gradient promo banners became a quiet aside that keeps its action. "Start a mock interview" and "Suggest topics" still open Novard Agent with the same prompt.
 
 **Smart Roadmap, Skill Gap Analysis**
