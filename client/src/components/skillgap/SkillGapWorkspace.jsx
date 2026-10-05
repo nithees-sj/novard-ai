@@ -1,4 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Button from '../ui/Button';
+import Badge from '../ui/Badge';
+import Spinner from '../ui/Spinner';
+import cx from '../ui/cx';
 import { api } from '../../lib/api';
 import logger from '../../lib/logger';
 import { currentEmail } from '../../lib/session';
@@ -8,8 +12,7 @@ import SkillGapChat from './SkillGapChat';
 
 const userId = () => currentEmail();
 
-const readinessBadge = (r) =>
-  r >= 75 ? 'bg-green-100 text-green-800' : r >= 50 ? 'bg-blue-100 text-blue-800' : r >= 25 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700';
+const readinessTone = (r) => (r >= 75 ? 'success' : r >= 50 ? 'accent' : r >= 25 ? 'warning' : 'danger');
 
 /**
  * Skill Gap Analysis as a coaching chat: a short intake, an analysis of what
@@ -17,7 +20,7 @@ const readinessBadge = (r) =>
  * conversation grounded in that analysis. Each analysis is saved per student
  * (the old version cached one shared list per role for everyone).
  */
-const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
+const SkillGapWorkspace = ({ heightClass = '' }) => {
   const [list, setList] = useState([]);
   const [session, setSession] = useState(null);
   const [view, setView] = useState('intake'); // intake | chat
@@ -135,11 +138,61 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
   };
 
   return (
-    <div className={`flex gap-6 ${heightClass}`}>
-      <main className="flex-1 min-w-0 rounded-xl border border-gray-200 bg-gray-50/40 p-6 overflow-hidden">
+    <div className={cx('flex min-h-0 flex-1 flex-col gap-4 md:flex-row md:gap-0 md:overflow-hidden md:rounded-xl md:bg-raised md:ring-1 md:ring-line-subtle', heightClass)}>
+      <aside className="flex max-h-[24rem] shrink-0 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:max-h-none md:w-72 md:rounded-none md:border-r md:border-line-subtle md:bg-canvas/60 md:ring-0" aria-label="Your analyses">
+        <div className="px-4 pb-3 pt-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-body font-semibold text-fg">Your analyses</h3>
+            {list.length > 0 && <span className="tabular text-caption text-fg-subtle">{list.length}</span>}
+          </div>
+          <Button
+            onClick={() => newAnalysis()}
+            aria-pressed={view === 'intake'}
+            variant={view === 'intake' ? 'secondary' : 'primary'}
+            icon={view === 'intake' ? undefined : 'plus'}
+            disabled={view === 'intake'}
+            block
+          >
+            {view === 'intake' ? 'Starting a new analysis…' : 'New analysis'}
+          </Button>
+        </div>
+        <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
+          {list.length === 0 ? (
+            <p className="px-4 py-8 text-center text-small text-fg-subtle">Your coaching chats are kept here.</p>
+          ) : list.map((s) => {
+            const active = view === 'chat' && session?._id === s._id;
+            return (
+              <button
+                key={s._id}
+                type="button"
+                onClick={() => open(s._id)}
+                aria-current={active ? 'true' : undefined}
+                className={cx(
+                  'w-full rounded-lg px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+                  active ? 'bg-accent-soft' : 'hover:bg-sunken',
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cx('truncate text-body font-medium', active ? 'text-accent-fg' : 'text-fg')}>{s.targetRole}</span>
+                  {loadingId === s._id
+                    ? <Spinner className="h-3.5 w-3.5 text-accent-fg" />
+                    : <Badge tone={readinessTone(s.readiness)} className="tabular">{s.readiness}%</Badge>}
+                </div>
+                <div className="mt-0.5 text-caption text-fg-subtle">
+                  {Math.max(0, s.messageCount - 1)} {s.messageCount - 1 === 1 ? 'message' : 'messages'} · {when(s.updatedAt)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <main className="flex min-h-[28rem] min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:min-h-0 md:rounded-none md:ring-0">
         {view === 'intake' ? (
           <div className="h-full overflow-y-auto">
-            <SkillGapIntake onStart={start} starting={starting} error={error} initial={preset} />
+            <div className="mx-auto max-w-3xl px-5 py-6 sm:px-8 sm:py-8">
+              <SkillGapIntake onStart={start} starting={starting} error={error} initial={preset} />
+            </div>
           </div>
         ) : session && (
           <SkillGapChat
@@ -153,49 +206,6 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
           />
         )}
       </main>
-
-      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-surface overflow-hidden" aria-label="Your analyses">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Your Analyses</h3>
-          <button
-            type="button"
-            onClick={() => newAnalysis()}
-            aria-pressed={view === 'intake'}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors ${view === 'intake'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            {view === 'intake' ? 'Starting a new analysis…' : '+ New Analysis'}
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {list.length === 0 ? (
-            <p className="text-center text-sm text-gray-500 py-8 px-4">Your coaching chats will appear here.</p>
-          ) : list.map((s) => {
-            const active = view === 'chat' && session?._id === s._id;
-            return (
-              <button
-                key={s._id}
-                type="button"
-                onClick={() => open(s._id)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${active
-                  ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600'
-                  : 'bg-surface border-gray-200 hover:border-gray-300'}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold truncate ${active ? 'text-blue-800' : 'text-gray-900'}`}>{s.targetRole}</span>
-                  {loadingId === s._id
-                    ? <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-200 border-t-blue-600 animate-spin" aria-hidden="true" />
-                    : <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded tabular-nums ${readinessBadge(s.readiness)}`}>{s.readiness}%</span>}
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {Math.max(0, s.messageCount - 1)} {s.messageCount - 1 === 1 ? 'message' : 'messages'} · {when(s.updatedAt)}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
     </div>
   );
 };

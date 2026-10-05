@@ -26,7 +26,7 @@ const ToolButton = ({ onClick, label, children, disabled }) => (
     disabled={disabled}
     aria-label={label}
     title={label}
-    className="h-8 min-w-[2rem] px-2 inline-flex items-center justify-center rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+    className="h-8 min-w-[2rem] px-2 inline-flex items-center justify-center rounded-md text-sm font-medium text-fg-muted hover:bg-sunken disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
   >
     {children}
   </button>
@@ -125,21 +125,21 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
   };
 
   const frame = fullScreen
-    ? 'fixed inset-0 z-[70] bg-surface flex flex-col'
-    : 'relative rounded-xl border border-gray-200 bg-surface flex flex-col';
+    ? 'fixed inset-0 z-[70] bg-raised flex flex-col'
+    : 'relative rounded-xl border border-line bg-raised flex flex-col';
 
   return (
     <div className={frame}>
-      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-2">
-        <span className="text-xs text-gray-500">
+      <div className="flex items-center justify-between gap-2 border-b border-line-subtle px-3 py-2">
+        <span className="text-xs text-fg-subtle">
           {status === 'ready' ? 'Scroll to explore · use the controls to zoom' : status === 'error' ? 'Diagram unavailable' : 'Drawing your roadmap…'}
         </span>
         <div className="flex items-center gap-1">
           <ToolButton onClick={() => applyZoom(zoom - 0.15)} label="Zoom out" disabled={status !== 'ready'}>−</ToolButton>
-          <span className="w-12 text-center text-xs tabular-nums text-gray-600">{Math.round(zoom * 100)}%</span>
+          <span className="w-12 text-center text-xs tabular-nums text-fg-muted">{Math.round(zoom * 100)}%</span>
           <ToolButton onClick={() => applyZoom(zoom + 0.15)} label="Zoom in" disabled={status !== 'ready'}>+</ToolButton>
           <ToolButton onClick={fit} label="Fit to width" disabled={status !== 'ready'}>Fit</ToolButton>
-          <span className="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+          <span className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
           <ToolButton onClick={() => setFullScreen((v) => !v)} label={fullScreen ? 'Exit full screen' : 'Full screen'} disabled={status !== 'ready'}>
             {fullScreen ? 'Exit' : '⤢'}
           </ToolButton>
@@ -150,11 +150,11 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
       <div ref={viewportRef} className={`overflow-auto p-4 ${fullScreen ? 'flex-1' : 'max-h-[70vh]'}`}>
         {status === 'loading' && (
           <div className="h-64 flex items-center justify-center">
-            <span className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" aria-hidden="true" />
+            <span className="w-8 h-8 rounded-full border-4 border-line border-t-blue-600 animate-spin" aria-hidden="true" />
           </div>
         )}
         {status === 'error' && (
-          <p className="text-sm text-gray-600 p-6 text-center">
+          <p className="text-sm text-fg-muted p-6 text-center">
             The diagram could not be drawn. The stage-by-stage plan below has everything it contains.
           </p>
         )}

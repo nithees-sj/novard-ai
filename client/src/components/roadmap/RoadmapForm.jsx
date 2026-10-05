@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Icon from '../ui/Icon';
+import Spinner from '../ui/Spinner';
+import { buttonClass } from '../ui/Button';
+import { fieldClass } from '../ui/Field';
 import { ROLE_SUGGESTIONS } from '../../lib/referenceRoadmaps';
 
 const LEVELS = [
@@ -24,9 +28,9 @@ const Choice = ({ active, onClick, children, className = '' }) => (
     type="button"
     aria-pressed={active}
     onClick={onClick}
-    className={`rounded-lg border-2 text-left transition-colors ${active
-      ? 'border-blue-600 bg-blue-50'
-      : 'border-gray-200 bg-surface hover:border-blue-200 hover:bg-gray-50'} ${className}`}
+    className={`rounded text-left ring-1 ring-inset transition-colors duration-150 ${active
+      ? 'bg-accent-soft ring-accent/40'
+      : 'bg-raised ring-line hover:bg-sunken hover:ring-line-strong'} ${className}`}
   >
     {children}
   </button>
@@ -73,21 +77,21 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
     onSubmit({ ...form, role: form.role.trim(), goal: form.goal.trim(), knownSkills });
   };
 
-  const label = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2';
+  const label = 'mb-2 block text-small font-medium text-fg';
 
   return (
-    <form onSubmit={submit} className="max-w-3xl mx-auto space-y-7" noValidate>
+    <form onSubmit={submit} className="space-y-7" noValidate>
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Generate your personalised roadmap</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Tell us where you want to go and how much time you have. The AI designs a stage-by-stage path,
-          fitted to your schedule, and draws it as a flow diagram.
+        <h2 className="text-display font-semibold text-fg">New roadmap</h2>
+        <p className="mt-1.5 max-w-2xl text-body text-fg-muted">
+          Say where you want to go and how much time you have. You get a stage-by-stage path that fits
+          your schedule, drawn as a diagram.
         </p>
       </div>
 
       <div>
-        <label htmlFor="roadmap-role" className="block text-sm font-semibold text-gray-900 mb-1.5">
-          Which role do you want to reach? <span className="text-red-500">*</span>
+        <label htmlFor="roadmap-role" className="mb-1.5 block text-small font-medium text-fg">
+          Which role do you want to reach? <span className="text-danger-fg" aria-hidden="true">*</span>
         </label>
         <input
           id="roadmap-role"
@@ -97,19 +101,20 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           value={form.role}
           onChange={(e) => set({ role: e.target.value })}
           placeholder="e.g. Frontend Developer"
-          className={`w-full px-4 py-3 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 ${roleError ? 'border-red-400' : 'border-gray-300'}`}
+          className={`${fieldClass(Boolean(roleError))} h-10`}
           aria-invalid={Boolean(roleError)}
         />
-        {roleError && <p className="mt-1 text-xs text-red-600">{roleError}</p>}
+        {roleError && <p className="mt-1 text-xs text-danger-fg">{roleError}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           {ROLE_SUGGESTIONS.map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => set({ role: r })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${form.role === r
-                ? 'bg-blue-600 border-blue-600 text-white'
-                : 'bg-surface border-gray-300 text-gray-700 hover:border-blue-400'}`}
+              aria-pressed={form.role === r}
+              className={`rounded-full px-2.5 py-1 text-caption font-medium ring-1 ring-inset transition-colors ${form.role === r
+                ? 'bg-accent-soft text-accent-fg ring-accent/40'
+                : 'text-fg-muted ring-line hover:text-fg hover:ring-line-strong'}`}
             >
               {r}
             </button>
@@ -122,8 +127,8 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {LEVELS.map((l) => (
             <Choice key={l.value} active={form.level === l.value} onClick={() => set({ level: l.value })} className="px-3 py-2.5">
-              <div className="text-sm font-semibold text-gray-900">{l.label}</div>
-              <div className="text-xs text-gray-500">{l.hint}</div>
+              <div className="text-sm font-semibold text-fg">{l.label}</div>
+              <div className="text-xs text-fg-subtle">{l.hint}</div>
             </Choice>
           ))}
         </div>
@@ -134,7 +139,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           <legend className={label}>Hours per week</legend>
           <div className="flex gap-2">
             {HOURS.map((h) => (
-              <Choice key={h} active={form.hoursPerWeek === h} onClick={() => set({ hoursPerWeek: h })} className="flex-1 py-2 text-center text-sm font-semibold text-gray-900">
+              <Choice key={h} active={form.hoursPerWeek === h} onClick={() => set({ hoursPerWeek: h })} className="flex-1 py-2 text-center text-sm font-semibold text-fg">
                 {h}h
               </Choice>
             ))}
@@ -144,7 +149,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           <legend className={label}>Target timeline</legend>
           <div className="flex gap-2">
             {MONTHS.map((m) => (
-              <Choice key={m} active={form.timelineMonths === m} onClick={() => set({ timelineMonths: m })} className="flex-1 py-2 text-center text-sm font-semibold text-gray-900">
+              <Choice key={m} active={form.timelineMonths === m} onClick={() => set({ timelineMonths: m })} className="flex-1 py-2 text-center text-sm font-semibold text-fg">
                 {m} mo
               </Choice>
             ))}
@@ -154,19 +159,19 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
 
       <div>
         <label htmlFor="roadmap-skills" className={label}>
-          Skills you already have <span className="normal-case font-normal text-gray-500">(optional - they will be marked, not re-taught)</span>
+          Skills you already have <span className="font-normal text-fg-subtle">(optional: marked as known, not taught again)</span>
         </label>
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-surface focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
+        <div className="flex min-h-[2.75rem] flex-wrap items-center gap-1.5 rounded bg-raised px-2.5 py-1.5 ring-1 ring-inset ring-line transition-shadow hover:ring-line-strong focus-within:ring-2 focus-within:ring-focus">
           {form.knownSkills.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-800">
+            <span key={s} className="inline-flex h-6 items-center gap-1 rounded-sm bg-sunken pl-2 pr-1 text-small text-fg ring-1 ring-inset ring-line-subtle">
               {s}
               <button
                 type="button"
                 aria-label={`Remove ${s}`}
                 onClick={() => set({ knownSkills: form.knownSkills.filter((k) => k !== s) })}
-                className="text-green-700 hover:text-green-900"
+                className="rounded-sm p-0.5 text-fg-subtle hover:bg-line hover:text-fg"
               >
-                ×
+                <Icon name="x" className="h-3 w-3" />
               </button>
             </span>
           ))}
@@ -181,14 +186,14 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
             }}
             onBlur={() => addSkill(skillDraft)}
             placeholder={form.knownSkills.length ? 'Add another…' : 'e.g. HTML, Git, Python - press Enter after each'}
-            className="flex-1 min-w-[12rem] py-1 text-sm focus:outline-none"
+            className="min-w-[12rem] flex-1 bg-transparent py-1 text-body text-fg placeholder:text-fg-subtle focus:outline-none"
           />
         </div>
       </div>
 
       <div>
         <label htmlFor="roadmap-goal" className={label}>
-          Your goal <span className="normal-case font-normal text-gray-500">(optional)</span>
+          Your goal <span className="font-normal text-fg-subtle">(optional)</span>
         </label>
         <input
           id="roadmap-goal"
@@ -197,20 +202,20 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
           value={form.goal}
           onChange={(e) => set({ goal: e.target.value })}
           placeholder="e.g. Land a first job at a product startup, or start freelancing"
-          className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+          className={`${fieldClass(false)} h-9`}
         />
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-body text-danger-fg">{error}</p>}
 
       <button
         type="submit"
         disabled={generating}
-        className="w-full px-6 py-3.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-70 transition-colors flex items-center justify-center gap-2"
+        className={buttonClass({ variant: 'primary', size: 'lg', block: true, className: 'sm:w-auto' })}
       >
         {generating ? (
           <>
-            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" aria-hidden="true" />
+            <Spinner className="h-4 w-4" />
             <span aria-live="polite">{PROGRESS[step]}</span>
           </>
         ) : 'Generate my roadmap'}

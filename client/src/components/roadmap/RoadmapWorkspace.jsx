@@ -1,4 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Button from '../ui/Button';
+import Icon from '../ui/Icon';
+import Spinner from '../ui/Spinner';
+import cx from '../ui/cx';
 import { api } from '../../lib/api';
 import logger from '../../lib/logger';
 import { currentEmail } from '../../lib/session';
@@ -18,7 +22,7 @@ const userId = () => currentEmail();
  * Layout matches the other tools: main area on the left, the student's
  * roadmaps in a panel on the right. It opens on the generator.
  */
-const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
+const RoadmapWorkspace = ({ heightClass = '' }) => {
   const [list, setList] = useState([]);
   const [view, setView] = useState('form'); // form | roadmap | reference
   const [current, setCurrent] = useState(null);
@@ -117,61 +121,29 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
   const formatDate = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
   return (
-    <div className={`flex gap-6 ${heightClass}`}>
-      {/* Main area */}
-      <main className="flex-1 min-w-0 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/40 p-6">
-        {view === 'form' && (
-          <RoadmapForm onSubmit={generate} generating={generating} error={error} initial={preset} />
-        )}
-
-        {view === 'roadmap' && current && (
-          <>
-            {error && <p role="alert" className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</p>}
-            <RoadmapView roadmap={current} onDelete={remove} onRegenerate={regenerate} deleting={deleting} />
-          </>
-        )}
-
-        {view === 'reference' && reference && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reference roadmap</p>
-                <h2 className="text-2xl font-bold text-gray-900">{reference.name}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => newRoadmap({ role: reference.role })}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Generate a personalised version
-              </button>
-            </div>
-            <img src={reference.imageUrl} alt={`${reference.name} reference roadmap`} loading="lazy" className="w-full h-auto rounded-xl border border-gray-200 bg-surface" />
+    <div className={cx('flex min-h-0 flex-1 flex-col gap-4 md:flex-row md:gap-0 md:overflow-hidden md:rounded-xl md:bg-raised md:ring-1 md:ring-line-subtle', heightClass)}>
+      {/* Left pane: the student's roadmaps */}
+      <aside className="flex max-h-[24rem] shrink-0 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:max-h-none md:w-72 md:rounded-none md:border-r md:border-line-subtle md:bg-canvas/60 md:ring-0" aria-label="Your roadmaps">
+        <div className="px-4 pb-3 pt-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-body font-semibold text-fg">Your roadmaps</h3>
+            {list.length > 0 && <span className="tabular text-caption text-fg-subtle">{list.length}</span>}
           </div>
-        )}
-      </main>
-
-      {/* Right panel: the student's roadmaps */}
-      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-surface overflow-hidden" aria-label="Your roadmaps">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Your Roadmaps</h3>
-          <button
-            type="button"
+          <Button
             onClick={() => newRoadmap()}
             aria-pressed={view === 'form'}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors ${view === 'form'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            variant={view === 'form' ? 'secondary' : 'primary'}
+            icon={view === 'form' ? undefined : 'plus'}
+            disabled={view === 'form'}
+            block
           >
-            {view === 'form' ? 'Creating a new roadmap…' : '+ New Roadmap'}
-          </button>
+            {view === 'form' ? 'Creating a new roadmap…' : 'New roadmap'}
+          </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
           {list.length === 0 ? (
-            <p className="text-center text-sm text-gray-500 py-8 px-4">
-              Your generated roadmaps will appear here.
-            </p>
+            <p className="px-4 py-8 text-center text-small text-fg-subtle">Roadmaps you generate are kept here.</p>
           ) : list.map((r) => {
             const active = view === 'roadmap' && current?._id === r._id;
             return (
@@ -179,15 +151,17 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                 key={r._id}
                 type="button"
                 onClick={() => openRoadmap(r._id)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${active
-                  ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600'
-                  : 'bg-surface border-gray-200 hover:border-gray-300'}`}
+                aria-current={active ? 'true' : undefined}
+                className={cx(
+                  'w-full rounded-lg px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+                  active ? 'bg-accent-soft' : 'hover:bg-sunken',
+                )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-sm font-semibold truncate ${active ? 'text-blue-800' : 'text-gray-900'}`}>{r.role}</span>
-                  {loadingId === r._id && <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-200 border-t-blue-600 animate-spin" aria-hidden="true" />}
+                  <span className={cx('truncate text-body font-medium', active ? 'text-accent-fg' : 'text-fg')}>{r.role}</span>
+                  {loadingId === r._id && <Spinner className="h-3.5 w-3.5 text-accent-fg" />}
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
+                <div className="tabular mt-0.5 text-caption text-fg-subtle">
                   {r.stageCount} stages · {r.totalWeeks} weeks · {formatDate(r.createdAt)}
                 </div>
               </button>
@@ -195,34 +169,65 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
           })}
         </div>
 
-        <div className="border-t border-gray-100">
+        <div className="border-t border-line-subtle">
           <button
             type="button"
             onClick={() => setShowReferences((v) => !v)}
             aria-expanded={showReferences}
-            className="w-full flex items-center justify-between pl-4 pr-24 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            className="flex w-full items-center justify-between px-4 py-3 text-small font-medium text-fg-muted transition-colors hover:bg-sunken hover:text-fg"
           >
             Reference roadmaps
-            <span className={`text-gray-400 transition-transform ${showReferences ? 'rotate-180' : ''}`} aria-hidden="true">▾</span>
+            <Icon name="chevronDown" className={cx('h-4 w-4 text-fg-subtle transition-transform duration-200', showReferences && 'rotate-180')} />
           </button>
           {showReferences && (
-            <div className="max-h-56 overflow-y-auto px-3 pb-3 grid grid-cols-2 gap-1.5">
-              {REFERENCE_ROADMAPS.map((r) => (
-                <button
-                  key={r.name}
-                  type="button"
-                  onClick={() => { setReference(r); setView('reference'); }}
-                  className={`px-2 py-1.5 rounded-md text-xs font-medium text-left truncate ${view === 'reference' && reference?.name === r.name
-                    ? 'bg-ink text-on-ink'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                >
-                  {r.name}
-                </button>
-              ))}
+            <div className="grid max-h-56 grid-cols-2 gap-1 overflow-y-auto px-3 pb-3">
+              {REFERENCE_ROADMAPS.map((r) => {
+                const on = view === 'reference' && reference?.name === r.name;
+                return (
+                  <button
+                    key={r.name}
+                    type="button"
+                    onClick={() => { setReference(r); setView('reference'); }}
+                    aria-current={on ? 'true' : undefined}
+                    className={cx('truncate rounded px-2 py-1.5 text-left text-caption font-medium transition-colors', on ? 'bg-accent-soft text-accent-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg')}
+                  >
+                    {r.name}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       </aside>
+
+      {/* Right pane */}
+      <main className="min-h-[28rem] min-w-0 flex-1 rounded-xl bg-raised ring-1 ring-line-subtle md:min-h-0 md:overflow-y-auto md:rounded-none md:ring-0">
+        <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8 sm:py-8">
+          {view === 'form' && (
+            <RoadmapForm onSubmit={generate} generating={generating} error={error} initial={preset} />
+          )}
+
+          {view === 'roadmap' && current && (
+            <>
+              {error && <p role="alert" className="mb-4 rounded-lg bg-danger-soft px-4 py-3 text-body text-danger-fg">{error}</p>}
+              <RoadmapView roadmap={current} onDelete={remove} onRegenerate={regenerate} deleting={deleting} />
+            </>
+          )}
+
+          {view === 'reference' && reference && (
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-small text-fg-subtle">Reference roadmap</p>
+                  <h2 className="text-display font-semibold text-fg">{reference.name}</h2>
+                </div>
+                <Button onClick={() => newRoadmap({ role: reference.role })} icon="sparkles">Make a personalised version</Button>
+              </div>
+              <img src={reference.imageUrl} alt={`${reference.name} reference roadmap`} loading="lazy" className="h-auto w-full rounded-lg bg-raised ring-1 ring-line-subtle" />
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
