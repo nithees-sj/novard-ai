@@ -1,15 +1,16 @@
 import { useLayoutEffect, useRef } from 'react';
 
 const KEYFRAMES = [
-  { opacity: 0, transform: 'translateY(6px)' },
+  { opacity: 0, transform: 'translateY(10px)' },
   { opacity: 1, transform: 'translateY(0)' },
 ];
-const TIMING = { duration: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
+// A long, soft ease-out: quick to start moving, slow to settle.
+const TIMING = { duration: 450, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * Eases `ref`'s element in (fade + 6px rise, 220ms) whenever `key` changes:
+ * Eases `ref`'s element in (fade + 10px rise, 450ms) whenever `key` changes:
  * a new page, tool, tab or item. Uses the Web Animations API, so nothing
  * remounts and no state is lost; the transform is gone when it finishes.
  * Skipped for people who prefer reduced motion.
@@ -22,7 +23,7 @@ export default function useEnterAnimation(ref, key) {
     first.current = false;
     if (!el || reducedMotion() || typeof el.animate !== 'function') return undefined;
     // The first render of a page animates too (it is a navigation), but softer.
-    const anim = el.animate(KEYFRAMES, isFirst ? { ...TIMING, duration: 260 } : TIMING);
+    const anim = el.animate(KEYFRAMES, isFirst ? { ...TIMING, duration: 520 } : TIMING);
     return () => anim.cancel();
   }, [ref, key]);
 }

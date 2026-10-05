@@ -47,7 +47,7 @@ Defined in `client/src/theme/palette.js`. Each token is a CSS variable with a li
 - **Spacing:** the Tailwind 4px grid. Arbitrary text sizes are banned.
 - **Shadows** are for elevation only: `shadow-raised` (a 1px hairline), `shadow-popover` and `shadow-modal`. They scale up in dark mode through `--shadow-strength`.
 - **Motion:** 150–200ms transitions. A global reduced-motion reset turns off transitions and looping animation.
-- **Flow between screens:** one entrance everywhere, a fade with a 6px rise over 220ms (`ui/useEnterAnimation`, `animate-view-in`). It plays on:
+- **Flow between screens:** one entrance everywhere, a fade with a 10px rise over 450ms on a soft ease-out (`ui/useEnterAnimation`, `animate-view-in`). It plays on:
   - a page change, or any breadcrumb change: opening a tool, a forum thread, a chat, a skill plan, the learner profile;
   - switching the open item or tab in a learning tool;
   - new chat messages;
