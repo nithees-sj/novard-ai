@@ -1,7 +1,7 @@
 import React from 'react';
 import { AgentMark } from '../ui/Icon';
 
-/** The Novard Agent mark (speech bubble with an AI spark), in the current text colour. */
+/** The Novard Agent mark (the orb's four-point star with a small sparkle), in the current text colour. */
 export const AgentGlyph = ({ className = 'h-4 w-4', strokeWidth = 1.9 }) => (
   <AgentMark className={className} strokeWidth={strokeWidth} aria-hidden="true" focusable="false" />
 );

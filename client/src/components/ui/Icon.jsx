@@ -11,15 +11,15 @@ import {
 } from 'react-icons/lu';
 
 /**
- * The Novard Agent mark, drawn on the same 24px grid and stroke as Lucide:
- * a speech bubble with an AI spark inside. Used wherever the agent is named
- * (sidebar, top bar, agent avatars).
+ * The Novard Agent mark: the curved four-point star of the agent's orb,
+ * static and flat, with a small companion sparkle where the orb has its
+ * badge. Drawn on Lucide's 24px grid so it sits with the other icons.
  */
 export function AgentMark({ className, strokeWidth = 1.75, ...rest }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...rest}>
-      <path d="M12 3.5c4.97 0 9 3.36 9 7.5s-4.03 7.5-9 7.5c-1.07 0-2.1-.16-3.05-.45L4.5 20l1.1-3.6C4.3 15.05 3 13.15 3 11c0-4.14 4.03-7.5 9-7.5z" />
-      <path d="M12 7.25c.35 1.85 1.4 2.9 3.25 3.25-1.85.35-2.9 1.4-3.25 3.25-.35-1.85-1.4-2.9-3.25-3.25 1.85-.35 2.9-1.4 3.25-3.25z" fill="currentColor" stroke="none" />
+      <path d="M10.5 4.5c0 4.7-3.3 8-8 8 4.7 0 8 3.3 8 8 0-4.7 3.3-8 8-8-4.7 0-8-3.3-8-8z" />
+      <path d="M18.5 2.25c0 1.75-1 2.75-2.75 2.75 1.75 0 2.75 1 2.75 2.75 0-1.75 1-2.75 2.75-2.75-1.75 0-2.75-1-2.75-2.75z" fill="currentColor" strokeWidth={1.25} />
     </svg>
   );
 }
