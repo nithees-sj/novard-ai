@@ -169,6 +169,7 @@ Icons are used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand
 - Composer and action cards are on tokens, with no icon tiles.
 - The draft and learner-profile selects are styled.
 - "Back to Home".
+- The learner profile opens inside the conversation pane (with "Back to chat"), not as a slide-over; the chat keeps its state underneath.
 
 **Landing**
 - Specific copy and one "Continue with Google" action.

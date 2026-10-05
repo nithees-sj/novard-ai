@@ -99,7 +99,7 @@ const Row = ({ chat, active, onOpen, onRename, onDelete }) => {
 };
 
 /** Left column of the agent: new chat, search, and the chat history grouped by date. */
-const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose, onProfile, embedded = false }) => {
+const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose, onProfile, profileActive = false, embedded = false }) => {
   const [query, setQuery] = useState('');
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,7 +164,7 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
 
       <div className="border-t border-line-subtle p-3">
         {onProfile && (
-          <button type="button" onClick={onProfile} className="mb-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm text-fg-muted hover:bg-line/60">
+          <button type="button" onClick={onProfile} aria-current={profileActive ? 'page' : undefined} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors ${profileActive ? 'bg-accent-soft text-accent-fg' : 'text-fg-muted hover:bg-line/60'}`}>
             <Icon name="user" className="h-5 w-5 text-accent-fg" />
             <span>
               <span className="block font-medium text-fg">Learner profile</span>

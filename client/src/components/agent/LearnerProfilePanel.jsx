@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Select } from '../ui/Field';
+import { Input, Select, Textarea } from '../ui/Field';
+import Button from '../ui/Button';
+import Badge from '../ui/Badge';
+import Icon from '../ui/Icon';
+import { ErrorState, Skeleton } from '../ui/States';
 import TagInput from './TagInput';
 import { agentApi } from '../../lib/agentStream';
 
@@ -7,6 +11,7 @@ import { agentApi } from '../../lib/agentStream';
  * What the Novard Agent remembers about the student between chats. It fills
  * in drafts from this, so it asks fewer questions. Values guessed from their
  * earlier roadmaps and analyses are marked until the student saves them.
+ * Shown inside the agent's conversation pane (in place of the chat).
  */
 
 const FIELDS = [
@@ -23,30 +28,21 @@ const FIELDS = [
   { key: 'notes', label: 'Anything else the agent should know', type: 'textarea', max: 500 },
 ];
 
-const inputClass = 'w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-fg outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20';
-
 const LearnerProfilePanel = ({ open, onClose }) => {
   const [state, setState] = useState({ loading: true, error: null, values: {}, derivedKeys: [] });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     if (!open) return;
     let alive = true;
-    setMessage('');
+    setMessage(null);
     setState((s) => ({ ...s, loading: true, error: null }));
     agentApi.getProfile()
       .then((data) => { if (alive) setState({ loading: false, error: null, values: data.profile || {}, derivedKeys: data.derivedKeys || [] }); })
       .catch((err) => { if (alive) setState((s) => ({ ...s, loading: false, error: err.message })); });
     return () => { alive = false; };
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -55,7 +51,7 @@ const LearnerProfilePanel = ({ open, onClose }) => {
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
+    setMessage(null);
     try {
       const body = Object.fromEntries(FIELDS.map((f) => {
         const v = state.values[f.key];
@@ -63,72 +59,85 @@ const LearnerProfilePanel = ({ open, onClose }) => {
       }));
       const data = await agentApi.saveProfile(body);
       setState({ loading: false, error: null, values: data.profile || {}, derivedKeys: data.derivedKeys || [] });
-      setMessage('Saved. New chats and drafts will use this.');
+      setMessage({ ok: true, text: 'Saved. New chats and drafts will use this.' });
     } catch (err) {
-      setMessage(err.message || 'Could not save your profile.');
+      setMessage({ ok: false, text: err.message || 'Could not save your profile.' });
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" className="absolute inset-0 bg-black/30 dark:bg-black/60" onClick={onClose} aria-label="Close learner profile" />
-      <aside role="dialog" aria-modal="true" aria-labelledby="learner-profile-title" className="relative flex h-full w-full max-w-md flex-col bg-overlay shadow-modal dark:border-l dark:border-line">
-        <div className="flex items-start justify-between border-b border-line-subtle px-5 py-4">
-          <div>
-            <h2 id="learner-profile-title" className="text-base font-semibold text-fg">Your learner profile</h2>
-            <p className="mt-0.5 text-xs text-fg-subtle">Novard Agent uses this to fill in drafts and ask fewer questions.</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-fg-subtle hover:bg-sunken" aria-label="Close">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-
-        {state.loading ? (
-          <div className="space-y-4 p-5" aria-label="Loading profile">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="h-9 animate-pulse rounded-lg bg-sunken" />)}
-          </div>
-        ) : state.error ? (
-          <p className="p-5 text-sm text-danger-fg" role="alert">{state.error}</p>
-        ) : (
-          <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
-            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-              {state.derivedKeys.length > 0 && (
-                <p className="rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning-fg">Fields marked <strong>guessed</strong> come from your roadmaps and analyses. Save to confirm them.</p>
-              )}
-              {FIELDS.map((f) => {
-                const id = `profile-${f.key}`;
-                const v = state.values[f.key];
-                return (
-                  <div key={f.key}>
-                    <label htmlFor={id} className="mb-1 flex items-center gap-2 text-xs font-semibold text-fg-muted">
-                      {f.label}
-                      {state.derivedKeys.includes(f.key) && <span className="rounded bg-warning-soft px-1.5 py-px text-micro font-medium text-warning-fg">guessed</span>}
-                    </label>
-                    {f.type === 'tags' && <TagInput id={id} value={v || []} max={f.max} onChange={(next) => set(f.key, next)} />}
-                    {f.type === 'select' && (
-                      <Select id={id} value={v || ''} onChange={(e) => set(f.key, e.target.value)}>
-                        <option value="">Not set</option>
-                        {f.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                      </Select>
-                    )}
-                    {f.type === 'int' && <input id={id} type="number" min={f.min} max={f.max} value={v ?? ''} onChange={(e) => set(f.key, e.target.value === '' ? '' : Number(e.target.value))} className={`${inputClass} w-32`} />}
-                    {f.type === 'text' && <input id={id} value={v || ''} maxLength={f.max} placeholder={f.placeholder} onChange={(e) => set(f.key, e.target.value)} className={inputClass} />}
-                    {f.type === 'textarea' && <textarea id={id} rows={3} value={v || ''} maxLength={f.max} onChange={(e) => set(f.key, e.target.value)} className={`${inputClass} resize-y`} />}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-end gap-3 border-t border-line-subtle px-5 py-3">
-              {message && <p className="mr-auto text-xs text-fg-muted" role="status">{message}</p>}
-              <button type="button" onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-sunken">Close</button>
-              <button type="submit" disabled={saving} className="rounded-lg bg-ink px-4 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
-            </div>
-          </form>
+  const field = (f) => {
+    const id = `profile-${f.key}`;
+    const v = state.values[f.key];
+    const wide = f.type === 'tags' || f.type === 'textarea' || f.key === 'goal';
+    return (
+      <div key={f.key} className={wide ? 'sm:col-span-2' : ''}>
+        <label htmlFor={id} className="mb-1.5 flex items-center gap-2 text-small font-medium text-fg">
+          {f.label}
+          {state.derivedKeys.includes(f.key) && <Badge tone="warning">guessed</Badge>}
+        </label>
+        {f.type === 'tags' && <TagInput id={id} value={v || []} max={f.max} onChange={(next) => set(f.key, next)} />}
+        {f.type === 'select' && (
+          <Select id={id} value={v || ''} onChange={(e) => set(f.key, e.target.value)}>
+            <option value="">Not set</option>
+            {f.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </Select>
         )}
-      </aside>
-    </div>
+        {f.type === 'int' && <Input id={id} type="number" min={f.min} max={f.max} value={v ?? ''} onChange={(e) => set(f.key, e.target.value === '' ? '' : Number(e.target.value))} />}
+        {f.type === 'text' && <Input id={id} value={v || ''} maxLength={f.max} placeholder={f.placeholder} onChange={(e) => set(f.key, e.target.value)} />}
+        {f.type === 'textarea' && <Textarea id={id} rows={3} value={v || ''} maxLength={f.max} onChange={(e) => set(f.key, e.target.value)} />}
+      </div>
+    );
+  };
+
+  return (
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col" aria-labelledby="learner-profile-title">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line-subtle px-3 sm:px-4">
+        <button type="button" onClick={onClose} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-body text-fg-muted transition-colors hover:bg-sunken hover:text-fg">
+          <Icon name="arrowLeft" className="h-4 w-4" />
+          <span>Back to chat</span>
+        </button>
+        <span className="h-5 w-px bg-line" aria-hidden="true" />
+        <Icon name="user" className="h-5 w-5 shrink-0 text-accent-fg" />
+        <span className="truncate text-body font-medium text-fg">Learner profile</span>
+      </header>
+
+      {state.loading ? (
+        <div className="mx-auto w-full max-w-3xl space-y-4 px-5 py-8" role="status" aria-label="Loading your learner profile">
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+          <div className="grid gap-5 pt-4 sm:grid-cols-2">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-9 w-full" />)}</div>
+        </div>
+      ) : state.error ? (
+        <ErrorState title="Your learner profile didn’t load" text={state.error} />
+      ) : (
+        <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
+              <h2 id="learner-profile-title" className="text-display font-semibold text-fg">Your learner profile</h2>
+              <p className="mt-1.5 max-w-2xl text-body text-fg-muted">
+                What Novard Agent remembers about you between chats. It uses this to fill in drafts, so it asks fewer questions.
+              </p>
+              {state.derivedKeys.length > 0 && (
+                <p className="mt-5 flex items-start gap-2.5 rounded-lg bg-warning-soft px-4 py-3 text-body text-warning-fg">
+                  <Icon name="info" className="mt-0.5 h-4 w-4" />
+                  <span>Fields marked <strong>guessed</strong> come from your roadmaps and analyses. Save to confirm them.</span>
+                </p>
+              )}
+              <div className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2">{FIELDS.map(field)}</div>
+            </div>
+          </div>
+          <div className="shrink-0 border-t border-line-subtle px-5 py-3 sm:px-8">
+            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-end gap-2">
+              {message && <p className={`mr-auto text-small ${message.ok ? 'text-success-fg' : 'text-danger-fg'}`} role="status">{message.text}</p>}
+              <Button variant="ghost" onClick={onClose}>Back to chat</Button>
+              <Button type="submit" loading={saving} loadingLabel="Saving…">Save profile</Button>
+            </div>
+          </div>
+        </form>
+      )}
+    </section>
   );
 };
 

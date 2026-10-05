@@ -73,10 +73,12 @@ const Chatbot = () => {
     setError(null);
     setDraft('');
     setSidebarOpen(false);
+    setProfileOpen(false);
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
   const openChat = useCallback(async (id) => {
+    setProfileOpen(false);
     if (id === activeRef.current) { setSidebarOpen(false); return; }
     abortRef.current?.abort();
     setActiveId(id);
@@ -323,8 +325,9 @@ const Chatbot = () => {
 
   const crumbs = [
     { label: 'Home', to: '/home' },
-    activeId ? { label: 'Novard Agent', onClick: newChat } : { label: 'Novard Agent' },
-    ...(activeId && title ? [{ label: title }] : []),
+    activeId || profileOpen ? { label: 'Novard Agent', onClick: () => { setProfileOpen(false); if (activeId) newChat(); } } : { label: 'Novard Agent' },
+    ...(activeId && title && !profileOpen ? [{ label: title }] : []),
+    ...(profileOpen ? [{ label: 'Learner profile' }] : []),
   ];
 
   return (
@@ -335,7 +338,7 @@ const Chatbot = () => {
         <AgentSidebar
           chats={chats}
           loading={chatsLoading}
-          activeId={activeId}
+          activeId={profileOpen ? null : activeId}
           onNew={newChat}
           onOpen={openChat}
           onRename={renameChat}
@@ -343,12 +346,14 @@ const Chatbot = () => {
           user={user}
           onClose={() => setSidebarOpen(false)}
           onProfile={() => { setSidebarOpen(false); setProfileOpen(true); }}
+          profileActive={profileOpen}
           embedded
         />
       </div>
       {sidebarOpen && <button type="button" className="absolute inset-0 z-10 bg-black/30 dark:bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
 
-      <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation">
+      <LearnerProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <section className={`min-w-0 flex-1 flex-col ${profileOpen ? 'hidden' : 'flex'}`} aria-label="Conversation">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line-subtle px-3 sm:px-4">
           <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-fg-muted hover:bg-sunken hover:text-fg md:hidden" aria-label="Open chat list" title="Your chats">
             <Icon name="clock" className="h-5 w-5" />
@@ -437,7 +442,6 @@ const Chatbot = () => {
         )}
       </section>
     </div>
-      <LearnerProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
     </AppShell>
   );
 };
