@@ -59,7 +59,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface-overlay rounded-2xl border border-gray-200 p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
+        className="bg-surface-overlay rounded-xl border border-gray-200 p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Start a Discussion</h2>

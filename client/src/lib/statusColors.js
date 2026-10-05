@@ -1,8 +1,8 @@
 /**
  * Colours passed as values (SVG fills and strokes, inline styles) rather than
- * Tailwind classes. Neutrals and the brand blue are CSS variables, so they
- * follow the light/dark theme (src/theme/palette.js); the series colours are
- * mid-ramp hues that read on both themes. Apply variables through `style`
+ * Tailwind classes. Every value is a CSS variable, so it follows the
+ * light/dark theme (src/theme/palette.js). Series use the categorical
+ * chart-1…6 tokens; status uses the semantic tones. Apply them through `style`
  * (style={{ stroke: chart.brand }}): they are not reliable in SVG
  * presentation attributes.
  */
@@ -14,8 +14,18 @@ export const chart = {
   track: css('chart-track'),
   axis: css('chart-axis'),
   line: css('chart-line'),
-  surface: css('surface'),
-  muted: css('gray-400'),
+  surface: css('raised'),
+  muted: css('chart-6'),
+  series: [1, 2, 3, 4, 5, 6].map((n) => css(`chart-${n}`)),
+};
+
+/** The semantic status tones as values. */
+export const tone = {
+  accent: css('accent'),
+  success: css('success'),
+  warning: css('warning'),
+  danger: css('danger'),
+  info: css('info'),
 };
 
 /** Risk levels (admin console). */
@@ -28,13 +38,13 @@ export const LEVEL_COLORS = {
 
 /** Study-time mix on the profile, by activity kind. */
 export const ACTIVITY_COLORS = {
-  quiz: '#3b82f6',
-  question: '#38bdf8',
-  planDay: '#22c55e',
-  materialAdded: '#a855f7',
-  forumPost: '#f59e0b',
-  forumComment: '#fbbf24',
+  quiz: css('chart-1'),
+  question: css('chart-2'),
+  planDay: css('chart-3'),
+  materialAdded: css('chart-4'),
+  forumPost: css('chart-5'),
+  forumComment: css('chart-6'),
 };
 
 /** Readiness (0-100) as a colour: on track, getting there, early, far off. */
-export const readinessColor = (r) => (r >= 75 ? '#22c55e' : r >= 50 ? '#3b82f6' : r >= 25 ? '#f59e0b' : '#ef4444');
+export const readinessColor = (r) => (r >= 75 ? tone.success : r >= 50 ? tone.accent : r >= 25 ? tone.warning : tone.danger);

@@ -72,7 +72,7 @@ const ChatbotButton = () => {
       onClick={() => navigate('/chatbot')}
       title="Ask the Novard Agent"
       aria-label="Open Novard Agent, the AI assistant"
-      className="group fixed bottom-8 right-8 z-50 flex flex-col items-center gap-2 rounded-2xl
+      className="group fixed bottom-8 right-8 z-50 flex flex-col items-center gap-2 rounded-xl
                  focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
     >
       <span

@@ -233,7 +233,7 @@ export const Heatmap = ({ days }) => {
           onFocus={() => setHover(d)}
           onBlur={() => setHover(null)}
           aria-label={`${fmt(d.date)}: ${d.count} activities`}
-          className={`block w-full aspect-square rounded-[3px] ${HEAT[heatLevel(d.count, peak)]} outline-none focus-visible:ring-2 focus-visible:ring-primary-400 hover:ring-1 hover:ring-gray-400`}
+          className={`block w-full aspect-square rounded-sm ${HEAT[heatLevel(d.count, peak)]} outline-none focus-visible:ring-2 focus-visible:ring-primary-400 hover:ring-1 hover:ring-gray-400`}
         />
       ) : <span key={`pad${wi}-${i}`} />);
     }
@@ -254,7 +254,7 @@ export const Heatmap = ({ days }) => {
           {hover ? <><strong className="text-gray-800">{hover.count} {hover.count === 1 ? 'activity' : 'activities'}</strong> on {fmt(hover.date)}{hover.minutes ? ` · ~${hover.minutes} min` : ''}</> : 'Hover a day to see what you did'}
         </span>
         <span className="flex items-center gap-1">
-          Less {HEAT.map((c) => <span key={c} className={`w-3 h-3 rounded-[3px] ${c}`} aria-hidden="true" />)} More
+          Less {HEAT.map((c) => <span key={c} className={`w-3 h-3 rounded-sm ${c}`} aria-hidden="true" />)} More
         </span>
       </div>
     </div>

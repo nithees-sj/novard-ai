@@ -16,7 +16,7 @@ export default function AdminLogin() {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 px-4">
       <ThemeToggle className="absolute right-4 top-4" />
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-surface p-8 text-center shadow-soft">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-surface p-8 text-center shadow-soft">
         <img src={mainlogo} alt="NOVARD-AI" className="mx-auto mb-4 h-12 w-12 rounded-xl dark:invert" />
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Admin console</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold text-gray-900">Sign in to NOVARD-AI admin</h1>

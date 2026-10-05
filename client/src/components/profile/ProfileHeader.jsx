@@ -96,10 +96,10 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
                 src={picture}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="w-24 h-24 rounded-2xl border-4 border-surface shadow-md object-cover bg-primary-100"
+                className="w-24 h-24 rounded-xl border-4 border-surface shadow-md object-cover bg-primary-100"
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
               />
-              <span className="hidden w-24 h-24 rounded-2xl border-4 border-surface shadow-md bg-primary-600 text-white text-2xl font-bold items-center justify-center" aria-hidden="true">{initials}</span>
+              <span className="hidden w-24 h-24 rounded-xl border-4 border-surface shadow-md bg-primary-600 text-white text-2xl font-bold items-center justify-center" aria-hidden="true">{initials}</span>
             </div>
             <div className="min-w-0 pb-1">
               <h1 className="text-2xl font-bold text-gray-900 truncate">{account.name || 'Your profile'}</h1>

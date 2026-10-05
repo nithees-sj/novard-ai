@@ -14,11 +14,30 @@
   }
 
   body {
-    @apply m-0 bg-gray-50 font-sans text-gray-900 antialiased;
+    @apply m-0 bg-canvas font-sans text-body text-fg antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+    text-rendering: optimizeLegibility;
   }
 
-  code {
+  code, kbd, samp, pre {
     @apply font-mono;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: rgb(var(--accent) / 0.18);
+  }
+
+  /* One focus ring everywhere: keyboard focus only, 2px, offset from the edge. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus));
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 
   /* Text fields without a background class: the card colour, as the browser's
@@ -31,6 +50,16 @@
 }
 
 @layer utilities {
+  /* Numbers that line up: stats, counters, tables. */
+  .num {
+    font-family: theme('fontFamily.mono');
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Hide scrollbar but keep scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none; /* IE and Edge */
@@ -80,4 +109,14 @@
 @keyframes agent-caret { to { visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) {
   .agent-streaming > .prose > p:last-child::after { animation: none; }
+}
+
+/* Respect reduced motion everywhere: no transitions, no looping animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

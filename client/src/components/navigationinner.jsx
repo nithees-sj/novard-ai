@@ -83,7 +83,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
         {/* Popup */}
         {showPopup && user && (
           <div className="absolute top-16 right-6 w-80 p-8 bg-surface-overlay border border-gray-200 
-                       rounded-3xl shadow-hard z-[60] animate-slide-down text-center">
+                       rounded-xl shadow-hard z-[60] animate-slide-down text-center">
             {/* Close Button */}
             <button
               type="button"

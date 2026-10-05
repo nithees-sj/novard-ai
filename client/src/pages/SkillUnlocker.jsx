@@ -377,7 +377,7 @@ const SkillUnlocker = () => {
 
             {/* FORM VIEW */}
             {currentView === 'form' && (
-              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 <form onSubmit={handleGeneratePlan} className="space-y-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -513,7 +513,7 @@ const SkillUnlocker = () => {
 
             {/* QUIZ CONFIGURATION VIEW */}
             {currentView === 'quiz-config' && currentPlan && (
-              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 <QuizSetup
                   source="plan"
                   itemId={currentPlan.planId || currentPlan._id}
@@ -678,7 +678,7 @@ const SkillUnlocker = () => {
 
             {/* QUIZ VIEW */}
             {currentView === 'quiz' && quiz && (
-              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 {!quizScore ? (
                   <>
                     {/* Quiz Configuration Badge */}

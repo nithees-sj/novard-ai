@@ -126,7 +126,7 @@ const WeeklyActivityChart = ({ weekly }) => {
                         </span>
                       )}
                       <span
-                        className={`block w-full max-w-[24px] rounded-t-[4px] transition-colors ${
+                        className={`block w-full max-w-[24px] rounded-t-sm transition-colors ${
                           d.tracked
                             ? (isActive ? 'bg-primary-700' : 'bg-primary-500 group-hover:bg-primary-600')
                             : (isActive ? 'bg-primary-400' : 'bg-primary-200 group-hover:bg-primary-300')

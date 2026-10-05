@@ -118,7 +118,7 @@ const Career = () => {
                         navigate(tool.route);
                       }
                     }}
-                    className="w-full text-left bg-surface rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
+                    className="w-full text-left bg-surface rounded-xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
                          transition-all duration-300 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                   >
                     {/* Icon */}
@@ -151,7 +151,7 @@ const Career = () => {
               </div>
 
               {/* Practice with AI Mentors Section */}
-              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-10 shadow-xl dark:ring-1 dark:ring-white/10">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl p-10 shadow-xl dark:ring-1 dark:ring-white/10">
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
                   <div className="flex-1">
                     <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">

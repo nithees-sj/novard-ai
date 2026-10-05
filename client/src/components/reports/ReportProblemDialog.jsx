@@ -162,7 +162,7 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 dark:bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !sending) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="report-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-surface-overlay shadow-hard animate-scale-in">
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="report-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-200 bg-surface-overlay shadow-hard animate-scale-in">
         <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"><Icon name="flag" className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1">

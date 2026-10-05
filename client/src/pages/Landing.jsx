@@ -3,7 +3,7 @@ import { Navigation } from "../components/navigation";
 import { useAuth } from "../AuthContext";
 
 // The hero's illustrative dashboard cards.
-const bentoCard = 'flex flex-col justify-between rounded-2xl border border-gray-100 bg-surface p-6 shadow-soft dark:border-gray-200';
+const bentoCard = 'flex flex-col justify-between rounded-xl border border-gray-100 bg-surface p-6 shadow-soft dark:border-gray-200';
 const bentoLabel = 'mb-1.5 text-[0.7rem] font-bold uppercase tracking-[0.08em]';
 
 const Landing = () => {
@@ -103,7 +103,7 @@ const Landing = () => {
                 </div>
 
                 {/* Card 4: Analytics Dashboard */}
-                <div className="flex min-h-[140px] flex-col justify-between rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-500/25">
+                <div className="flex min-h-[140px] flex-col justify-between rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-500/25">
                   <p className={`${bentoLabel} text-white/75`}>Analytics Dashboard</p>
                   <p className="mb-3 text-xl font-bold text-white">Alex Johnson</p>
                   <div className="flex items-center">
@@ -231,7 +231,7 @@ const Landing = () => {
           {/* Feature Cards */}
           <div className="grid md:grid-cols-3 gap-8">
             {/* Career Roadmap */}
-            <div className="bg-surface rounded-2xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+            <div className="bg-surface rounded-xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
@@ -253,7 +253,7 @@ const Landing = () => {
             </div>
 
             {/* AI Mentor Forum  */}
-            <div className="bg-surface rounded-2xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+            <div className="bg-surface rounded-xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
               <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-6 h-6 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
@@ -275,7 +275,7 @@ const Landing = () => {
             </div>
 
             {/* Video Summarizer */}
-            <div className="bg-surface rounded-2xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+            <div className="bg-surface rounded-xl p-8 border border-gray-200 hover:shadow-xl hover:border-blue-200 transition-all duration-300">
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />

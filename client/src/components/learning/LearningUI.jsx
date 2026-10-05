@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MarkdownView from '../MarkdownView';
+import Icon from '../ui/Icon';
 import { isCorrectAnswer } from '../../lib/quiz';
 
 /**
@@ -15,43 +16,9 @@ import { isCorrectAnswer } from '../../lib/quiz';
 
 // ── icons ──────────────────────────────────────────────────────────────────
 
-const PATHS = {
-  chat: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
-  summary: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-  quiz: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
-  video: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
-  book: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
-  doubt: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  plus: 'M12 4v16m8-8H4',
-  trash: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
-  send: 'M5 12h14M13 6l6 6-6 6',
-  sparkles: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
-  check: 'M5 13l4 4L19 7',
-  x: 'M6 18L18 6M6 6l12 12',
-  link: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
-  upload: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
-  flag: 'M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9',
-  bell: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-  mic: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z',
-  image: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
-  paperclip: 'M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13',
-  shield: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-  stop: 'M6 6h12v12H6z',
-  chart: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-  users: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-  settings: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4',
-  bolt: 'M13 10V3L4 14h7v7l9-11h-7z',
-  list: 'M4 6h16M4 10h16M4 14h16M4 18h16',
-  menu: 'M4 6h16M4 12h16M4 18h16',
-  globe: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9',
-  arrowLeft: 'M10 19l-7-7m0 0l7-7m-7 7h18',
-};
-
-export const Icon = ({ name, className = 'h-4 w-4', strokeWidth = 2 }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} d={PATHS[name]} />
-  </svg>
-);
+// One icon set for the whole app (components/ui/Icon.jsx); re-exported here so
+// the learning tools keep importing it from one place.
+export { Icon };
 
 export const Spinner = ({ className = 'h-4 w-4' }) => (
   <span className={`inline-block shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} aria-hidden="true" />
@@ -155,7 +122,7 @@ export const TabBar = ({ tabs, active, onChange, size = 'md' }) => (
 
 export const EmptyState = ({ icon = 'sparkles', title, text, action }) => (
   <div className="flex h-full min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center">
-    <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+    <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
       <Icon name={icon} className="h-7 w-7" strokeWidth={1.8} />
     </span>
     <h3 className="text-base font-semibold text-gray-900">{title}</h3>
@@ -276,7 +243,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
           <div className="mx-auto w-full max-w-3xl space-y-7 px-6 py-8">
             {messages.map((m, i) => (m.role === 'user' ? (
               <div key={i} className="flex justify-end">
-                <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] leading-relaxed text-white shadow-sm">
+                <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] leading-relaxed text-white shadow-sm">
                   {m.content}
                 </div>
               </div>
@@ -309,7 +276,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
       <div className="relative px-6 pb-4 pt-1">
         <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-surface to-transparent" aria-hidden="true" />
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="mx-auto w-full max-w-3xl">
-          <div className="rounded-2xl border border-gray-300 bg-surface shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+          <div className="rounded-xl border border-gray-300 bg-surface shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
             <textarea
               ref={inputRef}
               rows={1}
@@ -322,7 +289,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
               placeholder={placeholder}
               aria-label={placeholder}
-              className="block max-h-40 w-full resize-none rounded-2xl bg-transparent px-4 pt-3 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
+              className="block max-h-40 w-full resize-none rounded-xl bg-transparent px-4 pt-3 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
             />
             <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
               <span className="pl-1 text-[11px] text-gray-500">Enter to send · Shift + Enter for a new line</span>

@@ -33,6 +33,10 @@ describe('theme guard', () => {
     expect(offences(/\b(bg|from|via|to)-gray-(800|900|950)\b/)).toEqual([]);
   });
 
+  it('keeps corners on the radius scale (sm, md, lg, xl, full): no 2xl/3xl or arbitrary radii', () => {
+    expect(offences(/\brounded(-[trblse]{1,2})?-(2xl|3xl|\[)/)).toEqual([]);
+  });
+
   it('keeps colours out of JSX (use classes, or lib/statusColors.js for values)', () => {
     // The animated brand marks and the Mermaid/theme colour tables are their own palettes.
     const OWN_PALETTE = ['components/ChatbotButton.jsx', 'components/agent/AgentAvatar.jsx', 'components/MermaidDiagram.jsx', 'components/roadmap/RoadmapDiagram.jsx', 'context/ThemeContext.jsx'];

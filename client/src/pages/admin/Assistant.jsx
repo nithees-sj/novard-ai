@@ -57,7 +57,7 @@ function ActionCard({ action, conversationId, onUpdate }) {
 
 function Message({ message, conversationId, onCardUpdate }) {
   if (message.role === 'user') {
-    return <div className="flex justify-end"><div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] text-white">{message.content}</div></div>;
+    return <div className="flex justify-end"><div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] text-white">{message.content}</div></div>;
   }
   return (
     <div className="flex gap-3">

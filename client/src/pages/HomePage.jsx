@@ -216,7 +216,7 @@ const HomePage = () => {
                 </div>
 
                   {/* Adaptive Learning Paths Section */}
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 text-white shadow-xl dark:ring-1 dark:ring-white/10">
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl p-8 text-white shadow-xl dark:ring-1 dark:ring-white/10">
                     <div className="flex flex-col lg:flex-row items-center justify-between">
                       <div className="flex-1 mb-6 lg:mb-0">
                         <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">

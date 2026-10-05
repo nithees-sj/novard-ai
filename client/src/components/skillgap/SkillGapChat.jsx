@@ -79,7 +79,7 @@ const Bubble = ({ message, onReport }) => {
   return (
     <div className={`group flex gap-3 ${mine ? 'justify-end' : 'justify-start'}`}>
       {!mine && <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>}
-      <div className={`max-w-[85%] min-w-0 rounded-2xl px-4 py-3 ${mine
+      <div className={`max-w-[85%] min-w-0 rounded-xl px-4 py-3 ${mine
         ? 'bg-blue-600 text-white rounded-br-md'
         : 'bg-surface border border-gray-200 text-gray-900 rounded-bl-md'}`}>
         {mine
@@ -183,7 +183,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
         {sending && (
           <div className="flex gap-3">
             <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>
-            <div className="rounded-2xl rounded-bl-md bg-surface border border-gray-200 px-4 py-3 flex items-center gap-1.5" aria-label="The coach is typing">
+            <div className="rounded-xl rounded-bl-md bg-surface border border-gray-200 px-4 py-3 flex items-center gap-1.5" aria-label="The coach is typing">
               {[0, 150, 300].map((d) => <span key={d} className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
             </div>
           </div>

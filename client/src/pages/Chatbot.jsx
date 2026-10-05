@@ -284,7 +284,7 @@ const Chatbot = () => {
       )}
       <form
         onSubmit={(e) => { e.preventDefault(); send(); }}
-        className="relative rounded-3xl border border-gray-200 bg-surface shadow-soft transition focus-within:border-gray-300 focus-within:shadow-lg focus-within:shadow-blue-600/10"
+        className="relative rounded-xl border border-gray-200 bg-surface shadow-soft transition focus-within:border-gray-300 focus-within:shadow-lg focus-within:shadow-blue-600/10"
       >
         <textarea
           ref={inputRef}
@@ -300,7 +300,7 @@ const Chatbot = () => {
           placeholder={empty ? 'Ask anything, or tell me what you want to learn…' : 'Reply to Novard Agent…'}
           aria-label="Message Novard Agent"
           maxLength={6000}
-          className="block max-h-56 w-full resize-none rounded-3xl bg-transparent px-5 pt-4 pb-14 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
+          className="block max-h-56 w-full resize-none rounded-xl bg-transparent px-5 pt-4 pb-14 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
         />
         <div className="absolute inset-x-3 bottom-2.5 flex items-center justify-between">
           <span className="hidden pl-2 text-[11px] text-gray-500 sm:inline">Enter to send · Shift + Enter for a new line</span>
@@ -372,7 +372,7 @@ const Chatbot = () => {
                   key={s.title}
                   type="button"
                   onClick={() => send(s.text)}
-                  className="group rounded-2xl border border-gray-200 bg-surface p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
+                  className="group rounded-xl border border-gray-200 bg-surface p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
                 >
                   <span className="text-lg" aria-hidden="true">{s.icon}</span>
                   <p className="mt-1 text-sm font-semibold text-gray-900">{s.title}</p>
@@ -390,7 +390,7 @@ const Chatbot = () => {
                   <div className="space-y-6" aria-label="Loading chat">
                     {[0, 1].map((i) => (
                       <div key={i} className="space-y-3">
-                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-3xl bg-gray-100" />
+                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-xl bg-gray-100" />
                         <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
                         <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100" />
                       </div>

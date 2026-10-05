@@ -105,7 +105,7 @@ const Video = () => {
                   <button
                     type="button"
                     key={feature.id}
-                    className="w-full text-left bg-surface rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
+                    className="w-full text-left bg-surface rounded-xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
                              transition-all duration-300 cursor-pointer group hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                     onClick={() => {
                       if (feature.route === 'inline') {
@@ -150,7 +150,7 @@ const Video = () => {
               </div>
 
               {/* Promotional Banner */}
-              <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-10 relative overflow-hidden max-w-4xl dark:ring-1 dark:ring-white/10">
+              <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-10 relative overflow-hidden max-w-4xl dark:ring-1 dark:ring-white/10">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
