@@ -5,8 +5,8 @@ import { currentEmail } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
-} from './learning/LearningUI';
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate, useToastTimer } from './learning/LearningUI';
+import confirm from './ui/confirm';
 import NewVideoForm from './learning/NewVideoForm';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
@@ -41,10 +41,7 @@ const VideoSummarizerInlineView = () => {
   const [addError, setAddError] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
-  const showToast = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const showToast = useToastTimer(setToast);
 
   // Reloads the list and keeps the open video in step with it.
   const loadUserVideos = async () => {
@@ -217,7 +214,7 @@ const VideoSummarizerInlineView = () => {
   };
 
   const handleDeleteVideo = async (videoId, videoTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${videoTitle}"?`)) {
+    if (!(await confirm({ title: 'Delete this video?', message: `“${videoTitle}” and everything made from it (chat, summary, quizzes) will be removed.`, confirmLabel: 'Delete', danger: true }))) {
       return;
     }
     try {
@@ -284,8 +281,8 @@ const VideoSummarizerInlineView = () => {
                 title={video.title}
                 meta={formatDate(video.createdAt)}
                 badges={<>
-                  {video.summary && <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">Summary</span>}
-                  {video.quizzes?.length > 0 && <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">{video.quizzes.length} {video.quizzes.length === 1 ? 'quiz' : 'quizzes'}</span>}
+                  {video.summary && <span className="rounded-md bg-success-soft px-1.5 py-0.5 text-micro font-semibold text-success-fg ring-1 ring-success/20">Summary</span>}
+                  {video.quizzes?.length > 0 && <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-micro font-semibold text-accent-fg ring-1 ring-accent/20">{video.quizzes.length} {video.quizzes.length === 1 ? 'quiz' : 'quizzes'}</span>}
                 </>}
                 onSelect={() => openVideo(video)}
                 onDelete={() => handleDeleteVideo(video._id, video.title)}
@@ -310,7 +307,7 @@ const VideoSummarizerInlineView = () => {
               icon="video"
               title={selectedVideo.title}
               meta={(
-                <a href={selectedVideo.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline">
+                <a href={selectedVideo.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-accent-fg hover:underline">
                   Watch on YouTube <Icon name="link" className="h-3 w-3" />
                 </a>
               )}
@@ -367,7 +364,7 @@ const VideoSummarizerInlineView = () => {
                       onRetry={handleGenerateQuiz}
                     />
                   ) : (
-                    <div className="h-full overflow-y-auto p-6">
+                    <div className="h-full overflow-y-auto px-6 py-8">
                       <QuizSetup source="youtube" itemId={selectedVideo._id} topic={selectedVideo.title} onStart={confirmGenerateQuiz} starting={isGeneratingQuiz} error={quizError} />
                     </div>
                   )}

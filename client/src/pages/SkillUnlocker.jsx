@@ -4,6 +4,7 @@ import AppShell from '../components/layout/AppShell';
 import Icon from '../components/ui/Icon';
 import Button from '../components/ui/Button';
 import cx from '../components/ui/cx';
+import confirm from '../components/ui/confirm';
 import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
@@ -188,7 +189,7 @@ const SkillUnlocker = () => {
 
   const handleDeletePlan = async (e, planId) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this skill plan? This cannot be undone.')) {
+    if (await confirm({ title: 'Delete this skill plan?', message: 'Its days, progress and quiz results will be removed. This cannot be undone.', confirmLabel: 'Delete', danger: true })) {
       try {
         await api.delete(`/api/skill-unlocker/plans/${planId}`);
         if (currentPlan && (currentPlan.planId === planId || currentPlan._id === planId)) {

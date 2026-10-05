@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import MarkdownView from '../MarkdownView';
 import Icon from '../ui/Icon';
 import UISpinner from '../ui/Spinner';
@@ -9,6 +9,7 @@ import { Tabs } from '../ui/Tabs';
 import { EmptyState as UIEmptyState, SkeletonRows, Skeleton as SkeletonBar } from '../ui/States';
 import UIToast from '../ui/Toast';
 import cx from '../ui/cx';
+import AgentAvatar from '../agent/AgentAvatar';
 import { isCorrectAnswer } from '../../lib/quiz';
 
 /**
@@ -122,50 +123,44 @@ export const GeneratingState = ({ icon = 'sparkles', title, hint }) => {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="flex h-full min-h-[300px] flex-col items-center justify-center px-6 py-10" role="status" aria-live="polite">
-      <div className="relative mb-5 h-16 w-16">
-        <span className="absolute inset-0 rounded-full border-4 border-blue-100" />
-        <span className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 animate-spin" />
-        <span className="absolute inset-0 flex items-center justify-center text-blue-600"><Icon name={icon} className="h-6 w-6" /></span>
-      </div>
-      <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-      {hint && <p className="mt-1 max-w-sm text-center text-sm text-gray-500">{hint}</p>}
-      <p className="mt-2 text-xs tabular-nums text-gray-500">{seconds}s</p>
-      <div className="mt-8 w-full max-w-md space-y-2.5" aria-hidden="true">
-        {[100, 92, 97, 70].map((w, i) => (
-          <div key={i} className="h-3 animate-pulse rounded-full bg-gray-100" style={{ width: `${w}%`, animationDelay: `${i * 120}ms` }} />
-        ))}
+    <div className="h-full overflow-y-auto" role="status" aria-live="polite">
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="flex items-center gap-3">
+          <UISpinner className="h-4 w-4 text-accent-fg" />
+          <h3 className="text-body font-medium text-fg">{title}</h3>
+          <span className="tabular ml-auto text-caption text-fg-subtle">{seconds}s</span>
+        </div>
+        {hint && <p className="mt-1 pl-7 text-small text-fg-subtle">{hint}</p>}
+        <div className="mt-8 space-y-3" aria-hidden="true">
+          <SkeletonBar className="h-5 w-2/5" />
+          {['w-full', 'w-11/12', 'w-full', 'w-3/4'].map((w, i) => <SkeletonBar key={i} className={`h-3 ${w}`} />)}
+          <SkeletonBar className="mt-6 h-5 w-1/3" />
+          {['w-full', 'w-5/6', 'w-2/3'].map((w, i) => <SkeletonBar key={`b${i}`} className={`h-3 ${w}`} />)}
+        </div>
       </div>
     </div>
   );
 };
 
 /** A generated summary with its title row. `onReport` adds a "Report" action for a wrong summary. */
-export const SummaryView = ({ icon = 'summary', title, subtitle, content, onReport }) => (
+export const SummaryView = ({ title, subtitle, content, onReport }) => (
   <div className="h-full overflow-y-auto">
-    <div className="mx-auto max-w-3xl px-6 py-6">
-      <div className="mb-5 flex items-center gap-3 border-b border-gray-100 pb-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-          <Icon name={icon} className="h-5 w-5" />
-        </span>
+    <article className="mx-auto max-w-3xl px-6 py-8">
+      <header className="mb-6 flex items-start gap-3 border-b border-line-subtle pb-4">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-gray-900">{title}</h3>
-          {subtitle && <p className="truncate text-xs text-gray-500">{subtitle}</p>}
+          <h3 className="text-title font-semibold text-fg">{title}</h3>
+          {subtitle && <p className="mt-0.5 truncate text-small text-fg-subtle">{subtitle}</p>}
         </div>
         {onReport && <ReportAction onClick={onReport} label="Report a problem" />}
-      </div>
+      </header>
       <MarkdownView content={content} size="base" />
-    </div>
+    </article>
   </div>
 );
 
 // ── chat ───────────────────────────────────────────────────────────────────
 
-const Avatar = () => (
-  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm" aria-hidden="true">
-    <Icon name="sparkles" className="h-4 w-4" />
-  </span>
-);
+const Avatar = () => <AgentAvatar size="h-7 w-7" />;
 
 /**
  * The conversation with the AI about one item, laid out like ChatGPT / Claude:
@@ -211,7 +206,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
                 )}
                 {startPrompt && <span className="basis-full" aria-hidden="true" />}
                 {suggestions.map((s) => (
-                  <button key={s} type="button" onClick={() => submit(s)} className="rounded-full border border-gray-200 bg-surface px-3.5 py-1.5 text-sm text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                  <button key={s} type="button" onClick={() => submit(s)} className="rounded-full px-3 py-1 text-small text-fg-muted ring-1 ring-inset ring-line transition-colors hover:bg-sunken hover:text-fg">
                     {s}
                   </button>
                 ))}
@@ -222,7 +217,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
           <div className="mx-auto w-full max-w-3xl space-y-7 px-6 py-8">
             {messages.map((m, i) => (m.role === 'user' ? (
               <div key={i} className="flex justify-end">
-                <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] leading-relaxed text-white shadow-sm">
+                <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-xl rounded-br-sm bg-accent px-4 py-2.5 text-body leading-relaxed text-on-accent">
                   {m.content}
                 </div>
               </div>
@@ -243,7 +238,7 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
               <div className="flex items-center gap-4" role="status" aria-label="The assistant is typing">
                 <Avatar />
                 <div className="flex items-center gap-1.5">
-                  {[0, 150, 300].map((d) => <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-blue-400" style={{ animationDelay: `${d}ms` }} />)}
+                  {[0, 150, 300].map((d) => <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-fg-subtle" style={{ animationDelay: `${d}ms` }} />)}
                 </div>
               </div>
             )}
@@ -253,9 +248,8 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
       </div>
 
       <div className="relative px-6 pb-4 pt-1">
-        <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-surface to-transparent" aria-hidden="true" />
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="mx-auto w-full max-w-3xl">
-          <div className="rounded-xl border border-gray-300 bg-surface shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+          <div className="rounded-xl bg-raised ring-1 ring-inset ring-line transition-shadow hover:ring-line-strong focus-within:ring-2 focus-within:ring-focus">
             <textarea
               ref={inputRef}
               rows={1}
@@ -268,12 +262,12 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
               placeholder={placeholder}
               aria-label={placeholder}
-              className="block max-h-40 w-full resize-none rounded-xl bg-transparent px-4 pt-3 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
+              className="block max-h-40 w-full resize-none rounded-xl bg-transparent px-4 pt-3 text-body leading-relaxed text-fg placeholder:text-fg-subtle outline-none"
             />
             <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-              <span className="pl-1 text-[11px] text-gray-500">Enter to send · Shift + Enter for a new line</span>
-              <button type="submit" disabled={sending || !draft.trim()} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400" aria-label="Send">
-                {sending ? <Spinner className="h-4 w-4" /> : <Icon name="send" className="h-4 w-4" strokeWidth={2.4} />}
+              <span className="hidden pl-1 text-caption text-fg-subtle sm:inline">Enter to send · Shift + Enter for a new line</span>
+              <button type="submit" disabled={sending || !draft.trim()} className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-on-accent transition-colors hover:bg-accent-hover disabled:bg-sunken disabled:text-fg-disabled" aria-label="Send">
+                {sending ? <Spinner className="h-4 w-4" /> : <Icon name="arrowUp" className="h-4 w-4" strokeWidth={2.25} />}
               </button>
             </div>
           </div>
@@ -299,37 +293,35 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
 
   if (result) {
     const pct = Math.round((result.correct / Math.max(1, result.total)) * 100);
-    const tone = pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-blue-600' : 'text-amber-600';
-    const ring = pct >= 80 ? 'stroke-emerald-600' : pct >= 50 ? 'stroke-blue-600' : 'stroke-amber-600';
+    const tone = pct >= 80 ? 'text-success-fg' : pct >= 50 ? 'text-accent-fg' : 'text-warning-fg';
+    const ring = pct >= 80 ? 'stroke-success' : pct >= 50 ? 'stroke-accent' : 'stroke-warning';
     const r = 34;
     const c = 2 * Math.PI * r;
     return (
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-3xl space-y-6 px-6 py-6">
-          <div className="flex flex-col items-center gap-5 rounded-xl border border-gray-200 bg-gray-50/60 p-6 sm:flex-row">
+          <div className="flex flex-col items-center gap-5 border-b border-line-subtle pb-6 sm:flex-row">
             <svg width="88" height="88" viewBox="0 0 88 88" className="shrink-0" role="img" aria-label={`${pct}%`}>
               <circle cx="44" cy="44" r={r} fill="none" className="stroke-chart-track" strokeWidth="8" />
               <circle cx="44" cy="44" r={r} fill="none" className={ring} strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(pct / 100) * c} ${c}`} transform="rotate(-90 44 44)" />
-              <text x="44" y="44" dy="0.35em" textAnchor="middle" className="fill-gray-900 text-lg font-bold">{pct}%</text>
+              <text x="44" y="44" dy="0.35em" textAnchor="middle" className="fill-fg text-lead font-semibold">{pct}%</text>
             </svg>
             <div className="flex-1 text-center sm:text-left">
-              <h3 className={`text-xl font-bold ${tone}`}>{pct >= 80 ? 'Excellent work!' : pct >= 50 ? 'Good effort!' : 'Keep practising!'}</h3>
-              <p className="mt-1 text-sm text-gray-600">You got <strong className="text-gray-900">{result.correct}</strong> of {result.total} questions right. Review the answers below.</p>
+              <h3 className={`text-title font-semibold ${tone}`}>{pct >= 80 ? 'Strong result' : pct >= 50 ? 'Getting there' : 'Worth another go'}</h3>
+              <p className="mt-1 text-body text-fg-muted">You got <strong className="font-semibold text-fg">{result.correct}</strong> of {result.total} right. Every answer is explained below.</p>
             </div>
             <button type="button" onClick={onRetry} className={btn.primary}>Try another quiz</button>
           </div>
 
-          <ol className="space-y-4">
+          <ol className="divide-y divide-line-subtle">
             {questions.map((q, qi) => {
               const chosen = answers[qi];
               const right = isCorrectAnswer(q, chosen);
               return (
-                <li key={qi} className="rounded-xl border border-gray-200 bg-surface p-4">
-                  <div className="mb-3 flex items-start gap-2">
-                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white ${right ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                      <Icon name={right ? 'check' : 'x'} className="h-3 w-3" strokeWidth={3} />
-                    </span>
-                    <p className="flex-1 text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+                <li key={qi} className="py-5 first:pt-0">
+                  <div className="mb-3 flex items-start gap-2.5">
+                    <Icon name={right ? 'success' : 'alert'} className={`mt-0.5 h-4 w-4 ${right ? 'text-success-fg' : 'text-danger-fg'}`} label={right ? 'Correct' : 'Wrong'} />
+                    <p className="flex-1 text-body font-medium text-fg">{qi + 1}. {q.question}</p>
                     {onReport && <ReportAction onClick={() => onReport(q, qi)} className="-mt-1 shrink-0" />}
                   </div>
                   <div className="space-y-1.5">
@@ -337,17 +329,17 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
                       const isRight = isCorrectAnswer(q, oi);
                       const isChosen = chosen === oi;
                       return (
-                        <div key={oi} className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm ${
-                          isRight ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : isChosen ? 'border-red-200 bg-red-50 text-red-900' : 'border-gray-200 text-gray-600'
+                        <div key={oi} className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-body ${
+                          isRight ? 'bg-success-soft text-success-fg' : isChosen ? 'bg-danger-soft text-danger-fg' : 'text-fg-muted'
                         }`}>
-                          <span className="w-4 shrink-0 text-xs font-bold">{LETTERS[oi]}</span>
+                          <span className="w-4 shrink-0 text-caption font-semibold">{LETTERS[oi]}</span>
                           <span className="flex-1">{o}</span>
-                          {isChosen && <span className="text-[11px] font-semibold uppercase tracking-wide opacity-70">Your answer</span>}
+                          {isChosen && <span className="text-caption font-medium">Your answer</span>}
                         </div>
                       );
                     })}
                   </div>
-                  {q.explanation && <p className="mt-3 rounded-lg bg-blue-50/60 px-3 py-2 text-xs leading-relaxed text-gray-700"><strong className="text-blue-800">Why: </strong>{q.explanation}</p>}
+                  {q.explanation && <p className="mt-3 border-l-2 border-line-strong pl-3 text-small leading-relaxed text-fg-muted"><span className="font-medium text-fg">Why: </span>{q.explanation}</p>}
                 </li>
               );
             })}
@@ -359,20 +351,20 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-gray-100 px-6 py-3">
+      <div className="border-b border-line-subtle px-6 py-3">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <span className="text-sm font-medium text-gray-700">{answered} of {total} answered</span>
-          <div className="h-1.5 flex-1 rounded-full bg-gray-100">
-            <div className="h-1.5 rounded-full bg-blue-600 transition-all" style={{ width: `${(answered / Math.max(1, total)) * 100}%` }} />
+          <span className="tabular text-small text-fg-muted">{answered} of {total} answered</span>
+          <div className="h-1 flex-1 rounded-full bg-chart-track">
+            <div className="h-1 rounded-full bg-accent transition-all duration-200" style={{ width: `${(answered / Math.max(1, total)) * 100}%` }} />
           </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <ol className="mx-auto max-w-3xl space-y-4 px-6 py-6">
+        <ol className="mx-auto max-w-3xl divide-y divide-line-subtle px-6 py-4">
           {questions.map((q, qi) => (
-            <li key={qi} className="rounded-xl border border-gray-200 bg-surface p-4">
+            <li key={qi} className="py-5">
               <div className="mb-3 flex items-start gap-2">
-                <p className="flex-1 text-sm font-semibold text-gray-900">{qi + 1}. {q.question}</p>
+                <p className="flex-1 text-body font-medium text-fg">{qi + 1}. {q.question}</p>
                 {onReport && <ReportAction onClick={() => onReport(q, qi)} className="-mt-1 shrink-0" />}
               </div>
               <div className="space-y-2" role="radiogroup" aria-label={`Question ${qi + 1}`}>
@@ -385,11 +377,11 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
                       role="radio"
                       aria-checked={on}
                       onClick={() => onAnswer(qi, oi)}
-                      className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                        on ? 'border-blue-500 bg-blue-50 text-blue-900 ring-1 ring-blue-500' : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body ring-1 ring-inset transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus ${
+                        on ? 'bg-accent-soft text-fg ring-accent' : 'text-fg-muted ring-line hover:bg-sunken hover:text-fg'
                       }`}
                     >
-                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-bold ${on ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{LETTERS[oi]}</span>
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-caption font-semibold ${on ? 'bg-accent text-on-accent' : 'bg-sunken text-fg-subtle'}`}>{LETTERS[oi]}</span>
                       {o}
                     </button>
                   );
@@ -399,9 +391,9 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
           ))}
         </ol>
       </div>
-      <div className="border-t border-gray-100 bg-surface px-6 py-3">
+      <div className="border-t border-line-subtle px-6 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <span className="text-xs text-gray-500">{answered < total ? `${total - answered} question${total - answered === 1 ? '' : 's'} left` : 'All answered - ready to submit'}</span>
+          <span className="text-small text-fg-subtle">{answered < total ? `${total - answered} question${total - answered === 1 ? '' : 's'} left` : 'All answered. Ready to submit.'}</span>
           <button type="button" onClick={onSubmit} disabled={answered === 0} className={btn.primary}>Submit quiz</button>
         </div>
       </div>
@@ -488,6 +480,20 @@ export const ListEmpty = ({ icon, title, text }) => <UIEmptyState compact icon={
 
 export const Toast = ({ toast, onClose }) => (toast ? <UIToast message={toast.message} type={toast.type === 'success' ? 'success' : 'error'} onClose={onClose} /> : null);
 
+/**
+ * showToast(message, type) for a tool's Toast: shows it for 4 s. A new toast
+ * restarts the timer, so an older one can no longer dismiss it early.
+ */
+export function useToastTimer(setToast, ms = 4000) {
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return useCallback((message, type = 'error') => {
+    clearTimeout(timer.current);
+    setToast({ message, type });
+    timer.current = setTimeout(() => setToast(null), ms);
+  }, [setToast, ms]);
+}
+
 export const formatDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 // ── "add new" forms in the main area ───────────────────────────────────────
@@ -502,46 +508,38 @@ export const fieldClass = uiFieldClass;
  * the main area in place of the open item: heading, how it works, the fields
  * and the actions - the same layout as the new-doubt form.
  */
-export const FormPage = ({ icon, title, subtitle, steps = [], onSubmit, children, error, submitLabel, submitting = false, submittingLabel, onCancel }) => (
+export const FormPage = ({ title, subtitle, steps = [], onSubmit, children, error, submitLabel, submitting = false, submittingLabel, onCancel }) => (
   <Panel fill>
-    {/* m-auto in a flex box centres the form when it fits, and lets it scroll from the top when it does not. */}
-    <div className="flex h-full overflow-y-auto">
-      <form onSubmit={onSubmit} className="m-auto w-full max-w-3xl space-y-6 p-6 py-10" noValidate>
-        <div className="flex items-start gap-3.5">
-          {icon && (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-              <Icon name={icon} className="h-5 w-5" />
-            </span>
-          )}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-            {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
-          </div>
+    <div className="h-full overflow-y-auto">
+      <form onSubmit={onSubmit} className="mx-auto w-full max-w-3xl space-y-7 px-5 py-8 sm:px-8" noValidate>
+        <div>
+          <h2 className="text-display font-semibold text-fg">{title}</h2>
+          {subtitle && <p className="mt-1.5 max-w-2xl text-body text-fg-muted">{subtitle}</p>}
         </div>
 
         {steps.length > 0 && (
-          <ol className={`grid gap-3 ${steps.length === 3 ? 'sm:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
+          <ol className={`grid gap-x-6 gap-y-3 border-y border-line-subtle py-4 ${steps.length === 3 ? 'sm:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
             {steps.map((step, i) => (
-              <li key={step.title} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                <div className="mb-1 flex items-start gap-2">
-                  <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">{i + 1}</span>
-                  <span className="text-sm font-semibold text-gray-900">{step.title}</span>
-                </div>
-                <p className="text-xs text-gray-600">{step.text}</p>
+              <li key={step.title} className="flex gap-2.5">
+                <span className="tabular text-small font-medium text-fg-subtle">{i + 1}</span>
+                <span>
+                  <span className="block text-small font-medium text-fg">{step.title}</span>
+                  <span className="block text-caption text-fg-subtle">{step.text}</span>
+                </span>
               </li>
             ))}
           </ol>
         )}
 
-        <div className="space-y-5 rounded-xl border border-gray-200 bg-surface p-5">{children}</div>
+        <div className="space-y-5">{children}</div>
 
-        {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+        {error && <p role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-body text-danger-fg">{error}</p>}
 
-        <div className="flex gap-3">
-          <button type="submit" disabled={submitting} className={`${btn.primary} flex-1 py-3`}>
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={submitting} className={buttonClass({ variant: 'primary', size: 'lg' })}>
             {submitting ? <><Spinner /> {submittingLabel || 'Saving…'}</> : submitLabel}
           </button>
-          {onCancel && <button type="button" onClick={onCancel} disabled={submitting} className={`${btn.secondary} px-6 py-3`}>Cancel</button>}
+          {onCancel && <button type="button" onClick={onCancel} disabled={submitting} className={buttonClass({ variant: 'ghost', size: 'lg' })}>Cancel</button>}
         </div>
       </form>
     </div>

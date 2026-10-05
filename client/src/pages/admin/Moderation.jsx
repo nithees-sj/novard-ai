@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import confirm from '../../components/ui/confirm';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { ErrorNote, Loading, PageHeader, Section, when } from '../../components/admin/ui';
@@ -38,7 +39,7 @@ function Thread({ issueId, onClose, onChanged }) {
           {issue.status === 'closed'
             ? <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/issues/${issueId}/status`, { status: 'open' }), 'Reopened.')} className={btn.secondary}>Reopen</button>
             : <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/issues/${issueId}/status`, { status: 'closed' }), 'Closed.')} className={btn.secondary}>Close</button>}
-          <button type="button" onClick={() => { if (window.confirm('Delete this discussion and all its replies?')) run(() => adminDelete(`/api/admin/forum/issues/${issueId}`).then(onClose), 'Deleted.'); }} className={btn.danger}>Delete discussion</button>
+          <button type="button" onClick={async () => { if (await confirm({ title: 'Delete this discussion?', message: 'All its replies are deleted too.', confirmLabel: 'Delete', danger: true })) run(() => adminDelete(`/api/admin/forum/issues/${issueId}`).then(onClose), 'Deleted.'); }} className={btn.danger}>Delete discussion</button>
         </div>
       </div>
       {note && <p className="text-sm text-gray-700" role="status">{note}</p>}
@@ -50,7 +51,7 @@ function Thread({ issueId, onClose, onChanged }) {
               <span className="text-xs font-semibold text-gray-600">{c.isAI ? 'AI Assistant' : c.userName} · {when(c.createdAt)} {c.hidden && <Badge>hidden from students</Badge>}</span>
               <span className="flex gap-2">
                 <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/comments/${c._id}/hidden`, { hidden: !c.hidden }), c.hidden ? 'Shown again.' : 'Hidden from students.')} className="text-xs font-semibold text-blue-600 hover:underline">{c.hidden ? 'Show' : 'Hide'}</button>
-                <button type="button" onClick={() => { if (window.confirm('Delete this reply (and replies to it)?')) run(() => adminDelete(`/api/admin/forum/comments/${c._id}`), 'Reply deleted.'); }} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>
+                <button type="button" onClick={async () => { if (await confirm({ title: 'Delete this reply?', message: 'Replies to it are deleted too.', confirmLabel: 'Delete', danger: true })) run(() => adminDelete(`/api/admin/forum/comments/${c._id}`), 'Reply deleted.'); }} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>
               </span>
             </div>
             {c.isAI ? <MarkdownView content={c.content} /> : <p className="whitespace-pre-wrap text-gray-800">{c.content}</p>}

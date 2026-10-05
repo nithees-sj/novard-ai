@@ -5,8 +5,9 @@ import { currentEmail } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
 import {
   Workspace, Panel, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate,
-} from './learning/LearningUI';
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, Spinner, btn, formatDate, useToastTimer } from './learning/LearningUI';
+import confirm from './ui/confirm';
+import { SegmentedControl } from './ui/Tabs';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 
@@ -38,10 +39,7 @@ const NotesInlineView = () => {
   const [sidebarTab, setSidebarTab] = useState('notes');
   const fileInputRef = useRef(null);
 
-  const showToast = (message, type = 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const showToast = useToastTimer(setToast);
 
   useEffect(() => {
     loadUserNotes();
@@ -239,7 +237,7 @@ const NotesInlineView = () => {
   };
 
   const handleDeleteNote = async (noteId, noteTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${noteTitle}"?`)) {
+    if (!(await confirm({ title: 'Delete this note?', message: `“${noteTitle}” and everything made from it (chat, summary, quizzes) will be removed.`, confirmLabel: 'Delete', danger: true }))) {
       return;
     }
     try {
@@ -285,14 +283,14 @@ const NotesInlineView = () => {
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`${btn.primary} w-full`}>
                   {isUploading ? <><Spinner /> Uploading and reading PDF…</> : <><Icon name="upload" /> Upload a PDF</>}
                 </button>
-                <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1" role="tablist">
-                  {[['notes', 'Notes'], ['quizzes', 'Quizzes']].map(([id, label]) => (
-                    <button key={id} type="button" role="tab" aria-selected={sidebarTab === id} onClick={() => setSidebarTab(id)}
-                      className={`rounded-md py-1.5 text-sm font-medium transition ${sidebarTab === id ? 'bg-surface text-gray-900 shadow-sm ring-1 ring-gray-200 dark:bg-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  label="Show"
+                  size="sm"
+                  className="flex w-full"
+                  value={sidebarTab}
+                  onChange={setSidebarTab}
+                  options={[{ id: 'notes', label: 'Notes' }, { id: 'quizzes', label: 'Quizzes' }]}
+                />
               </div>
             )}
           >
@@ -390,7 +388,7 @@ const NotesInlineView = () => {
                       onRetry={handleGenerateQuiz}
                     />
                   ) : (
-                    <div className="h-full overflow-y-auto p-6">
+                    <div className="h-full overflow-y-auto px-6 py-8">
                       <QuizSetup source="notes" itemId={selectedNote._id} topic={selectedNote.title} onStart={confirmGenerateQuiz} starting={isGeneratingQuiz} error={quizError} />
                     </div>
                   )}

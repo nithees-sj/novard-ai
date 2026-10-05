@@ -3,8 +3,8 @@ import { api, errorMessage } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import {
-  Workspace, Panel, ItemFrame, GeneratingState, EmptyState, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, btn,
-} from './learning/LearningUI';
+  Workspace, Panel, ItemFrame, GeneratingState, EmptyState, LoadingPanel, SideList, ListItem, ListEmpty, Badge, Toast, Icon, btn, Spinner, useToastTimer } from './learning/LearningUI';
+import confirm from './ui/confirm';
 import NewVideoRequestForm from './learning/NewVideoRequestForm';
 
 
@@ -21,13 +21,10 @@ const VideoLibraryInlineView = () => {
   const [loaded, setLoaded] = useState(false);
 
   const platforms = {
-    youtube: { name: 'YouTube', icon: '📺' }
+    youtube: { name: 'YouTube' }
   };
 
-  const showToast = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const showToast = useToastTimer(setToast);
 
   useEffect(() => {
     loadUserVideoRequests();
@@ -112,7 +109,7 @@ const VideoLibraryInlineView = () => {
   };
 
   const handleDeleteVideoRequest = async (videoRequestId, videoRequestTitle) => {
-    if (!window.confirm(`Delete "${videoRequestTitle}"?`)) return;
+    if (!(await confirm({ title: 'Delete this request?', message: `“${videoRequestTitle}” and its video list will be removed.`, confirmLabel: 'Delete', danger: true }))) return;
 
     try {
       await api.delete(`/educational-video-requests/${videoRequestId}`);
@@ -186,8 +183,8 @@ const VideoLibraryInlineView = () => {
               title={selectedVideoRequest.title}
               meta={`Recommended ${platforms[selectedVideoRequest.platform]?.name || 'educational'} videos`}
               actions={(
-                <button type="button" onClick={() => !isLoading && getRecommendedVideos(selectedVideoRequest, true)} disabled={isLoading} className={`${btn.secondary} py-1.5`}>
-                  {isLoading ? 'Searching…' : 'Refresh'}
+                <button type="button" onClick={() => !isLoading && getRecommendedVideos(selectedVideoRequest, true)} disabled={isLoading} className={btn.secondary}>
+                  {isLoading ? <><Spinner /> Searching…</> : <><Icon name="refresh" /> Refresh</>}
                 </button>
               )}
             >
@@ -195,21 +192,21 @@ const VideoLibraryInlineView = () => {
                 <GeneratingState icon="video" title={selectedVideoRequest.platform === 'youtube' ? 'Finding videos' : 'Finding courses'} hint={`Searching ${platforms[selectedVideoRequest.platform]?.name || 'the web'} for the best learning content for this request.`} />
               ) : recommendedVideos.length > 0 ? (
                 <div className="h-full overflow-y-auto p-5">
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
                     {recommendedVideos.map((video, index) => (
-                      <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
-                        <div className="relative aspect-video bg-gray-100">
+                      <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group flex flex-col rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+                        <div className="relative aspect-video overflow-hidden rounded-lg bg-sunken ring-1 ring-line-subtle">
                           <img src={video.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = '/courses.jpg'; }} />
-                          {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">{video.duration}</span>}
+                          {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-micro font-medium text-white">{video.duration}</span>}
                         </div>
-                        <div className="flex flex-1 flex-col p-3.5">
-                          <p className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-700">{video.title}</p>
-                          {video.channel && <p className="mt-1 text-xs text-gray-500">{video.channel}</p>}
+                        <div className="flex flex-1 flex-col pt-2.5">
+                          <p className="line-clamp-2 text-body font-medium text-fg group-hover:text-accent-fg">{video.title}</p>
+                          {video.channel && <p className="mt-1 text-small text-fg-subtle">{video.channel}</p>}
                           {/* The search API fills a generic line when a video has no description; hide it. */}
-                          {video.description && !/^Educational (video|course) content$/.test(video.description) && <p className="mt-1.5 line-clamp-2 text-xs text-gray-600">{video.description}</p>}
+                          {video.description && !/^Educational (video|course) content$/.test(video.description) && <p className="mt-1.5 line-clamp-2 text-small text-fg-muted">{video.description}</p>}
                           {(video.rating || video.price) && (
-                            <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
-                              {video.rating && <Badge tone="amber">★ {video.rating}</Badge>}
+                            <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
+                              {video.rating && <Badge tone="warning"><Icon name="star" className="h-3 w-3" /> {video.rating}</Badge>}
                               {video.price && <Badge tone="green">{video.price}</Badge>}
                             </div>
                           )}

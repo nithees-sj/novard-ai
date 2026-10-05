@@ -72,13 +72,13 @@ const NewVideoRequestForm = ({ onSubmit, onCancel, submitting = false, error = n
       </Field>
 
       <div className="-mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs text-gray-500">Try:</span>
+        <span className="mr-1 text-xs text-fg-subtle">Try:</span>
         {EXAMPLES.map((ex) => (
           <button
             key={ex.title}
             type="button"
             onClick={() => setForm(ex)}
-            className="rounded-full border border-gray-200 bg-surface px-2.5 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-full px-2.5 py-1 text-caption text-fg-muted ring-1 ring-inset ring-line transition-colors hover:bg-sunken hover:text-fg"
           >
             {ex.title}
           </button>
@@ -105,8 +105,8 @@ const NewVideoRequestForm = ({ onSubmit, onCancel, submitting = false, error = n
         />
       </Field>
 
-      <p className="flex items-center gap-2 text-xs text-gray-500">
-        <span className="rounded-md bg-red-50 px-1.5 py-0.5 font-semibold text-red-600 ring-1 ring-red-100">YouTube</span>
+      <p className="flex items-center gap-2 text-xs text-fg-subtle">
+        <span className="rounded-sm bg-sunken px-1.5 py-0.5 font-medium text-fg-muted ring-1 ring-inset ring-line-subtle">YouTube</span>
         Videos are found on YouTube.
       </p>
     </FormPage>

@@ -6,8 +6,8 @@ import { useReportProblem } from '../context/ReportContext';
 import NewDoubtForm from './NewDoubtForm';
 import {
   Workspace, ItemFrame, TabBody, TabBar, ChatPanel, GeneratingState, EmptyState, SummaryView,
-  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate,
-} from './learning/LearningUI';
+  QuizRunner, LoadingPanel, SideList, ListItem, ListEmpty, Toast, Icon, btn, formatDate, useToastTimer } from './learning/LearningUI';
+import confirm from './ui/confirm';
 import QuizSetup from './quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import { readOpenParam, clearOpenParam } from '../lib/openParam';
@@ -43,10 +43,7 @@ const DoubtClearanceInlineView = () => {
   const [addDoubtError, setAddDoubtError] = useState(null);
   const [isAddingDoubt, setIsAddingDoubt] = useState(false);
 
-  const showToast = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const showToast = useToastTimer(setToast);
 
   // Reloads the list and keeps the open doubt in step with it; returns the list.
   const loadUserDoubts = async () => {
@@ -238,7 +235,7 @@ const DoubtClearanceInlineView = () => {
   };
 
   const handleDeleteDoubt = async (doubtId, doubtTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${doubtTitle}"?`)) {
+    if (!(await confirm({ title: 'Delete this doubt?', message: `“${doubtTitle}” and everything made from it (chat, summary, quizzes) will be removed.`, confirmLabel: 'Delete', danger: true }))) {
       return;
     }
     try {
@@ -330,7 +327,7 @@ const DoubtClearanceInlineView = () => {
                 Asked {formatDate(selectedDoubt.createdAt)}
                 {messageCount > 0 && ` · ${messageCount} ${messageCount === 1 ? 'message' : 'messages'}`}
                 {selectedDoubt.imageUrl && (
-                  <a href={selectedDoubt.imageUrl} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 font-medium text-blue-600 hover:underline">
+                  <a href={selectedDoubt.imageUrl} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 font-medium text-accent-fg hover:underline">
                     <Icon name="link" className="h-3 w-3" /> Attachment
                   </a>
                 )}
@@ -389,7 +386,7 @@ const DoubtClearanceInlineView = () => {
                       onRetry={handleGenerateQuiz}
                     />
                   ) : (
-                    <div className="h-full overflow-y-auto p-6">
+                    <div className="h-full overflow-y-auto px-6 py-8">
                       <QuizSetup
                         source="doubt"
                         itemId={selectedDoubt._id}
@@ -413,13 +410,13 @@ const DoubtClearanceInlineView = () => {
                   ) : youtubeRecommendations.length > 0 ? (
                     <div className="h-full overflow-y-auto p-5">
                       <div className="mb-4 flex items-center justify-between">
-                        <p className="text-sm text-gray-500">{youtubeRecommendations.length} videos picked for this doubt</p>
-                        <button type="button" onClick={handleGetRecommendations} className={btn.ghost}>Refresh</button>
+                        <p className="text-small text-fg-subtle">{youtubeRecommendations.length} videos picked for this doubt</p>
+                        <button type="button" onClick={handleGetRecommendations} className={btn.ghost}><Icon name="refresh" /> Refresh</button>
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
                         {youtubeRecommendations.map((video, index) => (
-                          <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-gray-200 bg-surface transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
-                            <div className="relative aspect-video bg-gray-100">
+                          <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+                            <div className="relative aspect-video overflow-hidden rounded-lg bg-sunken ring-1 ring-line-subtle">
                               {video.thumbnail && (
                               <img
                                 src={video.thumbnail}
@@ -434,11 +431,11 @@ const DoubtClearanceInlineView = () => {
                                 }}
                               />
                             )}
-                              {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">{video.duration}</span>}
+                              {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-micro font-medium text-white">{video.duration}</span>}
                             </div>
-                            <div className="p-3">
-                              <p className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-700">{video.title}</p>
-                              {video.description && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{video.description}</p>}
+                            <div className="pt-2.5">
+                              <p className="line-clamp-2 text-body font-medium text-fg group-hover:text-accent-fg">{video.title}</p>
+                              {video.description && <p className="mt-1 line-clamp-2 text-small text-fg-subtle">{video.description}</p>}
                             </div>
                           </a>
                         ))}

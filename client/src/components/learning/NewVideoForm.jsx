@@ -82,15 +82,15 @@ const NewVideoForm = ({ onSubmit, onCancel, onOpenExisting, existing = [], submi
       </Field>
 
       {id && (
-        <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-          <img src={`https://i.ytimg.com/vi/${id}/mqdefault.jpg`} alt="" className="aspect-video w-36 shrink-0 rounded-md bg-gray-200 object-cover" />
+        <div className="flex items-center gap-4 rounded-lg border border-line bg-sunken p-3">
+          <img src={`https://i.ytimg.com/vi/${id}/mqdefault.jpg`} alt="" className="aspect-video w-36 shrink-0 rounded-md bg-line object-cover" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900">{duplicate ? duplicate.title : 'Video found'}</p>
-            <p className="mt-0.5 text-xs text-gray-500">
+            <p className="text-sm font-semibold text-fg">{duplicate ? duplicate.title : 'Video found'}</p>
+            <p className="mt-0.5 text-xs text-fg-subtle">
               {duplicate ? 'This video is already in your list.' : 'We will fetch its title, description and transcript when you add it.'}
             </p>
             {duplicate && onOpenExisting && (
-              <button type="button" onClick={() => onOpenExisting(duplicate)} className={`${btn.ghost} -ml-3 mt-1 text-blue-700`}>Open it</button>
+              <button type="button" onClick={() => onOpenExisting(duplicate)} className={`${btn.ghost} -ml-3 mt-1 text-accent-fg`}>Open it</button>
             )}
           </div>
         </div>

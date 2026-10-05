@@ -108,13 +108,13 @@ const NewDoubtForm = ({ onSubmit, onCancel, submitting = false, error = null, is
         />
         {imageUrl && isHttpUrl(imageUrl) && (
           imageFailed ? (
-            <p className="mt-2 text-xs text-amber-700">That link does not load as an image. It will be saved as a link.</p>
+            <p className="mt-2 text-xs text-warning-fg">That link does not load as an image. It will be saved as a link.</p>
           ) : (
             <img
               src={imageUrl}
               alt="Preview of the linked screenshot"
               onError={() => setImageFailed(true)}
-              className="mt-3 max-h-48 rounded-lg border border-gray-200 bg-gray-50 object-contain"
+              className="mt-3 max-h-48 rounded-lg border border-line bg-sunken object-contain"
             />
           )
         )}

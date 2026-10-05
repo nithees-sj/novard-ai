@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { buttonClass } from '../ui/Button';
+import { fieldClass } from '../ui/Field';
+import Spinner from '../ui/Spinner';
 import { api } from '../../lib/api';
 import {
   QUIZ_DIFFICULTIES, QUIZ_STYLES, QUIZ_COUNTS, QUIZ_MIN, QUIZ_MAX, QUIZ_DEFAULTS, difficultyLabel,
@@ -7,19 +10,19 @@ import { currentEmail } from '../../lib/session';
 
 
 const scoreTone = (p) =>
-  p >= 85 ? { bar: 'bg-green-500', text: 'text-green-700' }
-    : p >= 70 ? { bar: 'bg-blue-500', text: 'text-blue-700' }
-      : p >= 50 ? { bar: 'bg-yellow-500', text: 'text-yellow-700' }
-        : { bar: 'bg-red-500', text: 'text-red-700' };
+  p >= 85 ? { bar: 'bg-success', text: 'text-success-fg' }
+    : p >= 70 ? { bar: 'bg-accent', text: 'text-accent-fg' }
+      : p >= 50 ? { bar: 'bg-warning', text: 'text-warning-fg' }
+        : { bar: 'bg-danger', text: 'text-danger-fg' };
 
 const formatWhen = (value) =>
   new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const Stat = ({ label, value, sub, subTone }) => (
-  <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2.5">
-    <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{label}</div>
-    <div className="text-xl font-bold text-gray-900 tabular-nums">{value}</div>
-    {sub && <div className={`text-[11px] font-semibold ${subTone || 'text-gray-500'}`}>{sub}</div>}
+  <div className="bg-raised px-3 py-2.5">
+    <div className="text-small text-fg-muted">{label}</div>
+    <div className="num text-title font-medium text-fg">{value}</div>
+    {sub && <div className={`text-caption ${subTone || 'text-fg-subtle'}`}>{sub}</div>}
   </div>
 );
 
@@ -28,20 +31,20 @@ const PreviousMarks = ({ state, onRetry }) => {
   const [showAll, setShowAll] = useState(false);
 
   if (state.loading) {
-    return <div className="h-24 rounded-lg bg-gray-100 animate-pulse" aria-label="Loading previous marks" />;
+    return <div className="h-24 animate-pulse rounded-lg bg-sunken" role="status" aria-label="Loading previous marks" />;
   }
   if (state.error) {
     return (
-      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-3">
+      <p className="text-body text-fg-muted">
         Couldn't load your previous marks.{' '}
-        <button type="button" onClick={onRetry} className="text-blue-600 font-medium hover:underline">Retry</button>
+        <button type="button" onClick={onRetry} className="text-accent-fg font-medium hover:underline">Retry</button>
       </p>
     );
   }
   const { attempts = [], stats } = state.data || {};
   if (!stats) {
     return (
-      <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-3">
+      <p className="text-body text-fg-muted">
         No quizzes taken on this topic yet - this will be your first.
       </p>
     );
@@ -52,7 +55,7 @@ const PreviousMarks = ({ state, onRetry }) => {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-line-subtle ring-1 ring-line-subtle sm:grid-cols-4">
         <Stat label="Attempts" value={stats.count} />
         <Stat label="Best" value={`${stats.best}%`} />
         <Stat label="Average" value={`${stats.average}%`} />
@@ -60,11 +63,11 @@ const PreviousMarks = ({ state, onRetry }) => {
           label="Latest"
           value={`${stats.latest}%`}
           sub={change === null ? null : change === 0 ? 'same as before' : `${change > 0 ? '▲ +' : '▼ '}${change} pts vs previous`}
-          subTone={change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500'}
+          subTone={change > 0 ? 'text-success-fg' : change < 0 ? 'text-danger-fg' : 'text-fg-subtle'}
         />
       </div>
 
-      <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-surface">
+      <ul className="divide-y divide-line-subtle">
         {visible.map((a, i) => {
           const tone = scoreTone(a.percentage);
           const details = [
@@ -76,15 +79,15 @@ const PreviousMarks = ({ state, onRetry }) => {
             <li key={`${a.attemptedAt}-${i}`} className="px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-fg">
                     {a.correct}/{a.total} correct
-                    <span className="ml-2 text-xs font-normal text-gray-500">{formatWhen(a.attemptedAt)}</span>
+                    <span className="ml-2 text-xs font-normal text-fg-subtle">{formatWhen(a.attemptedAt)}</span>
                   </div>
-                  <div className="text-xs text-gray-500 truncate">{details || 'Settings not recorded (older quiz)'}</div>
+                  <div className="text-xs text-fg-subtle truncate">{details || 'Settings not recorded (older quiz)'}</div>
                 </div>
                 <span className={`text-sm font-bold tabular-nums ${tone.text}`}>{a.percentage}%</span>
               </div>
-              <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100" aria-hidden="true">
+              <div className="mt-1.5 h-1.5 w-full rounded-full bg-sunken" aria-hidden="true">
                 <div className={`h-1.5 rounded-full ${tone.bar}`} style={{ width: `${a.percentage}%` }} />
               </div>
             </li>
@@ -92,7 +95,7 @@ const PreviousMarks = ({ state, onRetry }) => {
         })}
       </ul>
       {attempts.length > 4 && (
-        <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-medium text-blue-600 hover:underline">
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="text-xs font-medium text-accent-fg hover:underline">
           {showAll ? 'Show fewer' : `Show all ${attempts.length} attempts`}
         </button>
       )}
@@ -168,27 +171,27 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
   };
 
   const choice = (active) =>
-    `rounded-lg border-2 text-left transition-colors ${active
-      ? 'border-blue-600 bg-blue-50'
-      : 'border-gray-200 bg-surface hover:border-blue-200 hover:bg-gray-50'}`;
+    `rounded text-left ring-1 ring-inset transition-colors duration-150 ${active
+      ? 'bg-accent-soft ring-accent/40'
+      : 'bg-raised ring-line hover:bg-sunken hover:ring-line-strong'}`;
 
   return (
-    <form onSubmit={submit} className="max-w-3xl mx-auto space-y-6">
+    <form onSubmit={submit} className="mx-auto max-w-3xl space-y-7">
       <div>
-        <h3 className="text-lg font-bold text-gray-900">Quiz on {topic}</h3>
-        <p className="text-sm text-gray-500">Review how you've done before, then set up your next quiz.</p>
+        <h3 className="text-title font-semibold text-fg">Quiz on {topic}</h3>
+        <p className="mt-0.5 text-body text-fg-muted">See how you did before, then set up the next one.</p>
       </div>
 
       <section>
-        <h4 className="text-sm font-semibold text-gray-900 mb-2">Your previous marks on this topic</h4>
+        <h4 className="mb-2 text-small font-medium text-fg-muted">Previous marks on this topic</h4>
         <PreviousMarks state={history} onRetry={loadHistory} />
       </section>
 
-      <section className="space-y-5 border-t border-gray-100 pt-5">
-        <h4 className="text-sm font-semibold text-gray-900">Customise your quiz</h4>
+      <section className="space-y-5 border-t border-line-subtle pt-5">
+        <h4 className="text-small font-medium text-fg-muted">Your next quiz</h4>
 
         <fieldset>
-          <legend className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Difficulty</legend>
+          <legend className="mb-2 block text-small font-medium text-fg">Difficulty</legend>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {QUIZ_DIFFICULTIES.map((d) => (
               <button
@@ -198,13 +201,13 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 onClick={() => update({ difficulty: d.value })}
                 className={`${choice(settings.difficulty === d.value)} px-3 py-2.5`}
               >
-                <div className="text-sm font-semibold text-gray-900">{d.label}</div>
-                <div className="text-xs text-gray-500">{d.hint}</div>
+                <div className="text-sm font-semibold text-fg">{d.label}</div>
+                <div className="text-xs text-fg-subtle">{d.hint}</div>
               </button>
             ))}
           </div>
           {nextLevel && settings.difficulty === last.difficulty && (
-            <p className="mt-2 text-xs text-blue-700">
+            <p className="mt-2 text-xs text-accent-fg">
               You scored {last.percentage}% on {difficultyLabel(last.difficulty)} last time - try{' '}
               <button type="button" onClick={() => update({ difficulty: nextLevel })} className="font-semibold underline">
                 {difficultyLabel(nextLevel)}
@@ -214,7 +217,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
         </fieldset>
 
         <fieldset>
-          <legend className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Number of questions</legend>
+          <legend className="mb-2 block text-small font-medium text-fg">Number of questions</legend>
           <div className="flex flex-wrap items-center gap-2">
             {QUIZ_COUNTS.map((n) => (
               <button
@@ -222,12 +225,12 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 type="button"
                 aria-pressed={!isCustom && settings.questionCount === n}
                 onClick={() => { setCustomCount(''); update({ questionCount: n }); }}
-                className={`${choice(!isCustom && settings.questionCount === n)} px-4 py-2 text-sm font-semibold text-gray-900`}
+                className={`${choice(!isCustom && settings.questionCount === n)} px-4 py-2 text-sm font-semibold text-fg`}
               >
                 {n}
               </button>
             ))}
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
               or
               <input
                 type="number"
@@ -238,16 +241,16 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 onChange={(e) => { touched.current = true; setCustomCount(e.target.value); }}
                 placeholder={`${QUIZ_MIN}–${QUIZ_MAX}`}
                 aria-label="Custom number of questions"
-                className={`w-24 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 ${customInvalid ? 'border-red-400' : 'border-gray-300'}`}
+                className={`${fieldClass(customInvalid)} h-9 w-24`}
               />
             </label>
           </div>
-          {customInvalid && <p className="mt-1 text-xs text-red-600">Choose between {QUIZ_MIN} and {QUIZ_MAX} questions.</p>}
+          {customInvalid && <p className="mt-1 text-xs text-danger-fg">Choose between {QUIZ_MIN} and {QUIZ_MAX} questions.</p>}
         </fieldset>
 
         <fieldset>
-          <legend className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Question style</legend>
-          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1" role="radiogroup" aria-label="Question style">
+          <legend className="mb-2 block text-small font-medium text-fg">Question style</legend>
+          <div className="inline-flex rounded-lg bg-sunken p-0.5 ring-1 ring-inset ring-line-subtle" role="radiogroup" aria-label="Question style">
             {QUIZ_STYLES.map((s) => (
               <button
                 key={s.value}
@@ -255,15 +258,15 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 role="radio"
                 aria-checked={settings.style === s.value}
                 onClick={() => update({ style: s.value })}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${settings.style === s.value
-                  ? 'bg-surface text-blue-700 shadow-sm dark:bg-gray-200'
-                  : 'text-gray-600 hover:text-gray-900'}`}
+                className={`h-8 rounded-md px-3 text-body font-medium transition-colors ${settings.style === s.value
+                  ? 'bg-raised text-fg shadow-raised ring-1 ring-line-subtle'
+                  : 'text-fg-muted hover:text-fg'}`}
               >
                 {s.label}
               </button>
             ))}
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-fg-subtle">
             {settings.style === 'conceptual' ? 'Ideas, definitions and why things work.'
               : settings.style === 'practical' ? 'Scenarios, code and "what would you do" questions.'
                 : 'A mix of both.'}
@@ -271,8 +274,8 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
         </fieldset>
 
         <div>
-          <label htmlFor={`quiz-focus-${source}`} className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-            Focus on <span className="normal-case font-normal text-gray-500">(optional)</span>
+          <label htmlFor={`quiz-focus-${source}`} className="mb-2 block text-small font-medium text-fg">
+            Focus on <span className="font-normal text-fg-subtle">(optional)</span>
           </label>
           <input
             id={`quiz-focus-${source}`}
@@ -281,13 +284,13 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
             value={settings.focus}
             onChange={(e) => update({ focus: e.target.value })}
             placeholder="e.g. a sub-topic you want to practise"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className={`${fieldClass(false)} h-9`}
           />
         </div>
       </section>
 
       {(error || blockedReason) && (
-        <p role="alert" className={`text-sm rounded-lg px-4 py-3 ${blockedReason ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+        <p role="alert" className={`rounded-lg px-4 py-3 text-body ${blockedReason ? 'bg-warning-soft text-warning-fg' : 'bg-danger-soft text-danger-fg'}`}>
           {blockedReason || error}
         </p>
       )}
@@ -295,11 +298,11 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
       <button
         type="submit"
         disabled={starting || Boolean(blockedReason) || customInvalid}
-        className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className={buttonClass({ variant: 'primary', size: 'lg' })}
       >
         {starting ? (
           <>
-            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" aria-hidden="true" />
+            <Spinner className="h-4 w-4" />
             Generating {count} {difficultyLabel(settings.difficulty)?.toLowerCase()} questions…
           </>
         ) : (
