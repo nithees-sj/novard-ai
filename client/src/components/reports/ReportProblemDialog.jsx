@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { REPORT_SENT_EVENT } from '../../context/ReportContext';
 import Modal from '../ui/Modal';
 import { Select } from '../ui/Field';
 import { Link } from 'react-router-dom';
@@ -145,6 +146,7 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
         ...files,
       });
       setSent(report);
+      window.dispatchEvent(new CustomEvent(REPORT_SENT_EVENT, { detail: { ref: report?.ref } }));
     } catch (err) {
       setError({
         message: errorMessage(err, 'Your report could not be sent. Please try again.'),

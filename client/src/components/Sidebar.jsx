@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import mainlogo from '../images/mainlogo.png';
-import { useReportProblem } from '../context/ReportContext';
+import { useReportFromAnywhere } from '../context/ReportContext';
 import Icon from './ui/Icon';
 import cx from './ui/cx';
 import useFocusTrap from './ui/useFocusTrap';
@@ -35,7 +35,7 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const openReport = useReportProblem();
+  const openReport = useReportFromAnywhere();
   const panel = useRef(null);
 
   const groups = items ? [{ label: null, items }] : studentGroups(user?.role);
@@ -126,7 +126,7 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
           <div className="border-t border-line-subtle px-4 py-3">
             <button
               type="button"
-              onClick={() => { onDrawerClose?.(); openReport({}); }}
+              onClick={() => { onDrawerClose?.(); openReport(); }}
               className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body text-fg-muted transition-colors hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
             >
               <Icon name="flag" className="h-5 w-5 text-fg-subtle" />

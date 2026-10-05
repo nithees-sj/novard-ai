@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppShell from '../components/layout/AppShell';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, EmptyState, Icon, Spinner, btn, fieldClass, formatDate } from '../components/learning/LearningUI';
-import { useReportProblem } from '../context/ReportContext';
+import { useReportProblem, REPORT_SENT_EVENT } from '../context/ReportContext';
+import { useAppStatus } from '../context/AppStatusContext';
 import { reportsApi, attachmentUrl, STATUS_LABEL, STATUS_TONE } from '../lib/reports';
 import { errorMessage } from '../lib/api';
 import { rowFocus } from '../components/ui/DataTable';
@@ -41,7 +42,7 @@ function ReportList({ reports, loading, onOpen }) {
           {reports.map((r) => (
             <tr
               key={r.ref}
-              className={`cursor-pointer hover:bg-sunken/60 ${rowFocus}`}
+              className={`cursor-pointer animate-view-in hover:bg-sunken/60 ${rowFocus}`}
               onClick={() => onOpen(r.ref)}
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(r.ref); }}
@@ -163,6 +164,14 @@ function ReportDetail({ reportRef, onBack }) {
   );
 }
 
+/**
+ * The report area for the page the student came from, when the page alone
+ * says which part of the app it is (hub pages hold several tools, so they
+ * are left for the student to choose).
+ */
+const PAGE_AREAS = { '/forum': 'forum', '/chatbot': 'agent', '/skill-unlocker': 'skill-unlocker', '/home': 'dashboard', '/profile': 'dashboard' };
+const areaForPage = (page = '') => PAGE_AREAS[page.split('?')[0]] || null;
+
 /** The student's problem reports: /reports (list) and /reports/:ref (one report). */
 export default function Reports() {
   const { ref } = useParams();
@@ -171,11 +180,38 @@ export default function Reports() {
   const [data, setData] = useState({ reports: [], maxOpenPerArea: 2 });
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback(({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
     reportsApi.mine().then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
   useEffect(() => { load(); }, [load, ref]);
+
+  // A report sent from here (or anywhere) appears in the list without a reload.
+  useEffect(() => {
+    const onSent = () => load({ quiet: true });
+    window.addEventListener(REPORT_SENT_EVENT, onSent);
+    return () => window.removeEventListener(REPORT_SENT_EVENT, onSent);
+  }, [load]);
+
+  // "Report a problem" from the sidebar or account menu lands here: once the
+  // page has settled in, open the dialog, recording the page the student came
+  // from. The request is cleared so Back or a refresh does not reopen it.
+  const location = useLocation();
+  const { status: appStatus } = useAppStatus();
+  const newReport = location.state?.newReport;
+  const from = location.state?.from;
+  const pendingOpen = useRef(null);
+  useEffect(() => {
+    if (!newReport) return;
+    clearTimeout(pendingOpen.current);
+    const guess = areaForPage(from);
+    // Only pre-select an area that is currently offered (areas can be merged or renamed).
+    const area = guess && (appStatus.reports?.areas || []).some((a) => a.id === guess) ? guess : null;
+    pendingOpen.current = setTimeout(() => openReport(from ? { ...(area ? { area } : {}), source: { page: from } } : {}), 380);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+  useEffect(() => () => clearTimeout(pendingOpen.current), []);
 
   return (
     <AppShell page="reports">

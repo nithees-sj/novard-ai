@@ -92,8 +92,8 @@ module.exports = {
       transitionDuration: { DEFAULT: '150ms', 150: '150ms', 200: '200ms' },
       transitionTimingFunction: { DEFAULT: 'cubic-bezier(0.2, 0, 0, 1)', out: 'cubic-bezier(0.2, 0, 0, 1)' },
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
-        'slide-up': 'slideUp 0.2s ease-out',
+        'fade-in': 'fadeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+        'slide-up': 'slideUp 0.34s cubic-bezier(0.22, 1, 0.36, 1)',
         'slide-down': 'slideDown 0.15s ease-out',
         'scale-in': 'scaleIn 0.15s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -110,7 +110,7 @@ module.exports = {
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(6px)', opacity: '0' },
+          '0%': { transform: 'translateY(12px) scale(0.985)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
         slideDown: {

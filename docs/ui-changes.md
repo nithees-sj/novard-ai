@@ -168,6 +168,10 @@ Icons are used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand
 **My reports** and the **Report-a-problem** dialog
 - My reports uses PageHeader, skeletons and a divided conversation.
 - The dialog uses Modal and the styled Select.
+- "Report a problem" in the sidebar or account menu goes to My reports first, then opens the dialog once the page has settled (about 0.4s).
+  - The report still records the page you came from, and the area is pre-selected when that page names one (Forum, Novard Agent, Skill Plans, Home/Profile).
+  - Back and refresh don't reopen it, and a sent report appears in the list straight away.
+  - Report actions next to AI answers still open the dialog in place, so you keep your spot.
 
 **Novard Agent**
 - Now a page inside the app (sidebar item "Novard Agent", under Home): the main sidebar stays visible, the chat history is a pane inside the frame (a drawer on phones), the breadcrumb shows the open chat. The floating orb stays as a shortcut on other pages.

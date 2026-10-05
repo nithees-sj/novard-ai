@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
-import { useReportProblem } from "../context/ReportContext";
+import { useReportFromAnywhere } from "../context/ReportContext";
 import { useTheme } from "../context/ThemeContext";
 import Breadcrumbs from "./layout/Breadcrumbs";
 import Icon from "./ui/Icon";
@@ -29,12 +29,12 @@ export const Navigationinner = ({ crumbs, title, showBell = true, account, menuL
   const auth = useAuth();
   const user = account || auth.user;
   const navigate = useNavigate();
-  const openReport = useReportProblem();
+  const openReport = useReportFromAnywhere();
   const { preference, setPreference } = useTheme();
 
   const links = menuLinks || [
     { label: "My reports", icon: "inbox", onClick: () => navigate("/reports") },
-    { label: "Report a problem", icon: "flag", onClick: () => openReport({}) },
+    { label: "Report a problem", icon: "flag", onClick: () => openReport() },
     ...(ADMIN_ROLES.includes(user?.role) ? [{ label: "Admin console", icon: "shield", onClick: () => navigate("/admin") }] : []),
   ];
   const trail = crumbs || (title ? [{ label: title }] : []);
