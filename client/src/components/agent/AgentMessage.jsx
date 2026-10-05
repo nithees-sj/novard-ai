@@ -15,7 +15,7 @@ const CopyButton = ({ text }) => {
     } catch { /* clipboard unavailable */ }
   };
   return (
-    <button type="button" onClick={copy} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800" aria-label="Copy reply">
+    <button type="button" onClick={copy} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-fg-subtle hover:bg-sunken hover:text-fg" aria-label="Copy reply">
       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         {copied
           ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -34,7 +34,7 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-lg bg-gray-100 px-4 py-2.5 text-[15px] leading-relaxed text-gray-900">
+        <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-lg bg-sunken px-4 py-2.5 text-body leading-relaxed text-fg">
           {message.content}
         </div>
       </div>
@@ -47,9 +47,9 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
       <AgentAvatar size="h-8 w-8" className="mt-0.5" />
       <div className="min-w-0 flex-1">
         {waiting ? (
-          <div className="flex h-8 items-center gap-2 text-sm text-gray-500" role="status">
+          <div className="flex h-8 items-center gap-2 text-sm text-fg-subtle" role="status">
             {status ? (
-              <><span className="h-3.5 w-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" aria-hidden="true" />{status}</>
+              <><span className="h-3.5 w-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" aria-hidden="true" />{status}</>
             ) : (
               <span className="flex gap-1" aria-label="Thinking">
                 {[0, 150, 300].map((d) => <span key={d} className="h-2 w-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
@@ -63,8 +63,8 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
         )}
 
         {streaming && status && message.content && (
-          <p className="mt-2 flex items-center gap-2 text-sm text-gray-500" role="status">
-            <span className="h-3.5 w-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" aria-hidden="true" />{status}
+          <p className="mt-2 flex items-center gap-2 text-sm text-fg-subtle" role="status">
+            <span className="h-3.5 w-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" aria-hidden="true" />{status}
           </p>
         )}
 

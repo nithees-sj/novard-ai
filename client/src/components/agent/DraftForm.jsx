@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Select } from '../ui/Field';
+import Icon from '../ui/Icon';
 import TagInput from './TagInput';
 
 /**
@@ -9,11 +11,11 @@ import TagInput from './TagInput';
  */
 
 const SOURCE = {
-  profile: { text: 'from your profile', className: 'bg-blue-50 text-blue-700' },
-  assumed: { text: 'assumed - check', className: 'bg-amber-50 text-amber-700' },
+  profile: { text: 'from your profile', className: 'bg-accent-soft text-accent-fg' },
+  assumed: { text: 'assumed - check', className: 'bg-warning-soft text-warning-fg' },
 };
 
-const inputClass = 'w-full rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'w-full rounded-lg border border-line bg-raised px-3 py-1.5 text-sm text-fg outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/20';
 
 function problemFor(f, v) {
   const required = f.need === 'must' || f.need === 'auto';
@@ -32,16 +34,16 @@ const VideoPicker = ({ candidates = [], value, onChange }) => (
     {candidates.map((c) => {
       const active = c.videoId === value;
       return (
-        <label key={c.videoId} className={`flex cursor-pointer gap-3 rounded-lg border p-2 transition ${active ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
+        <label key={c.videoId} className={`flex cursor-pointer gap-3 rounded-lg border p-2 transition ${active ? 'border-blue-400 bg-accent-soft/50 ring-1 ring-accent/30' : 'border-line hover:border-line-strong'}`}>
           <input type="radio" name="video" className="sr-only" checked={active} onChange={() => onChange(c.videoId)} />
-          <span className="relative shrink-0 w-32 aspect-video overflow-hidden rounded-md bg-gray-100">
+          <span className="relative shrink-0 w-32 aspect-video overflow-hidden rounded-md bg-sunken">
             <img src={c.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-            {c.duration && <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1 text-[10px] font-medium text-white">{c.duration}</span>}
+            {c.duration && <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1 text-micro font-medium text-white">{c.duration}</span>}
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-gray-900 line-clamp-2">{c.title}</span>
-            {c.channelName && <span className="mt-0.5 block text-xs text-gray-500">{c.channelName}</span>}
-            <a href={`https://www.youtube.com/watch?v=${c.videoId}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="mt-1 inline-block text-xs text-blue-600 hover:underline">Preview ↗</a>
+            <span className="block text-sm font-semibold text-fg line-clamp-2">{c.title}</span>
+            {c.channelName && <span className="mt-0.5 block text-xs text-fg-subtle">{c.channelName}</span>}
+            <a href={`https://www.youtube.com/watch?v=${c.videoId}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="mt-1 inline-flex items-center gap-1 text-caption text-accent-fg hover:underline">Preview <Icon name="link" className="h-3 w-3" /></a>
           </span>
         </label>
       );
@@ -65,7 +67,7 @@ function Input({ f, value, onChange, id, candidates }) {
               role="radio"
               aria-checked={value === o.value}
               onClick={() => onChange(value === o.value && f.need === 'should' ? '' : o.value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${value === o.value ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-surface text-gray-700 hover:border-gray-300'}`}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${value === o.value ? 'border-accent bg-accent text-white' : 'border-line bg-raised text-fg-muted hover:border-line-strong'}`}
             >
               {o.label}
             </button>
@@ -74,10 +76,10 @@ function Input({ f, value, onChange, id, candidates }) {
       );
     }
     return (
-      <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={`${inputClass} w-auto`}>
+      <Select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="w-auto min-w-[10rem]">
         {f.need === 'should' && <option value="">-</option>}
         {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      </Select>
     );
   }
   return <input id={id} type="text" value={value ?? ''} maxLength={f.max} onChange={(e) => onChange(e.target.value)} className={inputClass} />;
@@ -110,23 +112,23 @@ const DraftForm = ({ action, confirmLabel, onCreate, onCancel, busy }) => {
           return (
             <div key={f.key}>
               <div className="mb-1 flex items-center gap-2">
-                <label htmlFor={id} className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{f.label}</label>
-                {source && <span className={`rounded px-1.5 py-px text-[10px] font-medium ${source.className}`}>{source.text}</span>}
+                <label htmlFor={id} className="text-small font-medium text-fg">{f.label}</label>
+                {source && <span className={`rounded px-1.5 py-px text-micro font-medium ${source.className}`}>{source.text}</span>}
               </div>
               <Input f={f} id={id} value={values[f.key]} onChange={set(f.key)} candidates={action.args?.candidates} />
             </div>
           );
         })}
-        {touched && problems.length > 0 && <p className="text-sm text-red-600" role="alert">{problems[0]}</p>}
+        {touched && problems.length > 0 && <p className="text-sm text-danger-fg" role="alert">{problems[0]}</p>}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/60 px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line-subtle bg-sunken/60 px-4 py-2.5">
         {action.meta?.rememberable && (
-          <label className="mr-auto flex items-center gap-2 text-xs text-gray-600">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded border-gray-300" />
+          <label className="mr-auto flex items-center gap-2 text-xs text-fg-muted">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 rounded border-line-strong" />
             Remember these details for next time
           </label>
         )}
-        <button type="button" onClick={onCancel} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
+        <button type="button" onClick={onCancel} className="rounded-lg px-3 py-1.5 text-sm font-medium text-fg-muted hover:bg-sunken">Cancel</button>
         <button type="submit" disabled={busy} className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:opacity-50">{confirmLabel}</button>
       </div>
     </form>

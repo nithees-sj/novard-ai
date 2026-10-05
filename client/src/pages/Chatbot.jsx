@@ -4,17 +4,18 @@ import { useAuth } from '../AuthContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
 import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
-import { BotMark } from '../components/ChatbotButton';
+import AgentAvatar from '../components/agent/AgentAvatar';
+import Icon from '../components/ui/Icon';
 import ThemeToggle from '../components/ThemeToggle';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
 import { currentEmail, currentName } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
 
 const STARTERS = [
-  { icon: '💡', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
-  { icon: '🗺️', title: 'Plan my career', text: 'What should I do to become a DevOps engineer? I already know Linux and Git.' },
-  { icon: '🎬', title: 'Find a video', text: 'Find me a good video to learn Docker basics' },
-  { icon: '🗓️', title: 'Build a study plan', text: 'Make me a study plan to learn SQL' },
+  { icon: 'doubt', title: 'Clear a doubt', text: 'Hi, I have a doubt in React hooks - when does useEffect run?' },
+  { icon: 'roadmap', title: 'Plan my career', text: 'What should I do to become a DevOps engineer? I already know Linux and Git.' },
+  { icon: 'play', title: 'Find a video', text: 'Find me a good video to learn Docker basics' },
+  { icon: 'plan', title: 'Build a study plan', text: 'Make me a study plan to learn SQL' },
 ];
 
 /**
@@ -271,20 +272,22 @@ const Chatbot = () => {
     }
   };
 
+  useEffect(() => { document.title = `${title && activeId ? `${title} · ` : ''}Novard Agent · NOVARD-AI`; }, [title, activeId]);
+
   // ── render ─────────────────────────────────────────────────
   const empty = !activeId && messages.length === 0;
 
   const composer = (
     <div className="mx-auto w-full max-w-3xl px-4 pb-4">
       {error && (
-        <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+        <div role="alert" className="mb-2 flex items-start justify-between gap-3 rounded-lg bg-danger-soft px-4 py-2.5 text-body text-danger-fg">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-500 hover:text-red-700" aria-label="Dismiss">✕</button>
+          <button type="button" onClick={() => setError(null)} className="shrink-0 rounded p-0.5 hover:bg-danger/10" aria-label="Dismiss"><Icon name="x" className="h-4 w-4" /></button>
         </div>
       )}
       <form
         onSubmit={(e) => { e.preventDefault(); send(); }}
-        className="relative rounded-xl border border-gray-200 bg-surface shadow-soft transition focus-within:border-gray-300 focus-within:shadow-lg focus-within:shadow-blue-600/10"
+        className="relative rounded-xl bg-raised shadow-raised ring-1 ring-inset ring-line transition-shadow hover:ring-line-strong focus-within:ring-2 focus-within:ring-focus"
       >
         <textarea
           ref={inputRef}
@@ -300,28 +303,28 @@ const Chatbot = () => {
           placeholder={empty ? 'Ask anything, or tell me what you want to learn…' : 'Reply to Novard Agent…'}
           aria-label="Message Novard Agent"
           maxLength={6000}
-          className="block max-h-56 w-full resize-none rounded-xl bg-transparent px-5 pt-4 pb-14 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
+          className="block max-h-56 w-full resize-none rounded-xl bg-transparent px-4 pb-14 pt-3.5 text-body leading-relaxed text-fg placeholder:text-fg-subtle outline-none"
         />
         <div className="absolute inset-x-3 bottom-2.5 flex items-center justify-between">
-          <span className="hidden pl-2 text-[11px] text-gray-500 sm:inline">Enter to send · Shift + Enter for a new line</span>
+          <span className="hidden pl-1 text-caption text-fg-subtle sm:inline">Enter to send · Shift + Enter for a new line</span>
           <span className="sm:hidden" />
           {streaming ? (
-            <button type="button" onClick={stop} className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-on-ink transition hover:bg-ink-hover" aria-label="Stop generating" title="Stop">
-              <span className="h-3 w-3 rounded-sm bg-on-ink" />
+            <button type="button" onClick={stop} className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-on-ink transition-colors hover:bg-ink-hover" aria-label="Stop generating" title="Stop">
+              <span className="h-2.5 w-2.5 rounded-sm bg-on-ink" />
             </button>
           ) : (
-            <button type="submit" disabled={!draft.trim()} className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400" aria-label="Send message" title="Send">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M5 12h14M13 6l6 6-6 6" transform="rotate(-90 12 12)" /></svg>
+            <button type="submit" disabled={!draft.trim()} className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-on-accent transition-colors hover:bg-accent-hover disabled:bg-sunken disabled:text-fg-disabled" aria-label="Send message" title="Send">
+              <Icon name="arrowUp" className="h-4 w-4" strokeWidth={2.25} />
             </button>
           )}
         </div>
       </form>
-      <p className="mt-2 text-center text-[11px] text-gray-500">Novard Agent asks what it needs, then shows you a draft - nothing is created until you press Create. It can make mistakes - check important information.</p>
+      <p className="mt-2 text-center text-caption text-fg-subtle">Nothing is created until you press Create. Novard Agent can make mistakes, so check anything important.</p>
     </div>
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface">
+    <div className="flex h-[100dvh] overflow-hidden bg-canvas">
       {/* chat history: fixed on desktop, a drawer on small screens */}
       <div className={`fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <AgentSidebar
@@ -340,14 +343,14 @@ const Chatbot = () => {
       {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 dark:bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-4">
-          <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 md:hidden" aria-label="Open chat list">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line-subtle px-3 sm:px-4">
+          <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-fg-muted hover:bg-sunken hover:text-fg md:hidden" aria-label="Open chat list">
+            <Icon name="menu" className="h-5 w-5" />
           </button>
-          <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">{empty ? 'Novard Agent' : title || 'New chat'}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-body font-medium text-fg">{empty ? 'Novard Agent' : title || 'New chat'}</h1>
           {!empty && (
-            <button type="button" onClick={newChat} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-100" title="New chat (Ctrl+Shift+O)">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            <button type="button" onClick={newChat} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-body text-fg-muted transition-colors hover:bg-sunken hover:text-fg" title="New chat (Ctrl+Shift+O)">
+              <Icon name="edit" className="h-4 w-4" />
               <span className="hidden sm:inline">New chat</span>
             </button>
           )}
@@ -358,28 +361,31 @@ const Chatbot = () => {
           <div className="flex flex-1 flex-col overflow-y-auto px-4">
             {/* my-auto centres the welcome when it fits and lets it scroll from the top when it does not. */}
             <div className="my-auto flex w-full flex-col items-center py-8">
-            <div className="h-20 w-20 shrink-0"><BotMark /></div>
-            <h2 className="mt-5 text-center text-3xl font-semibold tracking-tight text-gray-900">
+            <AgentAvatar size="h-12 w-12" />
+            <h2 className="mt-5 text-center text-display font-semibold text-fg">
               {firstName ? `Hi ${firstName}, how can I help?` : 'How can I help you today?'}
             </h2>
-            <p className="mt-2 max-w-lg text-center text-sm text-gray-500">
-              Ask me anything about what you're learning and I'll suggest a next step - or tell me what you want to create (a doubt, a video, a roadmap, a study plan). I'll ask a few quick questions so it fits you, then show you a draft to check.
+            <p className="mt-2 max-w-lg text-center text-body text-fg-muted">
+              Ask about anything you are learning, or tell me what to make: a doubt, a video, a roadmap or a study plan. I ask a few questions first, then show you a draft to check.
             </p>
             <div className="mt-8 w-full">{composer}</div>
-            <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 px-4 sm:grid-cols-2">
+            <ul className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-x-4 px-4 sm:grid-cols-2">
               {STARTERS.map((s) => (
-                <button
-                  key={s.title}
-                  type="button"
-                  onClick={() => send(s.text)}
-                  className="group rounded-xl border border-gray-200 bg-surface p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
-                >
-                  <span className="text-lg" aria-hidden="true">{s.icon}</span>
-                  <p className="mt-1 text-sm font-semibold text-gray-900">{s.title}</p>
-                  <p className="mt-0.5 text-sm text-gray-500 group-hover:text-gray-600">{s.text}</p>
-                </button>
+                <li key={s.title}>
+                  <button
+                    type="button"
+                    onClick={() => send(s.text)}
+                    className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
+                  >
+                    <Icon name={s.icon} className="mt-0.5 h-4 w-4 text-fg-subtle group-hover:text-accent-fg" />
+                    <span className="min-w-0">
+                      <span className="block text-body font-medium text-fg">{s.title}</span>
+                      <span className="mt-0.5 block text-small text-fg-subtle">{s.text}</span>
+                    </span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
             </div>
           </div>
         ) : (
@@ -390,9 +396,9 @@ const Chatbot = () => {
                   <div className="space-y-6" aria-label="Loading chat">
                     {[0, 1].map((i) => (
                       <div key={i} className="space-y-3">
-                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-xl bg-gray-100" />
-                        <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
-                        <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100" />
+                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-xl bg-sunken" />
+                        <div className="h-4 w-full animate-pulse rounded bg-sunken" />
+                        <div className="h-4 w-5/6 animate-pulse rounded bg-sunken" />
                       </div>
                     ))}
                   </div>
@@ -413,8 +419,8 @@ const Chatbot = () => {
             </div>
             {!atBottom && (
               <div className="pointer-events-none relative">
-                <button type="button" onClick={() => scrollToBottom()} className="pointer-events-auto absolute -top-12 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-gray-200 bg-surface text-gray-600 shadow-md hover:bg-gray-50" aria-label="Jump to latest">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                <button type="button" onClick={() => scrollToBottom()} className="pointer-events-auto absolute -top-12 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-overlay text-fg-muted shadow-popover ring-1 ring-line-subtle hover:text-fg" aria-label="Jump to latest">
+                  <Icon name="arrowDown" className="h-4 w-4" />
                 </button>
               </div>
             )}

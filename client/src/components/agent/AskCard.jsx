@@ -34,13 +34,13 @@ const AskCard = ({ ask, active, onAnswer }) => {
   };
 
   return (
-    <div className={`mt-3 rounded-xl border px-4 py-3 ${active ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-gray-50/60 opacity-70'}`}>
+    <div className={`mt-3 rounded-xl border px-4 py-3 ${active ? 'border-accent/30 bg-accent-soft/30' : 'border-line bg-sunken/60 opacity-70'}`}>
       <div className="space-y-3.5">
         {questions.map((q, i) => (
           <fieldset key={`${q.key}-${q.question}`} disabled={!active}>
-            <legend className="text-sm font-semibold text-gray-900">
+            <legend className="text-sm font-semibold text-fg">
               {q.question}
-              {q.multiSelect && active && <span className="ml-1.5 text-xs font-normal text-gray-500">(pick any)</span>}
+              {q.multiSelect && active && <span className="ml-1.5 text-xs font-normal text-fg-subtle">(pick any)</span>}
             </legend>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {q.options.map((o) => {
@@ -51,7 +51,7 @@ const AskCard = ({ ask, active, onAnswer }) => {
                     type="button"
                     onClick={() => toggle(i, o)}
                     aria-pressed={on}
-                    className={`rounded-full border px-3 py-1 text-sm transition ${on ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-surface text-gray-800 hover:border-blue-300 hover:bg-blue-50'} disabled:cursor-default disabled:hover:border-gray-200 disabled:hover:bg-surface`}
+                    className={`rounded-full border px-3 py-1 text-sm transition ${on ? 'border-accent bg-accent text-white' : 'border-line bg-raised text-fg hover:border-accent/50 hover:bg-accent-soft'} disabled:cursor-default disabled:hover:border-line disabled:hover:bg-raised`}
                   >
                     {o}
                   </button>
@@ -64,7 +64,7 @@ const AskCard = ({ ask, active, onAnswer }) => {
                   placeholder="Something else…"
                   aria-label={`Other answer to: ${q.question}`}
                   maxLength={200}
-                  className="min-w-[9rem] flex-1 rounded-full border border-dashed border-gray-300 bg-surface px-3 py-1 text-sm outline-none focus:border-blue-300"
+                  className="min-w-[9rem] flex-1 rounded-full border border-dashed border-line-strong bg-raised px-3 py-1 text-sm outline-none focus:border-accent/50"
                 />
               )}
             </div>
@@ -73,12 +73,12 @@ const AskCard = ({ ask, active, onAnswer }) => {
       </div>
       {active && (questions.length > 1 || questions[0].multiSelect) && (
         <div className="mt-3 flex items-center justify-end gap-3">
-          <span className="text-xs text-gray-500">{answered} of {questions.length} answered · or just type below</span>
+          <span className="text-xs text-fg-subtle">{answered} of {questions.length} answered · or just type below</span>
           <button
             type="button"
             disabled={!answered}
             onClick={() => onAnswer(compose())}
-            className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:bg-gray-200 disabled:text-gray-400"
+            className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:bg-line disabled:text-fg-subtle"
           >
             Send answers
           </button>

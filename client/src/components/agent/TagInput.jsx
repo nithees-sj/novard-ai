@@ -15,11 +15,11 @@ const TagInput = ({ value = [], onChange, max = 20, placeholder = 'Type and pres
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-surface px-2 py-1.5 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-line bg-raised px-2 py-1.5 focus-within:border-accent/50 focus-within:ring-2 focus-within:ring-accent/20">
       {value.map((tag) => (
-        <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-800">
+        <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-sunken px-2 py-0.5 text-xs text-fg">
           {tag}
-          <button type="button" onClick={() => onChange(value.filter((t) => t !== tag))} className="text-gray-400 hover:text-gray-700" aria-label={`Remove ${tag}`}>×</button>
+          <button type="button" onClick={() => onChange(value.filter((t) => t !== tag))} className="text-fg-subtle hover:text-fg-muted" aria-label={`Remove ${tag}`}>×</button>
         </span>
       ))}
       <input
@@ -33,7 +33,7 @@ const TagInput = ({ value = [], onChange, max = 20, placeholder = 'Type and pres
         onBlur={() => add(text)}
         placeholder={value.length ? '' : placeholder}
         disabled={value.length >= max}
-        className="min-w-[8rem] flex-1 bg-transparent py-0.5 text-sm outline-none placeholder-gray-400"
+        className="min-w-[8rem] flex-1 bg-transparent py-0.5 text-sm outline-none placeholder:text-fg-subtle"
       />
     </div>
   );
