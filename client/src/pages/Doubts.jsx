@@ -46,7 +46,7 @@ const Doubts = () => {
             title="Not sure what to study next?"
             text="Novard Agent suggests topics to explore, based on what you have been learning so far."
             action={(
-              <Button icon="idea" onClick={() => navigate('/chatbot', { state: { prompt: SUGGEST_TOPICS_PROMPT } })}>
+              <Button variant="secondary" icon="idea" onClick={() => navigate('/chatbot', { state: { prompt: SUGGEST_TOPICS_PROMPT } })}>
                 Suggest topics
               </Button>
             )}

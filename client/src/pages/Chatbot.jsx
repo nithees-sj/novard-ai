@@ -386,9 +386,9 @@ const Chatbot = () => {
                   <button
                     type="button"
                     onClick={() => send(s.text)}
-                    className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-accent-soft/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
+                    className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-fg ring-1 ring-inset ring-accent/15 transition-colors group-hover:bg-accent group-hover:text-on-accent">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft/70 text-accent-fg">
                       <Icon name={s.icon} className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">

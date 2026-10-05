@@ -74,7 +74,7 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
           onClick={() => go(item.route)}
           className={cx(
             'group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-            active ? 'bg-accent-soft font-medium text-accent-fg' : 'text-fg-muted hover:bg-raised hover:text-fg',
+            active ? 'bg-accent-soft/70 font-medium text-accent-fg' : 'text-fg-muted hover:bg-raised hover:text-fg',
           )}
         >
           {typeof item.icon === 'string'
