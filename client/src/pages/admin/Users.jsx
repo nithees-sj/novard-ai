@@ -35,8 +35,8 @@ export default function Users() {
       <PageHeader title="Users" subtitle={data ? `${data.total} account(s)` : ''} />
       <ErrorNote error={error} onRetry={reload} />
       <Section className="mb-6">
-        <form className="flex flex-wrap gap-3 p-5" onSubmit={(e) => { e.preventDefault(); set('q', q.trim()); }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email" className={`${fieldClass(false)} min-w-[220px] flex-1`} aria-label="Search users" />
+        <form className="flex flex-wrap items-center gap-2 p-4" onSubmit={(e) => { e.preventDefault(); set('q', q.trim()); }}>
+          <div className="min-w-[14rem] flex-1"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email" className={`${fieldClass(false)} h-9`} aria-label="Search users" /></div>
           <Select value={params.get('status') || ''} onChange={(e) => set('status', e.target.value)} className="w-auto min-w-[9rem]" aria-label="Status">
             <option value="">Any status</option><option value="active">Active</option><option value="suspended">Suspended</option>
           </Select>

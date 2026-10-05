@@ -72,7 +72,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="fixed inset-x-3 top-14 z-[70] overflow-hidden rounded-lg bg-overlay shadow-popover ring-1 ring-line-subtle animate-slide-down sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1.5 sm:w-96" role="dialog" aria-label="Notifications">
+        <div className="fixed inset-x-3 top-16 z-[70] overflow-hidden rounded-lg bg-overlay shadow-popover ring-1 ring-line-subtle animate-slide-down sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1.5 sm:w-96" role="dialog" aria-label="Notifications">
           <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
             <h3 className="text-body font-semibold text-fg">Notifications</h3>
             {data.unread > 0 && <button type="button" onClick={markAllRead} className="text-small font-medium text-accent-fg hover:underline">Mark all as read</button>}

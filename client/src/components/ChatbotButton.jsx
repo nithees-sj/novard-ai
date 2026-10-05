@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Tooltip from './ui/Tooltip';
-import { AgentGlyph } from './agent/AgentAvatar';
 
 /**
- * The large assistant mark (the agent's welcome screen): a ring around the
- * star core, on a face in the page's surface colour. Static.
+ * The Novard Agent orb (the original mark): an energy ring around a pulsing
+ * star core with a small lightning badge, on a face in the surface colour.
+ * Animations live in index.css (.bot-*) and stop for reduced motion.
  */
 export const BotMark = () => (
   <svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" aria-hidden="true" focusable="false">
@@ -36,25 +36,25 @@ export const BotMark = () => (
     <rect x="1" y="1" width="118" height="118" rx="59" stroke="#3B82F6" strokeOpacity="0.35" strokeWidth="1.5" />
 
     {/* energy vortex rings */}
-    <circle cx="60" cy="60" r="45" stroke="url(#novard-bot-stream)" strokeWidth="3" strokeLinecap="round" strokeDasharray="110 170" />
-    <circle cx="60" cy="60" r="38" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+    <circle className="bot-spin" cx="60" cy="60" r="45" stroke="url(#novard-bot-stream)" strokeWidth="3" strokeLinecap="round" strokeDasharray="110 170" filter="url(#novard-bot-glow)" />
+    <circle className="bot-spin-reverse bot-dash" cx="60" cy="60" r="38" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
 
     {/* orbiting particles */}
-    <g>
-      <circle cx="60" cy="15" r="3" fill="#3B82F6" />
+    <g className="bot-spin">
+      <circle cx="60" cy="15" r="3" fill="#3B82F6" filter="url(#novard-bot-glow)" />
       <circle cx="99" cy="82" r="2.5" fill="#0EA5E9" />
       <circle cx="21" cy="82" r="2.5" fill="#60A5FA" />
     </g>
 
     {/* pulsing star core with lightning */}
-    <g>
-      <path d="M60 26 C60 42 42 60 26 60 C42 60 60 78 60 94 C60 78 78 60 94 60 C78 60 60 42 60 26 Z" fill="url(#novard-bot-energy)" opacity="0.25" />
+    <g className="bot-pulse">
+      <path d="M60 26 C60 42 42 60 26 60 C42 60 60 78 60 94 C60 78 78 60 94 60 C78 60 60 42 60 26 Z" fill="url(#novard-bot-energy)" filter="url(#novard-bot-glow)" opacity="0.25" />
       <path d="M60 32 C60 46 46 60 32 60 C46 60 60 74 60 88 C60 74 74 60 88 60 C74 60 60 46 60 32 Z" fill="url(#novard-bot-energy)" />
-      <polygon points="60,45 69,57 63,57 66,70 54,61 60,61" fill="#FFFFFF" />
+      <polygon points="60,45 69,57 63,57 66,70 54,61 60,61" fill="#FFFFFF" filter="url(#novard-bot-glow)" />
     </g>
 
     {/* "live" badge */}
-    <g>
+    <g className="bot-badge">
       <circle cx="86" cy="34" r="5" fill="#2563EB" style={{ stroke: 'rgb(var(--surface))' }} strokeWidth="2" />
       <path d="M86 31 L84 34 L86 34 L85 37 L88 33.5 L86.5 33.5 Z" fill="#FFFFFF" />
     </g>
@@ -71,15 +71,15 @@ const ChatbotButton = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed bottom-5 right-4 z-40 hidden sm:block">
+    <div className="fixed bottom-4 right-2 z-40 hidden sm:block">
       <Tooltip label="Novard Agent" side="left">
         <button
           type="button"
           onClick={() => navigate('/chatbot')}
           aria-label="Open Novard Agent, the AI assistant"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-on-accent shadow-popover transition-colors duration-150 hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="block h-12 w-12 rounded-full bg-raised shadow-popover transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
-          <AgentGlyph className="h-5 w-5" />
+          <BotMark />
         </button>
       </Tooltip>
     </div>

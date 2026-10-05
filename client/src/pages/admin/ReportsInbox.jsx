@@ -19,7 +19,7 @@ function ResolveBox({ label, onResolve, busy }) {
   const [note, setNote] = useState('');
   return (
     <div className="flex flex-wrap items-end gap-2">
-      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What we did (students see this)" className={`${fieldClass(false)} min-w-[240px] flex-1 py-2`} aria-label="Resolution note" />
+      <div className="min-w-[15rem] flex-1"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What we did (students see this)" className={`${fieldClass(false)} h-9`} aria-label="Resolution note" /></div>
       <button type="button" onClick={() => onResolve(note)} disabled={busy} className={btn.primary}>{busy ? <Spinner /> : <Icon name="check" />}{label}</button>
     </div>
   );

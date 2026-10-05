@@ -93,8 +93,8 @@ export default function AdminLayout({ title, children, wide = false }) {
         onMenu={() => setDrawer(true)}
       />
       <Sidebar items={ADMIN_SECTIONS} subtitle="Admin console" matchPrefix drawerOpen={drawer} onDrawerClose={closeDrawer} />
-      <main className="min-w-0 px-4 pb-16 pt-20 sm:px-6 lg:pl-[17rem] lg:pr-8">
-        <div className={wide ? '' : 'mx-auto max-w-7xl'}>
+      <main className="min-w-0 pb-16 pt-16 lg:pl-sidebar">
+        <div className={`px-4 pt-6 sm:px-6 md:pt-8 lg:px-10 ${wide ? '' : 'mx-auto max-w-screen-2xl'}`}>
           <AlertBanner />
           {children}
         </div>

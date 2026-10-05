@@ -13,10 +13,10 @@ import { PAGES, TOOLS, documentTitle } from '../../lib/pages';
  *   tool   { key, onBack } when a tool inside the page is open (TOOLS key); its
  *          parent crumb then goes back to the page
  *   crumbs replaces the derived breadcrumb
- *   width  'default'  one reading column (max-w-6xl) — most pages
+ *   width  'default'  the page column (up to max-w-screen-2xl) — most pages
  *          'full'     fills the screen height and width — workspaces, chat, the forum thread
  *
- * From `sm` up, a 4.5rem strip on the right is kept free of content for the
+ * From `sm` up, a 4rem strip on the right is kept free of content for the
  * launcher, so it never covers a button or a field.
  */
 export default function AppShell({ page, tool, crumbs, width = 'default', title, agent = true, children, className }) {
@@ -45,12 +45,12 @@ export default function AppShell({ page, tool, crumbs, width = 'default', title,
       </a>
       <Navigationinner crumbs={trail} onMenu={() => setDrawer(true)} agent={agent} />
       <Sidebar drawerOpen={drawer} onDrawerClose={closeDrawer} />
-      <main id="main" tabIndex={-1} className={cx('pt-14 focus:outline-none lg:pl-60', agent && 'sm:pr-[4.5rem]')}>
+      <main id="main" tabIndex={-1} className={cx('pt-16 focus:outline-none lg:pl-sidebar', agent && 'sm:pr-16')}>
         <div
           className={cx(
             full
-              ? 'flex min-h-[calc(100dvh-3.5rem)] flex-col px-4 py-4 sm:px-6 md:h-[calc(100dvh-3.5rem)] md:min-h-0 lg:px-8 lg:py-5'
-              : 'mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 md:pt-8 lg:px-8',
+              ? 'flex min-h-[calc(100dvh-4rem)] flex-col px-4 py-4 sm:px-6 md:h-[calc(100dvh-4rem)] md:min-h-0 lg:px-10 lg:py-6'
+              : 'mx-auto w-full max-w-screen-2xl px-4 pb-16 pt-6 sm:px-6 md:pt-8 lg:px-10',
             agent && 'sm:pr-0 lg:pr-0',
             className,
           )}

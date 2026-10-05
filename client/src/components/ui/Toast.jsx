@@ -19,7 +19,7 @@ export default function Toast({ message, type = 'info', onClose }) {
   const t = TONES[type] || TONES.info;
   return createPortal(
     <div
-      className="pointer-events-none fixed inset-x-4 bottom-4 z-[100] flex justify-center sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-[4.5rem]"
+      className="pointer-events-none fixed inset-x-4 bottom-4 z-[100] flex justify-center sm:inset-x-auto sm:bottom-auto sm:right-6 sm:top-20"
     >
       <div
         role={type === 'error' ? 'alert' : 'status'}

@@ -19,7 +19,7 @@ const Row = ({ id, title, description, children }) => (
 const Settings = () => (
   <AppShell page="settings">
     <PageHeader title="Settings" description="How Novard-AI looks, and where your account details live." />
-    <div className="max-w-4xl divide-y divide-line-subtle border-y border-line-subtle">
+    <div className="divide-y divide-line-subtle border-y border-line-subtle">
       <Row id="appearance-title" title="Appearance" description="Light, dark, or follow your device. Saved to your account, so it follows you to other devices.">
         <ThemeOptions />
       </Row>

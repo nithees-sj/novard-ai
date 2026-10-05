@@ -42,8 +42,8 @@ export const Navigationinner = ({ crumbs, title, showBell = true, account, menuL
   const picture = user?.photoURL || user?.picture;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-line-subtle bg-canvas/90 backdrop-blur-md lg:left-60">
-      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-line-subtle bg-canvas/90 backdrop-blur-md lg:left-sidebar">
+      <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-10">
         {onMenu && (
           <button type="button" onClick={onMenu} className={`${iconButton} -ml-1 lg:hidden`} aria-label="Open the menu">
             <Icon name="menu" className="h-5 w-5" />

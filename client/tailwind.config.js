@@ -87,6 +87,8 @@ module.exports = {
         // The NOVARD-AI wordmark only.
         display: ['Raleway', 'Geist', 'sans-serif'],
       },
+      // The app shell's left navigation (Sidebar, AppShell, AdminLayout, RouteFallback).
+      spacing: { sidebar: '17.5rem' },
       transitionDuration: { DEFAULT: '150ms', 150: '150ms', 200: '200ms' },
       transitionTimingFunction: { DEFAULT: 'cubic-bezier(0.2, 0, 0, 1)', out: 'cubic-bezier(0.2, 0, 0, 1)' },
       animation: {

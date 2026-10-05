@@ -4,7 +4,7 @@ import { useAuth } from '../AuthContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
 import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
-import AgentAvatar from '../components/agent/AgentAvatar';
+import { BotMark } from '../components/ChatbotButton';
 import Icon from '../components/ui/Icon';
 import ThemeToggle from '../components/ThemeToggle';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
@@ -361,7 +361,7 @@ const Chatbot = () => {
           <div className="flex flex-1 flex-col overflow-y-auto px-4">
             {/* my-auto centres the welcome when it fits and lets it scroll from the top when it does not. */}
             <div className="my-auto flex w-full flex-col items-center py-8">
-            <AgentAvatar size="h-12 w-12" />
+            <div className="h-16 w-16 shrink-0"><BotMark /></div>
             <h2 className="mt-5 text-center text-display font-semibold text-fg">
               {firstName ? `Hi ${firstName}, how can I help?` : 'How can I help you today?'}
             </h2>

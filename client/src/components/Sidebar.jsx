@@ -73,12 +73,12 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
           aria-current={active ? 'page' : undefined}
           onClick={() => go(item.route)}
           className={cx(
-            'group flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-body transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+            'group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
             active ? 'bg-raised font-medium text-fg shadow-raised ring-1 ring-line-subtle' : 'text-fg-muted hover:bg-raised/60 hover:text-fg',
           )}
         >
           {typeof item.icon === 'string'
-            ? <Icon name={item.icon} className={cx('h-[1.125rem] w-[1.125rem]', active ? 'text-accent-fg' : 'text-fg-subtle group-hover:text-fg-muted')} />
+            ? <Icon name={item.icon} className={cx('h-5 w-5', active ? 'text-accent-fg' : 'text-fg-subtle group-hover:text-fg-muted')} />
             : <span className={active ? 'text-accent-fg' : 'text-fg-subtle'}>{item.icon}</span>}
           <span className="min-w-0 flex-1 truncate">{item.name}</span>
           {item.badge ? <span className="tabular rounded-full bg-accent px-1.5 text-caption font-medium text-on-accent">{item.badge}</span> : null}
@@ -94,14 +94,14 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
         ref={panel}
         aria-label="Main navigation"
         className={cx(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line-subtle bg-sunken transition-transform duration-200 ease-out lg:z-30 lg:w-60 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-sidebar max-w-[85vw] flex-col border-r border-line-subtle bg-sunken transition-transform duration-200 ease-out lg:z-30 lg:translate-x-0',
           drawerOpen ? 'translate-x-0 shadow-modal lg:shadow-none' : '-translate-x-full',
         )}
       >
-        <div className="flex h-14 shrink-0 items-center gap-2.5 px-4">
-          <img src={mainlogo} alt="" className="h-7 w-7 rounded-md dark:invert" />
+        <div className="flex h-16 shrink-0 items-center gap-3 px-5">
+          <img src={mainlogo} alt="" className="h-8 w-8 rounded-md dark:invert" />
           <span className="min-w-0 leading-none">
-            <span className="block font-display text-lead font-bold tracking-tight text-fg">NOVARD-AI</span>
+            <span className="block font-display text-title font-bold tracking-tight text-fg">NOVARD-AI</span>
             {subtitle && <span className="mt-1 block text-caption text-fg-subtle">{subtitle}</span>}
           </span>
           {drawerOpen && (
@@ -111,11 +111,11 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-2" aria-label="Pages">
+        <nav className="flex-1 overflow-y-auto px-4 pb-4 pt-3" aria-label="Pages">
           {groups.map((group, i) => (
-            <div key={group.label || i} className={i > 0 ? 'mt-5' : ''}>
-              {group.label && <p className="mb-1 px-2.5 text-caption font-medium text-fg-subtle">{group.label}</p>}
-              <ul className="space-y-0.5">{group.items.map(navItem)}</ul>
+            <div key={group.label || i} className={i > 0 ? 'mt-6' : ''}>
+              {group.label && <p className="mb-1.5 px-3 text-caption font-medium text-fg-subtle">{group.label}</p>}
+              <ul className="space-y-1">{group.items.map(navItem)}</ul>
             </div>
           ))}
         </nav>
@@ -123,13 +123,13 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
         {footer}
 
         {!items && user && (
-          <div className="border-t border-line-subtle px-3 py-3">
+          <div className="border-t border-line-subtle px-4 py-3">
             <button
               type="button"
               onClick={() => { onDrawerClose?.(); openReport({}); }}
-              className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-body text-fg-muted transition-colors hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+              className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body text-fg-muted transition-colors hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
             >
-              <Icon name="flag" className="h-[1.125rem] w-[1.125rem] text-fg-subtle" />
+              <Icon name="flag" className="h-5 w-5 text-fg-subtle" />
               Report a problem
             </button>
           </div>

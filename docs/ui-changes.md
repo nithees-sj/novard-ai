@@ -73,7 +73,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 **Layout** (`client/src/components/layout/`):
 - `AppShell` is the frame of every student page. It provides:
   - the breadcrumb and tab title, taken from `lib/pages.js`;
-  - a `default` reading column (`max-w-6xl`) or a `full` workspace;
+  - a `default` page column that fills the screen up to `max-w-screen-2xl` (1536px), or a `full` workspace;
   - a right strip kept free for the agent launcher;
   - a skip link.
 - `Breadcrumbs`.
@@ -85,7 +85,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 
 ### App shell
 **Sidebar**
-- Grouped as Learn / Grow / You, with a distinct icon for each page.
+- 280px wide (the `sidebar` spacing token), 40px rows with 20px icons, grouped as Learn / Grow / You, with a distinct icon for each page.
 - The active item is a quiet raised chip; there is no edge bar.
 - Below 1024px it becomes a drawer with a focus trap and Escape.
 - The user's card was removed from the footer, so the user now appears in one place only.
@@ -95,7 +95,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 - On the right: theme, notifications, and one account menu (Menu primitive). On phones, the theme options are inside the account menu.
 
 **Agent launcher**
-- A static 40px button replaces the 64px animated orb with its ping and glow.
+- The original animated Novard orb, at 48px, without the label pill or the green ping (it stops under reduced motion).
 - It sits in a strip the shell keeps clear, so it can no longer cover the forum's "Post reply" or any field.
 - It now appears on every page. On phones it moves into the top bar.
 
@@ -110,6 +110,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 - One stat strip replaces four emoji tiles.
 - "Start something" shortcuts lead straight into Notes, Doubt Clearance, Skill Plans and the Video Summarizer. They replace the fake "new model" banner; its Skill Plans link is kept.
 - The weekly chart, proficiency and strengths charts are on tokens.
+- The agent's welcome screen shows the same orb.
 - Loading uses skeletons, and errors show an error state with retry.
 
 **Career, Doubts & Notes, Videos**
