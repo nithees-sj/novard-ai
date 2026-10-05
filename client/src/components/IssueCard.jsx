@@ -17,9 +17,9 @@ const ago = (value) => {
 };
 
 /**
- * One discussion as a row of the forum list: votes and replies in fixed
- * columns on the right so they compare down the page, the title and one line
- * of the post, then category, status and author.
+ * One discussion as a card of the forum list: category and status, the
+ * title, two lines of the post, the author and age; votes and replies in
+ * fixed boxes on the right so they compare down the page.
  */
 const IssueCard = ({ issue, onClick }) => {
   const category = categoryMeta(issue.category);
@@ -33,29 +33,31 @@ const IssueCard = ({ issue, onClick }) => {
       <button
         type="button"
         onClick={onClick}
-        className="group flex w-full items-start gap-4 px-4 py-4 text-left transition-colors duration-150 hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus sm:px-5"
+        className="group flex w-full flex-col gap-4 rounded-xl bg-raised p-5 text-left ring-1 ring-line-subtle transition duration-200 hover:shadow-popover hover:ring-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus sm:flex-row sm:items-start sm:gap-6 sm:p-6"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-lead font-medium text-fg group-hover:text-accent-fg">{issue.title}</span>
-          {issue.description && <span className="mt-1 block line-clamp-1 text-body text-fg-muted">{issue.description}</span>}
-          <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-small text-fg-subtle">
+          <span className="flex flex-wrap items-center gap-2">
             <Badge tone={category.tone}><Icon name={category.icon} className="h-3 w-3" />{category.label}</Badge>
-            <Status tone={status.tone}>{status.label}</Status>
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <Avatar name={issue.userName || 'Anonymous'} size="xs" />
-              <span className="truncate">{mine ? 'You' : issue.userName || 'Anonymous'}</span>
+            <Status tone={status.tone} className="text-fg-muted">{status.label}</Status>
+          </span>
+          <span className="mt-2.5 block break-words text-title font-semibold leading-snug text-fg group-hover:text-accent-fg [overflow-wrap:anywhere]">{issue.title}</span>
+          {issue.description && <span className="mt-1.5 block line-clamp-2 text-lead leading-relaxed text-fg-muted [overflow-wrap:anywhere]">{issue.description}</span>}
+          <span className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-body text-fg-muted">
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <Avatar name={issue.userName || 'Anonymous'} size="sm" />
+              <span className="truncate font-medium text-fg">{mine ? 'You' : issue.userName || 'Anonymous'}</span>
             </span>
-            {issue.createdAt && <time dateTime={issue.createdAt}>{ago(issue.createdAt)}</time>}
+            {issue.createdAt && <><span className="text-fg-disabled" aria-hidden="true">·</span><time dateTime={issue.createdAt}>{ago(issue.createdAt)}</time></>}
           </span>
         </span>
-        <span className="flex shrink-0 gap-4 pt-0.5 text-small text-fg-subtle sm:gap-6">
-          <span className="flex w-10 flex-col items-center" title={`${netVotes} net votes`}>
-            <span className="num text-body font-medium text-fg">{netVotes}</span>
-            <span className="text-caption">votes</span>
+        <span className="flex shrink-0 gap-2 sm:gap-3">
+          <span className="flex min-w-[4rem] flex-row items-baseline gap-1.5 rounded-lg bg-sunken px-3 py-1.5 sm:w-16 sm:flex-col sm:items-center sm:gap-0 sm:px-2 sm:py-2.5" title={`${netVotes} net votes`}>
+            <span className="num text-title font-semibold text-fg">{netVotes}</span>
+            <span className="text-caption text-fg-muted">votes</span>
           </span>
-          <span className="flex w-10 flex-col items-center" title={`${commentsCount} ${commentsCount === 1 ? 'reply' : 'replies'}`}>
-            <span className={`num text-body font-medium ${commentsCount ? 'text-fg' : 'text-fg-subtle'}`}>{commentsCount}</span>
-            <span className="text-caption">{commentsCount === 1 ? 'reply' : 'replies'}</span>
+          <span className="flex min-w-[4rem] flex-row items-baseline gap-1.5 rounded-lg bg-sunken px-3 py-1.5 sm:w-16 sm:flex-col sm:items-center sm:gap-0 sm:px-2 sm:py-2.5" title={`${commentsCount} ${commentsCount === 1 ? 'reply' : 'replies'}`}>
+            <span className={`num text-title font-semibold ${commentsCount ? 'text-fg' : 'text-fg-subtle'}`}>{commentsCount}</span>
+            <span className="text-caption text-fg-muted">{commentsCount === 1 ? 'reply' : 'replies'}</span>
           </span>
         </span>
       </button>

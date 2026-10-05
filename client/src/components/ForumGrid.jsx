@@ -127,7 +127,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
         </div>
       </div>
 
-      <div className="mb-2 mt-4 flex min-h-[1.25rem] items-center justify-between text-small text-fg-subtle">
+      <div className="mb-3 mt-5 flex min-h-[1.25rem] items-center justify-between text-body text-fg-muted">
         <span className="tabular" aria-live="polite">
           {!loading && !error && total > 0 && `${issues.length} of ${total} ${total === 1 ? 'discussion' : 'discussions'}`}
         </span>
@@ -136,7 +136,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle">
+      <div className={loading || error || issues.length === 0 ? 'overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle' : ''}>
         {loading ? (
           <div className="divide-y divide-line-subtle" role="status" aria-label="Loading discussions">
             {[0, 1, 2, 3].map((i) => (
@@ -159,7 +159,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
               : <Button icon="plus" onClick={onCreateIssue}>New post</Button>}
           />
         ) : (
-          <ul className="divide-y divide-line-subtle">
+          <ul className="space-y-3">
             {issues.map((issue) => (
               <IssueCard key={issue.issueId} issue={issue} onClick={() => onIssueSelect(issue)} />
             ))}
