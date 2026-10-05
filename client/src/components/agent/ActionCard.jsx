@@ -45,7 +45,7 @@ const TYPES = {
   },
   create_skill_plan: {
     title: 'Create a day-by-day learning plan',
-    section: 'Skill Unlocker',
+    section: 'Skill Plans',
     confirm: 'Create plan',
     running: 'Building your plan and finding a video for each day - up to a minute…',
     tint: 'bg-emerald-50 text-emerald-700 ring-emerald-100',

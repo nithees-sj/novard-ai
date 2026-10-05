@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../AuthContext';
 import { inputClass } from '../learning/LearningUI';
+import UIIcon from '../ui/Icon';
+import Avatar from '../ui/Avatar';
+import Button from '../ui/Button';
 
 
 const formatDate = (d, opts = { day: 'numeric', month: 'short', year: 'numeric' }) =>
@@ -18,25 +21,12 @@ function relative(d) {
   return days === 1 ? 'Yesterday' : days < 30 ? `${days} days ago` : formatDate(d);
 }
 
-const Detail = ({ icon, label, children }) => (
-  <div className="flex items-start gap-3 min-w-0">
-    <span className="w-9 h-9 shrink-0 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500" aria-hidden="true">{icon}</span>
-    <div className="min-w-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
-      <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
-    </div>
+const Detail = ({ label, children }) => (
+  <div className="min-w-0">
+    <dt className="text-caption text-fg-subtle">{label}</dt>
+    <dd className="mt-0.5 truncate text-body text-fg">{children}</dd>
   </div>
 );
-
-const Icon = ({ d }) => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>
-);
-const ICONS = {
-  mail: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-  phone: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
-  calendar: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-  clock: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-};
 
 /**
  * Identity card at the top of the profile: photo, name, contact details, bio
@@ -53,8 +43,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
     setForm({ name: account.name || '', mobile: account.mobile || '', bio: account.bio || '' });
   }, [account.name, account.mobile, account.bio]);
 
-  const picture = account.picture || fallbackPicture || '/img/team/user.jpeg';
-  const initials = (account.name || account.email || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const picture = account.picture || fallbackPicture;
 
   const save = async (e) => {
     e.preventDefault();
@@ -83,109 +72,87 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
   const input = inputClass;
 
   return (
-    <section className="bg-surface rounded-xl border border-gray-200 overflow-hidden" aria-label="Your details">
-      <div className="h-28 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-400 relative">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_85%_20%,white_0,transparent_45%)]" aria-hidden="true" />
-      </div>
-
-      <div className="px-8 pb-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex items-end gap-5 min-w-0">
-            <div className="relative shrink-0 -mt-12">
-              <img
-                src={picture}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="w-24 h-24 rounded-xl border-4 border-surface shadow-md object-cover bg-primary-100"
-                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
-              />
-              <span className="hidden w-24 h-24 rounded-xl border-4 border-surface shadow-md bg-primary-600 text-white text-2xl font-bold items-center justify-center" aria-hidden="true">{initials}</span>
-            </div>
-            <div className="min-w-0 pb-1">
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{account.name || 'Your profile'}</h1>
-              <p className="text-sm text-gray-500 truncate">{account.email}</p>
+    <section aria-label="Your details">
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <Avatar src={picture} name={account.name || account.email} size="xl" />
+            <div className="min-w-0">
+              <h1 className="truncate text-display font-semibold text-fg">{account.name || 'Your profile'}</h1>
+              <p className="truncate text-body text-fg-subtle">{account.email}</p>
             </div>
           </div>
           {!editing && (
-            <button
-              type="button"
-              onClick={() => { setEditing(true); setNotice(null); }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50"
-            >
-              <Icon d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              Edit profile
-            </button>
+            <Button variant="secondary" icon="edit" onClick={() => { setEditing(true); setNotice(null); }}>Edit profile</Button>
           )}
         </div>
 
         {notice && (
-          <p role={notice.type === 'error' ? 'alert' : 'status'} className={`mt-5 text-sm rounded-lg px-4 py-2.5 border ${notice.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-800 border-green-200'}`}>
+          <p role={notice.type === 'error' ? 'alert' : 'status'} className={`mt-5 rounded-lg px-4 py-2.5 text-body ${notice.type === 'error' ? 'bg-danger-soft text-danger-fg' : 'bg-success-soft text-success-fg'}`}>
             {notice.text}
           </p>
         )}
 
         {editing ? (
-          <form onSubmit={save} className="mt-6 grid gap-5 md:grid-cols-2">
+          <form onSubmit={save} className="mt-6 grid max-w-3xl gap-5 rounded-xl bg-raised p-5 ring-1 ring-line-subtle md:grid-cols-2">
             <label className="block">
-              <span className="block text-sm font-medium text-gray-700 mb-1.5">Name</span>
+              <span className="mb-1.5 block text-small font-medium text-fg">Name</span>
               <input className={input} value={form.name} maxLength={80} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
             </label>
             <label className="block">
-              <span className="block text-sm font-medium text-gray-700 mb-1.5">Mobile number</span>
+              <span className="mb-1.5 block text-small font-medium text-fg">Mobile number</span>
               <input className={input} type="tel" value={form.mobile} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
             </label>
             <label className="block md:col-span-2">
-              <span className="block text-sm font-medium text-gray-700 mb-1.5">Email address</span>
-              <input className={`${input} disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`} value={account.email} disabled />
-              <span className="block mt-1 text-xs text-gray-500">Your email comes from your Google sign-in and cannot be changed.</span>
+              <span className="mb-1.5 block text-small font-medium text-fg">Email address</span>
+              <input className={`${input} disabled:cursor-not-allowed disabled:bg-sunken disabled:text-fg-subtle`} value={account.email} disabled />
+              <span className="block mt-1 text-xs text-fg-subtle">Your email comes from your Google sign-in and cannot be changed.</span>
             </label>
             <label className="block md:col-span-2">
-              <span className="flex justify-between text-sm font-medium text-gray-700 mb-1.5">Bio <span className="font-normal text-xs text-gray-500">{form.bio.length}/300</span></span>
+              <span className="mb-1.5 flex justify-between text-small font-medium text-fg">Bio <span className="tabular font-normal text-caption text-fg-subtle">{form.bio.length}/300</span></span>
               <textarea className={`${input} resize-none`} rows={3} maxLength={300} value={form.bio} placeholder="What are you studying, and what are you aiming for?" onChange={(e) => setForm({ ...form, bio: e.target.value })} />
             </label>
             <div className="md:col-span-2 flex justify-end gap-2">
-              <button type="button" onClick={() => { setEditing(false); setNotice(null); setForm({ name: account.name || '', mobile: account.mobile || '', bio: account.bio || '' }); }} className="px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100">
+              <Button variant="ghost" onClick={() => { setEditing(false); setNotice(null); setForm({ name: account.name || '', mobile: account.mobile || '', bio: account.bio || '' }); }}>
                 Cancel
-              </button>
-              <button type="submit" disabled={saving} className="px-5 py-2 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60">
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
+              </Button>
+              <Button type="submit" loading={saving} loadingLabel="Saving…">Save changes</Button>
             </div>
           </form>
         ) : (
           <>
             {account.bio
-              ? <p className="mt-5 text-sm text-gray-700 leading-relaxed max-w-3xl">{account.bio}</p>
-              : <p className="mt-5 text-sm text-gray-500 italic">No bio yet. Add a line about what you are studying.</p>}
+              ? <p className="mt-5 max-w-3xl text-body leading-relaxed text-fg-muted">{account.bio}</p>
+              : <p className="mt-5 text-body text-fg-subtle">No bio yet. Add a line about what you are studying.</p>}
 
-            <dl className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              <Detail icon={<Icon d={ICONS.mail} />} label="Email">{account.email}</Detail>
-              <Detail icon={<Icon d={ICONS.phone} />} label="Mobile">{account.mobile || <span className="text-gray-400 font-normal">Not added</span>}</Detail>
-              <Detail icon={<Icon d={ICONS.calendar} />} label="Member since">{formatDate(account.memberSince)}</Detail>
-              <Detail icon={<Icon d={ICONS.clock} />} label="Last active">{relative(account.lastActiveAt)}</Detail>
+            <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 border-y border-line-subtle py-4 lg:grid-cols-4">
+              <Detail label="Email">{account.email}</Detail>
+              <Detail label="Mobile">{account.mobile || <span className="text-fg-subtle">Not added</span>}</Detail>
+              <Detail label="Member since">{formatDate(account.memberSince)}</Detail>
+              <Detail label="Last active">{relative(account.lastActiveAt)}</Detail>
             </dl>
           </>
         )}
 
         {goal && !editing && (
-          <div className="mt-6 pt-6 border-t border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="w-9 h-9 shrink-0 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center" aria-hidden="true">🎯</span>
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <UIIcon name="target" className="h-4 w-4 text-accent-fg" />
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Current goal</p>
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {goal.role}{goal.goal && <span className="font-normal text-gray-600"> · {goal.goal}</span>}
+                <p className="text-caption text-fg-subtle">Current goal</p>
+                <p className="text-body font-medium text-fg">
+                  {goal.role}{goal.goal && <span className="font-normal text-fg-muted"> · {goal.goal}</span>}
                 </p>
               </div>
             </div>
             {goal.readiness !== null && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-100">{goal.readiness}% role-ready</span>
+              <span className="tabular rounded-sm bg-accent-soft px-1.5 py-0.5 text-caption font-medium text-accent-fg">{goal.readiness}% role-ready</span>
             )}
-            {goal.hoursPerWeek && <span className="text-xs text-gray-500">{goal.hoursPerWeek} h/week planned</span>}
+            {goal.hoursPerWeek && <span className="text-xs text-fg-subtle">{goal.hoursPerWeek} h/week planned</span>}
             {goal.skills?.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {goal.skills.slice(0, 8).map((s) => <span key={s} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700">{s}</span>)}
-                {goal.skills.length > 8 && <span className="text-xs text-gray-500">+{goal.skills.length - 8} more</span>}
+                {goal.skills.slice(0, 8).map((s) => <span key={s} className="rounded-sm bg-sunken px-1.5 py-0.5 text-caption text-fg-muted ring-1 ring-inset ring-line-subtle">{s}</span>)}
+                {goal.skills.length > 8 && <span className="text-xs text-fg-subtle">+{goal.skills.length - 8} more</span>}
               </div>
             )}
           </div>

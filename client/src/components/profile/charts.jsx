@@ -50,7 +50,7 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
   return (
     <div ref={ref} className="relative w-full" style={{ height }}>
       {points.length === 0 ? (
-        <div className="h-full flex items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500">{emptyText}</div>
+        <div className="h-full flex items-center justify-center rounded-lg bg-sunken text-sm text-fg-subtle">{emptyText}</div>
       ) : width > 0 && (
         <svg width={width} height={height} role="img" aria-label={caption} onMouseLeave={() => setHover(null)}>
           <defs>
@@ -62,21 +62,21 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
           {ticks.map((t) => (
             <g key={t}>
               <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className="stroke-chart-grid" />
-              <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-gray-400 text-[10px] tabular-nums">{t}{unit}</text>
+              <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-gray-400 text-micro tabular-nums">{t}{unit}</text>
             </g>
           ))}
           {area && <path d={area} fill={`url(#${gradientId})`} />}
           {thresholds.filter((t) => t.value <= top).map((t) => (
             <g key={t.label}>
               <line x1={pad.left} x2={pad.left + w} y1={y(t.value)} y2={y(t.value)} style={{ stroke: t.color || chart.axis }} strokeDasharray="4 4" />
-              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="fill-gray-500 text-[10px]" style={t.color ? { fill: t.color } : undefined}>{t.label}</text>
+              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="fill-gray-500 text-micro" style={t.color ? { fill: t.color } : undefined}>{t.label}</text>
             </g>
           ))}
           <path d={line} fill="none" style={{ stroke: color }} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((p, i) => (
             <g key={i}>
               {(i === points.length - 1 || (i % labelEvery === 0 && points.length - 1 - i >= labelEvery)) && (
-                <text x={x(i)} y={height - 6} textAnchor={i === points.length - 1 && points.length > 1 ? 'end' : i === 0 && points.length > 1 ? 'start' : 'middle'} className="fill-gray-500 text-[10px]">{p.label}</text>
+                <text x={x(i)} y={height - 6} textAnchor={i === points.length - 1 && points.length > 1 ? 'end' : i === 0 && points.length > 1 ? 'start' : 'middle'} className="fill-gray-500 text-micro">{p.label}</text>
               )}
               <circle cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} style={{ fill: chart.surface, stroke: color }} strokeWidth="2" />
               <rect
@@ -99,7 +99,7 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
           style={{ left: x(hover), top: y(points[hover].value) - 10 }}
         >
           <span className="block text-sm font-bold text-tooltip-fg tabular-nums">{points[hover].value}{unit}</span>
-          <span className="block text-[11px] text-tooltip-muted">{points[hover].sub || points[hover].label}</span>
+          <span className="block text-micro text-tooltip-muted">{points[hover].sub || points[hover].label}</span>
         </div>
       )}
       <div className="sr-only">
@@ -143,7 +143,7 @@ export const Donut = ({ segments, size = 168, thickness = 22, centerValue, cente
         return el;
       })}
       <text x="50%" y="47%" textAnchor="middle" className="fill-gray-900 text-xl font-bold">{centerValue}</text>
-      <text x="50%" y="60%" textAnchor="middle" className="fill-gray-500 text-[11px]">{centerLabel}</text>
+      <text x="50%" y="60%" textAnchor="middle" className="fill-gray-500 text-micro">{centerLabel}</text>
     </svg>
   );
 };
@@ -167,27 +167,27 @@ export const Ring = ({ value, size = 64, thickness = 7, color = chart.brand, lab
         strokeDasharray={`${(v / 100) * c} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" className="fill-gray-900 text-[13px] font-bold tabular-nums">{v}%</text>
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" className="fill-gray-900 text-small font-bold tabular-nums">{v}%</text>
     </svg>
   );
 };
 
 /** Horizontal bars. rows: [{ label, value, max?, note?, color? }]. */
 export const BarList = ({ rows, max = 100, unit = '%', emptyText = 'No data yet' }) => {
-  if (!rows.length) return <p className="text-sm text-gray-500 py-4">{emptyText}</p>;
+  if (!rows.length) return <p className="text-sm text-fg-subtle py-4">{emptyText}</p>;
   return (
     <ul className="space-y-3">
       {rows.map((r) => (
         <li key={r.label}>
           <div className="flex items-baseline justify-between gap-3 mb-1">
-            <span className="text-sm font-medium text-gray-800 truncate">{r.label}</span>
+            <span className="text-sm font-medium text-fg truncate">{r.label}</span>
             <span className="text-sm tabular-nums shrink-0">
-              <span className="font-bold text-gray-900">{r.value}{unit}</span>
-              {r.note && <span className="text-xs text-gray-500"> · {r.note}</span>}
+              <span className="font-bold text-fg">{r.value}{unit}</span>
+              {r.note && <span className="text-xs text-fg-subtle"> · {r.note}</span>}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-gray-100" role="meter" aria-valuemin={0} aria-valuemax={r.max || max} aria-valuenow={r.value} aria-label={r.label}>
-            <div className={`h-2 rounded-full ${r.color || 'bg-blue-500'}`} style={{ width: `${Math.min(100, (r.value / (r.max || max)) * 100)}%` }} />
+          <div className="h-2 rounded-full bg-sunken" role="meter" aria-valuemin={0} aria-valuemax={r.max || max} aria-valuenow={r.value} aria-label={r.label}>
+            <div className={`h-2 rounded-full ${r.color || 'bg-accent'}`} style={{ width: `${Math.min(100, (r.value / (r.max || max)) * 100)}%` }} />
           </div>
         </li>
       ))}
@@ -196,7 +196,7 @@ export const BarList = ({ rows, max = 100, unit = '%', emptyText = 'No data yet'
 };
 
 // Opacity steps of one blue, so "more" reads as stronger on both a white and a dark page.
-const HEAT = ['bg-gray-100', 'bg-blue-500/25', 'bg-blue-500/50', 'bg-blue-500/75', 'bg-blue-600'];
+const HEAT = ['bg-sunken', 'bg-accent/25', 'bg-accent/50', 'bg-accent/75', 'bg-accent'];
 const heatLevel = (count, peak) => (count === 0 ? 0 : Math.min(4, Math.ceil((count / Math.max(1, peak)) * 4)));
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -215,12 +215,12 @@ export const Heatmap = ({ days }) => {
   // Column-major grid: a label column, then one column per week (month label + 7 days).
   const cells = [<span key="corner" />];
   ['', 'Mon', '', 'Wed', '', 'Fri', ''].forEach((l, i) => cells.push(
-    <span key={`wd${i}`} className="self-center text-[10px] leading-none text-gray-500" aria-hidden="true">{l}</span>
+    <span key={`wd${i}`} className="self-center text-micro leading-none text-fg-subtle" aria-hidden="true">{l}</span>
   ));
   weeks.forEach((week, wi) => {
     const showMonth = wi === 0 ? week[0].date.slice(8) <= '21' : month(week) !== month(weeks[wi - 1]);
     cells.push(
-      <span key={`m${week[0].date}`} className="text-[10px] leading-[14px] text-gray-500 whitespace-nowrap overflow-visible" aria-hidden="true">
+      <span key={`m${week[0].date}`} className="text-micro leading-[14px] text-fg-subtle whitespace-nowrap overflow-visible" aria-hidden="true">
         {showMonth ? MONTHS[month(week)] : ''}
       </span>
     );
@@ -251,9 +251,9 @@ export const Heatmap = ({ days }) => {
           {cells}
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-fg-subtle">
         <span className="min-h-[1rem]" aria-live="polite">
-          {hover ? <><strong className="text-gray-800">{hover.count} {hover.count === 1 ? 'activity' : 'activities'}</strong> on {fmt(hover.date)}{hover.minutes ? ` · ~${hover.minutes} min` : ''}</> : 'Hover a day to see what you did'}
+          {hover ? <><strong className="text-fg">{hover.count} {hover.count === 1 ? 'activity' : 'activities'}</strong> on {fmt(hover.date)}{hover.minutes ? ` · ~${hover.minutes} min` : ''}</> : 'Hover a day to see what you did'}
         </span>
         <span className="flex items-center gap-1">
           Less {HEAT.map((c) => <span key={c} className={`w-3 h-3 rounded-sm ${c}`} aria-hidden="true" />)} More
@@ -265,7 +265,7 @@ export const Heatmap = ({ days }) => {
 
 /** A tiny trend line for tables and cards. values: numbers (oldest first). */
 export const Sparkline = ({ values = [], width = 96, height = 28, max, color = chart.brand, label }) => {
-  if (!values.length) return <span className="text-xs text-gray-500">no data</span>;
+  if (!values.length) return <span className="text-xs text-fg-subtle">no data</span>;
   const top = max ?? Math.max(...values, 0.0001);
   const x = (i) => (values.length === 1 ? width / 2 : (i / (values.length - 1)) * (width - 4) + 2);
   const y = (v) => height - 3 - (Math.min(v, top) / top) * (height - 6);
@@ -292,7 +292,7 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.
   return (
     <div ref={ref} className="relative w-full" style={{ height }}>
       {!bars.length ? (
-        <div className="flex h-full items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500">{emptyText}</div>
+        <div className="flex h-full items-center justify-center rounded-lg bg-sunken text-sm text-fg-subtle">{emptyText}</div>
       ) : width > 0 && (
         <svg width={width} height={height} role="img" aria-label={caption} onMouseLeave={() => setHover(null)}>
           <line x1={pad.left} x2={pad.left + w} y1={pad.top + h} y2={pad.top + h} className="stroke-chart-track" />
@@ -303,7 +303,7 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.
               <g key={`${b.label}-${i}`} onMouseEnter={() => setHover(i)}>
                 <rect x={cx - slot / 2} y={pad.top} width={slot} height={h} fill="transparent" />
                 <rect x={cx - barW / 2} y={pad.top + h - bh} width={barW} height={Math.max(bh, b.value ? 1 : 0)} rx="2" style={{ fill: b.color || color }} opacity={hover === null || hover === i ? 1 : 0.55} />
-                {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-gray-500 text-[10px]">{b.label}</text>}
+                {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-gray-500 text-micro">{b.label}</text>}
               </g>
             );
           })}
@@ -312,7 +312,7 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.
       {hover !== null && bars[hover] && (
         <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-lg" style={{ left: pad.left + slot * hover + slot / 2 }}>
           <span className="block text-sm font-bold tabular-nums text-tooltip-fg">{format(bars[hover].value)}{unit}</span>
-          <span className="block text-[11px] text-tooltip-muted">{bars[hover].sub || bars[hover].label}</span>
+          <span className="block text-micro text-tooltip-muted">{bars[hover].sub || bars[hover].label}</span>
         </div>
       )}
       <div className="sr-only">

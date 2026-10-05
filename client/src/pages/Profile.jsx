@@ -11,6 +11,9 @@ import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import { currentEmail } from '../lib/session';
 import { Card, SectionTitle, Stat } from '../components/profile/blocks';
 import { ACTIVITY_COLORS, chart } from '../lib/statusColors';
+import Icon from '../components/ui/Icon';
+import { StatStrip } from '../components/ui/Stat';
+import { ErrorState, Skeleton } from '../components/ui/States';
 
 const formatMinutes = (m) => {
   const mins = Math.round(m || 0);
@@ -20,14 +23,14 @@ const formatMinutes = (m) => {
 };
 
 const LIBRARY = [
-  { key: 'notes', label: 'Notes', icon: '📄' },
-  { key: 'videos', label: 'Videos', icon: '🎬' },
-  { key: 'doubts', label: 'Doubts', icon: '❓' },
-  { key: 'plans', label: 'Skill plans', icon: '🗓️' },
-  { key: 'roadmaps', label: 'Roadmaps', icon: '🗺️' },
-  { key: 'coachChats', label: 'Coach chats', icon: '🧭' },
-  { key: 'assistantChats', label: 'Assistant chats', icon: '💬' },
-  { key: 'forumPosts', label: 'Forum posts', icon: '🗣️' },
+  { key: 'notes', label: 'Notes', icon: 'summary' },
+  { key: 'videos', label: 'Videos', icon: 'play' },
+  { key: 'doubts', label: 'Doubts', icon: 'doubt' },
+  { key: 'plans', label: 'Skill plans', icon: 'plan' },
+  { key: 'roadmaps', label: 'Roadmaps', icon: 'roadmap' },
+  { key: 'coachChats', label: 'Coach chats', icon: 'target' },
+  { key: 'assistantChats', label: 'Agent chats', icon: 'bot' },
+  { key: 'forumPosts', label: 'Forum posts', icon: 'forum' },
 ];
 
 /**
@@ -72,18 +75,15 @@ const Profile = () => {
 
   return (
     <AppShell page="profile">
-          <div className="space-y-6">
+          <div className="space-y-8">
             {loading && !data ? (
-              <div className="flex flex-col items-center justify-center py-32 text-gray-500" role="status">
-                <span className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-primary-600 animate-spin mb-4" aria-hidden="true" />
-                Loading your profile…
+              <div role="status" aria-label="Loading your profile">
+                <div className="flex items-center gap-4"><Skeleton className="h-16 w-16" rounded="rounded-full" /><div className="space-y-2"><Skeleton className="h-6 w-48" /><Skeleton className="h-3.5 w-64" /></div></div>
+                <Skeleton className="mt-10 h-24 w-full" rounded="rounded-xl" />
+                <Skeleton className="mt-6 h-72 w-full" rounded="rounded-xl" />
               </div>
             ) : error && !data ? (
-              <div className="bg-surface rounded-xl border border-red-200 p-10 text-center">
-                <h2 className="text-lg font-semibold text-gray-900 mb-1">Your profile could not be loaded</h2>
-                <p className="text-sm text-gray-500 mb-5">{error}</p>
-                <button type="button" onClick={load} className="px-5 py-2 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700">Try again</button>
-              </div>
+              <ErrorState title="Your profile could not be loaded" text={error} onRetry={load} />
             ) : data && (
               <>
                 <ProfileHeader
@@ -95,14 +95,14 @@ const Profile = () => {
 
                 {/* ── overview ───────────────────────────────── */}
                 <SectionTitle title="Overview" subtitle="Your learning at a glance" />
-                <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-                  <Stat label="Skill score" value={<>{o.skillScore}<span className="text-sm font-medium text-gray-500"> / 1000</span></>} sub={`${scoreChange >= 0 ? '+' : ''}${scoreChange} in 12 weeks`} accent="bg-primary-600" />
-                  <Stat label="Quiz accuracy" value={o.accuracy === null ? '—' : `${o.accuracy}%`} sub={`${o.correctAnswers} of ${o.questionsAnswered} correct`} accent="bg-green-500" />
+                <StatStrip>
+                  <Stat label="Skill score" value={<>{o.skillScore}<span className="text-small font-normal text-fg-subtle"> / 1000</span></>} sub={`${scoreChange >= 0 ? '+' : ''}${scoreChange} in 12 weeks`} accent="bg-accent" />
+                  <Stat label="Quiz accuracy" value={o.accuracy === null ? '—' : `${o.accuracy}%`} sub={`${o.correctAnswers} of ${o.questionsAnswered} correct`} accent="bg-success" />
                   <Stat label="Tests taken" value={o.testsTaken} sub={`${o.questionsAnswered} questions answered`} accent="bg-indigo-500" />
                   <Stat label="Study time" value={formatMinutes(o.studyMinutes)} sub={`${o.trackedMinutes > 0 ? 'Time in the app' : 'Estimated'} · ${o.activeDays} active ${o.activeDays === 1 ? 'day' : 'days'}`} accent="bg-purple-500" />
-                  <Stat label="Study streak" value={`${o.streak.days} ${o.streak.days === 1 ? 'day' : 'days'}`} sub={o.streak.longest > o.streak.days ? `Best ${o.streak.longest} days · ${o.streak.message}` : o.streak.message} accent="bg-amber-500" />
+                  <Stat label="Study streak" value={`${o.streak.days} ${o.streak.days === 1 ? 'day' : 'days'}`} sub={o.streak.longest > o.streak.days ? `Best ${o.streak.longest} days · ${o.streak.message}` : o.streak.message} accent="bg-warning" />
                   <Stat label="Questions asked" value={o.questionsAsked} sub="Across every AI chat" accent="bg-sky-400" />
-                </div>
+                </StatStrip>
 
                 {/* ── activity ───────────────────────────────── */}
                 <SectionTitle title="Activity" subtitle="How your learning has built up over time" />
@@ -115,8 +115,8 @@ const Profile = () => {
                       <div className="flex gap-4 text-right">
                         {Object.entries(o.skillScoreBreakdown).map(([k, v]) => (
                           <div key={k}>
-                            <p className="text-sm font-bold text-gray-900 tabular-nums">{v}</p>
-                            <p className="text-[10px] uppercase tracking-wide text-gray-500">{k}</p>
+                            <p className="num text-body font-medium text-fg">{v}</p>
+                            <p className="text-caption capitalize text-fg-subtle">{k}</p>
                           </div>
                         ))}
                       </div>
@@ -126,7 +126,7 @@ const Profile = () => {
                   </Card>
                   <Card title="Where your time goes" subtitle="Estimated from each kind of activity">
                     {mixTotal === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-12">No activity recorded yet</p>
+                      <p className="text-sm text-fg-subtle text-center py-12">No activity recorded yet</p>
                     ) : (
                       <div className="flex flex-col items-center gap-5">
                         <Donut
@@ -137,11 +137,11 @@ const Profile = () => {
                         <ul className="w-full space-y-2">
                           {mix.map((m) => (
                             <li key={m.kind} className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2 text-gray-700">
+                              <span className="flex items-center gap-2 text-fg-muted">
                                 <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ACTIVITY_COLORS[m.kind] || chart.muted }} aria-hidden="true" />
                                 {m.label}
                               </span>
-                              <span className="tabular-nums text-gray-500">{formatMinutes(m.minutes)} <span className="text-gray-900 font-semibold">{m.share}%</span></span>
+                              <span className="tabular-nums text-fg-subtle">{formatMinutes(m.minutes)} <span className="text-fg font-semibold">{m.share}%</span></span>
                             </li>
                           ))}
                         </ul>
@@ -154,23 +154,26 @@ const Profile = () => {
                   title="Study calendar"
                   subtitle={`Last ${data.activity.heatmap.weeks} weeks`}
                   right={(
-                    <p className="text-sm text-gray-600">
-                      <strong className="text-gray-900 tabular-nums">{data.activity.heatmap.activeDays}</strong> active {data.activity.heatmap.activeDays === 1 ? 'day' : 'days'}
-                      {data.activity.heatmap.busiest && <> · busiest <strong className="text-gray-900">{new Date(`${data.activity.heatmap.busiest.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</strong></>}
+                    <p className="text-sm text-fg-muted">
+                      <strong className="text-fg tabular-nums">{data.activity.heatmap.activeDays}</strong> active {data.activity.heatmap.activeDays === 1 ? 'day' : 'days'}
+                      {data.activity.heatmap.busiest && <> · busiest <strong className="text-fg">{new Date(`${data.activity.heatmap.busiest.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</strong></>}
                     </p>
                   )}
                 >
                   <Heatmap days={data.activity.heatmap.days} />
                 </Card>
 
-                <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8">
-                  {LIBRARY.map((l) => (
-                    <div key={l.key} className="bg-surface rounded-xl border border-gray-200 px-4 py-3 text-center">
-                      <p className="text-lg" aria-hidden="true">{l.icon}</p>
-                      <p className="text-xl font-bold text-gray-900 tabular-nums">{data.activity.library[l.key]}</p>
-                      <p className="text-[11px] text-gray-500">{l.label}</p>
-                    </div>
-                  ))}
+                <div>
+                  <h3 className="mb-2 text-small font-medium text-fg-muted">What you have made</h3>
+                  <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line-subtle ring-1 ring-line-subtle sm:grid-cols-4">
+                    {LIBRARY.map((l) => (
+                      <li key={l.key} className="flex items-center gap-3 bg-raised px-4 py-3">
+                        <Icon name={l.icon} className="h-4 w-4 text-fg-subtle" />
+                        <span className="min-w-0 flex-1 truncate text-body text-fg-muted">{l.label}</span>
+                        <span className="num text-body font-medium text-fg">{data.activity.library[l.key]}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 {/* ── tests ──────────────────────────────────── */}
