@@ -57,7 +57,7 @@ export const Navigationinner = ({ crumbs, title, showBell = true, account, menuL
           {actions}
           {agent && (
             <button type="button" onClick={() => navigate("/chatbot")} className={`${iconButton} sm:hidden`} aria-label="Open Novard Agent">
-              <Icon name="bot" className="h-5 w-5" />
+              <Icon name="agent" className="h-5 w-5" />
             </button>
           )}
           <div className="hidden sm:block"><ThemeToggle /></div>

@@ -7,7 +7,6 @@ import Icon from './ui/Icon';
 import cx from './ui/cx';
 import useFocusTrap from './ui/useFocusTrap';
 import { NAV_GROUPS, PAGES } from '../lib/pages';
-import AgentAvatar from './agent/AgentAvatar';
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 
@@ -78,9 +77,7 @@ const Sidebar = ({ items, footer, subtitle, matchPrefix = false, drawerOpen = fa
             active ? 'bg-accent-soft font-medium text-accent-fg' : 'text-fg-muted hover:bg-raised hover:text-fg',
           )}
         >
-          {item.icon === 'agent'
-            ? <AgentAvatar size="h-5 w-5" />
-            : typeof item.icon === 'string'
+          {typeof item.icon === 'string'
             ? <Icon name={item.icon} className={cx('h-5 w-5', active ? 'text-accent-fg' : 'text-fg-subtle group-hover:text-fg-muted')} />
             : <span className={active ? 'text-accent-fg' : 'text-fg-subtle'}>{item.icon}</span>}
           <span className="min-w-0 flex-1 truncate">{item.name}</span>

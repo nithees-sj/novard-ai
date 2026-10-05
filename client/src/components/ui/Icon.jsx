@@ -11,6 +11,20 @@ import {
 } from 'react-icons/lu';
 
 /**
+ * The Novard Agent mark, drawn on the same 24px grid and stroke as Lucide:
+ * a speech bubble with an AI spark inside. Used wherever the agent is named
+ * (sidebar, top bar, agent avatars).
+ */
+export function AgentMark({ className, strokeWidth = 1.75, ...rest }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...rest}>
+      <path d="M12 3.5c4.97 0 9 3.36 9 7.5s-4.03 7.5-9 7.5c-1.07 0-2.1-.16-3.05-.45L4.5 20l1.1-3.6C4.3 15.05 3 13.15 3 11c0-4.14 4.03-7.5 9-7.5z" />
+      <path d="M12 7.25c.35 1.85 1.4 2.9 3.25 3.25-1.85.35-2.9 1.4-3.25 3.25-.35-1.85-1.4-2.9-3.25-3.25 1.85-.35 2.9-1.4 3.25-3.25z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/**
  * The one icon set (Lucide, through react-icons): 1.75px strokes, sized by
  * the className (h-4 w-4 by default, h-5 w-5 in navigation). Decorative by
  * default; pass `label` when the icon is the only content of a control.
@@ -46,6 +60,7 @@ const ICONS = {
   sliders: LuSlidersHorizontal,
   shield: LuShieldCheck,
   inbox: LuInbox,
+  agent: AgentMark,
   bot: LuBot,
   // actions
   plus: LuPlus,

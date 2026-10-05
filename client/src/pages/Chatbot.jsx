@@ -353,6 +353,7 @@ const Chatbot = () => {
           <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-fg-muted hover:bg-sunken hover:text-fg md:hidden" aria-label="Open chat list" title="Your chats">
             <Icon name="clock" className="h-5 w-5" />
           </button>
+          <Icon name="agent" className="h-5 w-5 shrink-0 text-accent-fg" />
           <h1 className="min-w-0 flex-1 truncate text-body font-medium text-fg">{empty ? 'Novard Agent' : title || 'New chat'}</h1>
           {!empty && (
             <button type="button" onClick={newChat} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-body text-fg-muted transition-colors hover:bg-sunken hover:text-fg" title="New chat (Ctrl+Shift+O)">

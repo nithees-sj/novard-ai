@@ -50,7 +50,9 @@ Defined in `client/src/theme/palette.js`. Each token is a CSS variable with a li
 - **Focus:** one 2px `focus` outline everywhere, keyboard only (`:focus-visible`).
 
 ### Icons
-There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand-written SVG paths, Feather and Material icons. There is no emoji anywhere in the interface.
+There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, plus one custom glyph drawn to the same grid and stroke: the Novard Agent mark (`AgentMark`, `<Icon name="agent" />`), a speech bubble with an AI spark. It is used for the agent in the sidebar, the top bar, the chat header and, in white on a blue disc, the agent's avatar. The floating launcher keeps the original animated orb.
+
+Icons are used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand-written SVG paths, Feather and Material icons. There is no emoji anywhere in the interface.
 
 ## Components created (`client/src/components/ui/`)
 
