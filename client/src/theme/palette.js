@@ -65,7 +65,7 @@ const SEMANTIC = {
   'line-strong': ['#c4cad3', '#3a4250'],
   fg: ['#14171d', '#e8ebf0'],
   'fg-muted': ['#4f5664', '#a6aebb'],
-  'fg-subtle': ['#656d7b', '#848d9c'],
+  'fg-subtle': ['#656d7b', '#949dab'],
   'fg-disabled': ['#a3aab5', '#4a5260'],
   accent: [BLUE, BLUE],
   'accent-hover': ['#1d4ed8', '#1d4ed8'],

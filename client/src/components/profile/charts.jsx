@@ -235,6 +235,7 @@ export const Heatmap = ({ days }) => {
           onFocus={() => setHover(d)}
           onBlur={() => setHover(null)}
           aria-label={`${fmt(d.date)}: ${d.count} activities`}
+          role="img"
           className={`block w-full aspect-square rounded-sm ${HEAT[heatLevel(d.count, peak)]} outline-none focus-visible:ring-2 focus-visible:ring-focus hover:ring-1 hover:ring-line-strong`}
         />
       ) : <span key={`pad${wi}-${i}`} />);

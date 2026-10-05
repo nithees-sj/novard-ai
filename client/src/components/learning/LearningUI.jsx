@@ -437,39 +437,37 @@ export const SideList = ({ title, count, action, children, loading = false, clas
 
 export const Badge = UIBadge;
 
-/** One of the student's items in a side list: selected by a soft tint, not an edge bar. */
+/**
+ * One of the student's items in a side list: selected by a soft tint, not an
+ * edge bar. Selecting and deleting are two sibling buttons (never nested).
+ */
 export const ListItem = ({ active, title, subtitle, meta, badges, onSelect, onDelete, deleteLabel }) => (
-  <div
-    role="button"
-    tabIndex={0}
-    onClick={onSelect}
-    onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSelect(); } }}
-    aria-current={active ? 'true' : undefined}
-    className={cx(
-      'group relative cursor-pointer rounded-lg px-3 py-2.5 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
-      active ? 'bg-accent-soft' : 'hover:bg-sunken',
-    )}
-  >
-    <div className="flex items-start gap-2">
-      <p className={cx('min-w-0 flex-1 text-body font-medium leading-snug line-clamp-2', active ? 'text-accent-fg' : 'text-fg')}>{title}</p>
-      {onDelete && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="-mr-1 -mt-0.5 shrink-0 rounded p-1 text-fg-subtle opacity-0 transition hover:bg-danger-soft hover:text-danger-fg focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-          aria-label={deleteLabel || `Delete ${title}`}
-          title="Delete"
-        >
-          <Icon name="trash" className="h-4 w-4" />
-        </button>
+  <div className={cx('group relative rounded-lg transition-colors duration-150', active ? 'bg-accent-soft' : 'hover:bg-sunken')}>
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={active ? 'true' : undefined}
+      className={cx('block w-full rounded-lg px-3 py-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus', onDelete && 'pr-9')}
+    >
+      <span className={cx('block text-body font-medium leading-snug line-clamp-2', active ? 'text-accent-fg' : 'text-fg')}>{title}</span>
+      {subtitle && <span className={cx('mt-0.5 block line-clamp-2 text-small', active ? 'text-fg' : 'text-fg-muted')}>{subtitle}</span>}
+      {(meta || badges) && (
+        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {meta && <span className={cx('text-caption', active ? 'text-fg-muted' : 'text-fg-subtle')}>{meta}</span>}
+          {badges}
+        </span>
       )}
-    </div>
-    {subtitle && <p className="mt-0.5 line-clamp-2 text-small text-fg-muted">{subtitle}</p>}
-    {(meta || badges) && (
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        {meta && <span className="text-caption text-fg-subtle">{meta}</span>}
-        {badges}
-      </div>
+    </button>
+    {onDelete && (
+      <button
+        type="button"
+        onClick={onDelete}
+        className="absolute right-1.5 top-2 rounded p-1 text-fg-subtle opacity-0 transition hover:bg-danger-soft hover:text-danger-fg focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+        aria-label={deleteLabel || `Delete ${title}`}
+        title="Delete"
+      >
+        <Icon name="trash" className="h-4 w-4" />
+      </button>
     )}
   </div>
 );

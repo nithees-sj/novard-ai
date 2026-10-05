@@ -112,7 +112,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
             className="block h-9 w-full rounded bg-raised pl-9 pr-3 text-body text-fg ring-1 ring-inset ring-line placeholder:text-fg-subtle transition-shadow hover:ring-line-strong focus:outline-none focus:ring-2 focus:ring-focus"
           />
         </div>
-        <div className="grid grid-cols-3 gap-2 lg:flex">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex">
           <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category" className="lg:w-40">
             <option value="all">All categories</option>
             {FORUM_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -121,7 +121,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
             <option value="all">All statuses</option>
             {FORUM_STATUSES.map((st) => <option key={st.value} value={st.value}>{st.label}</option>)}
           </Select>
-          <Select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort by" className="lg:w-40">
+          <Select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort by" className="col-span-2 sm:col-span-1 lg:w-40">
             {FORUM_SORTS.map((so) => <option key={so.value} value={so.value}>{so.label}</option>)}
           </Select>
         </div>
