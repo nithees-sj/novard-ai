@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { makeTitle } = require('../ai/titles');
 const { PDFParse } = require('pdf-parse');
 const Notes = require('../models/notes');
 const { MODELS } = require('../config/ai');
@@ -150,7 +151,9 @@ async function createNote({ userId, file, title }) {
 
     const note = await Notes.create({
       userId,
-      title: text(title, 'Title', { required: false, max: 200 }) || file.originalname.slice(0, 200),
+      // A title the student typed wins; otherwise one written from the notes themselves (ai/titles.js).
+      title: text(title, 'Title', { required: false, max: 200 })
+        || await makeTitle('notes', extractedText.slice(0, 2000), { fileName: file.originalname }),
       fileName: file.originalname.slice(0, 255),
       filePath: toStoredPath(file.path),
       extractedText,

@@ -90,7 +90,7 @@ export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-3.5">
         {icon && <Icon name={icon} className="h-4 w-4 text-fg-subtle" />}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lead font-semibold text-fg">{title}</h2>
+          <h2 className="truncate text-lead font-semibold text-fg" title={typeof title === "string" ? title : undefined}>{title}</h2>
           {meta && <div className="truncate text-small text-fg-subtle">{meta}</div>}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
@@ -454,7 +454,7 @@ export const ListItem = ({ active, title, subtitle, meta, badges, onSelect, onDe
       aria-current={active ? 'true' : undefined}
       className={cx('block w-full rounded-lg px-3 py-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus', onDelete && 'pr-9')}
     >
-      <span className={cx('block text-body font-medium leading-snug line-clamp-2', active ? 'text-accent-fg' : 'text-fg')}>{title}</span>
+      <span className={cx('block text-body font-medium leading-snug line-clamp-2', active ? 'text-accent-fg' : 'text-fg')} title={typeof title === 'string' ? title : undefined}>{title}</span>
       {subtitle && <span className={cx('mt-0.5 block line-clamp-2 text-small', active ? 'text-fg' : 'text-fg-muted')}>{subtitle}</span>}
       {(meta || badges) && (
         <span className="mt-1.5 flex flex-wrap items-center gap-1.5">

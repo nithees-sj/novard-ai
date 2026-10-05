@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { makeTitle } = require('../ai/titles');
 const { SystemMessage, HumanMessage, AIMessage, ToolMessage } = require('@langchain/core/messages');
 const ChatbotConversation = require('../models/chatbotConversation');
 const DoubtClearance = require('../models/doubtClearance');
@@ -520,17 +521,14 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
 }
 
 /** A short title for a new chat, from its first message. */
-async function titleFor(input) {
-  try {
-    const res = await runWithAi({ feature: 'agent.title' }, () => chatModel({ tier: 'FAST', temperature: 0.3 }).invoke([
-      new SystemMessage('Write a 2-6 word title for a chat that starts with the message below. Title case, no quotes, no trailing punctuation. Return only the title.'),
-      new HumanMessage(String(input).slice(0, 1000)),
-    ]));
-    const title = String(res.content || '').replace(/["'`*#]/g, '').replace(/\s+/g, ' ').trim();
-    return title && title.length <= 80 ? title : null;
-  } catch {
-    return null;
-  }
+/**
+ * The chat's title, written once the first reply is in: the student's first
+ * message plus the start of the reply say what the chat is about far better
+ * than a greeting alone (ai/titles.js). Null while the chat has no topic
+ * yet; the next turn tries again.
+ */
+async function titleFor(input, reply) {
+  return runWithAi({ feature: 'agent.title' }, () => makeTitle('chat', input, { context: reply ? `The assistant replied: ${String(reply).slice(0, 600)}` : undefined, allowNone: true }));
 }
 
 module.exports = { runTurn, titleFor, messageForModel, _internal: { systemPrompt, workspace, readAsk } };

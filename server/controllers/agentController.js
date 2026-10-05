@@ -1,4 +1,5 @@
 const { runTurn, titleFor } = require('../agent/novardAgent');
+const { isPlaceholder } = require('../ai/titles');
 const conversations = require('../agent/conversations');
 const learnerProfile = require('../services/learnerProfileService');
 const { friendlyAIError } = require('../ai/errors');
@@ -43,7 +44,6 @@ exports.chat = async (req, res) => {
   res.on('close', () => { if (!res.writableFinished) controller.abort(); });
 
   send('meta', { conversationId: conversation._id, title: conversation.title, isNew });
-  const titlePromise = isNew ? titleFor(input) : null;
 
   try {
     const message = await runTurn({
@@ -54,8 +54,9 @@ exports.chat = async (req, res) => {
       emit: send,
       signal: controller.signal,
     });
-    if (titlePromise) {
-      const title = await titlePromise;
+    // Title a new chat, or one still waiting for a topic (it opened with a greeting).
+    if (isNew || isPlaceholder(conversation.title)) {
+      const title = await titleFor(input, typeof message === 'string' ? message : message?.content);
       if (title) {
         await conversations.setTitle(conversation._id, title);
         send('title', { title });

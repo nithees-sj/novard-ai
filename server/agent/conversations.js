@@ -1,4 +1,5 @@
 const ChatbotConversation = require('../models/chatbotConversation');
+const { fallbackTitle: tidyTitle } = require('../ai/titles');
 const { defFor, withMeta, applyEdits, profilePatchFrom } = require('./actions');
 const { updateProfile } = require('../services/learnerProfileService');
 const { friendlyAIError } = require('../ai/errors');
@@ -13,10 +14,8 @@ const logger = require('../utils/logger');
 
 const STALE_RUNNING_MS = 10 * 60 * 1000;
 
-const fallbackTitle = (input) => {
-  const clean = String(input).replace(/\s+/g, ' ').trim();
-  return clean.length > 60 ? `${clean.slice(0, 57)}…` : clean || 'New chat';
-};
+// Shown until the AI title arrives (and kept if it cannot be generated): tidy, not the raw message.
+const fallbackTitle = (input) => tidyTitle(input, { kind: 'chat' });
 
 /**
  * Cards as the client renders them (with their form fields and summary). An

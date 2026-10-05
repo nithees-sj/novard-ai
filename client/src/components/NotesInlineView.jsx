@@ -92,14 +92,13 @@ const NotesInlineView = () => {
       showToast('File size must be less than 2MB', 'error');
       return;
     }
-    const existingNote = notes.find(note => note.title === file.name);
+    const existingNote = notes.find((note) => note.fileName === file.name || note.title === file.name);
     if (existingNote) {
       showToast(`A note with the name "${file.name}" already exists.`, 'error');
       return;
     }
     const formData = new FormData();
     formData.append('pdf', file);
-    formData.append('title', file.name);
     try {
       setIsUploading(true);
       const { data: created } = await api.post('/upload-notes', formData);
@@ -334,7 +333,7 @@ const NotesInlineView = () => {
             <ItemFrame
               icon="book"
               title={selectedNote.title}
-              meta={`PDF notes · uploaded ${formatDate(selectedNote.uploadedAt)}`}
+              meta={`${selectedNote.fileName || "PDF notes"} · uploaded ${formatDate(selectedNote.uploadedAt)}`}
               tabs={(
                 <TabBar
                   size="sm"
