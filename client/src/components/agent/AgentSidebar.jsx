@@ -99,7 +99,7 @@ const Row = ({ chat, active, onOpen, onRename, onDelete }) => {
 };
 
 /** Left column of the agent: new chat, search, and the chat history grouped by date. */
-const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose, onProfile }) => {
+const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDelete, user, onClose, onProfile, embedded = false }) => {
   const [query, setQuery] = useState('');
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -107,12 +107,16 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
   }, [chats, query]);
 
   return (
-    <aside className="flex h-full w-72 flex-col border-r border-line bg-sunken" aria-label="Chats">
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <Link to="/home" className="flex items-center gap-2.5" title="Back to Novard-AI">
-          <AgentAvatar size="h-8 w-8" />
-          <span className="text-body font-bold text-fg">Novard Agent</span>
-        </Link>
+    <aside className={`flex h-full w-72 flex-col ${embedded ? 'border-r border-line-subtle bg-canvas' : 'border-r border-line bg-sunken'}`} aria-label="Chats">
+      <div className="flex items-center justify-between px-4 pb-3 pt-4">
+        {embedded ? (
+          <span className="text-body font-semibold text-fg">Your chats</span>
+        ) : (
+          <Link to="/home" className="flex items-center gap-2.5" title="Back to Novard-AI">
+            <AgentAvatar size="h-8 w-8" />
+            <span className="text-body font-bold text-fg">Novard Agent</span>
+          </Link>
+        )}
         {onClose && (
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-fg-subtle hover:bg-line md:hidden" aria-label="Close chat list">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -121,10 +125,10 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
       </div>
 
       <div className="space-y-2 px-3">
-        <button type="button" onClick={onNew} className="flex w-full items-center gap-2 rounded-xl border border-line bg-raised px-3 py-2.5 text-sm font-semibold text-fg shadow-raised transition hover:border-line-strong hover:shadow">
-          <svg className="h-4 w-4 text-accent-fg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 4v16m8-8H4" /></svg>
+        <button type="button" onClick={onNew} className="flex h-10 w-full items-center gap-2 rounded-lg bg-accent px-3 text-body font-medium text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+          <Icon name="plus" className="h-4 w-4" />
           New chat
-          <kbd className="ml-auto hidden rounded border border-line bg-sunken px-1.5 text-micro font-medium text-fg-subtle md:inline">Ctrl ⇧ O</kbd>
+          <kbd className="ml-auto hidden rounded bg-on-accent/15 px-1.5 font-mono text-micro font-medium text-on-accent/90 md:inline">Ctrl ⇧ O</kbd>
         </button>
         <div className="relative">
           <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" /></svg>
@@ -158,23 +162,23 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
         ))}
       </nav>
 
-      <div className="border-t border-line p-3">
+      <div className="border-t border-line-subtle p-3">
         {onProfile && (
           <button type="button" onClick={onProfile} className="mb-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm text-fg-muted hover:bg-line/60">
-            <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <Icon name="user" className="h-5 w-5 text-accent-fg" />
             <span>
               <span className="block font-medium text-fg">Learner profile</span>
               <span className="block text-xs text-fg-subtle">What the agent remembers about you</span>
             </span>
           </button>
         )}
-        <Link to="/home" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-line/60">
+        {!embedded && <Link to="/home" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-line/60">
           <Avatar src={user?.photoURL || user?.picture} name={user?.name || user?.displayName || currentName()} size="md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-fg">{user?.name || user?.displayName || currentName() || 'You'}</p>
             <p className="flex items-center gap-1 text-caption text-fg-subtle"><Icon name="arrowLeft" className="h-3 w-3" /> Back to Home</p>
           </div>
-        </Link>
+        </Link>}
       </div>
     </aside>
   );

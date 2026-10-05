@@ -6,7 +6,7 @@ import AgentMessage from '../components/agent/AgentMessage';
 import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
 import { BotMark } from '../components/ChatbotButton';
 import Icon from '../components/ui/Icon';
-import ThemeToggle from '../components/ThemeToggle';
+import AppShell from '../components/layout/AppShell';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
 import { currentEmail, currentName } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
@@ -272,8 +272,6 @@ const Chatbot = () => {
     }
   };
 
-  useEffect(() => { document.title = `${title && activeId ? `${title} · ` : ''}Novard Agent · NOVARD-AI`; }, [title, activeId]);
-
   // ── render ─────────────────────────────────────────────────
   const empty = !activeId && messages.length === 0;
 
@@ -323,10 +321,17 @@ const Chatbot = () => {
     </div>
   );
 
+  const crumbs = [
+    { label: 'Home', to: '/home' },
+    activeId ? { label: 'Novard Agent', onClick: newChat } : { label: 'Novard Agent' },
+    ...(activeId && title ? [{ label: title }] : []),
+  ];
+
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-canvas">
-      {/* chat history: fixed on desktop, a drawer on small screens */}
-      <div className={`fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <AppShell page="agent" width="full" agent={false} crumbs={crumbs} title={activeId && title ? `${title} · Novard Agent` : 'Novard Agent'}>
+    <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle">
+      {/* chat history: a pane on desktop, a drawer inside the frame on small screens */}
+      <div className={`absolute inset-y-0 left-0 z-20 transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0 shadow-modal md:shadow-none' : '-translate-x-full'}`}>
         <AgentSidebar
           chats={chats}
           loading={chatsLoading}
@@ -338,14 +343,15 @@ const Chatbot = () => {
           user={user}
           onClose={() => setSidebarOpen(false)}
           onProfile={() => { setSidebarOpen(false); setProfileOpen(true); }}
+          embedded
         />
       </div>
-      {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 dark:bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
+      {sidebarOpen && <button type="button" className="absolute inset-0 z-10 bg-black/30 dark:bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
 
-      <main className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line-subtle px-3 sm:px-4">
-          <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-fg-muted hover:bg-sunken hover:text-fg md:hidden" aria-label="Open chat list">
-            <Icon name="menu" className="h-5 w-5" />
+          <button type="button" onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-fg-muted hover:bg-sunken hover:text-fg md:hidden" aria-label="Open chat list" title="Your chats">
+            <Icon name="clock" className="h-5 w-5" />
           </button>
           <h1 className="min-w-0 flex-1 truncate text-body font-medium text-fg">{empty ? 'Novard Agent' : title || 'New chat'}</h1>
           {!empty && (
@@ -354,7 +360,6 @@ const Chatbot = () => {
               <span className="hidden sm:inline">New chat</span>
             </button>
           )}
-          <ThemeToggle />
         </header>
 
         {empty ? (
@@ -375,9 +380,11 @@ const Chatbot = () => {
                   <button
                     type="button"
                     onClick={() => send(s.text)}
-                    className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
+                    className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-accent-soft/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
                   >
-                    <Icon name={s.icon} className="mt-0.5 h-4 w-4 text-fg-subtle group-hover:text-accent-fg" />
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-fg ring-1 ring-inset ring-accent/15 transition-colors group-hover:bg-accent group-hover:text-on-accent">
+                      <Icon name={s.icon} className="h-4 w-4" />
+                    </span>
                     <span className="min-w-0">
                       <span className="block text-body font-medium text-fg">{s.title}</span>
                       <span className="mt-0.5 block text-small text-fg-subtle">{s.text}</span>
@@ -427,9 +434,10 @@ const Chatbot = () => {
             {composer}
           </>
         )}
-      </main>
-      <LearnerProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
+      </section>
     </div>
+      <LearnerProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
+    </AppShell>
   );
 };
 

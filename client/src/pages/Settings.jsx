@@ -24,10 +24,10 @@ const Settings = () => (
         <ThemeOptions />
       </Row>
       <Row id="account-title" title="Account" description="Your name, mobile number and bio. Your email comes from your Google sign-in.">
-        <Link to="/profile" className={buttonClass({ variant: 'secondary' })}>Edit on your profile</Link>
+        <Link to="/profile" className={buttonClass({ variant: 'soft' })}>Edit on your profile</Link>
       </Row>
       <Row id="reports-title" title="Problem reports" description="Problems you have reported and the Novard team's replies.">
-        <Link to="/reports" className={buttonClass({ variant: 'secondary' })}>Open my reports</Link>
+        <Link to="/reports" className={buttonClass({ variant: 'soft' })}>Open my reports</Link>
       </Row>
     </div>
   </AppShell>

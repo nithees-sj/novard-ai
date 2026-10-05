@@ -56,7 +56,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 
 | Component | What it is |
 |---|---|
-| `Button`, `IconButton`, `buttonClass()` | variants primary / secondary / ghost / danger / danger-solid / inverse / link; sizes xs–lg; `loading`. An icon-only button requires a label. |
+| `Button`, `IconButton`, `buttonClass()` | variants primary / soft (quiet blue) / secondary / ghost / danger / danger-solid / inverse / link; sizes xs–lg; `loading`. An icon-only button requires a label. |
 | `Input`, `Textarea`, `Select`, `Field`, `inputClass`, `fieldClass` | one field style. `Select` is a styled native select: keyboard, screen-reader and mobile behaviour stay native. |
 | `Badge`, `Status` | soft-fill label; a dot plus text for lists and tables |
 | `Avatar` | photo with an initials fallback |
@@ -85,6 +85,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 
 ### App shell
 **Sidebar**
+- The active page is a soft blue tint with blue text and icon.
 - 280px wide (the `sidebar` spacing token), 40px rows with 20px icons, grouped as Learn / Grow / You, with a distinct icon for each page.
 - The active item is a quiet raised chip; there is no edge bar.
 - Below 1024px it becomes a drawer with a focus trap and Escape.
@@ -114,7 +115,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 - Loading uses skeletons, and errors show an error state with retry.
 
 **Career, Doubts & Notes, Videos**
-- A tool list (name, one specific sentence, what you get) replaces the icon-tile feature cards.
+- Tool cards: a blue icon chip, the name, one specific sentence, what you get, and a blue "Open …" action; the card outline turns blue on hover. The follow-up aside is a soft blue panel with a primary button.
 - The dark gradient promo banners became a quiet aside that keeps its action. "Start a mock interview" and "Suggest topics" still open Novard Agent with the same prompt.
 
 **Smart Roadmap, Skill Gap Analysis**
@@ -160,6 +161,7 @@ There is one set: Lucide (through react-icons) in `components/ui/Icon.jsx`, used
 - The dialog uses Modal and the styled Select.
 
 **Novard Agent**
+- Now a page inside the app (sidebar item "Novard Agent", under Home): the main sidebar stays visible, the chat history is a pane inside the frame (a drawer on phones), the breadcrumb shows the open chat. The floating orb stays as a shortcut on other pages.
 - The static agent mark.
 - Starter rows with icons replace the emoji tiles.
 - Composer and action cards are on tokens, with no icon tiles.

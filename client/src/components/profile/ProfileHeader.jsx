@@ -83,7 +83,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
             </div>
           </div>
           {!editing && (
-            <Button variant="secondary" icon="edit" onClick={() => { setEditing(true); setNotice(null); }}>Edit profile</Button>
+            <Button variant="soft" icon="edit" onClick={() => { setEditing(true); setNotice(null); }}>Edit profile</Button>
           )}
         </div>
 

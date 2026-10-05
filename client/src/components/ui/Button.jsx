@@ -4,7 +4,8 @@ import Icon from './Icon';
 import Spinner from './Spinner';
 
 /**
- * Buttons. Variants: primary (the one main action on a screen), secondary,
+ * Buttons. Variants: primary (the one main action on a screen), soft (a
+ * quieter blue action), secondary,
  * ghost (toolbars, quiet actions), danger (destructive), inverse (a dark
  * confirm button), link (inline text action).
  */
@@ -13,6 +14,8 @@ const BASE = 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-
 const VARIANTS = {
   primary: 'bg-accent text-on-accent hover:bg-accent-hover',
   secondary: 'bg-raised text-fg ring-1 ring-inset ring-line hover:bg-sunken hover:ring-line-strong',
+  // A quieter blue action: next to content, when the page already has a primary button.
+  soft: 'bg-accent-soft text-accent-fg ring-1 ring-inset ring-accent/15 hover:bg-accent/15 hover:ring-accent/30',
   ghost: 'text-fg-muted hover:bg-sunken hover:text-fg',
   danger: 'bg-raised text-danger-fg ring-1 ring-inset ring-line hover:bg-danger-soft hover:ring-danger/40',
   'danger-solid': 'bg-danger text-on-accent hover:brightness-95',

@@ -12,7 +12,7 @@ export const PAGES = {
   profile: { path: '/profile', name: 'Profile', icon: 'user' },
   settings: { path: '/settings', name: 'Settings', icon: 'settings' },
   reports: { path: '/reports', name: 'My reports', icon: 'flag' },
-  agent: { path: '/chatbot', name: 'Novard Agent', icon: 'bot' },
+  agent: { path: '/chatbot', name: 'Novard Agent', icon: 'agent' },
 };
 
 /** The tools inside a page. */
@@ -27,7 +27,8 @@ export const TOOLS = {
 
 /** The sidebar, in groups. A group without a label is set apart by space only. */
 export const NAV_GROUPS = [
-  { label: 'Learn', items: ['home', 'doubts', 'plans', 'videos'] },
+  { label: null, items: ['home', 'agent'] },
+  { label: 'Learn', items: ['doubts', 'plans', 'videos'] },
   { label: 'Grow', items: ['career', 'forum'] },
   { label: null, items: ['profile', 'settings'] },
 ];

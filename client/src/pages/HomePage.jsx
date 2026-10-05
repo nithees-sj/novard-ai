@@ -172,11 +172,13 @@ const HomePage = () => {
                   <button
                     type="button"
                     onClick={() => navigate(a.to)}
-                    className="group flex h-full w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+                    className="group flex h-full w-full items-center gap-3.5 px-4 py-4 text-left transition-colors duration-150 hover:bg-accent-soft/60 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
                   >
-                    <Icon name={a.icon} className="mt-0.5 h-4 w-4 text-fg-subtle transition-colors group-hover:text-accent-fg" />
-                    <span className="min-w-0">
-                      <span className="block text-body font-medium text-fg">{a.label}</span>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-fg ring-1 ring-inset ring-accent/15 transition-colors group-hover:bg-accent group-hover:text-on-accent">
+                      <Icon name={a.icon} className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body font-medium text-fg group-hover:text-accent-fg">{a.label}</span>
                       <span className="mt-0.5 block text-small text-fg-subtle">{a.text}</span>
                     </span>
                   </button>

@@ -47,7 +47,7 @@ const Career = () => {
             title="Practise an interview"
             text="Novard Agent asks which role and level you are interviewing for, then asks one question at a time and gives feedback on every answer."
             action={(
-              <Button variant="secondary" icon="mic" onClick={() => navigate('/chatbot', { state: { prompt: MOCK_INTERVIEW_PROMPT } })}>
+              <Button icon="mic" onClick={() => navigate('/chatbot', { state: { prompt: MOCK_INTERVIEW_PROMPT } })}>
                 Start a mock interview
               </Button>
             )}
