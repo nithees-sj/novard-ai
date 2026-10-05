@@ -5,6 +5,14 @@ import { apiJson } from '../lib/api';
 import logger from '../lib/logger';
 import { ReportAction } from './learning/LearningUI';
 import { useReportProblem } from '../context/ReportContext';
+import Icon from './ui/Icon';
+import Button from './ui/Button';
+import Badge, { Status } from './ui/Badge';
+import UIAvatar from './ui/Avatar';
+import Spinner from './ui/Spinner';
+import { inputClass } from './ui/Field';
+import { ErrorState, Skeleton } from './ui/States';
+import AgentAvatar from './agent/AgentAvatar';
 
 const POLL_MS = 10000;
 const POLL_WHILE_AI_PENDING_MS = 4000;
@@ -37,57 +45,42 @@ function buildThreads(comments) {
   return roots.map((root) => ({ root, replies: children.get(String(root._id)) || [] }));
 }
 
-const Avatar = ({ comment }) => (
-  <div
-    className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-semibold ${
-      comment.isAI ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-    }`}
-    aria-hidden="true"
-  >
-    {comment.isAI ? 'AI' : (comment.userName || '?').charAt(0).toUpperCase()}
-  </div>
-);
+const Person = ({ comment }) => (comment.isAI
+  ? <AgentAvatar size="h-8 w-8" />
+  : <UIAvatar name={comment.userName || '?'} size="md" />);
 
 const CommentBody = ({ comment }) =>
   comment.isAI ? (
     // AI replies are Markdown (headings, lists, code); render them as such.
-    <MarkdownView content={comment.content} className="mt-2" />
+    <MarkdownView content={comment.content} className="mt-1.5" />
   ) : (
-    <p className="mt-2 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{comment.content}</p>
+    <p className="mt-1.5 whitespace-pre-wrap break-words text-body leading-relaxed text-fg">{comment.content}</p>
   );
 
-const Comment = ({ comment, issueOwnerEmail, nested = false, footer = null }) => {
+const Comment = ({ comment, issueOwnerEmail, footer = null }) => {
   const openReport = useReportProblem();
   const byAuthor = !comment.isAI && sameEmail(comment.userEmail, issueOwnerEmail);
   const byMe = !comment.isAI && sameEmail(comment.userEmail, currentUserEmail());
   return (
-    <article
-      className={`rounded-lg p-4 min-w-0 ${
-        comment.isAI ? 'bg-blue-50 border border-blue-100' : 'bg-surface border border-gray-200 shadow-sm'
-      } ${nested ? '' : 'mb-3'}`}
-    >
-      <header className="flex justify-between items-start gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Avatar comment={comment} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm text-gray-900">{comment.isAI ? 'AI Assistant' : comment.userName}</span>
-              {comment.isAI && <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">AI</span>}
-              {byAuthor && <span className="px-1.5 py-0.5 bg-ink text-on-ink text-[10px] font-bold rounded">AUTHOR</span>}
-              {byMe && !byAuthor && <span className="text-[11px] text-gray-500">(you)</span>}
-            </div>
-            {!comment.isAI && <div className="text-xs text-gray-500 truncate">{comment.userEmail}</div>}
+    <article className="flex min-w-0 gap-3">
+      <Person comment={comment} />
+      <div className="min-w-0 flex-1">
+        <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="text-body font-medium text-fg">{comment.isAI ? 'AI assistant' : comment.userName}</span>
+          {comment.isAI && <Badge tone="accent">AI</Badge>}
+          {byAuthor && <Badge>Author</Badge>}
+          {byMe && !byAuthor && <span className="text-caption text-fg-subtle">(you)</span>}
+          <time className="text-caption text-fg-subtle" dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
+        </header>
+        {!comment.isAI && comment.userEmail && <div className="truncate text-caption text-fg-subtle">{comment.userEmail}</div>}
+        <CommentBody comment={comment} />
+        {comment.isAI && (
+          <div className="mt-1 -ml-1.5">
+            <ReportAction onClick={() => openReport({ area: 'forum', source: { tool: 'forumAi', itemType: 'forum_comment', itemId: comment._id, excerpt: comment.content } })} />
           </div>
-        </div>
-        <time className="text-xs text-gray-500 whitespace-nowrap" dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
-      </header>
-      <CommentBody comment={comment} />
-      {comment.isAI && (
-        <div className="mt-1 -ml-1.5">
-          <ReportAction onClick={() => openReport({ area: 'forum', source: { tool: 'forumAi', itemType: 'forum_comment', itemId: comment._id, excerpt: comment.content } })} />
-        </div>
-      )}
-      {footer}
+        )}
+        {footer}
+      </div>
     </article>
   );
 };
@@ -227,190 +220,166 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
 
   if (!issue) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+      <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to AI Forum</h2>
-          <p className="text-sm text-gray-600">Select a discussion to view it.</p>
+          <h2 className="mb-1 text-title font-semibold text-fg">Forum</h2>
+          <p className="text-sm text-fg-muted">Select a discussion to view it.</p>
         </div>
       </div>
     );
   }
 
-  const button = 'px-4 py-2 text-sm font-semibold rounded-md disabled:opacity-60 transition-colors';
-
   return (
-    <div className="w-full h-full flex flex-col bg-gray-50">
-      <div className="px-6 py-3 bg-surface border-b border-gray-200 flex-shrink-0">
-        <button onClick={onBack} className="text-sm text-blue-600 hover:underline flex items-center gap-2">
-          ← Back to discussions
-        </button>
-      </div>
-
-      {/* Header */}
-      <div className="bg-surface border-b border-gray-200 px-6 py-4 flex-shrink-0">
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-3">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 min-w-0">
-            <span className={`px-3 py-1 rounded-md text-xs font-bold text-white uppercase ${status.pill}`}>{status.label}</span>
-            <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${category.badge}`}>{category.label}</span>
-            <span className="text-gray-400" aria-hidden="true">•</span>
-            <span>
-              Opened by <span className="font-semibold text-gray-900">{owner ? 'you' : issue.userName}</span> · {formatDate(issue.createdAt)}
-            </span>
-          </div>
-
-          {/* Only the person who started the discussion can change its state or delete it. */}
-          {owner ? (
-            confirmingDelete ? (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
-                <span className="text-sm text-red-800">
-                  Delete this discussion and its {comments.length} {comments.length === 1 ? 'reply' : 'replies'}?
-                </span>
-                <button onClick={() => setConfirmingDelete(false)} disabled={deleting} className={`${button} bg-surface text-gray-700 border border-gray-300 hover:bg-gray-50`}>
-                  Cancel
-                </button>
-                <button onClick={handleDelete} disabled={deleting} className={`${button} bg-red-600 text-white hover:bg-red-700`}>
-                  {deleting ? 'Deleting…' : 'Delete'}
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                {issueStatus === 'open' ? (
-                  <>
-                    <button onClick={() => handleStatusUpdate('resolved')} disabled={updatingStatus} className={`${button} bg-green-600 text-white hover:bg-green-700`}>
-                      {updatingStatus ? 'Updating…' : 'Mark solved'}
-                    </button>
-                    <button onClick={() => handleStatusUpdate('closed')} disabled={updatingStatus} className={`${button} bg-surface text-gray-700 border border-gray-300 hover:bg-gray-50`}>
-                      Close
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={() => handleStatusUpdate('open')} disabled={updatingStatus} className={`${button} bg-blue-600 text-white hover:bg-blue-700`}>
-                    {updatingStatus ? 'Updating…' : 'Reopen'}
-                  </button>
-                )}
-                <button onClick={() => setConfirmingDelete(true)} className={`${button} bg-surface text-red-600 border border-red-200 hover:bg-red-50`}>
-                  Delete
-                </button>
-              </div>
-            )
-          ) : (
-            <span className="text-xs text-gray-500">Only {issue.userName} can mark this solved or close it</span>
-          )}
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-900 break-words">{issue.title}</h1>
-      </div>
-
-      {actionError && (
-        <div role="alert" className="mx-6 mt-3 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-3 flex-shrink-0">
-          <span className="flex-1">{actionError}</span>
-          <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="text-red-500 hover:text-red-700 leading-none text-lg">&times;</button>
-        </div>
-      )}
-
-      <div className="flex-1 flex flex-col p-4 min-h-0">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-bold text-gray-900">Replies ({comments.length})</h3>
-          <button onClick={() => fetchComments(true)} disabled={refreshing} className="px-3 py-2 border border-gray-300 bg-surface text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
-            {refreshing ? 'Refreshing…' : '↻ Refresh'}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-5 py-6 sm:px-8 sm:py-8">
+          <button type="button" onClick={onBack} className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 text-small text-fg-subtle hover:bg-sunken hover:text-fg">
+            <Icon name="arrowLeft" className="h-3.5 w-3.5" /> All discussions
           </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto mb-4 min-h-0 pr-1">
-          {/* The opening post */}
-          <article className="bg-blue-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600">
-            <header className="flex justify-between items-start gap-3 mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-9 h-9 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold text-white" aria-hidden="true">
-                  {(issue.userName || '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-gray-900">{issue.userName}</span>
-                    <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">AUTHOR</span>
+          {/* Title and state */}
+          <header className="mt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Status tone={status.tone}>{status.label}</Status>
+              <Badge tone={category.tone}><Icon name={category.icon} className="h-3 w-3" />{category.label}</Badge>
+            </div>
+            <h1 className="mt-2 break-words text-display font-semibold text-fg">{issue.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-small text-fg-subtle">
+                Opened by <span className="font-medium text-fg-muted">{owner ? 'you' : issue.userName}</span> · {formatDate(issue.createdAt)}
+              </p>
+              {/* Only the person who started the discussion can change its state or delete it. */}
+              {owner ? (
+                confirmingDelete ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-lg bg-danger-soft px-3 py-1.5">
+                    <span className="text-small text-danger-fg">
+                      Delete this discussion and its {comments.length} {comments.length === 1 ? 'reply' : 'replies'}?
+                    </span>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</Button>
+                    <Button size="sm" variant="danger-solid" onClick={handleDelete} loading={deleting} loadingLabel="Deleting…">Delete</Button>
                   </div>
-                  <div className="text-xs text-gray-500 truncate">{issue.userEmail}</div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {issueStatus === 'open' ? (
+                      <>
+                        <Button size="sm" variant="secondary" icon="check" onClick={() => handleStatusUpdate('resolved')} loading={updatingStatus} loadingLabel="Updating…">Mark solved</Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleStatusUpdate('closed')} disabled={updatingStatus}>Close</Button>
+                      </>
+                    ) : (
+                      <Button size="sm" variant="secondary" onClick={() => handleStatusUpdate('open')} loading={updatingStatus} loadingLabel="Updating…">Reopen</Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-danger-fg hover:bg-danger-soft hover:text-danger-fg" onClick={() => setConfirmingDelete(true)}>Delete</Button>
+                  </div>
+                )
+              ) : (
+                <span className="text-caption text-fg-subtle">Only {issue.userName} can mark this solved or close it</span>
+              )}
+            </div>
+          </header>
+
+          {actionError && (
+            <div role="alert" className="mt-4 flex items-start gap-3 rounded-lg bg-danger-soft px-4 py-2.5 text-body text-danger-fg">
+              <span className="flex-1">{actionError}</span>
+              <button type="button" onClick={() => setActionError(null)} aria-label="Dismiss" className="rounded p-0.5 hover:bg-danger/10"><Icon name="x" className="h-4 w-4" /></button>
+            </div>
+          )}
+
+          {/* The opening post */}
+          <article className="mt-6 border-t border-line-subtle pt-6">
+            <div className="flex items-center gap-3">
+              <UIAvatar name={issue.userName || '?'} size="md" />
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-body font-medium text-fg">{issue.userName}</span>
+                  <Badge>Author</Badge>
                 </div>
+                {issue.userEmail && <div className="truncate text-caption text-fg-subtle">{issue.userEmail}</div>}
               </div>
-              <time className="text-xs text-gray-500 whitespace-nowrap" dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
-            </header>
-            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{issue.description}</p>
+            </div>
+            <p className="mt-4 whitespace-pre-wrap break-words text-lead leading-relaxed text-fg">{issue.description}</p>
             {issue.tags?.length > 0 && (
-              <div className="flex gap-2 flex-wrap pt-3 mt-3 border-t border-blue-200">
-                {issue.tags.map((tag) => (
-                  <span key={tag} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">#{tag}</span>
-                ))}
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {issue.tags.map((tag) => <Badge key={tag}>#{tag}</Badge>)}
               </div>
             )}
           </article>
 
+          {/* Replies */}
+          <div className="mt-8 flex items-center justify-between border-t border-line-subtle pt-5">
+            <h2 className="text-body font-semibold text-fg"><span className="tabular">{comments.length}</span> {comments.length === 1 ? 'reply' : 'replies'}</h2>
+            <Button size="sm" variant="ghost" icon="refresh" onClick={() => fetchComments(true)} loading={refreshing} loadingLabel="Refreshing…">Refresh</Button>
+          </div>
+
           {loading ? (
-            <div className="p-8 text-center text-gray-500 text-sm">Loading replies…</div>
+            <div className="mt-5 space-y-6" role="status" aria-label="Loading replies">
+              {[0, 1].map((i) => (
+                <div key={i} className="flex gap-3"><Skeleton className="h-8 w-8" rounded="rounded-full" /><div className="flex-1 space-y-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-4/5" /></div></div>
+              ))}
+            </div>
           ) : error ? (
-            <div className="p-8 text-center text-red-600 text-sm">{error}</div>
+            <ErrorState title="Replies didn’t load" text={error} onRetry={() => fetchComments(true)} />
           ) : (
-            <>
+            <div className="mt-2">
               {issueAnswerPending && (
-                <p className="mb-3 px-4 py-3 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-800 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin" aria-hidden="true" />
+                <p className="mt-3 flex items-center gap-2 rounded-lg bg-accent-soft px-4 py-3 text-body text-accent-fg">
+                  <Spinner className="h-3.5 w-3.5" />
                   The AI assistant is writing a first answer…
                 </p>
               )}
 
               {threads.length === 0 && !issueAnswerPending && (
-                <div className="p-8 text-center text-gray-500 text-sm">No replies yet. Be the first to reply!</div>
+                <p className="py-8 text-center text-body text-fg-subtle">No replies yet. Be the first to answer.</p>
               )}
 
-              {threads.map(({ root, replies }) => {
-                const hasAIReply = replies.some((r) => r.isAI);
-                const pending = aiPendingFor.has(String(root._id));
-                // Only render a footer row when it has something in it; an empty
-                // row left a blank strip under comments that already had an AI reply.
-                const showFooter = !root.isAI && !isClosed && (pending || !hasAIReply);
-                const footer = showFooter && (
-                  <div className="flex justify-end items-center mt-3">
-                    {pending ? (
-                      <span className="text-xs text-blue-700 flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin" aria-hidden="true" />
-                        AI is writing a reply…
-                      </span>
-                    ) : !hasAIReply && (
-                      <button
-                        onClick={() => handleGenerateAIResponse(root._id)}
-                        disabled={generatingAI === root._id}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
-                      >
-                        {generatingAI === root._id ? 'Generating…' : 'Get AI response'}
-                      </button>
-                    )}
-                  </div>
-                );
+              <ol className="divide-y divide-line-subtle">
+                {threads.map(({ root, replies }) => {
+                  const hasAIReply = replies.some((r) => r.isAI);
+                  const pending = aiPendingFor.has(String(root._id));
+                  // Only render a footer row when it has something in it.
+                  const showFooter = !root.isAI && !isClosed && (pending || !hasAIReply);
+                  const footer = showFooter && (
+                    <div className="mt-2">
+                      {pending ? (
+                        <span className="flex items-center gap-2 text-small text-accent-fg">
+                          <Spinner className="h-3 w-3" />
+                          AI is writing a reply…
+                        </span>
+                      ) : !hasAIReply && (
+                        <Button size="xs" variant="ghost" icon="sparkles" className="-ml-2 text-accent-fg" onClick={() => handleGenerateAIResponse(root._id)} loading={generatingAI === root._id} loadingLabel="Generating…">
+                          Get an AI answer
+                        </Button>
+                      )}
+                    </div>
+                  );
 
-                return (
-                  <div key={root._id} className="mb-3">
-                    <Comment comment={root} issueOwnerEmail={issue.userEmail} nested footer={footer} />
-                    {replies.length > 0 && (
-                      <div className="mt-2 ml-6 pl-4 border-l-2 border-blue-100 space-y-2">
-                        {replies.map((reply) => (
-                          <Comment key={reply._id} comment={reply} issueOwnerEmail={issue.userEmail} nested />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
+                  return (
+                    <li key={root._id} className="py-5">
+                      <Comment comment={root} issueOwnerEmail={issue.userEmail} footer={footer} />
+                      {replies.length > 0 && (
+                        <div className="ml-4 mt-4 space-y-5 border-l border-line pl-6">
+                          {replies.map((reply) => (
+                            <Comment key={reply._id} comment={reply} issueOwnerEmail={issue.userEmail} />
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Reply box */}
-        <div className="bg-surface border-t border-gray-200 pl-4 pr-24 py-4">
+      {/* Reply box */}
+      <div className="shrink-0 border-t border-line-subtle bg-raised px-5 py-3 sm:px-8">
+        <div className="mx-auto max-w-3xl">
           {isClosed ? (
-            <p className="text-sm text-gray-500 text-center">
-              This discussion is closed{owner ? ' - reopen it to accept replies.' : ' to new replies.'}
+            <p className="py-1 text-center text-body text-fg-subtle">
+              This discussion is closed{owner ? '. Reopen it to accept replies.' : ' to new replies.'}
             </p>
           ) : (
-            <form onSubmit={handleSubmitComment} className="flex gap-3 items-end">
+            <form onSubmit={handleSubmitComment} className="flex items-end gap-2">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
@@ -419,18 +388,13 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
                 }}
                 placeholder="Write a reply… (Ctrl+Enter to post)"
                 aria-label="Write a reply"
-                className="flex-1 px-4 py-3 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none
-                           focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[60px] max-h-[160px]"
+                rows={2}
+                className={`${inputClass} max-h-40 min-h-[2.75rem] flex-1 resize-none`}
                 required
               />
-              <button
-                type="submit"
-                disabled={submittingComment || !newComment.trim()}
-                className="px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700
-                           disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-fit whitespace-nowrap"
-              >
-                {submittingComment ? 'Posting…' : 'Post reply'}
-              </button>
+              <Button type="submit" size="lg" disabled={!newComment.trim()} loading={submittingComment} loadingLabel="Posting…">
+                Post reply
+              </Button>
             </form>
           )}
         </div>

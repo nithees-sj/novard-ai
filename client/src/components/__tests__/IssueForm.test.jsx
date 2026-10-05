@@ -8,7 +8,7 @@ describe('IssueForm', () => {
   it('requires a title and description', async () => {
     const onSubmit = jest.fn();
     render(<IssueForm isVisible onSubmit={onSubmit} onCancel={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Create Issue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Post discussion' }));
     expect(await screen.findByText('Please fill in both the title and the description.')).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -19,7 +19,7 @@ describe('IssueForm', () => {
     fill('title', 'Docker volume permissions');
     fill('description', 'The container cannot write.');
     fill('tags', 'docker, volumes, ');
-    fireEvent.click(screen.getByRole('button', { name: 'Create Issue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Post discussion' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
       title: 'Docker volume permissions', description: 'The container cannot write.', tags: ['docker', 'volumes'], category: 'general',
     }));
@@ -29,7 +29,7 @@ describe('IssueForm', () => {
     render(<IssueForm isVisible onSubmit={async () => { throw new Error('Title must be 200 characters or fewer.'); }} onCancel={() => {}} />);
     fill('title', 'x');
     fill('description', 'y');
-    fireEvent.click(screen.getByRole('button', { name: 'Create Issue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Post discussion' }));
     expect(await screen.findByText('Title must be 200 characters or fewer.')).toBeInTheDocument();
   });
 });

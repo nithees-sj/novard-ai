@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { FORUM_CATEGORIES } from '../lib/forum';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import Icon from './ui/Icon';
+import { Field, Input, Textarea } from './ui/Field';
 
 const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
   const [formData, setFormData] = useState({
@@ -50,119 +54,79 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
     }
   };
 
-  if (!isVisible) return null;
-
   return (
-    <div
-      onClick={onCancel}
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-50"
+    <Modal
+      open={isVisible}
+      onClose={onCancel}
+      dismissible={!isSubmitting}
+      title="New discussion"
+      description="Ask a question, share something you made or start a conversation. Novard's AI assistant usually posts a first answer within a minute."
+      size="lg"
+      footer={(
+        <>
+          <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+          <Button type="submit" form="new-discussion" loading={isSubmitting} loadingLabel="Posting…">Post discussion</Button>
+        </>
+      )}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface-overlay rounded-xl border border-gray-200 p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Start a Discussion</h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Close"
-            className="rounded-md text-gray-500 hover:text-gray-700 text-2xl p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          >
-            ×
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="title" className="font-semibold text-sm text-gray-700">
-              Title *
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Enter a descriptive title for your issue"
-              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-            />
-          </div>
+      <form id="new-discussion" onSubmit={handleSubmit} className="space-y-5">
+        <Field id="title" label="Title" required>
+          <Input
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="One line: what is this about?"
+            required
+            data-autofocus
+          />
+        </Field>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="description" className="font-semibold text-sm text-gray-700">
-              Description *
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe your issue in detail. Include any relevant information, steps to reproduce, or context that might help others understand and help with your issue."
-              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg min-h-[150px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-            />
-          </div>
+        <Field id="description" label="Description" required hint="Include what you tried, any error messages, and what you expected to happen.">
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={6}
+            placeholder="Give the details someone needs to help."
+            required
+          />
+        </Field>
 
-          <div className="flex flex-col gap-2">
-            <span className="font-semibold text-sm text-gray-700">Category</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Category">
-              {FORUM_CATEGORIES.map((c) => (
+        <fieldset>
+          <legend className="mb-2 text-small font-medium text-fg">Category</legend>
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Category">
+            {FORUM_CATEGORIES.map((c) => {
+              const on = formData.category === c.value;
+              return (
                 <button
                   key={c.value}
                   type="button"
                   role="radio"
-                  aria-checked={formData.category === c.value}
+                  aria-checked={on}
                   onClick={() => setFormData((prev) => ({ ...prev, category: c.value }))}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    formData.category === c.value
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-surface border-gray-300 text-gray-700 hover:border-blue-400'
+                  className={`inline-flex h-8 items-center gap-1.5 rounded px-3 text-small font-medium ring-1 ring-inset transition-colors duration-150 ${
+                    on ? 'bg-accent-soft text-accent-fg ring-accent/40' : 'text-fg-muted ring-line hover:bg-sunken hover:text-fg'
                   }`}
                 >
+                  <Icon name={c.icon} className="h-3.5 w-3.5" />
                   {c.label}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="tags" className="font-semibold text-sm text-gray-700">
-              Tags (optional)
-            </label>
-            <input
-              type="text"
-              id="tags"
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              placeholder="Enter tags separated by commas (e.g., javascript, react, bug)"
-              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </div>
+        </fieldset>
 
-          {formError && (
-            <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{formError}</p>
-          )}
-          <div className="flex gap-3 justify-end mt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-6 py-2 border border-gray-300 bg-surface text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Issue'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Field id="tags" label="Tags" optional hint="Separate with commas, e.g. javascript, react, bug">
+          <Input id="tags" name="tags" value={formData.tags} onChange={handleChange} placeholder="javascript, react" />
+        </Field>
+
+        {formError && (
+          <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-body text-danger-fg">{formError}</p>
+        )}
+      </form>
+    </Modal>
   );
 };
 
