@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Select } from '../../components/ui/Field';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { ErrorNote, Loading, PageHeader, Section, usd, when } from '../../components/admin/ui';
@@ -36,12 +37,12 @@ export default function Users() {
       <Section className="mb-6">
         <form className="flex flex-wrap gap-3 p-5" onSubmit={(e) => { e.preventDefault(); set('q', q.trim()); }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email" className={`${fieldClass(false)} min-w-[220px] flex-1`} aria-label="Search users" />
-          <select value={params.get('status') || ''} onChange={(e) => set('status', e.target.value)} className={`${fieldClass(false)} w-auto`} aria-label="Status">
+          <Select value={params.get('status') || ''} onChange={(e) => set('status', e.target.value)} className="w-auto min-w-[9rem]" aria-label="Status">
             <option value="">Any status</option><option value="active">Active</option><option value="suspended">Suspended</option>
-          </select>
-          <select value={params.get('role') || ''} onChange={(e) => set('role', e.target.value)} className={`${fieldClass(false)} w-auto`} aria-label="Role">
+          </Select>
+          <Select value={params.get('role') || ''} onChange={(e) => set('role', e.target.value)} className="w-auto min-w-[9rem]" aria-label="Role">
             <option value="">Everyone</option><option value="student">Students</option><option value="admins">Admins</option>
-          </select>
+          </Select>
           <button type="submit" className={btn.primary}>Search</button>
         </form>
       </Section>
@@ -53,17 +54,17 @@ export default function Users() {
             onRowClick={(u) => navigate(`/admin/users/${u._id}`)}
             empty="No users match."
             columns={[
-              { key: 'name', label: 'Name', render: (u) => <span className="font-semibold text-gray-900">{u.name || '(no name)'}</span> },
-              { key: 'email', label: 'Email', render: (u) => <span className="font-mono text-xs text-gray-600">{u.email}</span> },
+              { key: 'name', label: 'Name', render: (u) => <span className="font-semibold text-fg">{u.name || '(no name)'}</span> },
+              { key: 'email', label: 'Email', render: (u) => <span className="font-mono text-xs text-fg-muted">{u.email}</span> },
               { key: 'role', label: 'Role', render: (u) => <Badge tone={ROLE_TONE[u.role]}>{u.role}</Badge> },
               { key: 'status', label: 'Status', render: (u) => <Badge tone={u.status === 'suspended' ? 'red' : 'green'}>{u.status}</Badge> },
               { key: 'lastActiveDay', label: 'Last active', render: (u) => u.lastActiveDay || '–' },
               { key: 'createdAt', label: 'Joined', render: (u) => when(u.createdAt) },
             ]}
             footer={data && data.total > data.limit && (
-              <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-3 text-sm">
+              <div className="flex items-center justify-end gap-2 border-t border-line-subtle px-6 py-3 text-sm">
                 <button type="button" disabled={page <= 1} onClick={() => set('page', String(page - 1))} className={`${btn.ghost} py-1`}>Previous</button>
-                <span className="text-gray-500">Page {page} of {Math.ceil(data.total / data.limit)}</span>
+                <span className="text-fg-subtle">Page {page} of {Math.ceil(data.total / data.limit)}</span>
                 <button type="button" disabled={page * data.limit >= data.total} onClick={() => set('page', String(page + 1))} className={`${btn.ghost} py-1`}>Next</button>
               </div>
             )}
@@ -106,28 +107,28 @@ export function UserDetail() {
     <AdminLayout title="ADMIN · USERS">
       <PageHeader title={u?.name || 'User'} subtitle={u ? `${u.role} · ${u.status}${u.createdAt ? ` · joined ${when(u.createdAt)}` : ''}` : ''} actions={<Link to="/admin/users" className={btn.secondary}>All users</Link>} />
       <ErrorNote error={error} onRetry={reload} />
-      {note && <p className="mb-4 text-sm text-gray-700" role="status">{note}</p>}
+      {note && <p className="mb-4 text-sm text-fg-muted" role="status">{note}</p>}
       {loading && !data ? <Loading /> : data && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="Study time (30 days)" value={`${data.activity.studyMinutesLast30Days}m`} sub={`${data.activity.activeDays.length} active day(s)`} accent="bg-primary-500" />
-            <Stat label="Items" value={data.activity.notes + data.activity.doubts + data.activity.videos + data.activity.learningPlans + data.activity.roadmaps} sub={`${data.activity.notes} notes · ${data.activity.doubts} doubts · ${data.activity.videos} videos`} accent="bg-primary-500" />
-            <Stat label="AI requests today" value={data.ai.requestsToday} sub="counted against the daily quota" accent="bg-primary-500" />
-            <Stat label="Reports" value={data.reports.length} sub={`${data.reports.filter((r) => ['open', 'in_progress'].includes(r.status)).length} open`} accent="bg-primary-500" />
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line-subtle ring-1 ring-line-subtle lg:grid-cols-4">
+            <Stat label="Study time (30 days)" value={`${data.activity.studyMinutesLast30Days}m`} sub={`${data.activity.activeDays.length} active day(s)`} accent="bg-accent" />
+            <Stat label="Items" value={data.activity.notes + data.activity.doubts + data.activity.videos + data.activity.learningPlans + data.activity.roadmaps} sub={`${data.activity.notes} notes · ${data.activity.doubts} doubts · ${data.activity.videos} videos`} accent="bg-accent" />
+            <Stat label="AI requests today" value={data.ai.requestsToday} sub="counted against the daily quota" accent="bg-accent" />
+            <Stat label="Reports" value={data.reports.length} sub={`${data.reports.filter((r) => ['open', 'in_progress'].includes(r.status)).length} open`} accent="bg-accent" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Section title="Account" className="lg:col-span-1">
               <div className="space-y-4 px-6 pb-6 text-sm">
-                <p className="font-mono text-xs text-gray-600">{email || u.email}</p>
-                {!email && <button type="button" onClick={() => act('reveal-email', undefined, 'Email shown (recorded in the audit log).')} className="text-xs font-semibold text-blue-600 hover:underline">Show full email (audited)</button>}
-                {u.status === 'suspended' && <p className="rounded-lg bg-red-50 px-3 py-2 text-red-700">Suspended {when(u.suspendedAt)}{u.suspendedReason ? `: ${u.suspendedReason}` : ''}</p>}
-                <div className="space-y-2 border-t border-gray-100 pt-4">
+                <p className="font-mono text-xs text-fg-muted">{email || u.email}</p>
+                {!email && <button type="button" onClick={() => act('reveal-email', undefined, 'Email shown (recorded in the audit log).')} className="text-xs font-semibold text-accent-fg hover:underline">Show full email (audited)</button>}
+                {u.status === 'suspended' && <p className="rounded-lg bg-danger-soft px-3 py-2 text-danger-fg">Suspended {when(u.suspendedAt)}{u.suspendedReason ? `: ${u.suspendedReason}` : ''}</p>}
+                <div className="space-y-2 border-t border-line-subtle pt-4">
                   {u.status === 'active' ? (
                     (!isAdminAccount || superadmin) && (
                       <>
                         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" className={`${fieldClass(false)} py-1.5`} aria-label="Suspension reason" />
-                        <button type="button" disabled={busy} onClick={() => act('suspend', { reason }, 'Suspended: they are signed out on their next request.')} className={`${btn.secondary} w-full text-red-700`}>Suspend</button>
+                        <button type="button" disabled={busy} onClick={() => act('suspend', { reason }, 'Suspended: they are signed out on their next request.')} className={`${btn.secondary} w-full text-danger-fg`}>Suspend</button>
                       </>
                     )
                   ) : (
@@ -141,7 +142,7 @@ export function UserDetail() {
                       ))}
                     </div>
                   )}
-                  {!superadmin && isAdminAccount && <p className="text-xs text-gray-500">Only a superadmin can act on an admin account.</p>}
+                  {!superadmin && isAdminAccount && <p className="text-xs text-fg-subtle">Only a superadmin can act on an admin account.</p>}
                 </div>
               </div>
             </Section>
@@ -154,7 +155,7 @@ export function UserDetail() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Reports">
               <DataTable rowKey={(r) => r.ref} rows={data.reports} empty="No reports." columns={[
-                { key: 'ref', label: 'Report', render: (r) => <Link to={`/admin/reports/${r.ref}`} className="font-semibold text-blue-600 hover:underline">{r.ref}</Link> },
+                { key: 'ref', label: 'Report', render: (r) => <Link to={`/admin/reports/${r.ref}`} className="font-semibold text-accent-fg hover:underline">{r.ref}</Link> },
                 { key: 'area', label: 'Area' },
                 { key: 'status', label: 'Status', render: (r) => <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge> },
                 { key: 'createdAt', label: 'Sent', render: (r) => when(r.createdAt) },

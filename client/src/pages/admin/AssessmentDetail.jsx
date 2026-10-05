@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Select } from '../../components/ui/Field';
 import { Link, useParams } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { ErrorNote, LevelBadge, Loading, PageHeader, Section, pct, usd, when } from '../../components/admin/ui';
@@ -18,9 +19,9 @@ const STATUS = {
 
 /** A cited id: reports open in the inbox, evidence ids jump to the evidence. */
 function Cite({ id }) {
-  if (id.startsWith('NV-')) return <Link to={`/admin/reports/${id}`} className="rounded bg-blue-50 px-1.5 py-0.5 font-mono text-[11px] text-blue-700 hover:underline">{id}</Link>;
-  if (id.startsWith('MC-') || id.startsWith('GW-')) return <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700" title={id.startsWith('MC-') ? 'A logged AI call' : 'A logged YouTube / PDF / sign-in call'}>{id.slice(0, 11)}</span>;
-  return <a href={`#ev-${id}`} className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 hover:underline">{id}</a>;
+  if (id.startsWith('NV-')) return <Link to={`/admin/reports/${id}`} className="rounded bg-accent-soft px-1.5 py-0.5 font-mono text-micro text-accent-fg hover:underline">{id}</Link>;
+  if (id.startsWith('MC-') || id.startsWith('GW-')) return <span className="rounded bg-sunken px-1.5 py-0.5 font-mono text-micro text-fg-muted" title={id.startsWith('MC-') ? 'A logged AI call' : 'A logged YouTube / PDF / sign-in call'}>{id.slice(0, 11)}</span>;
+  return <a href={`#ev-${id}`} className="rounded bg-sunken px-1.5 py-0.5 font-mono text-micro text-fg-muted hover:underline">{id}</a>;
 }
 
 function Recommendation({ rec, assessmentId, onChange }) {
@@ -41,24 +42,24 @@ function Recommendation({ rec, assessmentId, onChange }) {
   const [tone, label] = STATUS[rec.status] || ['gray', rec.status];
   const open = ['awaiting_approval', 'advice'].includes(rec.status);
   return (
-    <li className="rounded-lg border border-gray-200 p-4">
+    <li className="rounded-lg border border-line p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="min-w-0 flex-1 text-sm font-semibold text-gray-900">{rec.action}</p>
+        <p className="min-w-0 flex-1 text-sm font-semibold text-fg">{rec.action}</p>
         <Badge tone={tone}>{label}</Badge>
       </div>
-      <p className="mt-1 text-xs text-gray-500">{rec.actionType.replace(/_/g, ' ')} · priority {rec.priority} · {rec.kind}{Object.keys(rec.params || {}).length ? ` · ${JSON.stringify(rec.params)}` : ''}</p>
-      {rec.rationale && <p className="mt-2 text-sm text-gray-700">{rec.rationale}</p>}
-      {rec.expectedEffect && <p className="mt-1 text-xs text-gray-500">Expected: {rec.expectedEffect}</p>}
+      <p className="mt-1 text-xs text-fg-subtle">{rec.actionType.replace(/_/g, ' ')} · priority {rec.priority} · {rec.kind}{Object.keys(rec.params || {}).length ? ` · ${JSON.stringify(rec.params)}` : ''}</p>
+      {rec.rationale && <p className="mt-2 text-sm text-fg-muted">{rec.rationale}</p>}
+      {rec.expectedEffect && <p className="mt-1 text-xs text-fg-subtle">Expected: {rec.expectedEffect}</p>}
       {rec.evidenceIds?.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{rec.evidenceIds.map((id) => <Cite key={id} id={id} />)}</div>}
-      {rec.approvedBy && <p className="mt-2 text-xs text-gray-500">{label} by {rec.approvedBy} {when(rec.decidedAt)}</p>}
-      {rec.error && <p className="mt-2 text-xs text-red-600">{rec.error}</p>}
+      {rec.approvedBy && <p className="mt-2 text-xs text-fg-subtle">{label} by {rec.approvedBy} {when(rec.decidedAt)}</p>}
+      {rec.error && <p className="mt-2 text-xs text-danger-fg">{rec.error}</p>}
       {open && (
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={() => decide('approve')} disabled={Boolean(busy)} className={`${btn.primary} py-1.5`}>{busy === 'approve' ? <Spinner /> : null}{rec.status === 'advice' ? 'Mark done' : 'Approve and run'}</button>
           <button type="button" onClick={() => decide('dismiss')} disabled={Boolean(busy)} className={`${btn.secondary} py-1.5`}>Dismiss</button>
         </div>
       )}
-      {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-xs text-danger-fg">{error}</p>}
     </li>
   );
 }
@@ -83,12 +84,12 @@ function WhatIf({ assessmentId }) {
     }
   };
   return (
-    <form onSubmit={run} className="mt-4 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-4">
-      <label className="text-xs text-gray-600">If<select value={feature} onChange={(e) => setFeature(e.target.value)} className={`${fieldClass(false)} mt-1 py-1.5`}>{WHATIF_FEATURES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-      <label className="text-xs text-gray-600">were ×<input type="number" step="0.1" min="0" max="5" value={multiplier} onChange={(e) => setMultiplier(e.target.value)} className={`${fieldClass(false)} mt-1 w-24 py-1.5`} /></label>
+    <form onSubmit={run} className="mt-4 flex flex-wrap items-end gap-2 border-t border-line-subtle pt-4">
+      <label className="text-xs text-fg-muted">If<Select value={feature} onChange={(e) => setFeature(e.target.value)} className="mt-1 w-full" size="sm">{WHATIF_FEATURES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select></label>
+      <label className="text-xs text-fg-muted">were ×<input type="number" step="0.1" min="0" max="5" value={multiplier} onChange={(e) => setMultiplier(e.target.value)} className={`${fieldClass(false)} mt-1 w-24 py-1.5`} /></label>
       <button type="submit" className={`${btn.secondary} py-2`}>Re-score</button>
-      {result && <p className="w-full text-sm text-gray-700">Score {result.baseScore.toFixed(3)} → <strong>{result.newScore.toFixed(3)}</strong></p>}
-      {error && <p className="w-full text-xs text-red-600">{error}</p>}
+      {result && <p className="w-full text-sm text-fg-muted">Score {result.baseScore.toFixed(3)} → <strong>{result.newScore.toFixed(3)}</strong></p>}
+      {error && <p className="w-full text-xs text-danger-fg">{error}</p>}
     </form>
   );
 }
@@ -129,7 +130,7 @@ export default function AssessmentDetail() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-2">
             <LevelBadge level={a.risk?.level} />
-            {a.risk && <span className="text-sm text-gray-600">score {Number(a.risk.score).toFixed(3)}</span>}
+            {a.risk && <span className="text-sm text-fg-muted">score {Number(a.risk.score).toFixed(3)}</span>}
             {a.degraded && <Badge tone="amber">Degraded: some steps ran without a model</Badge>}
             {a.status === 'interrupted' && <Badge tone="red">Interrupted</Badge>}
           </div>
@@ -138,34 +139,34 @@ export default function AssessmentDetail() {
             <Section title="Findings" subtitle="Each claim cites the evidence it rests on" className="lg:col-span-2">
               <ul className="space-y-3 px-6 pb-6">
                 {a.hypotheses.map((h, i) => (
-                  <li key={i} className="flex gap-4 rounded-lg border border-gray-200 p-4">
+                  <li key={i} className="flex gap-4 rounded-lg border border-line p-4">
                     <Ring value={Math.round((h.confidence || 0) * 100)} size={56} color={h.degraded ? chart.muted : chart.brand} label={`confidence ${Math.round((h.confidence || 0) * 100)}%`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-900">{h.cause}</p>
-                      {h.uncited && <p className="mt-1 text-xs text-amber-700">No valid citation: confidence capped at 35%.</p>}
+                      <p className="text-sm text-fg">{h.cause}</p>
+                      {h.uncited && <p className="mt-1 text-xs text-warning-fg">No valid citation: confidence capped at 35%.</p>}
                       <div className="mt-2 flex flex-wrap gap-1">{(h.evidenceIds || []).map((cid) => <Cite key={cid} id={cid} />)}</div>
-                      {h.contradictingIds?.length > 0 && <p className="mt-2 text-xs text-gray-500">Contradicted by: {h.contradictingIds.map((cid) => <Cite key={cid} id={cid} />)}</p>}
+                      {h.contradictingIds?.length > 0 && <p className="mt-2 text-xs text-fg-subtle">Contradicted by: {h.contradictingIds.map((cid) => <Cite key={cid} id={cid} />)}</p>}
                     </div>
                   </li>
                 ))}
-                {!a.hypotheses.length && <li className="text-sm text-gray-500">No findings: {a.outcome === 'no_investigation_needed' ? 'the area was not at HIGH risk, so nothing was investigated.' : 'the run did not finish.'}</li>}
+                {!a.hypotheses.length && <li className="text-sm text-fg-subtle">No findings: {a.outcome === 'no_investigation_needed' ? 'the area was not at HIGH risk, so nothing was investigated.' : 'the run did not finish.'}</li>}
               </ul>
             </Section>
 
             <Section title="Review" subtitle="A second model audits the findings">
               <div className="space-y-2 px-6 pb-6 text-sm">
                 <Badge tone={vTone}>{vLabel}</Badge>
-                {a.verification?.note && <p className="text-gray-700">{a.verification.note}</p>}
-                {a.verification?.model && <p className="text-xs text-gray-500">Reviewer: {a.verification.model}</p>}
-                {a.revisionCount > 0 && <p className="text-xs text-gray-500">Revised {a.revisionCount} time(s) after review.</p>}
-                {(a.verification?.unsupported || []).map((u) => <p key={u} className="text-xs text-amber-700">Unsupported: {u}</p>)}
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="mb-2 text-xs font-semibold text-gray-500">Was this accurate?</p>
+                {a.verification?.note && <p className="text-fg-muted">{a.verification.note}</p>}
+                {a.verification?.model && <p className="text-xs text-fg-subtle">Reviewer: {a.verification.model}</p>}
+                {a.revisionCount > 0 && <p className="text-xs text-fg-subtle">Revised {a.revisionCount} time(s) after review.</p>}
+                {(a.verification?.unsupported || []).map((u) => <p key={u} className="text-xs text-warning-fg">Unsupported: {u}</p>)}
+                <div className="border-t border-line-subtle pt-3">
+                  <p className="mb-2 text-xs font-semibold text-fg-subtle">Was this accurate?</p>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => sendFeedback('accurate')} className={`${btn.secondary} py-1.5`}>Accurate</button>
                     <button type="button" onClick={() => sendFeedback('not_accurate')} className={`${btn.secondary} py-1.5`}>Not accurate</button>
                   </div>
-                  {feedbackNote && <p className="mt-2 text-xs text-gray-600" role="status">{feedbackNote}</p>}
+                  {feedbackNote && <p className="mt-2 text-xs text-fg-muted" role="status">{feedbackNote}</p>}
                 </div>
               </div>
             </Section>
@@ -175,17 +176,17 @@ export default function AssessmentDetail() {
             <Section title="Recommendations" subtitle="Only internal flags run by themselves; everything else waits for you">
               <ul className="space-y-3 px-6 pb-6">
                 {a.recommendations.map((r) => <Recommendation key={r.id} rec={r} assessmentId={a._id} onChange={reload} />)}
-                {!a.recommendations.length && <li className="text-sm text-gray-500">No recommendations.</li>}
+                {!a.recommendations.length && <li className="text-sm text-fg-subtle">No recommendations.</li>}
               </ul>
             </Section>
             <Section title="Outlook" subtitle={a.predictions ? `${a.predictions.horizonDays}-day view · ${a.predictions.method}` : ''}>
               {a.predictions ? (
                 <div className="px-6 pb-6">
-                  <p className="mb-4 text-sm text-gray-700">Chance this becomes an incident: <strong>{pct(a.predictions.pIncident)}</strong> (score now {a.predictions.baseScore.toFixed(3)})</p>
+                  <p className="mb-4 text-sm text-fg-muted">Chance this becomes an incident: <strong>{pct(a.predictions.pIncident)}</strong> (score now {a.predictions.baseScore.toFixed(3)})</p>
                   <BarList rows={Object.entries(a.predictions.whatif).map(([label, v]) => ({ label: `If ${label}`, value: Math.round(v * 100), note: `score ${v.toFixed(3)}` }))} />
                   <WhatIf assessmentId={a._id} />
                 </div>
-              ) : <p className="px-6 pb-6 text-sm text-gray-500">No outlook for this run.</p>}
+              ) : <p className="px-6 pb-6 text-sm text-fg-subtle">No outlook for this run.</p>}
             </Section>
           </div>
 
@@ -193,19 +194,19 @@ export default function AssessmentDetail() {
             <div className="space-y-5 px-6 pb-6">
               {lanes.map((lane) => (
                 <div key={lane}>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{LANE_LABEL[lane] || lane}</h3>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{LANE_LABEL[lane] || lane}</h3>
                   <ul className="space-y-2">
                     {a.evidence.filter((e) => e.lane === lane).map((e) => (
-                      <li key={e.id} id={`ev-${e.id}`} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                        <span className="mr-2 font-mono text-[11px] text-gray-500">{e.id}</span>
-                        <span className="text-gray-800">{e.summary}</span>
+                      <li key={e.id} id={`ev-${e.id}`} className="rounded-lg border border-line px-3 py-2 text-sm">
+                        <span className="mr-2 font-mono text-micro text-fg-subtle">{e.id}</span>
+                        <span className="text-fg">{e.summary}</span>
                         {e.citeIds?.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1">{e.citeIds.slice(0, 12).map((cid) => <Cite key={cid} id={cid} />)}</div>}
                       </li>
                     ))}
                   </ul>
                 </div>
               ))}
-              {a.runErrors?.length > 0 && <p className="text-xs text-gray-500">Notes: {a.runErrors.join(' · ')}</p>}
+              {a.runErrors?.length > 0 && <p className="text-xs text-fg-subtle">Notes: {a.runErrors.join(' · ')}</p>}
             </div>
           </Section>
         </div>

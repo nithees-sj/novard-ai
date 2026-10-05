@@ -87,7 +87,7 @@ export default function AreaDetail() {
             <Section title="What drives the score" subtitle="Each signal's deviation from this area's own baseline (σ)">
               <div className="px-6 pb-6">
                 <BarList
-                  rows={(data.latest?.attribution || []).filter((a) => a.z > 0).slice(0, 8).map((a) => ({ label: a.label, value: Number(a.z.toFixed(1)), max: 6, note: pct(a.share), color: a.z >= 3 ? 'bg-red-500' : a.z >= 1.5 ? 'bg-amber-500' : 'bg-primary-500' }))}
+                  rows={(data.latest?.attribution || []).filter((a) => a.z > 0).slice(0, 8).map((a) => ({ label: a.label, value: Number(a.z.toFixed(1)), max: 6, note: pct(a.share), color: a.z >= 3 ? 'bg-danger' : a.z >= 1.5 ? 'bg-warning' : 'bg-accent' }))}
                   max={6}
                   unit="σ"
                   emptyText="Nothing unusual in this window."
@@ -96,15 +96,15 @@ export default function AreaDetail() {
             </Section>
           </div>
 
-          <Section title="Open reports" subtitle={complaintNote(data.latest?.complaints) || 'Newest first'} right={<Link to={`/admin/reports?area=${area}`} className="text-xs font-semibold text-blue-600 hover:underline">Inbox</Link>}>
+          <Section title="Open reports" subtitle={complaintNote(data.latest?.complaints) || 'Newest first'} right={<Link to={`/admin/reports?area=${area}`} className="text-xs font-semibold text-accent-fg hover:underline">Inbox</Link>}>
             <DataTable
               rowKey={(r) => r.ref}
               onRowClick={(r) => navigate(`/admin/reports/${r.ref}`)}
               empty="No open reports in this area."
               rows={data.openReports}
               columns={[
-                { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-gray-900">{r.ref}</span> },
-                { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-xl text-gray-700">{r.text}</span> },
+                { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-fg">{r.ref}</span> },
+                { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-xl text-fg-muted">{r.text}</span> },
                 { key: 'risk', label: 'Counts as', render: (r) => <RiskVerdict risk={r.risk} /> },
                 { key: 'urgency', label: 'Urgency', render: (r) => r.enrichment?.urgency || '–' },
                 { key: 'topic', label: 'Topic', render: (r) => r.enrichment?.topic || '–' },
@@ -123,26 +123,26 @@ export default function AreaDetail() {
                 columns={[
                   { key: 'startedAt', label: 'Started', render: (r) => when(r.startedAt) },
                   { key: 'outcome', label: 'Outcome', render: (r) => (r.outcome || r.status).replace(/_/g, ' ') + (r.degraded ? ' (degraded)' : '') },
-                  { key: 'cause', label: 'Top cause', render: (r) => <span className="line-clamp-2 text-gray-700">{r.topCause || '–'}</span> },
+                  { key: 'cause', label: 'Top cause', render: (r) => <span className="line-clamp-2 text-fg-muted">{r.topCause || '–'}</span> },
                   { key: 'cost', label: 'Cost', render: (r) => usd(r.budget?.usdUsed) },
                 ]}
               />
             </Section>
             <Section title="Tracked risks and precedents">
-              <ul className="divide-y divide-gray-100 px-6 pb-4 text-sm">
+              <ul className="divide-y divide-line-subtle px-6 pb-4 text-sm">
                 {data.riskObjects.map((o) => (
                   <li key={o._id} className="py-2.5">
-                    <p className="font-medium text-gray-900">{o.topic} <span className="text-xs font-normal text-gray-500">· {o.state}{o.flagged ? ' · flagged' : ''} · peak {o.peakScore.toFixed(2)}</span></p>
-                    <p className="text-xs text-gray-500">first seen {when(o.firstDetectedAt)}, last {when(o.lastSeenAt)}</p>
+                    <p className="font-medium text-fg">{o.topic} <span className="text-xs font-normal text-fg-subtle">· {o.state}{o.flagged ? ' · flagged' : ''} · peak {o.peakScore.toFixed(2)}</span></p>
+                    <p className="text-xs text-fg-subtle">first seen {when(o.firstDetectedAt)}, last {when(o.lastSeenAt)}</p>
                   </li>
                 ))}
                 {data.precedents.map((p) => (
                   <li key={p._id} className="py-2.5">
-                    <p className="text-gray-800">Before: {p.cause}</p>
-                    <p className="text-xs text-gray-500">{p.resolution} ({when(p.closedAt)})</p>
+                    <p className="text-fg">Before: {p.cause}</p>
+                    <p className="text-xs text-fg-subtle">{p.resolution} ({when(p.closedAt)})</p>
                   </li>
                 ))}
-                {!data.riskObjects.length && !data.precedents.length && <li className="py-4 text-gray-500">Nothing tracked yet.</li>}
+                {!data.riskObjects.length && !data.precedents.length && <li className="py-4 text-fg-subtle">Nothing tracked yet.</li>}
               </ul>
             </Section>
           </div>

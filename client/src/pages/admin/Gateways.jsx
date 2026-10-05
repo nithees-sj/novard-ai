@@ -25,17 +25,17 @@ export default function Gateways() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(data?.gateways || []).map((g) => (
-              <button key={g.id} type="button" onClick={() => navigate(`/admin/gateways/${g.id}`)} className="rounded-xl border border-gray-200 bg-surface p-5 text-left transition hover:border-blue-200 hover:bg-blue-50/30">
+              <button key={g.id} type="button" onClick={() => navigate(`/admin/gateways/${g.id}`)} className="rounded-xl border border-line bg-raised p-5 text-left transition hover:border-accent/30 hover:bg-accent-soft/30">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-base font-bold text-gray-900">{g.name}</h2>
+                  <h2 className="text-base font-bold text-fg">{g.name}</h2>
                   <StatusLight status={g.status} />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">{g.kind === 'ai' ? 'AI provider' : g.kind === 'database' ? 'Database' : 'Outside service'}</p>
-                {g.key && <p className="mt-3 text-xs text-gray-600">API key: {g.key.configured ? <>set, ends in <span className="font-mono">…{g.key.last4}</span></> : <span className="text-red-600">missing</span>}</p>}
+                <p className="mt-1 text-xs text-fg-subtle">{g.kind === 'ai' ? 'AI provider' : g.kind === 'database' ? 'Database' : 'Outside service'}</p>
+                {g.key && <p className="mt-3 text-xs text-fg-muted">API key: {g.key.configured ? <>set, ends in <span className="font-mono">…{g.key.last4}</span></> : <span className="text-danger-fg">missing</span>}</p>}
               </button>
             ))}
           </div>
-          <p className="mt-4 text-xs text-gray-500">{KEY_NOTE}</p>
+          <p className="mt-4 text-xs text-fg-subtle">{KEY_NOTE}</p>
         </>
       )}
     </AdminLayout>
@@ -55,7 +55,7 @@ function TestButton({ id }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <button type="button" onClick={run} disabled={state?.busy} className={btn.secondary}>{state?.busy ? <Spinner /> : null}Test</button>
-      {state && !state.busy && <span role="status" className={`text-xs ${state.ok ? 'text-emerald-700' : 'text-red-600'}`}>{state.ok ? 'Working' : 'Failed'}{state.latencyMs !== undefined ? ` in ${ms(state.latencyMs)}` : ''}: {state.result}</span>}
+      {state && !state.busy && <span role="status" className={`text-xs ${state.ok ? 'text-success-fg' : 'text-danger-fg'}`}>{state.ok ? 'Working' : 'Failed'}{state.latencyMs !== undefined ? ` in ${ms(state.latencyMs)}` : ''}: {state.result}</span>}
     </span>
   );
 }
@@ -112,7 +112,7 @@ export function GatewayDetail() {
       <ErrorNote error={error} onRetry={reload} />
       {loading && !g ? <Loading /> : g && (
         <div className="space-y-6">
-          {g.key && <p className="text-sm text-gray-600">API key: {g.key.configured ? <>set, ends in <span className="font-mono">…{g.key.last4}</span></> : <span className="text-red-600">missing</span>}. {KEY_NOTE}</p>}
+          {g.key && <p className="text-sm text-fg-muted">API key: {g.key.configured ? <>set, ends in <span className="font-mono">…{g.key.last4}</span></> : <span className="text-danger-fg">missing</span>}. {KEY_NOTE}</p>}
           {g.windows && <Section title="Health"><WindowTable windows={g.windows} ai={ai} rejected={g.id === 'oauth'} /></Section>}
 
           {ai && (
@@ -124,7 +124,7 @@ export function GatewayDetail() {
             </div>
           )}
           {g.byOperation && <Section title="By operation" subtitle="Last 7 days"><DataTable rowKey={(r) => r.operation} rows={g.byOperation} empty="No calls." columns={[{ key: 'operation', label: 'Operation' }, { key: 'events', label: 'Calls' }, { key: 'failed', label: 'Failed' }, { key: 'missing', label: 'No captions' }, { key: 'failureRate', label: 'Failure rate', render: (r) => pct(r.failureRate, 1) }]} /></Section>}
-          {g.clientIds && <Section title="OAuth client IDs" subtitle={g.note}><ul className="px-6 pb-6 font-mono text-xs text-gray-700">{g.clientIds.map((c) => <li key={c}>{c}</li>)}</ul></Section>}
+          {g.clientIds && <Section title="OAuth client IDs" subtitle={g.note}><ul className="px-6 pb-6 font-mono text-xs text-fg-muted">{g.clientIds.map((c) => <li key={c}>{c}</li>)}</ul></Section>}
           {g.collections && <Section title={`Database ${g.database} (${g.state})`}><DataTable rowKey={(r) => r.name} rows={g.collections} columns={[{ key: 'name', label: 'Collection' }, { key: 'documents', label: 'Documents', className: 'tabular-nums' }]} /></Section>}
 
           {g.editableSettings?.length > 0 && (

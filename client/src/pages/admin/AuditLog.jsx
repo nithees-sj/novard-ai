@@ -42,12 +42,12 @@ export default function AuditLog() {
             { key: 'adminId', label: 'Who', render: (e) => <span className="text-xs">{e.adminId}{e.adminRole && e.adminRole !== e.adminId ? ` (${e.adminRole})` : ''}</span> },
             { key: 'action', label: 'Action', render: (e) => <span className="font-mono text-xs">{e.action}</span> },
             { key: 'target', label: 'Target', render: (e) => <span className="text-xs">{e.target ? `${e.target.type}: ${e.target.id}` : '–'}</span> },
-            { key: 'change', label: 'Before → after', render: (e) => <span className="block max-w-md break-words font-mono text-[11px] text-gray-600">{short(e.before)} → {short(e.after)}</span> },
+            { key: 'change', label: 'Before → after', render: (e) => <span className="block max-w-md break-words font-mono text-micro text-fg-muted">{short(e.before)} → {short(e.after)}</span> },
           ]}
           footer={data && data.total > data.limit && (
-            <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-3 text-sm">
+            <div className="flex items-center justify-end gap-2 border-t border-line-subtle px-6 py-3 text-sm">
               <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className={`${btn.ghost} py-1`}>Newer</button>
-              <span className="text-gray-500">Page {page} of {Math.ceil(data.total / data.limit)}</span>
+              <span className="text-fg-subtle">Page {page} of {Math.ceil(data.total / data.limit)}</span>
               <button type="button" disabled={page * data.limit >= data.total} onClick={() => setPage((p) => p + 1)} className={`${btn.ghost} py-1`}>Older</button>
             </div>
           )}

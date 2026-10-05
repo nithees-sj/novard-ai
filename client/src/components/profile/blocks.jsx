@@ -4,11 +4,13 @@ import { Stat as UIStat, SectionHeader } from '../ui';
 /**
  * Blocks shared by the profile page and the admin console: a stat (one cell
  * of a StatStrip), a section heading and a titled card.
- * `accent` is accepted for older callers and ignored: stats are not colour-coded.
+ * Stats are not colour-coded; an older `accent` class only marks a warning
+ * (amber) or a problem (red) value, through its tone.
  */
 
-// eslint-disable-next-line no-unused-vars
-export const Stat = ({ label, value, sub, accent, tone }) => <UIStat label={label} value={value} sub={sub} tone={tone} />;
+const toneFromAccent = (accent = '') => (/red/.test(accent) ? 'danger' : /amber/.test(accent) ? 'warning' : undefined);
+
+export const Stat = ({ label, value, sub, accent, tone }) => <UIStat label={label} value={value} sub={sub} tone={tone || toneFromAccent(accent)} />;
 
 export const SectionTitle = ({ title, subtitle, actions }) => (
   <SectionHeader title={title} description={subtitle} actions={actions} className="mb-0 pt-2" />

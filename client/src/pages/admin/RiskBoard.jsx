@@ -32,13 +32,13 @@ export default function RiskBoard() {
   };
 
   const columns = [
-    { key: 'label', label: 'Area', render: (r) => <span className="font-semibold text-gray-900">{r.label}</span> },
+    { key: 'label', label: 'Area', render: (r) => <span className="font-semibold text-fg">{r.label}</span> },
     { key: 'level', label: 'Level', render: (r) => <span className="flex items-center gap-2"><LevelBadge level={r.level} />{r.complaints?.raised && <Badge tone="red">complaints</Badge>}{r.status === 'insufficient_baseline' && !r.complaints?.raised && <Badge>new area</Badge>}</span> },
     { key: 'score', label: 'Score', className: 'tabular-nums', render: (r) => r.score.toFixed(3) },
     { key: 'trend', label: '28-day trend', render: (r) => <Sparkline values={r.sparkline.map((p) => p.score)} max={1} color={LEVEL_COLORS[r.level]} label={`${r.label} risk trend`} /> },
     { key: 'drivers', label: 'Driven by', render: (r) => <DriverList drivers={r.drivers} /> },
     { key: 'reports', label: 'Open reports', className: 'tabular-nums', render: (r) => `${r.openReports}${r.urgentReports ? ` (${r.urgentReports} urgent)` : ''}` },
-    { key: 'object', label: 'Tracking', render: (r) => (r.riskObject ? <span className="text-xs text-gray-600">{r.riskObject.topic} · {r.riskObject.state}{r.riskObject.flagged ? ' · flagged' : ''}</span> : <span className="text-xs text-gray-500">–</span>) },
+    { key: 'object', label: 'Tracking', render: (r) => (r.riskObject ? <span className="text-xs text-fg-muted">{r.riskObject.topic} · {r.riskObject.state}{r.riskObject.flagged ? ' · flagged' : ''}</span> : <span className="text-xs text-fg-subtle">–</span>) },
   ];
 
   return (
@@ -49,7 +49,7 @@ export default function RiskBoard() {
         actions={<button type="button" onClick={rescan} disabled={rescanning} className={btn.primary}>{rescanning ? <><Spinner /> Rescanning…</> : 'Rescan now'}</button>}
       />
       <ErrorNote error={error} onRetry={reload} />
-      {note && <p className="mb-4 text-sm text-gray-600" role="status">{note}</p>}
+      {note && <p className="mb-4 text-sm text-fg-muted" role="status">{note}</p>}
       {loading && !data ? <Loading label="Scoring areas…" /> : data && (
         <Section>
           <DataTable columns={columns} rows={data.areas} rowKey={(r) => r.area} onRowClick={(r) => navigate(`/admin/risk/${r.area}`)} />

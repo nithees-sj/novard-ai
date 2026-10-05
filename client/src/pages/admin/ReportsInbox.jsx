@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Select } from '../../components/ui/Field';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { ErrorNote, LevelBadge, Loading, PageHeader, Section, when } from '../../components/admin/ui';
@@ -71,29 +72,29 @@ export default function ReportsInbox() {
       <Section className="mb-6">
         <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
           <Field id="f-area" label="Area">
-            <select id="f-area" value={filters.area} onChange={(e) => setFilter('area', e.target.value)} className={fieldClass(false)}>
+            <Select id="f-area" value={filters.area} onChange={(e) => setFilter('area', e.target.value)} className="w-full">
               <option value="">All areas</option>
               {areas.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field id="f-status" label="Status">
-            <select id="f-status" value={filters.status} onChange={(e) => setFilter('status', e.target.value)} className={fieldClass(false)}>
+            <Select id="f-status" value={filters.status} onChange={(e) => setFilter('status', e.target.value)} className="w-full">
               <option value="">Any</option>
               <option value="open,in_progress">Open or in progress</option>
               {Object.entries(STATUS_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field id="f-urgency" label="Urgency">
-            <select id="f-urgency" value={filters.urgency} onChange={(e) => setFilter('urgency', e.target.value)} className={fieldClass(false)}>
+            <Select id="f-urgency" value={filters.urgency} onChange={(e) => setFilter('urgency', e.target.value)} className="w-full">
               <option value="">Any</option>
               {['high', 'medium', 'low'].map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field id="f-intent" label="Kind">
-            <select id="f-intent" value={filters.intent} onChange={(e) => setFilter('intent', e.target.value)} className={fieldClass(false)}>
+            <Select id="f-intent" value={filters.intent} onChange={(e) => setFilter('intent', e.target.value)} className="w-full">
               <option value="">Any</option>
               {INTENTS.map((i) => <option key={i} value={i}>{i.replace(/_/g, ' ')}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field id="f-q" label="Search"><input id="f-q" defaultValue={filters.q} onKeyDown={(e) => { if (e.key === 'Enter') setFilter('q', e.target.value.trim()); }} placeholder="Text, student or NV-…, then Enter" className={fieldClass(false)} /></Field>
           <Field id="f-from" label="From"><input id="f-from" type="date" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} className={fieldClass(false)} /></Field>
@@ -104,12 +105,12 @@ export default function ReportsInbox() {
       {(selected.size > 0 || (filters.area && openRows.length > 0)) && (
         <Section className="mb-6">
           <div className="space-y-3 p-5">
-            {selected.size > 0 && <><p className="text-sm font-semibold text-gray-900">{selected.size} selected</p><ResolveBox label="Resolve selected" busy={busy} onResolve={(n) => resolve({ refs: [...selected], note: n })} /></>}
-            {filters.area && selected.size === 0 && <><p className="text-sm font-semibold text-gray-900">Every open report in {areas.find((a) => a.id === filters.area)?.label || filters.area}</p><ResolveBox label="Resolve all in area" busy={busy} onResolve={(n) => resolve({ note: n }, `/api/admin/areas/${filters.area}/resolve`)} /></>}
+            {selected.size > 0 && <><p className="text-sm font-semibold text-fg">{selected.size} selected</p><ResolveBox label="Resolve selected" busy={busy} onResolve={(n) => resolve({ refs: [...selected], note: n })} /></>}
+            {filters.area && selected.size === 0 && <><p className="text-sm font-semibold text-fg">Every open report in {areas.find((a) => a.id === filters.area)?.label || filters.area}</p><ResolveBox label="Resolve all in area" busy={busy} onResolve={(n) => resolve({ note: n }, `/api/admin/areas/${filters.area}/resolve`)} /></>}
           </div>
         </Section>
       )}
-      {note && <p className="mb-4 text-sm text-gray-700" role="status">{note}</p>}
+      {note && <p className="mb-4 text-sm text-fg-muted" role="status">{note}</p>}
 
       {loading && !data ? <Loading /> : (
         <Section>
@@ -124,10 +125,10 @@ export default function ReportsInbox() {
                   ? <input type="checkbox" checked={selected.has(r.ref)} onClick={(e) => e.stopPropagation()} onChange={() => toggle(r.ref)} aria-label={`Select ${r.ref}`} />
                   : null),
               },
-              { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-gray-900">{r.ref}</span> },
-              { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-md text-gray-700">{r.text}</span> },
+              { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-fg">{r.ref}</span> },
+              { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-md text-fg-muted">{r.text}</span> },
               { key: 'area', label: 'Area', render: (r) => r.areaLabel },
-              { key: 'urgency', label: 'Urgency', render: (r) => (r.enrichment?.urgency ? <Badge tone={URGENCY_TONE[r.enrichment.urgency]}>{r.enrichment.urgency}</Badge> : <span className="text-xs text-gray-500">{r.enrichment?.status === 'done' ? '–' : 'triaging'}</span>) },
+              { key: 'urgency', label: 'Urgency', render: (r) => (r.enrichment?.urgency ? <Badge tone={URGENCY_TONE[r.enrichment.urgency]}>{r.enrichment.urgency}</Badge> : <span className="text-xs text-fg-subtle">{r.enrichment?.status === 'done' ? '–' : 'triaging'}</span>) },
               { key: 'status', label: 'Status', render: (r) => <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge> },
               { key: 'createdAt', label: 'Sent', render: (r) => when(r.createdAt) },
             ]}
@@ -146,7 +147,7 @@ function AdminAttachment({ reportRef, a }) {
     if (!res.ok) { setError('Could not load it.'); return; }
     window.open(URL.createObjectURL(await res.blob()), '_blank', 'noopener');
   };
-  return <span><button type="button" onClick={open} className={`${btn.secondary} py-1.5`}><Icon name={{ screenshot: 'image', voice: 'mic', pdf: 'paperclip' }[a.kind]} />{a.originalName || a.kind}</button>{error && <span className="ml-2 text-xs text-red-600">{error}</span>}</span>;
+  return <span><button type="button" onClick={open} className={`${btn.secondary} py-1.5`}><Icon name={{ screenshot: 'image', voice: 'mic', pdf: 'paperclip' }[a.kind]} />{a.originalName || a.kind}</button>{error && <span className="ml-2 text-xs text-danger-fg">{error}</span>}</span>;
 }
 
 /** One report, everything about it, and every action on it. */
@@ -183,34 +184,34 @@ export function AdminReportDetail() {
           <div className="space-y-6 lg:col-span-2">
             <Section title="The report">
               <div className="space-y-3 px-6 pb-6 text-sm">
-                <p className="whitespace-pre-wrap text-gray-900">{r.text}</p>
-                {r.transcript && <p className="rounded-lg bg-gray-50 px-3 py-2 text-gray-700"><strong>Voice note:</strong> {r.transcript}</p>}
+                <p className="whitespace-pre-wrap text-fg">{r.text}</p>
+                {r.transcript && <p className="rounded-lg bg-sunken px-3 py-2 text-fg-muted"><strong>Voice note:</strong> {r.transcript}</p>}
                 {r.source?.excerpt && (
-                  <div className="rounded-lg border border-gray-200 px-3 py-2">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">The AI output they reported{r.source.itemType ? ` (${r.source.itemType.replace(/_/g, ' ')})` : ''}{r.source.excerptVerified === false ? ' · as sent by the student, not found in the database' : ''}</p>
-                    <p className="whitespace-pre-wrap text-gray-700">{r.source.excerpt}</p>
+                  <div className="rounded-lg border border-line px-3 py-2">
+                    <p className="mb-1 text-micro font-semibold uppercase tracking-wide text-fg-subtle">The AI output they reported{r.source.itemType ? ` (${r.source.itemType.replace(/_/g, ' ')})` : ''}{r.source.excerptVerified === false ? ' · as sent by the student, not found in the database' : ''}</p>
+                    <p className="whitespace-pre-wrap text-fg-muted">{r.source.excerpt}</p>
                   </div>
                 )}
-                {r.pdfText && <details className="rounded-lg bg-gray-50 px-3 py-2 text-gray-600"><summary className="cursor-pointer font-medium">Attached PDF text</summary><p className="mt-2 whitespace-pre-wrap">{r.pdfText}</p></details>}
+                {r.pdfText && <details className="rounded-lg bg-sunken px-3 py-2 text-fg-muted"><summary className="cursor-pointer font-medium">Attached PDF text</summary><p className="mt-2 whitespace-pre-wrap">{r.pdfText}</p></details>}
                 {r.attachments.length > 0 && <div className="flex flex-wrap gap-2">{r.attachments.map((a) => <AdminAttachment key={a.n} reportRef={r.ref} a={a} />)}</div>}
-                {r.source?.page && <p className="text-xs text-gray-500">From {r.source.page}</p>}
+                {r.source?.page && <p className="text-xs text-fg-subtle">From {r.source.page}</p>}
               </div>
             </Section>
 
             <Section title="Conversation and notes" subtitle="Internal notes are for admins only; replies notify the student">
               <ol className="space-y-2 px-6">
                 {r.notes.map((n, i) => (
-                  <li key={i} className={`rounded-lg border px-3 py-2 text-sm ${n.internal ? 'border-amber-200 bg-amber-50' : n.authorRole === 'student' ? 'border-gray-200' : 'border-blue-100 bg-blue-50/60'}`}>
-                    <p className="mb-0.5 text-xs font-semibold text-gray-500">{n.authorRole === 'student' ? r.studentName : (n.authorName || n.author)}{n.internal ? ' · internal' : ''} · {when(n.at)}</p>
-                    <p className="whitespace-pre-wrap text-gray-800">{n.body}</p>
+                  <li key={i} className={`rounded-lg border px-3 py-2 text-sm ${n.internal ? 'border-warning/30 bg-warning-soft' : n.authorRole === 'student' ? 'border-line' : 'border-accent/20 bg-accent-soft/60'}`}>
+                    <p className="mb-0.5 text-xs font-semibold text-fg-subtle">{n.authorRole === 'student' ? r.studentName : (n.authorName || n.author)}{n.internal ? ' · internal' : ''} · {when(n.at)}</p>
+                    <p className="whitespace-pre-wrap text-fg">{n.body}</p>
                   </li>
                 ))}
-                {!r.notes.length && <li className="text-sm text-gray-500">No notes yet.</li>}
+                {!r.notes.length && <li className="text-sm text-fg-subtle">No notes yet.</li>}
               </ol>
               <form className="space-y-2 p-6" onSubmit={(e) => { e.preventDefault(); if (noteText.trim()) act(() => adminPost(`/api/admin/reports/${r.ref}/notes`, { body: noteText.trim(), internal })).then(() => setNoteText('')); }}>
                 <textarea rows={3} value={noteText} onChange={(e) => setNoteText(e.target.value)} className={fieldClass(false)} placeholder={internal ? 'Internal note' : 'Reply to the student'} aria-label="Note" />
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} /> Internal note</label>
+                  <label className="flex items-center gap-2 text-sm text-fg-muted"><input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} /> Internal note</label>
                   <button type="submit" disabled={busy || !noteText.trim()} className={btn.primary}>{internal ? 'Add note' : 'Send reply'}</button>
                 </div>
               </form>
@@ -225,11 +226,11 @@ export function AdminReportDetail() {
                   <>
                     {r.status === 'open' && <button type="button" onClick={() => act(() => adminPost(`/api/admin/reports/${r.ref}/status`, { status: 'in_progress' }))} className={`${btn.secondary} w-full`}>Mark in progress</button>}
                     <ResolveBox label="Resolve" busy={busy} onResolve={(n) => act(() => adminPost(`/api/admin/reports/${r.ref}/status`, { status: 'resolved', note: n }))} />
-                    <button type="button" onClick={() => act(() => adminPost(`/api/admin/reports/${r.ref}/status`, { status: 'closed' }))} className="text-xs font-semibold text-gray-500 hover:text-gray-800">Close without fixing</button>
+                    <button type="button" onClick={() => act(() => adminPost(`/api/admin/reports/${r.ref}/status`, { status: 'closed' }))} className="text-xs font-semibold text-fg-subtle hover:text-fg">Close without fixing</button>
                   </>
                 )}
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-xs text-gray-500">Assigned to {r.assignedTo || 'nobody'}</p>
+                <div className="border-t border-line-subtle pt-3">
+                  <p className="text-xs text-fg-subtle">Assigned to {r.assignedTo || 'nobody'}</p>
                   <div className="mt-2 flex gap-2">
                     <button type="button" onClick={() => act(() => adminPost(`/api/admin/reports/${r.ref}/assign`, { assignee: admin?.email }))} className={`${btn.secondary} py-1.5`}>Assign to me</button>
                     {r.assignedTo && <button type="button" onClick={() => act(() => adminPost(`/api/admin/reports/${r.ref}/assign`, { assignee: null }))} className={`${btn.ghost} py-1.5`}>Unassign</button>}
@@ -240,25 +241,25 @@ export function AdminReportDetail() {
 
             <Section title="Student">
               <div className="space-y-2 px-6 pb-6 text-sm">
-                <p className="font-medium text-gray-900">{r.studentName}</p>
-                {email ? <p className="text-gray-700">{email}</p> : <button type="button" onClick={() => act(async () => setEmail((await adminPost(`/api/admin/reports/${r.ref}/reporter-email`)).email))} className="text-xs font-semibold text-blue-600 hover:underline">Show email (recorded in the audit log)</button>}
+                <p className="font-medium text-fg">{r.studentName}</p>
+                {email ? <p className="text-fg-muted">{email}</p> : <button type="button" onClick={() => act(async () => setEmail((await adminPost(`/api/admin/reports/${r.ref}/reporter-email`)).email))} className="text-xs font-semibold text-accent-fg hover:underline">Show email (recorded in the audit log)</button>}
               </div>
             </Section>
 
             <Section title="Triage" subtitle={r.enrichment?.model ? `by ${r.enrichment.model}` : ''}>
               <dl className="grid grid-cols-2 gap-2 px-6 pb-6 text-sm">
-                <dt className="text-gray-500">Urgency</dt><dd>{r.enrichment?.urgency || '–'}</dd>
-                <dt className="text-gray-500">Kind</dt><dd>{r.enrichment?.intent?.replace(/_/g, ' ') || '–'}</dd>
-                <dt className="text-gray-500">Topic</dt><dd>{r.enrichment?.topic || '–'}</dd>
-                <dt className="text-gray-500">Sentiment</dt><dd>{typeof r.enrichment?.sentiment === 'number' ? r.enrichment.sentiment.toFixed(2) : '–'}</dd>
-                <dt className="text-gray-500">Repeat</dt><dd>{r.enrichment?.isRepeat ? 'yes' : 'no'}</dd>
-                <dt className="text-gray-500">Routed by</dt><dd>{r.routedBy}</dd>
+                <dt className="text-fg-subtle">Urgency</dt><dd>{r.enrichment?.urgency || '–'}</dd>
+                <dt className="text-fg-subtle">Kind</dt><dd>{r.enrichment?.intent?.replace(/_/g, ' ') || '–'}</dd>
+                <dt className="text-fg-subtle">Topic</dt><dd>{r.enrichment?.topic || '–'}</dd>
+                <dt className="text-fg-subtle">Sentiment</dt><dd>{typeof r.enrichment?.sentiment === 'number' ? r.enrichment.sentiment.toFixed(2) : '–'}</dd>
+                <dt className="text-fg-subtle">Repeat</dt><dd>{r.enrichment?.isRepeat ? 'yes' : 'no'}</dd>
+                <dt className="text-fg-subtle">Routed by</dt><dd>{r.routedBy}</dd>
               </dl>
             </Section>
 
-            <Section title="Area risk" right={<Link to={`/admin/risk/${r.area}`} className="text-xs font-semibold text-blue-600 hover:underline">Open</Link>}>
+            <Section title="Area risk" right={<Link to={`/admin/risk/${r.area}`} className="text-xs font-semibold text-accent-fg hover:underline">Open</Link>}>
               <div className="px-6 pb-6 text-sm">
-                {risk.data?.latest ? <p className="flex items-center gap-2"><LevelBadge level={risk.data.latest.level} /> score {risk.data.latest.score.toFixed(3)}</p> : <p className="text-gray-500">No score yet.</p>}
+                {risk.data?.latest ? <p className="flex items-center gap-2"><LevelBadge level={risk.data.latest.level} /> score {risk.data.latest.score.toFixed(3)}</p> : <p className="text-fg-subtle">No score yet.</p>}
               </div>
             </Section>
           </div>

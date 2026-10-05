@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const rowFocus = 'focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500';
+export const rowFocus = 'focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus';
 
 /**
  * A table in the app's card style (the same classes as the Profile page's
@@ -11,22 +11,22 @@ export const rowFocus = 'focus:outline-none focus-visible:outline focus-visible:
 export default function DataTable({ columns, rows, rowKey = (r, i) => r._id || r.id || i, onRowClick, empty = 'Nothing here yet.', footer = null }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-body">
         <thead>
-          <tr className="border-y border-gray-100 bg-gray-50/70 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          <tr className="border-y border-line-subtle bg-sunken/60 text-left text-caption font-medium text-fg-subtle">
             {columns.map((c, i) => (
               <th key={c.key} className={`${i === 0 ? 'px-6' : 'px-4'} py-2.5 whitespace-nowrap ${c.headClassName || ''}`}>{c.label}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-line-subtle">
           {rows.length === 0 && (
-            <tr><td colSpan={columns.length} className="px-6 py-10 text-center text-sm text-gray-500">{empty}</td></tr>
+            <tr><td colSpan={columns.length} className="px-6 py-10 text-center text-body text-fg-subtle">{empty}</td></tr>
           )}
           {rows.map((row, ri) => (
             <tr
               key={rowKey(row, ri)}
-              className={`hover:bg-gray-50/60 ${onRowClick ? `cursor-pointer ${rowFocus}` : ''}`}
+              className={`transition-colors hover:bg-sunken/60 ${onRowClick ? `cursor-pointer ${rowFocus}` : ''}`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               // Clickable rows open with the keyboard too (Tab to the row, then Enter).
               tabIndex={onRowClick ? 0 : undefined}

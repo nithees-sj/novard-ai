@@ -31,9 +31,9 @@ function Thread({ issueId, onClose, onChanged }) {
     <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <button type="button" onClick={onClose} className="mb-2 text-xs font-semibold text-blue-600 hover:underline">← All discussions</button>
-          <h2 className="text-lg font-bold text-gray-900">{issue.title}</h2>
-          <p className="text-xs text-gray-500">{issue.userName} · {when(issue.createdAt)} · {issue.status}</p>
+          <button type="button" onClick={onClose} className="mb-2 text-xs font-semibold text-accent-fg hover:underline">← All discussions</button>
+          <h2 className="text-lg font-bold text-fg">{issue.title}</h2>
+          <p className="text-xs text-fg-subtle">{issue.userName} · {when(issue.createdAt)} · {issue.status}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {issue.status === 'closed'
@@ -42,22 +42,22 @@ function Thread({ issueId, onClose, onChanged }) {
           <button type="button" onClick={async () => { if (await confirm({ title: 'Delete this discussion?', message: 'All its replies are deleted too.', confirmLabel: 'Delete', danger: true })) run(() => adminDelete(`/api/admin/forum/issues/${issueId}`).then(onClose), 'Deleted.'); }} className={btn.danger}>Delete discussion</button>
         </div>
       </div>
-      {note && <p className="text-sm text-gray-700" role="status">{note}</p>}
-      <p className="whitespace-pre-wrap rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800">{issue.description}</p>
+      {note && <p className="text-sm text-fg-muted" role="status">{note}</p>}
+      <p className="whitespace-pre-wrap rounded-lg border border-line px-4 py-3 text-sm text-fg">{issue.description}</p>
       <ul className="space-y-3">
         {comments.map((c) => (
-          <li key={c._id} className={`rounded-lg border px-4 py-3 text-sm ${c.hidden ? 'border-dashed border-gray-300 bg-gray-50 opacity-70' : c.isAI ? 'border-blue-100 bg-blue-50/60' : 'border-gray-200'}`}>
+          <li key={c._id} className={`rounded-lg border px-4 py-3 text-sm ${c.hidden ? 'border-dashed border-line-strong bg-sunken opacity-70' : c.isAI ? 'border-accent/20 bg-accent-soft/60' : 'border-line'}`}>
             <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-gray-600">{c.isAI ? 'AI Assistant' : c.userName} · {when(c.createdAt)} {c.hidden && <Badge>hidden from students</Badge>}</span>
+              <span className="text-xs font-semibold text-fg-muted">{c.isAI ? 'AI Assistant' : c.userName} · {when(c.createdAt)} {c.hidden && <Badge>hidden from students</Badge>}</span>
               <span className="flex gap-2">
-                <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/comments/${c._id}/hidden`, { hidden: !c.hidden }), c.hidden ? 'Shown again.' : 'Hidden from students.')} className="text-xs font-semibold text-blue-600 hover:underline">{c.hidden ? 'Show' : 'Hide'}</button>
-                <button type="button" onClick={async () => { if (await confirm({ title: 'Delete this reply?', message: 'Replies to it are deleted too.', confirmLabel: 'Delete', danger: true })) run(() => adminDelete(`/api/admin/forum/comments/${c._id}`), 'Reply deleted.'); }} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>
+                <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/comments/${c._id}/hidden`, { hidden: !c.hidden }), c.hidden ? 'Shown again.' : 'Hidden from students.')} className="text-xs font-semibold text-accent-fg hover:underline">{c.hidden ? 'Show' : 'Hide'}</button>
+                <button type="button" onClick={async () => { if (await confirm({ title: 'Delete this reply?', message: 'Replies to it are deleted too.', confirmLabel: 'Delete', danger: true })) run(() => adminDelete(`/api/admin/forum/comments/${c._id}`), 'Reply deleted.'); }} className="text-xs font-semibold text-danger-fg hover:underline">Delete</button>
               </span>
             </div>
-            {c.isAI ? <MarkdownView content={c.content} /> : <p className="whitespace-pre-wrap text-gray-800">{c.content}</p>}
+            {c.isAI ? <MarkdownView content={c.content} /> : <p className="whitespace-pre-wrap text-fg">{c.content}</p>}
           </li>
         ))}
-        {!comments.length && <li className="text-sm text-gray-500">No replies.</li>}
+        {!comments.length && <li className="text-sm text-fg-subtle">No replies.</li>}
       </ul>
     </div>
   );
@@ -91,7 +91,7 @@ export default function Moderation() {
                 onRowClick={(i) => setOpen(i.issueId)}
                 empty={forum.loading ? 'Loading…' : 'No discussions.'}
                 columns={[
-                  { key: 'title', label: 'Discussion', render: (i) => <span className="font-semibold text-gray-900">{i.title}</span> },
+                  { key: 'title', label: 'Discussion', render: (i) => <span className="font-semibold text-fg">{i.title}</span> },
                   { key: 'userName', label: 'By' },
                   { key: 'status', label: 'Status' },
                   { key: 'commentsCount', label: 'Replies', className: 'tabular-nums' },
@@ -105,21 +105,21 @@ export default function Moderation() {
       {tab === 'flagged' && (
         <Section>
           <ErrorNote error={flagged.error} onRetry={flagged.reload} />
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-line-subtle">
             {(flagged.data?.flagged || []).map((f) => (
               <li key={f.ref} className="space-y-2 px-6 py-4 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Link to={`/admin/reports/${f.ref}`} className="font-semibold text-blue-600 hover:underline">{f.ref}</Link>
-                  <span className="text-xs text-gray-500">{f.areaLabel} · {f.itemType ? f.itemType.replace(/_/g, ' ') : 'AI output'} · {f.status} · {when(f.createdAt)}</span>
+                  <Link to={`/admin/reports/${f.ref}`} className="font-semibold text-accent-fg hover:underline">{f.ref}</Link>
+                  <span className="text-xs text-fg-subtle">{f.areaLabel} · {f.itemType ? f.itemType.replace(/_/g, ' ') : 'AI output'} · {f.status} · {when(f.createdAt)}</span>
                 </div>
-                <p className="text-gray-800"><strong>Student:</strong> {f.complaint}</p>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">The AI said{f.verified ? '' : ' (as sent by the student)'}</p>
-                  <p className="line-clamp-6 whitespace-pre-wrap text-gray-700">{f.excerpt}</p>
+                <p className="text-fg"><strong>Student:</strong> {f.complaint}</p>
+                <div className="rounded-lg border border-line bg-sunken px-3 py-2">
+                  <p className="mb-1 text-micro font-semibold uppercase tracking-wide text-fg-subtle">The AI said{f.verified ? '' : ' (as sent by the student)'}</p>
+                  <p className="line-clamp-6 whitespace-pre-wrap text-fg-muted">{f.excerpt}</p>
                 </div>
               </li>
             ))}
-            {!flagged.loading && !(flagged.data?.flagged || []).length && <li className="px-6 py-10 text-center text-sm text-gray-500">No AI messages have been reported.</li>}
+            {!flagged.loading && !(flagged.data?.flagged || []).length && <li className="px-6 py-10 text-center text-sm text-fg-subtle">No AI messages have been reported.</li>}
           </ul>
         </Section>
       )}

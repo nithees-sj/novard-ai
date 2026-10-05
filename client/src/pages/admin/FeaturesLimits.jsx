@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Select } from '../../components/ui/Field';
 import AdminLayout from '../../components/admin/AdminLayout';
 import SettingEditor from '../../components/admin/SettingEditor';
 import { ErrorNote, Loading, PageHeader } from '../../components/admin/ui';
@@ -35,18 +36,18 @@ function TokenLimitsEditor({ setting, save, reset }) {
       onSave={() => save({ period, perStudent: Object.fromEntries(tools.map((tool) => [tool, Number(limits[tool]) || 0])) })}
       onReset={reset}
     >
-      <label className="block text-sm text-gray-700">Limit period (UTC)
-        <select value={period} onChange={(e) => setPeriod(e.target.value)} disabled={!setting.editable} className={`${fieldClass(false)} mt-1 w-64 py-1.5`}>
+      <label className="block text-sm text-fg-muted">Limit period (UTC)
+        <Select value={period} onChange={(e) => setPeriod(e.target.value)} disabled={!setting.editable} className="mt-1 w-64" size="sm">
           {PERIODS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </select>
+        </Select>
       </label>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-y border-gray-100 bg-gray-50/70 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500"><th className="px-3 py-2">Tool</th><th className="px-3 py-2">Tokens per student</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
+          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-micro font-semibold uppercase tracking-wide text-fg-subtle"><th className="px-3 py-2">Tool</th><th className="px-3 py-2">Tokens per student</th></tr></thead>
+          <tbody className="divide-y divide-line-subtle">
             {tools.map((tool) => (
               <tr key={tool}>
-                <td className="px-3 py-2 text-gray-800">{setting.labels?.[tool] || tool}</td>
+                <td className="px-3 py-2 text-fg">{setting.labels?.[tool] || tool}</td>
                 <td className="px-3 py-2">
                   <input
                     type="number"
@@ -65,7 +66,7 @@ function TokenLimitsEditor({ setting, save, reset }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-gray-500">A summary of a long PDF can use 20,000 tokens or more; a chat reply usually uses 1,000-4,000. Problem reports are never limited.</p>
+      <p className="mt-2 text-xs text-fg-subtle">A summary of a long PDF can use 20,000 tokens or more; a chat reply usually uses 1,000-4,000. Problem reports are never limited.</p>
     </SettingEditor>
   );
 }
@@ -84,22 +85,22 @@ function AreasEditor({ setting, save }) {
       editable={setting.editable}
       onSave={() => save({ maxOpenPerArea: Number(max), areas })}
     >
-      <label className="block text-sm text-gray-700">Open reports a student may have per area
+      <label className="block text-sm text-fg-muted">Open reports a student may have per area
         <input type="number" min="1" max="20" value={max} onChange={(e) => setMax(e.target.value)} className={`${fieldClass(false)} mt-1 w-32 py-1.5`} />
       </label>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-y border-gray-100 bg-gray-50/70 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500"><th className="px-3 py-2">Id</th><th className="px-3 py-2">Label</th><th className="px-3 py-2">Merged into</th></tr></thead>
-          <tbody className="divide-y divide-gray-100">
+          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-micro font-semibold uppercase tracking-wide text-fg-subtle"><th className="px-3 py-2">Id</th><th className="px-3 py-2">Label</th><th className="px-3 py-2">Merged into</th></tr></thead>
+          <tbody className="divide-y divide-line-subtle">
             {areas.map((a, i) => (
               <tr key={a.id}>
                 <td className="px-3 py-2 font-mono text-xs">{a.id}</td>
                 <td className="px-3 py-2"><input value={a.label} onChange={(e) => update(i, { label: e.target.value })} className={`${fieldClass(false)} py-1`} aria-label={`Label for ${a.id}`} /></td>
                 <td className="px-3 py-2">
-                  <select value={a.mergedInto || ''} onChange={(e) => update(i, { mergedInto: e.target.value || null })} className={`${fieldClass(false)} py-1`} aria-label={`Merge ${a.id} into`}>
+                  <Select value={a.mergedInto || ''} onChange={(e) => update(i, { mergedInto: e.target.value || null })} className="w-full" size="sm" aria-label={`Merge ${a.id} into`}>
                     <option value="">(its own area)</option>
                     {areas.filter((b) => b.id !== a.id).map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-                  </select>
+                  </Select>
                 </td>
               </tr>
             ))}
@@ -124,7 +125,7 @@ export default function FeaturesLimits() {
     <AdminLayout title="ADMIN · FEATURES & LIMITS">
       <PageHeader title="Features & limits" subtitle="Changes apply on every server within 30 seconds, and are audited." />
       <div className="mb-4 overflow-x-auto"><TabBar tabs={GROUPS.map(({ id, label, icon }) => ({ id, label, icon }))} active={group} onChange={setGroup} /></div>
-      <p className="mb-4 text-sm text-gray-600">{current.text}</p>
+      <p className="mb-4 text-sm text-fg-muted">{current.text}</p>
       <ErrorNote error={error} onRetry={reload} />
       {loading && !data ? <Loading /> : (
         <div className="grid gap-4 lg:grid-cols-2">

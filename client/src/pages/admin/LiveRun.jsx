@@ -16,19 +16,19 @@ function NodeBox({ label, steps }) {
   const failed = steps.some((s) => s.error);
   const latency = steps.reduce((n, s) => n + (s.latencyMs || 0), 0);
   const cost = steps.reduce((n, s) => n + (s.usd || 0), 0);
-  const tone = failed ? 'border-red-200 bg-red-50' : done ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-surface';
+  const tone = failed ? 'border-danger/30 bg-danger-soft' : done ? 'border-accent/30 bg-accent-soft' : 'border-line bg-raised';
   return (
     <div className={`min-w-[120px] flex-1 rounded-lg border px-3 py-2 transition ${tone}`} aria-label={`${label}: ${failed ? 'failed' : done ? 'done' : 'waiting'}`}>
-      <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-        {done ? <Icon name={failed ? 'x' : 'check'} className={`h-3.5 w-3.5 ${failed ? 'text-red-600' : 'text-blue-600'}`} strokeWidth={3} /> : <span className="h-2 w-2 rounded-full bg-gray-300" />}
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+        {done ? <Icon name={failed ? 'x' : 'check'} className={`h-3.5 w-3.5 ${failed ? 'text-danger-fg' : 'text-accent-fg'}`} strokeWidth={3} /> : <span className="h-2 w-2 rounded-full bg-gray-300" />}
         {label}{steps.length > 1 ? ` ×${steps.length}` : ''}
       </p>
-      <p className="text-[11px] text-gray-500">{done ? `${ms(latency)}${cost ? ` · ${usd(cost)}` : ''}` : 'waiting'}</p>
+      <p className="text-micro text-fg-subtle">{done ? `${ms(latency)}${cost ? ` · ${usd(cost)}` : ''}` : 'waiting'}</p>
     </div>
   );
 }
 
-const Arrow = () => <span className="hidden self-center text-gray-300 sm:block" aria-hidden="true">→</span>;
+const Arrow = () => <span className="hidden self-center text-fg-disabled sm:block" aria-hidden="true">→</span>;
 
 /** An investigation as it runs: the graph's nodes light up, with timing and cost per node and every model call. */
 export default function LiveRun() {
@@ -75,10 +75,10 @@ export default function LiveRun() {
         actions={done?.assessmentId && <button type="button" onClick={() => navigate(`/admin/risk/assessments/${done.assessmentId}`)} className={btn.primary}>Open the findings</button>}
       />
       <ErrorNote error={error} />
-      <div className="mb-4 flex items-center gap-2 text-sm text-gray-600" role="status">
+      <div className="mb-4 flex items-center gap-2 text-sm text-fg-muted" role="status">
         {done ? (
-          <><Icon name="check" className="h-4 w-4 text-blue-600" strokeWidth={3} /> Finished: {(done.outcome || done.status).replace(/_/g, ' ')}{done.degraded ? ' (degraded)' : ''}</>
-        ) : <><Spinner className="h-4 w-4 text-blue-600" /> Running…</>}
+          <><Icon name="check" className="h-4 w-4 text-accent-fg" strokeWidth={3} /> Finished: {(done.outcome || done.status).replace(/_/g, ' ')}{done.degraded ? ' (degraded)' : ''}</>
+        ) : <><Spinner className="h-4 w-4 text-accent-fg" /> Running…</>}
       </div>
 
       <Section title="The graph" subtitle="Rules first (no tokens); models only for HIGH or CRITICAL risk">
@@ -89,7 +89,7 @@ export default function LiveRun() {
             ))}
           </div>
           {monitored ? (
-            <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">The risk is below HIGH: monitored, no investigation and no model call needed.</p>
+            <p className="rounded-lg border border-line bg-sunken px-4 py-3 text-sm text-fg-muted">The risk is below HIGH: monitored, no investigation and no model call needed.</p>
           ) : (
             <>
               <NodeBox label="Supervisor" steps={byNode.supervisor || []} />
@@ -113,9 +113,9 @@ export default function LiveRun() {
             rowKey={(s) => s._id || s.seq}
             empty="Waiting for the first step…"
             columns={[
-              { key: 'seq', label: '#', className: 'tabular-nums text-gray-500' },
+              { key: 'seq', label: '#', className: 'tabular-nums text-fg-subtle' },
               { key: 'node', label: 'Node', render: (s) => `${s.node}${s.lane ? ` · ${s.lane}` : ''}` },
-              { key: 'out', label: 'Result', render: (s) => <span className={`line-clamp-2 ${s.error ? 'text-red-600' : 'text-gray-700'}`}>{s.error || s.outputSummary || '–'}</span> },
+              { key: 'out', label: 'Result', render: (s) => <span className={`line-clamp-2 ${s.error ? 'text-danger-fg' : 'text-fg-muted'}`}>{s.error || s.outputSummary || '–'}</span> },
               { key: 'ms', label: 'Time', className: 'tabular-nums', render: (s) => ms(s.latencyMs) },
             ]}
           />
@@ -156,7 +156,7 @@ export function Runs() {
           onRowClick={(r) => navigate(r.status === 'running' ? `/admin/runs/${r.runId}` : `/admin/risk/assessments/${r._id}`)}
           columns={[
             { key: 'startedAt', label: 'Started', render: (r) => when(r.startedAt) },
-            { key: 'area', label: 'Area', render: (r) => <span className="font-semibold text-gray-900">{r.area}</span> },
+            { key: 'area', label: 'Area', render: (r) => <span className="font-semibold text-fg">{r.area}</span> },
             { key: 'trigger', label: 'Trigger' },
             { key: 'outcome', label: 'Outcome', render: (r) => (r.outcome || r.status).replace(/_/g, ' ') + (r.degraded ? ' (degraded)' : '') },
             { key: 'lanes', label: 'Lanes', render: (r) => (r.lanesDone || []).length },

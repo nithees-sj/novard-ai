@@ -35,29 +35,29 @@ function ActionCard({ action, conversationId, onUpdate }) {
     }
   };
   return (
-    <div className="mt-3 rounded-xl border border-gray-200 bg-surface p-4">
+    <div className="mt-3 rounded-xl border border-line bg-raised p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-900">{action.args?.summary || action.type.replace(/_/g, ' ')}</p>
+        <p className="text-sm font-semibold text-fg">{action.args?.summary || action.type.replace(/_/g, ' ')}</p>
         <Badge tone={CARD_TONE[action.status]}>{CARD_LABEL[action.status] || action.status}</Badge>
       </div>
-      {action.args?.note && <p className="mt-1 text-xs text-gray-600">Note for students: {action.args.note}</p>}
-      {action.result?.note && <p className="mt-1 text-xs text-gray-600">{action.result.note}</p>}
-      {action.result?.route && <Link to={action.result.route} className="mt-1 inline-block text-xs font-semibold text-blue-600 hover:underline">{action.result.label || 'Open'}</Link>}
-      {action.error && <p className="mt-1 text-xs text-red-600">{action.error}</p>}
+      {action.args?.note && <p className="mt-1 text-xs text-fg-muted">Note for students: {action.args.note}</p>}
+      {action.result?.note && <p className="mt-1 text-xs text-fg-muted">{action.result.note}</p>}
+      {action.result?.route && <Link to={action.result.route} className="mt-1 inline-block text-xs font-semibold text-accent-fg hover:underline">{action.result.label || 'Open'}</Link>}
+      {action.error && <p className="mt-1 text-xs text-danger-fg">{action.error}</p>}
       {action.status === 'proposed' && (
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={() => decide('confirm')} disabled={busy} className={`${btn.primary} py-1.5`}>{busy ? <Spinner /> : null}Confirm</button>
           <button type="button" onClick={() => decide('dismiss')} disabled={busy} className={`${btn.secondary} py-1.5`}>Decline</button>
         </div>
       )}
-      {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }
 
 function Message({ message, conversationId, onCardUpdate }) {
   if (message.role === 'user') {
-    return <div className="flex justify-end"><div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-br-md bg-blue-600 px-4 py-2.5 text-[15px] text-white">{message.content}</div></div>;
+    return <div className="flex justify-end"><div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-br-md bg-accent px-4 py-2.5 text-body text-white">{message.content}</div></div>;
   }
   return (
     <div className="flex gap-3">
@@ -65,12 +65,12 @@ function Message({ message, conversationId, onCardUpdate }) {
       <div className="min-w-0 flex-1">
         {message.tools?.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {message.tools.map((t, i) => <span key={i} className="rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-600" title={t.preview}>{t.name}{t.ok === false ? ' (failed)' : ''}</span>)}
+            {message.tools.map((t, i) => <span key={i} className="rounded-md bg-sunken px-1.5 py-0.5 font-mono text-micro text-fg-muted" title={t.preview}>{t.name}{t.ok === false ? ' (failed)' : ''}</span>)}
           </div>
         )}
         <MarkdownView content={message.content} size="base" />
         {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} conversationId={conversationId} onUpdate={(next) => onCardUpdate(a.id, next)} />)}
-        <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-500">
+        <div className="mt-1 flex flex-wrap gap-2 text-micro text-fg-subtle">
           {message.flags?.forcedTool && <span>looked up after a reminder</span>}
           {message.flags?.refused && <span>only the console can do this</span>}
           {message.flags?.capped && <span>stopped at the cost limit</span>}
@@ -140,25 +140,25 @@ export default function Assistant() {
     <AdminLayout title="ADMIN · ASSISTANT">
       <PageHeader title="Admin assistant" subtitle="Ask about risk, reports, costs, gateways and users. Changes are proposed as cards; nothing happens until you confirm." />
       <div className="flex h-[calc(100vh-230px)] min-h-[520px] flex-col gap-5 lg:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-raised">
           <div className="flex-1 overflow-y-auto" aria-live="polite">
             {!messages.length ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-                <p className="text-base font-semibold text-gray-900">What would you like to know?</p>
+                <p className="text-base font-semibold text-fg">What would you like to know?</p>
                 <div className="flex max-w-lg flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => send(s)} className="rounded-full border border-gray-200 px-3.5 py-1.5 text-sm text-gray-700 hover:border-blue-300 hover:bg-blue-50">{s}</button>)}
+                  {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => send(s)} className="rounded-full border border-line px-3.5 py-1.5 text-sm text-fg-muted hover:border-accent/50 hover:bg-accent-soft">{s}</button>)}
                 </div>
               </div>
             ) : (
               <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6">
                 {messages.map((m, i) => <Message key={`${m.createdAt || 'p'}-${i}`} message={m} conversationId={id} onCardUpdate={updateCard} />)}
-                {sending && <p className="flex items-center gap-2 text-sm text-gray-500" role="status"><Spinner className="h-4 w-4 text-blue-600" />{status || 'Thinking…'}</p>}
+                {sending && <p className="flex items-center gap-2 text-sm text-fg-subtle" role="status"><Spinner className="h-4 w-4 text-accent-fg" />{status || 'Thinking…'}</p>}
                 <div ref={endRef} />
               </div>
             )}
           </div>
-          {error && <p role="alert" className="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2 border-t border-gray-100 p-3">
+          {error && <p role="alert" className="mx-4 mb-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg">{error}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2 border-t border-line-subtle p-3">
             <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask the assistant…" aria-label="Message" className={`${inputClass} flex-1`} disabled={sending} />
             <button type="submit" disabled={sending || !draft.trim()} className={btn.primary}><Icon name="send" /></button>
           </form>
