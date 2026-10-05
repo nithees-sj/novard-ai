@@ -102,10 +102,12 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
           <span className="block text-[11px] text-tooltip-muted">{points[hover].sub || points[hover].label}</span>
         </div>
       )}
-      <table className="sr-only">
+      <div className="sr-only">
+        <table>
         {caption && <caption>{caption}</caption>}
         <tbody>{points.map((p, i) => <tr key={i}><td>{p.sub || p.label}</td><td>{p.value}{unit}</td></tr>)}</tbody>
       </table>
+      </div>
     </div>
   );
 };
@@ -313,10 +315,12 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.
           <span className="block text-[11px] text-tooltip-muted">{bars[hover].sub || bars[hover].label}</span>
         </div>
       )}
-      <table className="sr-only">
+      <div className="sr-only">
+        <table>
         {caption && <caption>{caption}</caption>}
         <tbody>{bars.map((b, i) => <tr key={i}><td>{b.sub || b.label}</td><td>{format(b.value)}{unit}</td></tr>)}</tbody>
       </table>
+      </div>
     </div>
   );
 };

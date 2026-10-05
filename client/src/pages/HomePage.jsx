@@ -10,6 +10,10 @@ import { apiJson } from '../lib/api';
 import { currentEmail, currentName } from '../lib/session';
 import logger from '../lib/logger';
 import { AiLimitBanner, DashboardBanner } from '../components/FeatureNotice';
+import { PageHeader, SectionHeader } from '../components/ui/Headers';
+import Button from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
+import { ErrorState, Skeleton } from '../components/ui/States';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -79,162 +83,118 @@ const HomePage = () => {
     ? new Date(analytics.generatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
     : null;
 
+  const firstName = userName.split(' ')[0];
+  const shortcuts = [
+    { label: 'Study your notes', text: 'Upload a PDF, chat with it, take a quiz', icon: 'summary', to: '/doubts?tool=notes' },
+    { label: 'Clear a doubt', text: 'Explain what you are stuck on', icon: 'doubt', to: '/doubts?tool=doubts' },
+    { label: 'Start a skill plan', text: 'A day-by-day plan for one skill', icon: 'plan', to: '/skill-unlocker' },
+    { label: 'Summarize a video', text: 'Paste a YouTube link', icon: 'play', to: '/video?tool=summarizer' },
+  ];
+
   return (
     <AppShell page="home">
-          <div>
-            <DashboardBanner />
-            <AiLimitBanner />
-            {/* Welcome Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back, {userName}! 👋
-              </h1>
-              <p className="text-gray-600">
-                Track your learning progress and skill development
-              </p>
-            </div>
+      <DashboardBanner />
+      <AiLimitBanner />
+      <PageHeader
+        title={`Welcome back, ${firstName}`}
+        description="Your progress, worked out from your quizzes, skill plans and time spent studying."
+        actions={!loading && analytics && (
+          <div className="flex items-center gap-3 text-small text-fg-subtle">
+            {error && <span className="text-danger-fg">Refresh failed · showing earlier numbers</span>}
+            {updatedAt && <span className="hidden sm:inline">Updated {updatedAt}</span>}
+            <Button variant="secondary" size="sm" icon="refresh" loading={refreshing} loadingLabel="Refreshing…" onClick={() => loadAnalytics({ background: true })}>
+              Refresh
+            </Button>
+          </div>
+        )}
+      />
 
-            {loading ? (
-              <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                  <div className="w-10 h-10 mx-auto mb-4 rounded-full border-4 border-gray-200 border-t-primary-600 animate-spin" />
-                  <p className="text-gray-600">Loading your analytics...</p>
-                </div>
-              </div>
-            ) : error && !analytics ? (
-              <div className="flex items-center justify-center h-96">
-                <div className="text-center max-w-md">
-                  <div className="text-5xl mb-4">📊</div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Your analytics could not be loaded</h2>
-                  <p className="text-sm text-gray-600 mb-6">{error}</p>
+      {loading ? (
+        <div role="status" aria-label="Loading your progress">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-line-subtle ring-1 ring-line-subtle lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="space-y-3 bg-raised px-5 py-4"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-7 w-20" /><Skeleton className="h-3 w-32" /></div>
+            ))}
+          </div>
+          <Skeleton className="mt-10 h-64 w-full" rounded="rounded-xl" />
+        </div>
+      ) : error && !analytics ? (
+        <ErrorState
+          title="Your progress could not be loaded"
+          text={error}
+          onRetry={() => { setLoading(true); loadAnalytics(); }}
+        />
+      ) : (
+        <div className={`transition-opacity duration-200 ${refreshing ? 'opacity-60' : ''}`}>
+          {!analytics?.hasActivity && (
+            <p className="mb-4 text-body text-fg-muted">
+              Nothing to measure yet. Study something below, then take a quiz on it, and these numbers start to move.
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-line-subtle ring-1 ring-line-subtle sm:grid-cols-2 lg:grid-cols-4">
+            <AnalyticsCard
+              title="Skill score"
+              value={score?.formattedValue || '0'}
+              subtitle="of 1,000"
+              trend={score?.trend}
+              trendDirection={score?.trendDirection}
+              trendLabel={score?.trendLabel}
+              detail={breakdown && `Mastery ${breakdown.mastery} · Progress ${breakdown.progress} · Consistency ${breakdown.consistency} · Breadth ${breakdown.breadth}`}
+            />
+            <AnalyticsCard
+              title="Quiz accuracy"
+              value={quiz?.accuracy === null || quiz?.accuracy === undefined ? '—' : `${quiz.accuracy}%`}
+              subtitle={quiz?.questionsAnswered ? `${quiz.correctAnswers} of ${quiz.questionsAnswered} correct` : 'No quizzes yet'}
+              detail={quiz?.quizzesTaken ? `${quiz.quizzesTaken} ${quiz.quizzesTaken === 1 ? 'quiz' : 'quizzes'} · recent results weigh more` : undefined}
+            />
+            <AnalyticsCard
+              title="Plan completion"
+              value={completion?.formattedPercentage || '0%'}
+              subtitle={completion?.summary || 'No skill plans yet'}
+              detail={completion?.totalDays ? `${completion.completedDays} of ${completion.totalDays} plan days done` : undefined}
+            />
+            <AnalyticsCard
+              title="Study streak"
+              value={`${streak?.days || 0} ${streak?.days === 1 ? 'day' : 'days'}`}
+              subtitle={streak?.message || 'Study today to start one'}
+              trend={streakTrend}
+              trendTone={streak?.status === 'at-risk' ? 'warning' : undefined}
+              detail={streak?.longest ? `Longest: ${streak.longest} ${streak.longest === 1 ? 'day' : 'days'}` : undefined}
+            />
+          </div>
+
+          <section className="mt-10" aria-labelledby="home-start">
+            <SectionHeader as="h2" title={<span id="home-start">Start something</span>} />
+            <ul className="grid gap-px overflow-hidden rounded-xl bg-line-subtle ring-1 ring-line-subtle sm:grid-cols-2 lg:grid-cols-4">
+              {shortcuts.map((a) => (
+                <li key={a.label} className="bg-raised">
                   <button
                     type="button"
-                    onClick={() => { setLoading(true); loadAnalytics(); }}
-                    className="px-5 py-2.5 bg-ink text-on-ink text-sm font-semibold rounded-lg hover:bg-ink-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                    onClick={() => navigate(a.to)}
+                    className="group flex h-full w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-sunken focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
                   >
-                    Try again
+                    <Icon name={a.icon} className="mt-0.5 h-4 w-4 text-fg-subtle transition-colors group-hover:text-accent-fg" />
+                    <span className="min-w-0">
+                      <span className="block text-body font-medium text-fg">{a.label}</span>
+                      <span className="mt-0.5 block text-small text-fg-subtle">{a.text}</span>
+                    </span>
                   </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Analytics Overview Section */}
-                <div className={`mb-8 transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
-                  <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 mb-1">Analytics Overview</h2>
-                      <p className="text-sm text-gray-600">
-                        Calculated from your quizzes, learning plans and study activity.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      {error && <span className="text-red-600">Refresh failed · showing last loaded data</span>}
-                      {updatedAt && <span>Updated {updatedAt}</span>}
-                      <button
-                        type="button"
-                        onClick={() => loadAnalytics({ background: true })}
-                        disabled={refreshing}
-                        className="px-3 py-1.5 rounded-md border border-gray-200 bg-surface text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        {refreshing ? 'Refreshing…' : 'Refresh'}
-                      </button>
-                    </div>
-                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-                  {!analytics?.hasActivity && (
-                    <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm text-blue-900">
-                      No learning activity yet. Upload notes, add a video, ask a doubt or start a learning plan -
-                      then take a quiz, and these numbers will start reflecting your progress.
-                    </div>
-                  )}
+          <section className="mt-10">
+            <WeeklyActivityChart weekly={analytics?.weeklyActivity} />
+          </section>
 
-                  {/* Metrics Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-                    <AnalyticsCard
-                      title="SKILL SCORE"
-                      value={score?.formattedValue || '0'}
-                      subtitle="out of 1,000"
-                      icon="⚡"
-                      trend={score?.trend}
-                      trendDirection={score?.trendDirection}
-                      trendLabel={score?.trendLabel}
-                      detail={breakdown && `Mastery ${breakdown.mastery} · Progress ${breakdown.progress} · Consistency ${breakdown.consistency} · Breadth ${breakdown.breadth}`}
-                      iconBg="bg-blue-50"
-                      iconColor="text-blue-600"
-                    />
-                    <AnalyticsCard
-                      title="QUIZ ACCURACY"
-                      value={quiz?.accuracy === null || quiz?.accuracy === undefined ? '—' : `${quiz.accuracy}%`}
-                      subtitle={quiz?.questionsAnswered
-                        ? `${quiz.correctAnswers}/${quiz.questionsAnswered} correct`
-                        : 'No quizzes taken yet'}
-                      icon="🎯"
-                      detail={quiz?.quizzesTaken ? `${quiz.quizzesTaken} ${quiz.quizzesTaken === 1 ? 'quiz' : 'quizzes'} taken · recent results weigh more` : undefined}
-                      iconBg="bg-purple-50"
-                      iconColor="text-purple-600"
-                    />
-                    <AnalyticsCard
-                      title="COURSE COMPLETION"
-                      value={completion?.formattedPercentage || '0%'}
-                      subtitle={completion?.summary || 'No learning plans yet'}
-                      icon="✓"
-                      detail={completion?.totalDays ? `${completion.completedDays} of ${completion.totalDays} plan days completed` : undefined}
-                      iconBg="bg-green-50"
-                      iconColor="text-green-600"
-                    />
-                    <AnalyticsCard
-                      title="STUDY STREAK"
-                      value={`${streak?.days || 0} ${streak?.days === 1 ? 'day' : 'days'}`}
-                      subtitle={streak?.message || 'Study today to start a streak'}
-                      icon="🔥"
-                      trend={streakTrend}
-                      trendColor={streak?.status === 'at-risk' ? 'text-amber-600' : 'text-orange-600'}
-                      detail={streak?.longest ? `Best streak: ${streak.longest} ${streak.longest === 1 ? 'day' : 'days'}` : undefined}
-                      iconBg="bg-orange-50"
-                      iconColor="text-orange-600"
-                    />
-                  </div>
-
-                  {/* Weekly Learning Hours */}
-                  <div className="mb-8">
-                    <WeeklyActivityChart weekly={analytics?.weeklyActivity} />
-                  </div>
-
-                  {/* Skill Proficiency & Strengths */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                    <SkillProficiencyRadar skills={analytics?.skillProficiency || []} />
-                    <StrengthsWeaknesses data={analytics?.strengthsWeaknesses} />
-                  </div>
-                </div>
-
-                  {/* Adaptive Learning Paths Section */}
-                  <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl p-8 text-white shadow-xl dark:ring-1 dark:ring-white/10">
-                    <div className="flex flex-col lg:flex-row items-center justify-between">
-                      <div className="flex-1 mb-6 lg:mb-0">
-                        <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">
-                          🚀 NEW MODEL RELEASED
-                        </div>
-                        <h2 className="text-3xl font-bold mb-3">Adaptive Learning Paths</h2>
-                        <p className="text-slate-300 text-base max-w-2xl">
-                          Our latest AI engine analyzes your specific learning style and progress to build a dynamic roadmap tailored just for you.
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => navigate('/skill-unlocker')}
-                        className="bg-white text-slate-900 px-6 py-3 rounded-lg font-semibold 
-                             hover:bg-slate-100 transition-all duration-200 shadow-lg hover:shadow-xl
-                             flex items-center space-x-2 whitespace-nowrap"
-                      >
-                        <span>Start Personalized Path</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-              </>
-            )}
-          </div>
+          <section className="mt-6 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+            <SkillProficiencyRadar skills={analytics?.skillProficiency || []} />
+            <StrengthsWeaknesses data={analytics?.strengthsWeaknesses} />
+          </section>
+        </div>
+      )}
     </AppShell>
   );
 };

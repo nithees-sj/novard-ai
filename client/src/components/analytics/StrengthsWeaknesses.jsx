@@ -1,38 +1,33 @@
 import React from 'react';
+import Badge from '../ui/Badge';
+import { BAR, toneForLevel } from '../../lib/levels';
 
-const LEVEL = {
-  Expert: { bar: 'bg-green-500', badge: 'bg-green-100 text-green-700' },
-  Advanced: { bar: 'bg-blue-500', badge: 'bg-blue-100 text-blue-700' },
-  Intermediate: { bar: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-700' },
-  Beginner: { bar: 'bg-red-500', badge: 'bg-red-100 text-red-700' },
-  'Not enough data': { bar: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600' },
-};
 
 const TopicRow = ({ topic }) => {
-  const style = LEVEL[topic.level] || LEVEL['Not enough data'];
+  const tone = toneForLevel(topic.level);
   return (
     <li>
       <div className="flex items-start justify-between gap-3 mb-1.5">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate" title={topic.name}>{topic.name}</p>
-          <p className="text-xs text-gray-500">
+          <p className="truncate text-body font-medium text-fg" title={topic.name}>{topic.name}</p>
+          <p className="text-caption text-fg-subtle">
             {topic.domain} · {topic.questions} questions · {topic.attempts} {topic.attempts === 1 ? 'quiz' : 'quizzes'}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${style.badge}`}>{topic.level}</span>
-          <span className="w-10 text-right text-sm font-bold text-gray-900 tabular-nums">{topic.percentage}%</span>
+          <Badge tone={tone}>{topic.level}</Badge>
+          <span className="num w-10 text-right text-small font-medium text-fg">{topic.percentage}%</span>
         </div>
       </div>
       <div
-        className="w-full bg-gray-100 rounded-full h-2"
+        className="h-1.5 w-full rounded-full bg-chart-track"
         role="meter"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={topic.percentage}
         aria-label={`${topic.name} accuracy`}
       >
-        <div className={`h-2 rounded-full transition-all duration-500 ${style.bar}`} style={{ width: `${topic.percentage}%` }} />
+        <div className={`h-1.5 rounded-full transition-all duration-500 ${BAR[tone]}`} style={{ width: `${topic.percentage}%` }} />
       </div>
     </li>
   );
@@ -41,13 +36,13 @@ const TopicRow = ({ topic }) => {
 const Section = ({ title, hint, topics, empty }) => (
   <section>
     <div className="flex items-baseline justify-between mb-3">
-      <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-      <span className="text-xs text-gray-500">{hint}</span>
+      <h4 className="text-small font-medium text-fg-muted">{title}</h4>
+      <span className="text-caption text-fg-subtle">{hint}</span>
     </div>
     {topics.length > 0 ? (
       <ul className="space-y-4">{topics.map((t) => <TopicRow key={`${t.domain}-${t.name}`} topic={t} />)}</ul>
     ) : (
-      <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3">{empty}</p>
+      <p className="text-small text-fg-subtle">{empty}</p>
     )}
   </section>
 );
@@ -66,17 +61,17 @@ const StrengthsWeaknesses = ({ data }) => {
   const pending = data?.pendingTopics || 0;
 
   return (
-    <div className="bg-surface rounded-xl border border-gray-200 p-6 flex flex-col">
+    <div className="flex flex-col rounded-xl bg-raised p-5 ring-1 ring-line-subtle">
       <div className="mb-5">
-        <h3 className="text-lg font-bold text-gray-900">Strengths & Weaknesses</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-body font-semibold text-fg">Strengths and weak spots</h3>
+        <p className="mt-0.5 text-small text-fg-subtle">
           Quiz accuracy per topic · {assessed} {assessed === 1 ? 'topic' : 'topics'} assessed
           {pending > 0 && ` · ${pending} need more questions`}
         </p>
       </div>
 
       {assessed === 0 ? (
-        <div className="flex-1 min-h-[200px] flex items-center justify-center rounded-lg bg-gray-50 px-6 text-center text-sm text-gray-500">
+        <div className="flex-1 min-h-[8rem] flex items-center justify-center px-6 text-center text-body text-fg-subtle">
           {pending > 0
             ? 'Answer a few more quiz questions on a topic (at least 5) to see your strengths and weaknesses.'
             : 'Take a quiz on your notes, videos, doubts or learning plan to see your strengths and weaknesses.'}

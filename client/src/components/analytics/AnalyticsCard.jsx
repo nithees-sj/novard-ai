@@ -1,59 +1,38 @@
 import React from 'react';
+import Icon from '../ui/Icon';
+import cx from '../ui/cx';
 
-const TREND_STYLES = {
-  up: { color: 'text-green-600', arrow: '▲' },
-  down: { color: 'text-red-600', arrow: '▼' },
-  flat: { color: 'text-gray-500', arrow: '' },
+const TREND = {
+  up: { color: 'text-success-fg', icon: 'arrowUp' },
+  down: { color: 'text-danger-fg', icon: 'arrowDown' },
+  flat: { color: 'text-fg-subtle', icon: null },
 };
 
 /**
- * Stat tile: label, value, a short explanation, and an optional signed change.
- * `trendDirection` colours the change by whether it is good news; `detail`
- * shows how the number was arrived at so it is never a black box.
+ * One number on the dashboard, as a cell of the stat strip: label, value,
+ * what it is out of, an optional signed change, and how it was worked out
+ * (`detail`) so it is never a black box. Older props (icon, iconBg,
+ * iconColor) are accepted and ignored.
  */
-const AnalyticsCard = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  trend,
-  trendDirection,
-  trendLabel,
-  trendColor,
-  detail,
-  iconBg = 'bg-blue-50',
-  iconColor = 'text-blue-600',
-}) => {
-  const style = TREND_STYLES[trendDirection] || null;
-  const color = trendColor || style?.color || 'text-green-600';
+const AnalyticsCard = ({ title, value, subtitle, trend, trendDirection, trendLabel, trendTone, detail }) => {
+  const style = TREND[trendDirection] || null;
+  const color = trendTone === 'warning' ? 'text-warning-fg' : style?.color || 'text-fg-muted';
 
   return (
-    <div className="bg-surface rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</span>
-        <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center shrink-0`}>
-          <span className={`text-xl ${iconColor}`} aria-hidden="true">{icon}</span>
-        </div>
-      </div>
-
-      <div className="mb-2">
-        <h3 className="text-3xl font-bold text-gray-900">{value}</h3>
-      </div>
-
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <span className="text-sm text-gray-500 whitespace-nowrap">{subtitle}</span>
+    <div className="flex min-w-0 flex-col bg-raised px-5 py-4">
+      <p className="text-small text-fg-muted">{title}</p>
+      <p className="num mt-1.5 text-display font-medium text-fg">{value}</p>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-small">
+        {subtitle && <span className="text-fg-subtle">{subtitle}</span>}
         {trend && (
-          <span className={`text-xs font-semibold whitespace-nowrap ${color}`} title={trendLabel || undefined}>
-            {style?.arrow && <span aria-hidden="true">{style.arrow} </span>}
+          <span className={cx('inline-flex items-center gap-0.5 font-medium', color)} title={trendLabel || undefined}>
+            {style?.icon && <Icon name={style.icon} className="h-3 w-3" strokeWidth={2.25} />}
             {trend}
-            {trendLabel && <span className="font-normal text-gray-500"> {trendLabel}</span>}
+            {trendLabel && <span className="font-normal text-fg-subtle"> {trendLabel}</span>}
           </span>
         )}
       </div>
-
-      {detail && (
-        <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">{detail}</p>
-      )}
+      {detail && <p className="mt-auto pt-3 text-caption text-fg-subtle">{detail}</p>}
     </div>
   );
 };

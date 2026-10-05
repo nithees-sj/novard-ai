@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Badge from '../ui/Badge';
+import { toneForLevel } from '../../lib/levels';
 
 // Wider than tall: axis labels sit outside the rings and need horizontal room
 // ("DevOps & Cloud" at 12px is ~95px) or they are clipped by the viewBox.
@@ -10,13 +12,6 @@ const MAX_RADIUS = 118;
 const LABEL_OFFSET = 16;
 const RINGS = [20, 40, 60, 80, 100];
 
-const LEVEL_BADGE = {
-  Expert: 'bg-green-100 text-green-700',
-  Advanced: 'bg-blue-100 text-blue-700',
-  Intermediate: 'bg-yellow-100 text-yellow-700',
-  Beginner: 'bg-red-100 text-red-700',
-  'Not enough data': 'bg-gray-100 text-gray-600',
-};
 
 const point = (index, count, value) => {
   const angle = ((Math.PI * 2) / count) * index - Math.PI / 2;
@@ -47,14 +42,14 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
   const polygon = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
 
   return (
-    <div className="bg-surface rounded-xl border border-gray-200 p-6 flex flex-col">
+    <div className="flex flex-col rounded-xl bg-raised p-5 ring-1 ring-line-subtle">
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-gray-900">Skill Proficiency</h3>
-        <p className="text-sm text-gray-500">Quiz accuracy by subject · recent results count more</p>
+        <h3 className="text-body font-semibold text-fg">Proficiency by subject</h3>
+        <p className="mt-0.5 text-small text-fg-subtle">Quiz accuracy by subject · recent results count more</p>
       </div>
 
       {n === 0 ? (
-        <div className="flex-1 min-h-[200px] flex items-center justify-center rounded-lg bg-gray-50 px-6 text-center text-sm text-gray-500">
+        <div className="flex-1 min-h-[8rem] flex items-center justify-center px-6 text-center text-body text-fg-subtle">
           Study a topic and take a quiz on it to see your proficiency here.
         </div>
       ) : (
@@ -70,7 +65,7 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
                   return <line key={i} x1={CX} y1={CY} x2={end.x} y2={end.y} className="stroke-chart-track" strokeWidth="1" />;
                 })}
 
-                <path d={polygon} className="fill-blue-500/10 stroke-blue-500" strokeWidth="2" strokeLinejoin="round" />
+                <path d={polygon} className="fill-accent/10 stroke-accent" strokeWidth="2" strokeLinejoin="round" />
 
                 {points.map((p, i) => {
                   const assessed = p.skill.score !== null;
@@ -82,10 +77,10 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
                   const lift = Math.sin(label.angle) < -0.3 ? -14 : 0;
                   return (
                     <g key={p.skill.name}>
-                      <text x={lx} y={ly + lift} textAnchor={anchor} dominantBaseline="middle" className="fill-gray-700" fontSize="12" fontWeight="600">
+                      <text x={lx} y={ly + lift} textAnchor={anchor} dominantBaseline="middle" className="fill-fg-muted" fontSize="12" fontWeight="600">
                         {p.skill.name}
                       </text>
-                      <text x={lx} y={ly + lift + 14} textAnchor={anchor} dominantBaseline="middle" className="fill-gray-500" fontSize="11">
+                      <text x={lx} y={ly + lift + 14} textAnchor={anchor} dominantBaseline="middle" className="fill-fg-subtle" fontSize="11">
                         {assessed ? `${p.skill.score}%` : 'not assessed'}
                       </text>
                       {/* visible marker: filled when assessed, hollow when not */}
@@ -93,7 +88,7 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
                         cx={p.x}
                         cy={p.y}
                         r={active === i ? 6 : 4.5}
-                        className={assessed ? 'fill-blue-500 stroke-surface' : 'fill-surface stroke-gray-400'}
+                        className={assessed ? 'fill-accent stroke-raised' : 'fill-raised stroke-fg-subtle'}
                         strokeWidth="2"
                       />
                       {/* hit target larger than the mark */}
@@ -119,14 +114,14 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
               {active !== null && (
                 <div
                   role="tooltip"
-                  className="absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-lg pointer-events-none"
+                  className="absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-tooltip px-3 py-2 shadow-popover pointer-events-none"
                   style={{ left: `${(points[active].x / WIDTH) * 100}%`, top: `calc(${(points[active].y / HEIGHT) * 100}% - 12px)` }}
                 >
-                  <span className="block text-sm font-bold text-tooltip-fg">
+                  <span className="block text-small font-semibold text-tooltip-fg tabular">
                     {points[active].skill.score === null ? 'Not assessed' : `${points[active].skill.score}%`}
                   </span>
-                  <span className="block text-[11px] text-tooltip-muted">{points[active].skill.name}</span>
-                  <span className="block text-[11px] text-tooltip-muted">
+                  <span className="block text-micro text-tooltip-muted">{points[active].skill.name}</span>
+                  <span className="block text-micro text-tooltip-muted">
                     {points[active].skill.questions} questions · {points[active].skill.items} studied
                   </span>
                 </div>
@@ -135,22 +130,22 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
           )}
 
           {/* Always-visible values (also the table view) */}
-          <ul className={`space-y-2 ${showRadar ? 'mt-4 pt-4 border-t border-gray-100' : ''}`}>
+          <ul className={`space-y-2 ${showRadar ? 'mt-4 pt-4 border-t border-line-subtle' : ''}`}>
             {skills.map((s) => (
-              <li key={s.name} className="flex items-center gap-3 text-sm">
-                <span className="w-32 shrink-0 font-medium text-gray-900 truncate" title={s.name}>{s.name}</span>
-                <span className="flex-1 h-2 rounded-full bg-primary-50 overflow-hidden" aria-hidden="true">
+              <li key={s.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body sm:flex-nowrap">
+                <span className="min-w-0 flex-1 truncate font-medium text-fg sm:w-32 sm:flex-none" title={s.name}>{s.name}</span>
+                <span className="order-last h-1.5 w-full overflow-hidden rounded-full bg-chart-track sm:order-none sm:w-auto sm:flex-1" aria-hidden="true">
                   {s.score !== null && (
-                    <span className="block h-full rounded-full bg-primary-500" style={{ width: `${s.score}%` }} />
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${s.score}%` }} />
                   )}
                 </span>
-                <span className="w-24 shrink-0 text-right tabular-nums text-gray-700">
-                  {s.score === null ? <span className="text-gray-500">—</span> : `${s.score}%`}
-                  <span className="text-xs text-gray-500"> · {s.questions}q</span>
+                <span className="num shrink-0 text-right text-small text-fg-muted sm:w-24">
+                  {s.score === null ? <span className="text-fg-subtle">—</span> : `${s.score}%`}
+                  <span className="text-xs text-fg-subtle"> · {s.questions}q</span>
                 </span>
-                <span className={`w-28 shrink-0 text-center text-[11px] font-semibold px-2 py-0.5 rounded ${LEVEL_BADGE[s.level] || LEVEL_BADGE['Not enough data']}`}>
+                <Badge tone={toneForLevel(s.level)} className="shrink-0">
                   {s.score === null ? 'Take a quiz' : s.level}
-                </span>
+                </Badge>
               </li>
             ))}
           </ul>
