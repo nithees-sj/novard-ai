@@ -17,9 +17,9 @@ const ago = (value) => {
 };
 
 /**
- * One discussion as a card of the forum list: category and status, the
- * title, two lines of the post, the author and age; votes and replies in
- * fixed boxes on the right so they compare down the page.
+ * One discussion as a card in the forum grid: category and status, the
+ * title (two lines), a three-line preview, and a footer with the author,
+ * the age, votes and replies. Cards in a row share one height.
  */
 const IssueCard = ({ issue, onClick }) => {
   const category = categoryMeta(issue.category);
@@ -29,35 +29,42 @@ const IssueCard = ({ issue, onClick }) => {
   const mine = isOwner(issue);
 
   return (
-    <li>
+    <li className="flex">
       <button
         type="button"
         onClick={onClick}
-        className="group flex w-full flex-col gap-4 rounded-xl bg-raised p-5 text-left ring-1 ring-line-subtle transition duration-200 hover:shadow-popover hover:ring-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus sm:flex-row sm:items-start sm:gap-6 sm:p-6"
+        className="group flex w-full flex-col rounded-xl bg-raised p-5 text-left ring-1 ring-line-subtle transition duration-200 hover:-translate-y-0.5 hover:shadow-popover hover:ring-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
-        <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <Badge tone={category.tone}><Icon name={category.icon} className="h-3 w-3" />{category.label}</Badge>
-            <Status tone={status.tone} className="text-fg-muted">{status.label}</Status>
-          </span>
-          <span className="mt-2.5 block break-words text-title font-semibold leading-snug text-fg group-hover:text-accent-fg [overflow-wrap:anywhere]">{issue.title}</span>
-          {issue.description && <span className="mt-1.5 block line-clamp-2 text-lead leading-relaxed text-fg-muted [overflow-wrap:anywhere]">{issue.description}</span>}
-          <span className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-body text-fg-muted">
-            <span className="inline-flex min-w-0 items-center gap-2">
-              <Avatar name={issue.userName || 'Anonymous'} size="sm" />
-              <span className="truncate font-medium text-fg">{mine ? 'You' : issue.userName || 'Anonymous'}</span>
-            </span>
-            {issue.createdAt && <><span className="text-fg-disabled" aria-hidden="true">·</span><time dateTime={issue.createdAt}>{ago(issue.createdAt)}</time></>}
-          </span>
+        <span className="flex items-center justify-between gap-2">
+          <Badge tone={category.tone}><Icon name={category.icon} className="h-3 w-3" />{category.label}</Badge>
+          <Status tone={status.tone} className="text-fg-muted">{status.label}</Status>
         </span>
-        <span className="flex shrink-0 gap-2 sm:gap-3">
-          <span className="flex min-w-[4rem] flex-row items-baseline gap-1.5 rounded-lg bg-sunken px-3 py-1.5 sm:w-16 sm:flex-col sm:items-center sm:gap-0 sm:px-2 sm:py-2.5" title={`${netVotes} net votes`}>
-            <span className="num text-title font-semibold text-fg">{netVotes}</span>
-            <span className="text-caption text-fg-muted">votes</span>
+
+        <span className="mt-4 block line-clamp-2 text-lead font-semibold leading-snug text-fg [overflow-wrap:anywhere] group-hover:text-accent-fg">{issue.title}</span>
+        <span className="mt-2 block line-clamp-3 text-body leading-relaxed text-fg-muted [overflow-wrap:anywhere]">
+          {issue.description || 'No details added.'}
+        </span>
+
+        <span className="block min-h-5 flex-1" aria-hidden="true" />
+        <span className="flex items-center justify-between gap-3 border-t border-line-subtle pt-4">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Avatar name={issue.userName || 'Anonymous'} size="md" />
+            <span className="min-w-0">
+              <span className="block truncate text-small font-medium text-fg">{mine ? 'You' : issue.userName || 'Anonymous'}</span>
+              {issue.createdAt && <time className="block text-caption text-fg-subtle" dateTime={issue.createdAt}>{ago(issue.createdAt)}</time>}
+            </span>
           </span>
-          <span className="flex min-w-[4rem] flex-row items-baseline gap-1.5 rounded-lg bg-sunken px-3 py-1.5 sm:w-16 sm:flex-col sm:items-center sm:gap-0 sm:px-2 sm:py-2.5" title={`${commentsCount} ${commentsCount === 1 ? 'reply' : 'replies'}`}>
-            <span className={`num text-title font-semibold ${commentsCount ? 'text-fg' : 'text-fg-subtle'}`}>{commentsCount}</span>
-            <span className="text-caption text-fg-muted">{commentsCount === 1 ? 'reply' : 'replies'}</span>
+          <span className="flex shrink-0 items-center gap-3 text-small text-fg-muted">
+            <span className="inline-flex items-center gap-1" title={`${netVotes} net votes`}>
+              <Icon name="thumbsUp" className="h-4 w-4 text-fg-subtle" />
+              <span className="num font-medium text-fg">{netVotes}</span>
+              <span className="sr-only">votes</span>
+            </span>
+            <span className="inline-flex items-center gap-1" title={`${commentsCount} ${commentsCount === 1 ? 'reply' : 'replies'}`}>
+              <Icon name="chat" className="h-4 w-4 text-fg-subtle" />
+              <span className={`num font-medium ${commentsCount ? 'text-fg' : 'text-fg-subtle'}`}>{commentsCount}</span>
+              <span className="sr-only">{commentsCount === 1 ? 'reply' : 'replies'}</span>
+            </span>
           </span>
         </span>
       </button>

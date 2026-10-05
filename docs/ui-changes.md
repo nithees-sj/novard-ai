@@ -143,7 +143,7 @@ Icons are used as `<Icon name="…" />` with a 1.75 stroke. It replaces the hand
 - Toast timers no longer cut a newer toast short.
 
 **Forum**
-- A single-column list of discussion cards replaces the three-column grid: category and status, a 20px title, two lines of the post at 16px, the author and age, and votes and replies in aligned count boxes (below the text on phones).
+- Discussion cards in a grid (three per row on wide screens, two on tablets, one on phones), equal height in each row: category and status on top, the title (two lines), a three-line preview, and a divided footer with the author, age, votes and replies. The loading state is a grid of card skeletons.
 - The filters are styled selects.
 - The thread reads like a document, with the composer pinned in the frame.
 - "New discussion" uses Modal, and its submit button reads "Post discussion".

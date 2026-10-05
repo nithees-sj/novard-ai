@@ -136,14 +136,16 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
         )}
       </div>
 
-      <div className={loading || error || issues.length === 0 ? 'overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle' : ''}>
+      <div className={error || (!loading && issues.length === 0) ? 'overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle' : ''}>
         {loading ? (
-          <div className="divide-y divide-line-subtle" role="status" aria-label="Loading discussions">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2.5 px-5 py-4">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-3 w-5/6" />
-                <Skeleton className="h-3 w-40" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading discussions">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex h-56 flex-col rounded-xl bg-raised p-5 ring-1 ring-line-subtle">
+                <div className="flex justify-between"><Skeleton className="h-5 w-20" /><Skeleton className="h-4 w-14" /></div>
+                <Skeleton className="mt-5 h-4 w-4/5" />
+                <Skeleton className="mt-3 h-3 w-full" />
+                <Skeleton className="mt-2 h-3 w-2/3" />
+                <div className="mt-auto flex items-center gap-2.5 border-t border-line-subtle pt-4"><Skeleton className="h-8 w-8" rounded="rounded-full" /><Skeleton className="h-3 w-24" /></div>
               </div>
             ))}
           </div>
@@ -159,7 +161,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
               : <Button icon="plus" onClick={onCreateIssue}>New post</Button>}
           />
         ) : (
-          <ul className="space-y-3 animate-view-in">
+          <ul className="grid grid-cols-1 gap-4 animate-view-in md:grid-cols-2 xl:grid-cols-3">
             {issues.map((issue) => (
               <IssueCard key={issue.issueId} issue={issue} onClick={() => onIssueSelect(issue)} />
             ))}
