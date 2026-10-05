@@ -62,21 +62,21 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
           {ticks.map((t) => (
             <g key={t}>
               <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className="stroke-chart-grid" />
-              <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-gray-400 text-micro tabular-nums">{t}{unit}</text>
+              <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-chart-axis text-micro tabular-nums">{t}{unit}</text>
             </g>
           ))}
           {area && <path d={area} fill={`url(#${gradientId})`} />}
           {thresholds.filter((t) => t.value <= top).map((t) => (
             <g key={t.label}>
               <line x1={pad.left} x2={pad.left + w} y1={y(t.value)} y2={y(t.value)} style={{ stroke: t.color || chart.axis }} strokeDasharray="4 4" />
-              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="fill-gray-500 text-micro" style={t.color ? { fill: t.color } : undefined}>{t.label}</text>
+              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="fill-fg-subtle text-micro" style={t.color ? { fill: t.color } : undefined}>{t.label}</text>
             </g>
           ))}
           <path d={line} fill="none" style={{ stroke: color }} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((p, i) => (
             <g key={i}>
               {(i === points.length - 1 || (i % labelEvery === 0 && points.length - 1 - i >= labelEvery)) && (
-                <text x={x(i)} y={height - 6} textAnchor={i === points.length - 1 && points.length > 1 ? 'end' : i === 0 && points.length > 1 ? 'start' : 'middle'} className="fill-gray-500 text-micro">{p.label}</text>
+                <text x={x(i)} y={height - 6} textAnchor={i === points.length - 1 && points.length > 1 ? 'end' : i === 0 && points.length > 1 ? 'start' : 'middle'} className="fill-fg-subtle text-micro">{p.label}</text>
               )}
               <circle cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} style={{ fill: chart.surface, stroke: color }} strokeWidth="2" />
               <rect
@@ -95,7 +95,7 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = chart.
       {hover !== null && points[hover] && (
         <div
           role="tooltip"
-          className="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full rounded-lg bg-tooltip px-3 py-2 shadow-lg whitespace-nowrap"
+          className="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full rounded-lg bg-tooltip px-3 py-2 shadow-popover whitespace-nowrap"
           style={{ left: x(hover), top: y(points[hover].value) - 10 }}
         >
           <span className="block text-sm font-bold text-tooltip-fg tabular-nums">{points[hover].value}{unit}</span>
@@ -142,8 +142,8 @@ export const Donut = ({ segments, size = 168, thickness = 22, centerValue, cente
         offset += len;
         return el;
       })}
-      <text x="50%" y="47%" textAnchor="middle" className="fill-gray-900 text-xl font-bold">{centerValue}</text>
-      <text x="50%" y="60%" textAnchor="middle" className="fill-gray-500 text-micro">{centerLabel}</text>
+      <text x="50%" y="47%" textAnchor="middle" className="fill-fg text-xl font-bold">{centerValue}</text>
+      <text x="50%" y="60%" textAnchor="middle" className="fill-fg-subtle text-micro">{centerLabel}</text>
     </svg>
   );
 };
@@ -167,7 +167,7 @@ export const Ring = ({ value, size = 64, thickness = 7, color = chart.brand, lab
         strokeDasharray={`${(v / 100) * c} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" className="fill-gray-900 text-small font-bold tabular-nums">{v}%</text>
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" className="fill-fg text-small font-bold tabular-nums">{v}%</text>
     </svg>
   );
 };
@@ -235,7 +235,7 @@ export const Heatmap = ({ days }) => {
           onFocus={() => setHover(d)}
           onBlur={() => setHover(null)}
           aria-label={`${fmt(d.date)}: ${d.count} activities`}
-          className={`block w-full aspect-square rounded-sm ${HEAT[heatLevel(d.count, peak)]} outline-none focus-visible:ring-2 focus-visible:ring-primary-400 hover:ring-1 hover:ring-gray-400`}
+          className={`block w-full aspect-square rounded-sm ${HEAT[heatLevel(d.count, peak)]} outline-none focus-visible:ring-2 focus-visible:ring-focus hover:ring-1 hover:ring-line-strong`}
         />
       ) : <span key={`pad${wi}-${i}`} />);
     }
@@ -303,14 +303,14 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.
               <g key={`${b.label}-${i}`} onMouseEnter={() => setHover(i)}>
                 <rect x={cx - slot / 2} y={pad.top} width={slot} height={h} fill="transparent" />
                 <rect x={cx - barW / 2} y={pad.top + h - bh} width={barW} height={Math.max(bh, b.value ? 1 : 0)} rx="2" style={{ fill: b.color || color }} opacity={hover === null || hover === i ? 1 : 0.55} />
-                {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-gray-500 text-micro">{b.label}</text>}
+                {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-fg-subtle text-micro">{b.label}</text>}
               </g>
             );
           })}
         </svg>
       )}
       {hover !== null && bars[hover] && (
-        <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-lg" style={{ left: pad.left + slot * hover + slot / 2 }}>
+        <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-popover" style={{ left: pad.left + slot * hover + slot / 2 }}>
           <span className="block text-sm font-bold tabular-nums text-tooltip-fg">{format(bars[hover].value)}{unit}</span>
           <span className="block text-micro text-tooltip-muted">{bars[hover].sub || bars[hover].label}</span>
         </div>

@@ -22,7 +22,7 @@ const Career = () => {
 
   return (
     <AppShell page="career" tool={tool} width={tool ? 'full' : 'default'}>
-      <FeatureNotice tool={{ roadmap: 'roadmap', skills: 'skillGap' }[activeView]} />
+      <FeatureNotice tool={{ roadmap: 'roadmap', skills: 'skillGap' }[activeView]} className="mb-4" />
 
       {activeView === 'landing' && (
         <>

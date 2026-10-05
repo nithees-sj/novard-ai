@@ -43,7 +43,7 @@ function TokenLimitsEditor({ setting, save, reset }) {
       </label>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-micro font-semibold uppercase tracking-wide text-fg-subtle"><th className="px-3 py-2">Tool</th><th className="px-3 py-2">Tokens per student</th></tr></thead>
+          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-caption font-medium text-fg-subtle"><th className="px-3 py-2">Tool</th><th className="px-3 py-2">Tokens per student</th></tr></thead>
           <tbody className="divide-y divide-line-subtle">
             {tools.map((tool) => (
               <tr key={tool}>
@@ -90,7 +90,7 @@ function AreasEditor({ setting, save }) {
       </label>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-micro font-semibold uppercase tracking-wide text-fg-subtle"><th className="px-3 py-2">Id</th><th className="px-3 py-2">Label</th><th className="px-3 py-2">Merged into</th></tr></thead>
+          <thead><tr className="border-y border-line-subtle bg-sunken/70 text-left text-caption font-medium text-fg-subtle"><th className="px-3 py-2">Id</th><th className="px-3 py-2">Label</th><th className="px-3 py-2">Merged into</th></tr></thead>
           <tbody className="divide-y divide-line-subtle">
             {areas.map((a, i) => (
               <tr key={a.id}>

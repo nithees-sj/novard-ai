@@ -1,7 +1,7 @@
 /**
- * Keeps new code themed (src/theme/palette.js). The light and dark themes
- * come from the ordinary Tailwind classes, except for a few that a palette
- * swap gets wrong; this fails when one of those is used.
+ * Keeps new code on the design system (src/theme/palette.js, tailwind.config.js,
+ * components/ui; see docs/ui-changes.md): semantic colour tokens, the type,
+ * radius and elevation scales, one icon set, no decorative gradients or emoji.
  */
 const fs = require('fs');
 const path = require('path');
@@ -42,5 +42,33 @@ describe('theme guard', () => {
     const OWN_PALETTE = ['components/ChatbotButton.jsx', 'components/agent/AgentAvatar.jsx', 'components/MermaidDiagram.jsx', 'components/roadmap/RoadmapDiagram.jsx', 'context/ThemeContext.jsx'];
     const hex = /(['"`(:\s])#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/;
     expect(offences(hex, (where) => OWN_PALETTE.some((f) => where.startsWith(`${f}:`)))).toEqual([]);
+  });
+
+  it('uses the semantic tokens, not the old gray/blue/primary ramps (bg-sunken, text-fg-muted, border-line, bg-accent…)', () => {
+    expect(offences(/\b(text|bg|border|ring|divide|fill|stroke|from|via|to|placeholder)-(gray|blue|primary)-\d/)).toEqual([]);
+  });
+
+  it('keeps text on the type scale: no arbitrary text-[…] sizes', () => {
+    expect(offences(/\btext-\[\d/)).toEqual([]);
+  });
+
+  it('uses elevation shadows by name (raised, popover, modal), not the old size scale', () => {
+    expect(offences(/\bshadow-(sm|md|lg|xl|2xl|soft|medium|hard)\b/)).toEqual([]);
+  });
+
+  it('has no decorative gradients', () => {
+    expect(offences(/\bbg-gradient-to-/)).toEqual([]);
+  });
+
+  it('has no emoji in the interface (use the Icon set)', () => {
+    expect(offences(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u)).toEqual([]);
+  });
+
+  it('has no uppercase tracked labels (sentence case, text-caption)', () => {
+    expect(offences(/\buppercase tracking-(wide|wider|widest)\b/)).toEqual([]);
+  });
+
+  it('renders selects through ui/Field Select (styled, same focus ring)', () => {
+    expect(offences(/<select\b/, (where) => where.startsWith('components/ui/Field.jsx:'))).toEqual([]);
   });
 });

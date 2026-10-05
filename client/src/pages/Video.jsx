@@ -16,7 +16,7 @@ const Video = () => {
 
   return (
     <AppShell page="videos" tool={tool} width={tool ? 'full' : 'default'}>
-      <FeatureNotice tool={{ videoLibrary: 'videoLibrary', videoSummarizer: 'videoSummarizer' }[activeView]} />
+      <FeatureNotice tool={{ videoLibrary: 'videoLibrary', videoSummarizer: 'videoSummarizer' }[activeView]} className="mb-4" />
 
       {activeView === 'landing' && (
         <>

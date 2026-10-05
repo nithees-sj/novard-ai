@@ -188,7 +188,7 @@ export function AdminReportDetail() {
                 {r.transcript && <p className="rounded-lg bg-sunken px-3 py-2 text-fg-muted"><strong>Voice note:</strong> {r.transcript}</p>}
                 {r.source?.excerpt && (
                   <div className="rounded-lg border border-line px-3 py-2">
-                    <p className="mb-1 text-micro font-semibold uppercase tracking-wide text-fg-subtle">The AI output they reported{r.source.itemType ? ` (${r.source.itemType.replace(/_/g, ' ')})` : ''}{r.source.excerptVerified === false ? ' · as sent by the student, not found in the database' : ''}</p>
+                    <p className="mb-1 text-caption font-medium text-fg-subtle">The AI output they reported{r.source.itemType ? ` (${r.source.itemType.replace(/_/g, ' ')})` : ''}{r.source.excerptVerified === false ? ' · as sent by the student, not found in the database' : ''}</p>
                     <p className="whitespace-pre-wrap text-fg-muted">{r.source.excerpt}</p>
                   </div>
                 )}

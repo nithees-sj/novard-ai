@@ -61,7 +61,7 @@ function Message({ message, conversationId, onCardUpdate }) {
   }
   return (
     <div className="flex gap-3">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white" aria-hidden="true"><Icon name="shield" className="h-4 w-4" /></span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent" aria-hidden="true"><Icon name="shield" className="h-4 w-4" /></span>
       <div className="min-w-0 flex-1">
         {message.tools?.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">

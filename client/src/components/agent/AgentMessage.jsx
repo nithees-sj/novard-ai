@@ -52,7 +52,7 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
               <><span className="h-3.5 w-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" aria-hidden="true" />{status}</>
             ) : (
               <span className="flex gap-1" aria-label="Thinking">
-                {[0, 150, 300].map((d) => <span key={d} className="h-2 w-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
+                {[0, 150, 300].map((d) => <span key={d} className="h-2 w-2 rounded-full bg-fg-disabled animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
               </span>
             )}
           </div>

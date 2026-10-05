@@ -194,7 +194,7 @@ export default function AssessmentDetail() {
             <div className="space-y-5 px-6 pb-6">
               {lanes.map((lane) => (
                 <div key={lane}>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{LANE_LABEL[lane] || lane}</h3>
+                  <h3 className="mb-2 text-caption font-medium text-fg-subtle">{LANE_LABEL[lane] || lane}</h3>
                   <ul className="space-y-2">
                     {a.evidence.filter((e) => e.lane === lane).map((e) => (
                       <li key={e.id} id={`ev-${e.id}`} className="rounded-lg border border-line px-3 py-2 text-sm">

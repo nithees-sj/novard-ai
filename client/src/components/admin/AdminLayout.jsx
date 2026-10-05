@@ -44,7 +44,7 @@ function AlertBanner() {
     <div className="mb-6 space-y-2" aria-live="polite">
       {alerts.slice(0, 3).map((a) => (
         <div key={a._id} role="alert" className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 ${a.level === 'CRITICAL' ? 'border-danger/30 bg-danger-soft' : 'border-warning/30 bg-warning-soft'}`}>
-          <span className={`rounded-md px-1.5 py-0.5 text-micro font-bold ${a.level === 'CRITICAL' ? 'bg-danger text-white' : 'bg-amber-400 text-amber-950'}`}>{a.level}</span>
+          <span className={`rounded-md px-1.5 py-0.5 text-micro font-bold ${a.level === 'CRITICAL' ? 'bg-danger text-white' : 'bg-warning text-amber-950'}`}>{a.level}</span>
           <p className="min-w-0 flex-1 text-sm text-fg">{a.message}</p>
           <div className="flex gap-2">
             <button type="button" onClick={() => { ack(a._id); navigate(`/admin/risk/${a.area}`); }} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-focus">Open</button>

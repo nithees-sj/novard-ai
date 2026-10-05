@@ -150,7 +150,7 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
       <div ref={viewportRef} className={`overflow-auto p-4 ${fullScreen ? 'flex-1' : 'max-h-[70vh]'}`}>
         {status === 'loading' && (
           <div className="h-64 flex items-center justify-center">
-            <span className="w-8 h-8 rounded-full border-4 border-line border-t-blue-600 animate-spin" aria-hidden="true" />
+            <span className="w-8 h-8 rounded-full border-4 border-line border-t-accent animate-spin" aria-hidden="true" />
           </div>
         )}
         {status === 'error' && (

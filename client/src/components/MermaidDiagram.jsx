@@ -124,14 +124,14 @@ const MermaidDiagram = ({ chart }) => {
 
   if (failed) {
     return (
-      <pre className="not-prose my-4 first:mt-0 last:mb-0 overflow-x-auto rounded-lg bg-code p-4 text-xs text-code-fg dark:ring-1 dark:ring-gray-200">
+      <pre className="not-prose my-4 first:mt-0 last:mb-0 overflow-x-auto rounded-lg bg-code p-4 text-xs text-code-fg dark:ring-1 dark:ring-line">
         <code>{chart}</code>
       </pre>
     );
   }
 
   return (
-    <div className="not-prose my-4 first:mt-0 last:mb-0 overflow-x-auto rounded-lg border border-gray-200 bg-surface p-4">
+    <div className="not-prose my-4 first:mt-0 last:mb-0 overflow-x-auto rounded-lg border border-line bg-raised p-4">
       {/*
         Centred with margin:auto rather than flex justify-center. With flex,
         a diagram wider than this container overflows equally on both sides
@@ -141,8 +141,8 @@ const MermaidDiagram = ({ chart }) => {
       */}
       {/* The diagram library loads on first use and waits for the page font; say so instead of an empty box. */}
       {!drawn && (
-        <div className="flex h-24 items-center justify-center gap-2 text-xs text-gray-500" role="status">
-          <span className="h-3.5 w-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" aria-hidden="true" />
+        <div className="flex h-24 items-center justify-center gap-2 text-xs text-fg-subtle" role="status">
+          <span className="h-3.5 w-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" aria-hidden="true" />
           Drawing diagram…
         </div>
       )}

@@ -20,7 +20,7 @@ function NodeBox({ label, steps }) {
   return (
     <div className={`min-w-[120px] flex-1 rounded-lg border px-3 py-2 transition ${tone}`} aria-label={`${label}: ${failed ? 'failed' : done ? 'done' : 'waiting'}`}>
       <p className="flex items-center gap-1.5 text-sm font-semibold text-fg">
-        {done ? <Icon name={failed ? 'x' : 'check'} className={`h-3.5 w-3.5 ${failed ? 'text-danger-fg' : 'text-accent-fg'}`} strokeWidth={3} /> : <span className="h-2 w-2 rounded-full bg-gray-300" />}
+        {done ? <Icon name={failed ? 'x' : 'check'} className={`h-3.5 w-3.5 ${failed ? 'text-danger-fg' : 'text-accent-fg'}`} strokeWidth={3} /> : <span className="h-2 w-2 rounded-full bg-fg-disabled" />}
         {label}{steps.length > 1 ? ` ×${steps.length}` : ''}
       </p>
       <p className="text-micro text-fg-subtle">{done ? `${ms(latency)}${cost ? ` · ${usd(cost)}` : ''}` : 'waiting'}</p>

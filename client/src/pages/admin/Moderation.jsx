@@ -114,7 +114,7 @@ export default function Moderation() {
                 </div>
                 <p className="text-fg"><strong>Student:</strong> {f.complaint}</p>
                 <div className="rounded-lg border border-line bg-sunken px-3 py-2">
-                  <p className="mb-1 text-micro font-semibold uppercase tracking-wide text-fg-subtle">The AI said{f.verified ? '' : ' (as sent by the student)'}</p>
+                  <p className="mb-1 text-caption font-medium text-fg-subtle">The AI said{f.verified ? '' : ' (as sent by the student)'}</p>
                   <p className="line-clamp-6 whitespace-pre-wrap text-fg-muted">{f.excerpt}</p>
                 </div>
               </li>

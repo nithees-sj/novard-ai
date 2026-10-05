@@ -19,7 +19,7 @@ function FieldFor({ name, value, onChange, disabled, path, unlimited = [] }) {
     return (
       <label htmlFor={id} className="flex items-center justify-between gap-3 py-1.5 text-sm text-fg">
         {humanize(name)}
-        <input id={id} type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} disabled={disabled} className="h-4 w-4 accent-blue-600" />
+        <input id={id} type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} disabled={disabled} className="h-4 w-4 accent-accent" />
       </label>
     );
   }
@@ -50,7 +50,7 @@ function FieldFor({ name, value, onChange, disabled, path, unlimited = [] }) {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return (
       <fieldset className="rounded-lg border border-line px-3 py-2">
-        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{humanize(name)}</legend>
+        <legend className="px-1 text-caption font-medium text-fg-subtle">{humanize(name)}</legend>
         {Object.entries(value).map(([k, v]) => <FieldFor key={k} name={k} value={v} path={[...path, k]} disabled={disabled} unlimited={unlimited} onChange={(next) => onChange({ ...value, [k]: next })} />)}
       </fieldset>
     );

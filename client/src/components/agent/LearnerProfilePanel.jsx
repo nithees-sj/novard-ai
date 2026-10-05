@@ -74,7 +74,7 @@ const LearnerProfilePanel = ({ open, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <button type="button" className="absolute inset-0 bg-black/30 dark:bg-black/60" onClick={onClose} aria-label="Close learner profile" />
-      <aside role="dialog" aria-modal="true" aria-labelledby="learner-profile-title" className="relative flex h-full w-full max-w-md flex-col bg-overlay shadow-xl dark:border-l dark:border-line">
+      <aside role="dialog" aria-modal="true" aria-labelledby="learner-profile-title" className="relative flex h-full w-full max-w-md flex-col bg-overlay shadow-modal dark:border-l dark:border-line">
         <div className="flex items-start justify-between border-b border-line-subtle px-5 py-4">
           <div>
             <h2 id="learner-profile-title" className="text-base font-semibold text-fg">Your learner profile</h2>

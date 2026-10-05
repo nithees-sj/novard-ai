@@ -34,7 +34,7 @@ const VideoPicker = ({ candidates = [], value, onChange }) => (
     {candidates.map((c) => {
       const active = c.videoId === value;
       return (
-        <label key={c.videoId} className={`flex cursor-pointer gap-3 rounded-lg border p-2 transition ${active ? 'border-blue-400 bg-accent-soft/50 ring-1 ring-accent/30' : 'border-line hover:border-line-strong'}`}>
+        <label key={c.videoId} className={`flex cursor-pointer gap-3 rounded-lg border p-2 transition ${active ? 'border-accent bg-accent-soft/50 ring-1 ring-accent/30' : 'border-line hover:border-line-strong'}`}>
           <input type="radio" name="video" className="sr-only" checked={active} onChange={() => onChange(c.videoId)} />
           <span className="relative shrink-0 w-32 aspect-video overflow-hidden rounded-md bg-sunken">
             <img src={c.thumbnailUrl} alt="" className="h-full w-full object-cover" />

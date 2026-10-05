@@ -63,7 +63,7 @@ const Row = ({ chat, active, onOpen, onRename, onDelete }) => {
   }
 
   return (
-    <div ref={ref} className={`group relative flex items-center rounded-lg ${active ? 'bg-raised shadow-sm ring-1 ring-line' : 'hover:bg-line/60'}`}>
+    <div ref={ref} className={`group relative flex items-center rounded-lg ${active ? 'bg-raised shadow-raised ring-1 ring-line' : 'hover:bg-line/60'}`}>
       <button type="button" onClick={() => onOpen(chat._id)} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-sm text-fg" title={chat.title} aria-current={active ? 'page' : undefined}>
         {chat.title}
       </button>
@@ -77,7 +77,7 @@ const Row = ({ chat, active, onOpen, onRename, onDelete }) => {
         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" /></svg>
       </button>
       {menu && (
-        <div className="absolute right-1 top-9 z-20 w-44 rounded-xl border border-line bg-raised p-1 shadow-lg" role="menu">
+        <div className="absolute right-1 top-9 z-20 w-44 rounded-xl border border-line bg-raised p-1 shadow-popover" role="menu">
           {confirming ? (
             <div className="p-2">
               <p className="mb-2 text-xs text-fg-muted">Delete this chat? This cannot be undone.</p>
@@ -121,7 +121,7 @@ const AgentSidebar = ({ chats, loading, activeId, onNew, onOpen, onRename, onDel
       </div>
 
       <div className="space-y-2 px-3">
-        <button type="button" onClick={onNew} className="flex w-full items-center gap-2 rounded-xl border border-line bg-raised px-3 py-2.5 text-sm font-semibold text-fg shadow-sm transition hover:border-line-strong hover:shadow">
+        <button type="button" onClick={onNew} className="flex w-full items-center gap-2 rounded-xl border border-line bg-raised px-3 py-2.5 text-sm font-semibold text-fg shadow-raised transition hover:border-line-strong hover:shadow">
           <svg className="h-4 w-4 text-accent-fg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 4v16m8-8H4" /></svg>
           New chat
           <kbd className="ml-auto hidden rounded border border-line bg-sunken px-1.5 text-micro font-medium text-fg-subtle md:inline">Ctrl ⇧ O</kbd>

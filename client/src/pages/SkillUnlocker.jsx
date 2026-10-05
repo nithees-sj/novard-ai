@@ -352,7 +352,7 @@ const SkillUnlocker = () => {
       ]}
       title={currentView !== 'form' && currentPlan?.skillName ? `${currentPlan.skillName} · Skill Plans` : 'Skill Plans'}
     >
-      <FeatureNotice tool="skillUnlocker" />
+      <FeatureNotice tool="skillUnlocker" className="mb-4" />
       <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row md:gap-0 md:overflow-hidden md:rounded-xl md:bg-raised md:ring-1 md:ring-line-subtle">
         {/* The open plan, form or quiz */}
         <div className="order-last min-h-[28rem] min-w-0 flex-1 rounded-xl bg-raised ring-1 ring-line-subtle md:order-none md:min-h-0 md:overflow-y-auto md:rounded-none md:ring-0">

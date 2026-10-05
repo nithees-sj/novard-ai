@@ -6,7 +6,7 @@ const PAGE = 8;
 
 const scoreTone = (p) => (p >= 80 ? 'text-success-fg bg-success-soft' : p >= 60 ? 'text-accent-fg bg-accent-soft' : p >= 40 ? 'text-warning-fg bg-warning-soft' : 'text-danger-fg bg-danger-soft');
 const barTone = (p) => (p >= 80 ? 'bg-success' : p >= 60 ? 'bg-accent' : p >= 40 ? 'bg-warning' : 'bg-danger');
-const BAND_COLORS = ['bg-red-400', 'bg-amber-400', 'bg-primary-400', 'bg-success'];
+const BAND_COLORS = ['bg-danger', 'bg-warning', 'bg-accent', 'bg-success'];
 const shortDate = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 const longDate = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 

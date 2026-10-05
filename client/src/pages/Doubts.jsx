@@ -21,7 +21,7 @@ const Doubts = () => {
 
   return (
     <AppShell page="doubts" tool={tool} width={tool ? 'full' : 'default'}>
-      <FeatureNotice tool={{ notes: 'notes', doubtClearance: 'doubts' }[activeView]} />
+      <FeatureNotice tool={{ notes: 'notes', doubtClearance: 'doubts' }[activeView]} className="mb-4" />
 
       {activeView === 'landing' && (
         <>

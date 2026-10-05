@@ -93,7 +93,7 @@ const LearningPath = ({ path }) => {
               <ol className="mt-2.5 space-y-1.5 border-l border-line ml-2">
                 {r.stageTitles.map((t, i) => (
                   <li key={`${t}-${i}`} className="relative pl-4 text-xs text-fg-muted" title={t}>
-                    <span className="absolute -left-[7px] top-0.5 w-3 h-3 rounded-full bg-raised border-2 border-primary-400" aria-hidden="true" />
+                    <span className="absolute -left-[7px] top-0.5 w-3 h-3 rounded-full bg-raised border-2 border-accent" aria-hidden="true" />
                     <span className="block truncate"><span className="font-semibold text-accent-fg tabular-nums">{i + 1}.</span> {t}</span>
                   </li>
                 ))}
