@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigationinner } from '../components/navigationinner';
 import Sidebar from '../components/Sidebar';
+import { ThemeOptions } from '../components/ThemeToggle';
 
 const Settings = () => {
   return (
@@ -18,12 +19,26 @@ const Settings = () => {
               <p className="text-gray-600">Manage your account preferences and configurations</p>
             </div>
 
+            {/* Appearance */}
+            <section className="mb-6 bg-surface rounded-xl border border-gray-200 p-6" aria-labelledby="appearance-title">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 id="appearance-title" className="text-lg font-semibold text-gray-900">Appearance</h2>
+                  <p className="text-sm text-gray-600">
+                    Choose light or dark, or follow your device. Saved to your account, so it follows you to other devices.
+                  </p>
+                </div>
+                <ThemeOptions />
+              </div>
+            </section>
+
             {/* Placeholder Content */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+            <div className="bg-surface rounded-xl border border-gray-200 p-12">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
                   <svg 
                     className="w-10 h-10 text-gray-400" 
+                    aria-hidden="true"
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -44,7 +59,7 @@ const Settings = () => {
                 </div>
                 
                 <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-                  Settings Coming Soon
+                  More Settings Coming Soon
                 </h2>
                 <p className="text-gray-600 max-w-md mx-auto">
                   We're working on bringing you powerful settings and customization options. 
@@ -53,7 +68,7 @@ const Settings = () => {
               </div>
 
               {/* Placeholder Settings Sections */}
-              <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Account Settings</h3>
                   <p className="text-sm text-gray-600">Manage your account preferences and security options</p>
@@ -67,11 +82,6 @@ const Settings = () => {
                 <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">Privacy</h3>
                   <p className="text-sm text-gray-600">Control your privacy and data sharing preferences</p>
-                </div>
-                
-                <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Appearance</h3>
-                  <p className="text-sm text-gray-600">Customize the look and feel of your dashboard</p>
                 </div>
               </div>
             </div>

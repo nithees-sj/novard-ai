@@ -11,16 +11,7 @@ import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import { currentEmail } from '../lib/session';
 import { Card, SectionTitle, Stat } from '../components/profile/blocks';
-
-
-const MIX_COLORS = {
-  quiz: '#0284c7',
-  question: '#38bdf8',
-  planDay: '#16a34a',
-  materialAdded: '#a855f7',
-  forumPost: '#f59e0b',
-  forumComment: '#fbbf24',
-};
+import { ACTIVITY_COLORS, chart } from '../lib/statusColors';
 
 const formatMinutes = (m) => {
   const mins = Math.round(m || 0);
@@ -93,7 +84,7 @@ const Profile = () => {
                 Loading your profile…
               </div>
             ) : error && !data ? (
-              <div className="bg-white rounded-xl border border-red-200 p-10 text-center">
+              <div className="bg-surface rounded-xl border border-red-200 p-10 text-center">
                 <h2 className="text-lg font-semibold text-gray-900 mb-1">Your profile could not be loaded</h2>
                 <p className="text-sm text-gray-500 mb-5">{error}</p>
                 <button type="button" onClick={load} className="px-5 py-2 text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700">Try again</button>
@@ -110,7 +101,7 @@ const Profile = () => {
                 {/* ── overview ───────────────────────────────── */}
                 <SectionTitle title="Overview" subtitle="Your learning at a glance" />
                 <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-                  <Stat label="Skill score" value={<>{o.skillScore}<span className="text-sm font-medium text-gray-400"> / 1000</span></>} sub={`${scoreChange >= 0 ? '+' : ''}${scoreChange} in 12 weeks`} accent="bg-primary-600" />
+                  <Stat label="Skill score" value={<>{o.skillScore}<span className="text-sm font-medium text-gray-500"> / 1000</span></>} sub={`${scoreChange >= 0 ? '+' : ''}${scoreChange} in 12 weeks`} accent="bg-primary-600" />
                   <Stat label="Quiz accuracy" value={o.accuracy === null ? '—' : `${o.accuracy}%`} sub={`${o.correctAnswers} of ${o.questionsAnswered} correct`} accent="bg-green-500" />
                   <Stat label="Tests taken" value={o.testsTaken} sub={`${o.questionsAnswered} questions answered`} accent="bg-indigo-500" />
                   <Stat label="Study time" value={formatMinutes(o.studyMinutes)} sub={`${o.trackedMinutes > 0 ? 'Time in the app' : 'Estimated'} · ${o.activeDays} active ${o.activeDays === 1 ? 'day' : 'days'}`} accent="bg-purple-500" />
@@ -130,7 +121,7 @@ const Profile = () => {
                         {Object.entries(o.skillScoreBreakdown).map(([k, v]) => (
                           <div key={k}>
                             <p className="text-sm font-bold text-gray-900 tabular-nums">{v}</p>
-                            <p className="text-[10px] uppercase tracking-wide text-gray-400">{k}</p>
+                            <p className="text-[10px] uppercase tracking-wide text-gray-500">{k}</p>
                           </div>
                         ))}
                       </div>
@@ -144,7 +135,7 @@ const Profile = () => {
                     ) : (
                       <div className="flex flex-col items-center gap-5">
                         <Donut
-                          segments={mix.map((m) => ({ label: m.label, value: m.minutes, color: MIX_COLORS[m.kind] || '#9ca3af' }))}
+                          segments={mix.map((m) => ({ label: m.label, value: m.minutes, color: ACTIVITY_COLORS[m.kind] || chart.muted }))}
                           centerValue={formatMinutes(mixTotal)}
                           centerLabel="total"
                         />
@@ -152,7 +143,7 @@ const Profile = () => {
                           {mix.map((m) => (
                             <li key={m.kind} className="flex items-center justify-between text-sm">
                               <span className="flex items-center gap-2 text-gray-700">
-                                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: MIX_COLORS[m.kind] || '#9ca3af' }} aria-hidden="true" />
+                                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: ACTIVITY_COLORS[m.kind] || chart.muted }} aria-hidden="true" />
                                 {m.label}
                               </span>
                               <span className="tabular-nums text-gray-500">{formatMinutes(m.minutes)} <span className="text-gray-900 font-semibold">{m.share}%</span></span>
@@ -179,7 +170,7 @@ const Profile = () => {
 
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8">
                   {LIBRARY.map((l) => (
-                    <div key={l.key} className="bg-white rounded-xl border border-gray-200 px-4 py-3 text-center">
+                    <div key={l.key} className="bg-surface rounded-xl border border-gray-200 px-4 py-3 text-center">
                       <p className="text-lg" aria-hidden="true">{l.icon}</p>
                       <p className="text-xl font-bold text-gray-900 tabular-nums">{data.activity.library[l.key]}</p>
                       <p className="text-[11px] text-gray-500">{l.label}</p>

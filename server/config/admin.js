@@ -36,6 +36,13 @@ const TOOLS = {
 };
 
 /**
+ * Tools whose AI use an admin can cap per student (the ai.tokenLimits setting).
+ * Problem reports are left out on purpose: a student can always report a problem.
+ */
+const TOKEN_LIMITED_TOOLS = Object.keys(TOOLS).filter((tool) => !['reports', 'voiceReports'].includes(tool));
+const TOKEN_PERIODS = ['day', 'week', 'month'];
+
+/**
  * Every AI feature, as tagged on its model calls (ai/aiContext.js). `tool` is
  * the switch that turns it off; `essential: false` features are the ones
  * paused when the global daily spend cap is reached.
@@ -208,11 +215,10 @@ const SETTINGS = {
   },
   'ai.params': {
     group: 'ai',
-    description: 'reasoning_effort for gpt-oss models, a multiplier on every max_tokens, and an optional temperature for all calls.',
-    default: () => ({ reasoningEffort: 'low', maxTokensScale: 1, temperature: null }),
+    description: 'reasoning_effort for gpt-oss models and an optional temperature for all calls. Output length is never capped.',
+    default: () => ({ reasoningEffort: 'low', temperature: null }),
     validate: v.shape({
       reasoningEffort: v.oneOf(['low', 'medium', 'high']),
-      maxTokensScale: v.num(0.25, 2),
       temperature: (x, label) => (x === null || x === undefined || x === '' ? null : v.num(0, 2)(x, label)),
     }),
   },
@@ -220,8 +226,19 @@ const SETTINGS = {
     group: 'ai',
     critical: true,
     description: 'Per-student AI requests per day and a global daily USD cap (0 = off). At the cap, non-essential AI features pause.',
+    unlimited: ['perStudentDaily', 'globalDailyUsdCap'],
     default: () => ({ perStudentDaily: 0, globalDailyUsdCap: 0 }),
     validate: v.shape({ perStudentDaily: v.int(0, 100000), globalDailyUsdCap: v.num(0, 10000) }),
+  },
+  'ai.tokenLimits': {
+    group: 'tokens',
+    labels: Object.fromEntries(TOKEN_LIMITED_TOOLS.map((tool) => [tool, TOOLS[tool].label])),
+    description: 'AI tokens each student may use per tool, per day, week or month (0 = unlimited, the default). A student at the limit is told so in the tool, on the dashboard and in the bell until it resets.',
+    default: () => ({ period: 'day', perStudent: Object.fromEntries(TOKEN_LIMITED_TOOLS.map((tool) => [tool, 0])) }),
+    validate: v.shape({
+      period: v.oneOf(TOKEN_PERIODS),
+      perStudent: v.shape(Object.fromEntries(TOKEN_LIMITED_TOOLS.map((tool) => [tool, (x, label) => v.int(0, 1000000000)(x ?? 0, label)]))),
+    }),
   },
   'gateways.youtube': {
     group: 'gateways',
@@ -269,9 +286,10 @@ const SETTINGS = {
   'risk.budget': {
     group: 'risk',
     critical: true,
-    description: 'Per-investigation budget and how many lanes may call a model at once (Groq allows ~8k tokens/minute per model).',
+    description: 'Optional per-investigation USD and token caps (0 = off, the default) and how many lanes may call a model at once (Groq allows ~8k tokens/minute per model).',
+    unlimited: ['usdMax', 'tokensMax'],
     default: () => ({ ...EW.BUDGET }),
-    validate: v.shape({ usdMax: v.num(0.001, 5), tokensMax: v.int(2000, 500000), laneConcurrency: v.int(1, 5) }),
+    validate: v.shape({ usdMax: v.num(0, 5), tokensMax: v.int(0, 500000), laneConcurrency: v.int(1, 5) }),
   },
   'risk.autoInvestigate': {
     group: 'risk',
@@ -293,4 +311,4 @@ const SETTINGS = {
   },
 };
 
-module.exports = { ROLES, ADMIN_ROLES, STATUSES, TOOLS, AI_FEATURES, SETTINGS, validators: v };
+module.exports = { ROLES, ADMIN_ROLES, STATUSES, TOOLS, TOKEN_LIMITED_TOOLS, TOKEN_PERIODS, AI_FEATURES, SETTINGS, validators: v };

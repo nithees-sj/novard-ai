@@ -154,7 +154,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
         )}
       </main>
 
-      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden" aria-label="Your analyses">
+      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-surface overflow-hidden" aria-label="Your analyses">
         <div className="p-4 border-b border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-3">Your Analyses</h3>
           <button
@@ -180,7 +180,7 @@ const SkillGapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                 onClick={() => open(s._id)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${active
                   ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600'
-                  : 'bg-white border-gray-200 hover:border-gray-300'}`}
+                  : 'bg-surface border-gray-200 hover:border-gray-300'}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className={`text-sm font-semibold truncate ${active ? 'text-blue-800' : 'text-gray-900'}`}>{s.targetRole}</span>

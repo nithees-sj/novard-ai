@@ -25,7 +25,7 @@ export default function Gateways() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(data?.gateways || []).map((g) => (
-              <button key={g.id} type="button" onClick={() => navigate(`/admin/gateways/${g.id}`)} className="rounded-xl border border-gray-200 bg-white p-5 text-left transition hover:border-blue-200 hover:bg-blue-50/30">
+              <button key={g.id} type="button" onClick={() => navigate(`/admin/gateways/${g.id}`)} className="rounded-xl border border-gray-200 bg-surface p-5 text-left transition hover:border-blue-200 hover:bg-blue-50/30">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-bold text-gray-900">{g.name}</h2>
                   <StatusLight status={g.status} />
@@ -138,6 +138,7 @@ export function GatewayDetail() {
                   critical={critical.includes(key)}
                   editable={!critical.includes(key) || admin?.role === 'superadmin'}
                   mapKeys={key === 'ai.routes' ? g.reference?.tasks : undefined}
+                  unlimited={g.reference?.unlimited?.[key]}
                   onSave={save(key)}
                 />
               ))}

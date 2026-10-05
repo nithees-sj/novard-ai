@@ -135,3 +135,36 @@ describe('POST /updateUserProfile', () => {
     expect(res.body.error).toBe('Please enter a valid phone number.');
   });
 });
+
+describe('PUT /api/auth/preferences', () => {
+  beforeEach(() => User.create({ email: ALICE.email, name: ALICE.name }));
+
+  it('has no theme until the student chooses one', async () => {
+    const res = await request(app).get('/api/auth/me').set('Authorization', bearer());
+    expect(res.status).toBe(200);
+    expect(res.body.user.theme).toBeNull();
+  });
+
+  it('saves the theme on the account, so /me returns it on any device', async () => {
+    const res = await request(app).put('/api/auth/preferences').set('Authorization', bearer()).send({ theme: 'dark' });
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ email: ALICE.email, theme: 'dark' });
+    expect(res.body.token).toBeUndefined();
+    expect((await User.findOne({ email: ALICE.email })).theme).toBe('dark');
+
+    const me = await request(app).get('/api/auth/me').set('Authorization', bearer());
+    expect(me.body.user.theme).toBe('dark');
+  });
+
+  it('rejects an unknown theme', async () => {
+    const res = await request(app).put('/api/auth/preferences').set('Authorization', bearer()).send({ theme: 'neon' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Theme must be one of: light, dark, system.');
+    expect((await User.findOne({ email: ALICE.email })).theme).toBeUndefined();
+  });
+
+  it('needs a signed-in student', async () => {
+    const res = await request(app).put('/api/auth/preferences').send({ theme: 'dark' });
+    expect(res.status).toBe(401);
+  });
+});

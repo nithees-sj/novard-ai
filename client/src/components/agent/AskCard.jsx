@@ -51,7 +51,7 @@ const AskCard = ({ ask, active, onAnswer }) => {
                     type="button"
                     onClick={() => toggle(i, o)}
                     aria-pressed={on}
-                    className={`rounded-full border px-3 py-1 text-sm transition ${on ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-white text-gray-800 hover:border-blue-300 hover:bg-blue-50'} disabled:cursor-default disabled:hover:border-gray-200 disabled:hover:bg-white`}
+                    className={`rounded-full border px-3 py-1 text-sm transition ${on ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-surface text-gray-800 hover:border-blue-300 hover:bg-blue-50'} disabled:cursor-default disabled:hover:border-gray-200 disabled:hover:bg-surface`}
                   >
                     {o}
                   </button>
@@ -64,7 +64,7 @@ const AskCard = ({ ask, active, onAnswer }) => {
                   placeholder="Something else…"
                   aria-label={`Other answer to: ${q.question}`}
                   maxLength={200}
-                  className="min-w-[9rem] flex-1 rounded-full border border-dashed border-gray-300 bg-white px-3 py-1 text-sm outline-none focus:border-blue-300"
+                  className="min-w-[9rem] flex-1 rounded-full border border-dashed border-gray-300 bg-surface px-3 py-1 text-sm outline-none focus:border-blue-300"
                 />
               )}
             </div>
@@ -78,7 +78,7 @@ const AskCard = ({ ask, active, onAnswer }) => {
             type="button"
             disabled={!answered}
             onClick={() => onAnswer(compose())}
-            className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
+            className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:bg-gray-200 disabled:text-gray-400"
           >
             Send answers
           </button>

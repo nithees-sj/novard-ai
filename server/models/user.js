@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { ROLES, STATUSES } = require('../config/admin');
+const { THEMES } = require('../config/preferences');
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -13,6 +14,8 @@ const userSchema = new mongoose.Schema({
   status: { type: String, enum: STATUSES, default: 'active', index: true },
   suspendedAt: Date,
   suspendedReason: String,
+  // Display theme (config/preferences.js). No default: unset means never chosen.
+  theme: { type: String, enum: THEMES },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

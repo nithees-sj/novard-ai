@@ -21,3 +21,14 @@ if (typeof global.ResizeObserver === 'undefined') {
     disconnect() {}
   };
 }
+
+// jsdom has no matchMedia; the theme follows the device's light/dark setting with it.
+// A test can replace it to simulate the device switching.
+if (!window.matchMedia) {
+  window.matchMedia = (query) => ({
+    matches: false,
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+}

@@ -1,4 +1,4 @@
-const { MODELS, route, costUsd } = require('../config/ai');
+const { MODELS, route, costUsd, maxOutputTokens } = require('../config/ai');
 const { env } = require('../config/env');
 const settings = require('../services/settingsService');
 const { rateLimitWait, withRateLimitRetry } = require('./errors');
@@ -43,9 +43,14 @@ const statusOf = (error) => error?.status ?? error?.response?.status;
 /** A 429 that waiting a few seconds will not fix: the model's daily quota is used up. */
 function isDailyQuota(error) {
   if (statusOf(error) !== 429) return false;
-  if (/per day|daily|\bRPD\b|\bTPD\b/i.test(String(error?.message || ''))) return true;
+  const message = String(error?.message || '');
+  if (/per day|daily|\bRPD\b|\bTPD\b/i.test(message)) return true;
+  if (/per minute|\bTPM\b|\bRPM\b/i.test(message)) return false;
   return rateLimitWait(error) === null; // "try again in 25m": too long to sit out
 }
+
+/** A per-minute 429 whose wait is too long to sit out here; the next model has its own allowance. */
+const isLongMinuteLimit = (error) => statusOf(error) === 429 && !isDailyQuota(error) && rateLimitWait(error) === null;
 
 const isServerError = (error) => statusOf(error) >= 500 && statusOf(error) < 600;
 const unique = (list) => [...new Set(list.filter(Boolean))];
@@ -71,10 +76,10 @@ function chainFor(model, live) {
 
 /**
  * Run `attempt(model, n)` over the fail-over chain. `attempt` does the call
- * and logs it. Daily quota -> next model; 5xx -> backoff on the same model
- * (`serverTries` in all; 1 where the SDK already retries 5xx itself);
- * anything else is rethrown untouched (per-minute 429s are the caller's
- * withRateLimitRetry's to handle, exactly as before).
+ * and logs it. Daily quota, or a per-minute wait too long to sit out -> next
+ * model; 5xx -> backoff on the same model (`serverTries` in all; 1 where the
+ * SDK already retries 5xx itself); anything else is rethrown untouched (short
+ * per-minute 429s are the caller's withRateLimitRetry's to handle).
  */
 async function withFailover(chain, attempt, { serverTries = MAX_5XX_TRIES } = {}) {
   let last;
@@ -88,8 +93,9 @@ async function withFailover(chain, attempt, { serverTries = MAX_5XX_TRIES } = {}
       } catch (error) {
         last = error;
         if (error && typeof error === 'object') error.loggedAttempts = true;
-        if (isDailyQuota(error)) {
-          if (i < chain.length - 1) logger.warn(`AI: ${chain[i]} has used its daily quota, failing over to ${chain[i + 1]}`);
+        if (isDailyQuota(error) || isLongMinuteLimit(error)) {
+          const reason = isDailyQuota(error) ? 'has used its daily quota' : 'is at its per-minute limit';
+          if (i < chain.length - 1) logger.warn(`AI: ${chain[i]} ${reason}, failing over to ${chain[i + 1]}`);
           break;
         }
         if (isServerError(error) && tries < serverTries - 1) {
@@ -146,12 +152,12 @@ function gemini() {
   return geminiSdk;
 }
 
-async function groqJson({ model, system, user, maxTokens, temperature, reasoningEffort }) {
+async function groqJson({ model, system, user, temperature, reasoningEffort }) {
   const completion = await groq().chat.completions.create({
     model,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
     response_format: { type: 'json_object' },
-    max_tokens: maxTokens,
+    max_tokens: maxOutputTokens(model),
     temperature,
     ...(/gpt-oss/.test(model) ? { reasoning_effort: reasoningEffort } : {}),
   }, { maxRetries: 0 });
@@ -162,11 +168,11 @@ async function groqJson({ model, system, user, maxTokens, temperature, reasoning
   };
 }
 
-async function geminiJson({ model, system, user, maxTokens, temperature }) {
+async function geminiJson({ model, system, user, temperature }) {
   const response = await gemini().getGenerativeModel({
     model,
     systemInstruction: system,
-    generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxTokens, temperature },
+    generationConfig: { responseMimeType: 'application/json', maxOutputTokens: maxOutputTokens(model), temperature },
   }, { timeout: GEMINI_TIMEOUT_MS }).generateContent(user);
   const usage = response.response.usageMetadata || {};
   return { result: response.response.text(), tokensIn: usage.promptTokenCount || 0, tokensOut: usage.candidatesTokenCount || 0 };
@@ -181,14 +187,13 @@ async function geminiJson({ model, system, user, maxTokens, temperature }) {
  *
  * @returns {Promise<{data: object, model: string, provider: string, tokensIn: number, tokensOut: number, usd: number, attempts: number}>}
  */
-async function callJson({ task, system, user, maxTokens = 800, temperature = 0.2, attempt = 0, confidence, avoid, context, onWait }) {
+async function callJson({ task, system, user, temperature = 0.2, attempt = 0, confidence, avoid, context, onWait }) {
   // The caller's AI context (feature, run id, step, conversation), so every call is logged against it.
   const ctx = { ...currentAi(), ...(context || {}), task };
   const live = await liveModelSettings();
   const geminiAvailable = Boolean(env.geminiApiKey) && live['ai.providers'].gemini !== false;
   const pick = route(task, { attempt, confidence, overrides: live['ai.routes'], avoid, geminiAvailable });
   const params = live['ai.params'];
-  const scaledTokens = Math.max(64, Math.round(maxTokens * params.maxTokensScale));
   const temp = params.temperature ?? temperature;
 
   // Gemini first when routed there, then Groq (never the model to avoid).
@@ -215,8 +220,8 @@ async function callJson({ task, system, user, maxTokens = 800, temperature = 0.2
             usage.attempts += 1;
             return logged({ provider: candidate.provider, model, attempt: usage.attempts, routedBy: candidate.routedBy, context: ctx }, async () => {
               const res = candidate.provider === 'gemini'
-                ? await geminiJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp })
-                : await groqJson({ model, system, user: user + repair, maxTokens: scaledTokens, temperature: temp, reasoningEffort: candidate.reasoningEffort || params.reasoningEffort });
+                ? await geminiJson({ model, system, user: user + repair, temperature: temp })
+                : await groqJson({ model, system, user: user + repair, temperature: temp, reasoningEffort: candidate.reasoningEffort || params.reasoningEffort });
               usage.tokensIn += res.tokensIn;
               usage.tokensOut += res.tokensOut;
               usage.usd += costUsd(model, res.tokensIn, res.tokensOut);

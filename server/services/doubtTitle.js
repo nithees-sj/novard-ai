@@ -37,7 +37,7 @@ function fallbackTitle({ title, description }) {
 
 async function contextualTitle({ title, description }) {
   try {
-    const res = await withRateLimitRetry(() => chatModel({ tier: 'FAST', maxTokens: 300, temperature: 0.3 }).invoke([
+    const res = await withRateLimitRetry(() => chatModel({ tier: 'FAST', temperature: 0.3 }).invoke([
       new SystemMessage(SYSTEM),
       new HumanMessage(`Title the student typed: ${String(title || '(none)').slice(0, 200)}\nTheir question: ${String(description || '').slice(0, 1500)}`),
     ]), { retries: 1 });

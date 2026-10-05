@@ -79,7 +79,7 @@ const TYPES = {
 
 const Field = ({ label, children }) => (
   <div className="min-w-0">
-    <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</dt>
+    <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
     <dd className="mt-0.5 text-sm text-gray-800">{children}</dd>
   </div>
 );
@@ -154,7 +154,7 @@ const ActionCard = ({ action, onDecide, busy = false }) => {
   const retry = () => onDecide(action, isProfile ? 'confirm' : 'create', {});
 
   return (
-    <div className={`mt-3 overflow-hidden rounded-xl border bg-white shadow-sm transition-colors ${
+    <div className={`mt-3 overflow-hidden rounded-xl border bg-surface shadow-sm transition-colors ${
       status === 'done' ? 'border-green-200' : status === 'failed' ? 'border-red-200' : status === 'draft' ? 'border-blue-200' : ['dismissed', 'superseded', 'accepted'].includes(status) ? 'border-gray-200 opacity-70' : 'border-gray-200'
     }`}>
       <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
@@ -188,7 +188,7 @@ const ActionCard = ({ action, onDecide, busy = false }) => {
             {status === 'proposed' && (
               <>
                 <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">{isProfile ? 'Not now' : 'No thanks'}</button>
-                <button type="button" disabled={busy} onClick={() => onDecide(action, isProfile ? 'confirm' : 'accept')} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50">
+                <button type="button" disabled={busy} onClick={() => onDecide(action, isProfile ? 'confirm' : 'accept')} className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:opacity-50">
                   {isProfile ? 'Yes, remember' : 'Yes, set it up'}
                 </button>
               </>
@@ -211,7 +211,7 @@ const ActionCard = ({ action, onDecide, busy = false }) => {
               <>
                 <p className="mr-auto text-sm text-red-700" role="alert">{action.error || 'That did not work.'}</p>
                 <button type="button" onClick={() => onDecide(action, 'dismiss')} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Dismiss</button>
-                <button type="button" onClick={retry} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">Try again</button>
+                <button type="button" onClick={retry} className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover">Try again</button>
               </>
             )}
             {status === 'dismissed' && <p className="mr-auto text-sm text-gray-500">You can ask me again any time.</p>}

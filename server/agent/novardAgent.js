@@ -261,7 +261,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
     ...past,
     new HumanMessage(input),
   ];
-  const base = chatModel({ tier: 'REASONING', maxTokens: 3000, temperature: 0.5 });
+  const base = chatModel({ tier: 'REASONING', temperature: 0.5 });
   const withTools = base.bindTools(TOOLS);
 
   const ctx = { userId, searchResults: new Map(), emit };
@@ -522,7 +522,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
 /** A short title for a new chat, from its first message. */
 async function titleFor(input) {
   try {
-    const res = await runWithAi({ feature: 'agent.title' }, () => chatModel({ tier: 'FAST', maxTokens: 400, temperature: 0.3 }).invoke([
+    const res = await runWithAi({ feature: 'agent.title' }, () => chatModel({ tier: 'FAST', temperature: 0.3 }).invoke([
       new SystemMessage('Write a 2-6 word title for a chat that starts with the message below. Title case, no quotes, no trailing punctuation. Return only the title.'),
       new HumanMessage(String(input).slice(0, 1000)),
     ]));

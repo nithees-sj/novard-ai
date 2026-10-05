@@ -33,7 +33,40 @@ const MODELS = {
   EMBED: process.env.GEMINI_EMBED_MODEL || 'gemini-embedding-001',
 };
 
-const csv = (value) => String(value || '').split(',').map((m) => m.trim()).filter(Boolean);
+/**
+ * No call caps its output: every model may answer at full length. That length
+ * is sent on every call, because when it is left out Groq applies a small
+ * default (2-3k tokens) and long answers come back cut off. Models not listed
+ * get the provider's default; AI_MAX_OUTPUT_TOKENS overrides the lot.
+ */
+const MODEL_MAX_OUTPUT = {
+  'openai/gpt-oss-120b': 65536,
+  'openai/gpt-oss-20b': 65536,
+  'gemini-flash-latest': 65536,
+  'gemini-flash-lite-latest': 65536,
+};
+
+/** The most output tokens `model` can write, or undefined when unknown. */
+function maxOutputTokens(model) {
+  if (Number(process.env.AI_MAX_OUTPUT_TOKENS)) return Number(process.env.AI_MAX_OUTPUT_TOKENS);
+  return MODEL_MAX_OUTPUT[model] ?? (/gpt-oss/.test(model) || /^gemini/.test(model) ? 65536 : undefined);
+}
+
+/**
+ * Inputs are never cut short either. *
+ * The one size limit left is the provider's own: Groq's free (on_demand) tier
+ * refuses any single request over 8,000 tokens (413 "Request too large"), while
+ * paid tiers take the models' full 131k context. Long inputs (notes,
+ * transcripts, chat threads) are read in pieces of this size rather than cut,
+ * so after upgrading the Groq tier, raising AI_REQUEST_TOKEN_LIMIT is the only
+ * change needed.
+ */
+const REQUEST_TOKEN_LIMIT = Number(process.env.AI_REQUEST_TOKEN_LIMIT) || 8000;
+
+/** Source text that fits in one request beside its instructions (dense text runs ~3 characters a token). */
+const SOURCE_CHARS = Math.max(4000, (REQUEST_TOKEN_LIMIT - 2500) * 3);
+
+const csv = (value) =>String(value || '').split(',').map((m) => m.trim()).filter(Boolean);
 
 /** Dimensions stored per report embedding (Gemini embeddings support MRL truncation). */
 const EMBED_DIM = Number(process.env.EMBED_DIM) || 768;
@@ -133,4 +166,4 @@ const GROQ_DEFAULTS = {
   reasoning_effort: 'low',
 };
 
-module.exports = { MODELS, GROQ_DEFAULTS, EMBED_DIM, FAILOVER, PRICING, AUDIO_PRICING_PER_HOUR, costUsd, TASKS, route };
+module.exports = { MODELS, GROQ_DEFAULTS, REQUEST_TOKEN_LIMIT, SOURCE_CHARS, maxOutputTokens, EMBED_DIM, FAILOVER, PRICING, AUDIO_PRICING_PER_HOUR, costUsd, TASKS, route };

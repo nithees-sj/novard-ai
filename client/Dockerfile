@@ -12,6 +12,8 @@ ARG REACT_APP_GOOGLE_CLIENT_ID
 
 ENV REACT_APP_API_ENDPOINT=$REACT_APP_API_ENDPOINT
 ENV REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID
+# Keep CRA's runtime chunk a file: the CSP (nginx.conf.template) allows no inline scripts
+ENV INLINE_RUNTIME_CHUNK=false
 
 COPY . .
 RUN npm run build
@@ -27,6 +29,10 @@ COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # Copy the built React app
 COPY --from=build /app/build /usr/share/nginx/html
+
+# The CSP's connect-src allows the API this build calls
+ARG REACT_APP_API_ENDPOINT
+ENV API_ORIGIN=$REACT_APP_API_ENDPOINT
 
 # Cloud Run injects PORT env var; default to 8080
 ENV PORT=8080

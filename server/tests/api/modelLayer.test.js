@@ -66,20 +66,23 @@ describe('model-call logging for existing features', () => {
     expect(spend.value).toBeCloseTo(calls[0].usd, 10);
   });
 
-  it('sends the same request as before while settings are at their defaults', async () => {
+  it('asks for the model\'s full output length while settings are at their defaults', async () => {
     mockCreate.mockResolvedValue(reply('ok'));
-    await complete({ messages: [{ role: 'user', content: 'hi' }], model: MODELS.REASONING, temperature: 0.7, maxTokens: 900 });
+    await complete({ messages: [{ role: 'user', content: 'hi' }], model: MODELS.REASONING, temperature: 0.7 });
+    // Sent explicitly: left out, Groq cuts answers off at a small default.
     expect(mockCreate.mock.calls[0][0]).toEqual({
-      messages: [{ role: 'user', content: 'hi' }], model: MODELS.REASONING, reasoning_effort: 'low', temperature: 0.7, max_tokens: 900,
+      messages: [{ role: 'user', content: 'hi' }], model: MODELS.REASONING, reasoning_effort: 'low', temperature: 0.7, max_tokens: 65536,
     });
   });
 
   it('uses the admin\'s tier models and parameters', async () => {
     await settings.set('ai.tiers', { FAST: 'llama-3.1-8b-instant' }, { actor: system });
-    await settings.set('ai.params', { reasoningEffort: 'medium', maxTokensScale: 0.5 }, { actor: system });
+    await settings.set('ai.params', { reasoningEffort: 'medium' }, { actor: system });
     mockCreate.mockResolvedValue(reply('ok'));
-    await complete({ messages: [{ role: 'user', content: 'hi' }], maxTokens: 1000 });
-    expect(mockCreate.mock.calls[0][0]).toMatchObject({ model: 'llama-3.1-8b-instant', reasoning_effort: 'medium', max_tokens: 500 });
+    await complete({ messages: [{ role: 'user', content: 'hi' }] });
+    expect(mockCreate.mock.calls[0][0]).toMatchObject({ model: 'llama-3.1-8b-instant', reasoning_effort: 'medium' });
+    // A model without a known maximum gets the provider's default.
+    expect(mockCreate.mock.calls[0][0].max_tokens).toBeUndefined();
   });
 });
 
@@ -101,6 +104,16 @@ describe('fail-over and retries', () => {
     expect(mockCreate.mock.calls.map((c) => c[0].model)).toEqual([MODELS.REASONING, MODELS.REASONING]);
     expect((await ModelCall.find().lean()).map((c) => c.outcome).sort()).toEqual(['429', 'ok']);
   }, 10000);
+
+  it('fails over on a per-minute limit too long to wait out, without calling it a daily quota', async () => {
+    mockCreate.mockRejectedValueOnce(apiError(429, 'Rate limit reached on tokens per minute (TPM): Limit 8000. Please try again in 45.2s.'))
+      .mockResolvedValueOnce(reply('from 20b'));
+    const text = await complete({ messages: [], model: MODELS.REASONING });
+    expect(text).toBe('from 20b');
+    expect(mockCreate.mock.calls.map((c) => c[0].model)).toEqual([MODELS.REASONING, MODELS.FAST]);
+    const outcomes = (await ModelCall.find().sort({ createdAt: 1 }).lean()).map((c) => c.outcome);
+    expect(outcomes).toEqual(['429', 'ok']);
+  });
 
   it('ends with one clean error when every model is out of quota', async () => {
     mockCreate.mockRejectedValue(DAILY());
@@ -269,5 +282,16 @@ describe('gateway events', () => {
     expect((await gatewayLights()).oauth).toBe('ok');
     await GatewayEvent.create([{ gateway: 'oauth', operation: 'tokeninfo', outcome: 'fail' }, { gateway: 'oauth', operation: 'tokeninfo', outcome: 'fail' }]);
     expect((await gatewayLights()).oauth).toBe('down');
+  });
+
+  it('shows Groq rate-limited, not down, when calls are answered with 429s', async () => {
+    const { gatewayLights } = require('../../services/admin/gatewayService');
+    const call = (outcome) => ({ provider: 'groq', model: MODELS.FAST, feature: 'notes.summary', outcome, latencyMs: 10 });
+    // As seen live: more 429s than answers in the hour, but Groq itself up.
+    await ModelCall.create([call('ok'), call('ok'), call('429'), call('429'), call('429_daily')]);
+    expect((await gatewayLights()).groq).toBe('limited');
+    // Real failures still turn it red.
+    await ModelCall.create([call('5xx'), call('5xx'), call('5xx'), call('5xx'), call('5xx'), call('5xx')]);
+    expect((await gatewayLights()).groq).toBe('down');
   });
 });

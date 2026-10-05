@@ -13,7 +13,7 @@ const SOURCE = {
   assumed: { text: 'assumed - check', className: 'bg-amber-50 text-amber-700' },
 };
 
-const inputClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'w-full rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 function problemFor(f, v) {
   const required = f.need === 'must' || f.need === 'auto';
@@ -65,7 +65,7 @@ function Input({ f, value, onChange, id, candidates }) {
               role="radio"
               aria-checked={value === o.value}
               onClick={() => onChange(value === o.value && f.need === 'should' ? '' : o.value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${value === o.value ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${value === o.value ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 bg-surface text-gray-700 hover:border-gray-300'}`}
             >
               {o.label}
             </button>
@@ -127,7 +127,7 @@ const DraftForm = ({ action, confirmLabel, onCreate, onCancel, busy }) => {
           </label>
         )}
         <button type="button" onClick={onCancel} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
-        <button type="submit" disabled={busy} className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50">{confirmLabel}</button>
+        <button type="submit" disabled={busy} className="rounded-lg bg-ink px-3.5 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:opacity-50">{confirmLabel}</button>
       </div>
     </form>
   );

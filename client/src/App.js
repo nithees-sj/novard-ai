@@ -5,6 +5,7 @@ import RouteFallback from "./components/RouteFallback";
 import useStudyTimeTracker from "./hooks/useStudyTimeTracker";
 import { AppStatusProvider } from "./context/AppStatusContext";
 import { ReportProvider } from "./context/ReportContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { MaintenanceNotice } from "./components/FeatureNotice";
 
 // Routes are code-split: the entry bundle previously contained every page,
@@ -90,11 +91,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppStatusProvider>
-          <ReportProvider>
-            <AppRoutes />
-          </ReportProvider>
-        </AppStatusProvider>
+        <ThemeProvider>
+          <AppStatusProvider>
+            <ReportProvider>
+              <AppRoutes />
+            </ReportProvider>
+          </AppStatusProvider>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

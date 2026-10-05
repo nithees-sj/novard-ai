@@ -8,6 +8,7 @@ import { Badge, Spinner, btn } from '../../components/learning/LearningUI';
 import useAdminData from '../../lib/useAdminData';
 import { adminPost } from '../../lib/adminApi';
 import { errorMessage } from '../../lib/api';
+import { LEVEL_COLORS } from '../../lib/statusColors';
 
 const short = (d) => d.slice(5);
 
@@ -47,9 +48,9 @@ export default function AreaDetail() {
 
   const t = data?.thresholds;
   const thresholdLines = t ? [
-    { value: t.MEDIUM, label: 'MEDIUM', color: '#f59e0b' },
-    { value: t.HIGH, label: 'HIGH', color: '#ef4444' },
-    { value: t.CRITICAL, label: 'CRITICAL', color: '#b91c1c' },
+    { value: t.MEDIUM, label: 'MEDIUM', color: LEVEL_COLORS.MEDIUM },
+    { value: t.HIGH, label: 'HIGH', color: LEVEL_COLORS.HIGH },
+    { value: t.CRITICAL, label: 'CRITICAL', color: LEVEL_COLORS.CRITICAL },
   ] : [];
 
   return (

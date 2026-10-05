@@ -169,7 +169,6 @@ async function generateRoadmap(input) {
         ],
         model: MODELS.REASONING,
         temperature: 0.5,
-        maxTokens: 7000,
       });
       const raw = parseModelJson(reply, { context: 'roadmap' });
       const roadmap = normaliseRoadmap(raw, input);

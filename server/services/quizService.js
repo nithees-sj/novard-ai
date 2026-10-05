@@ -2,6 +2,7 @@ const { MODELS } = require('../config/ai');
 const { complete } = require('../ai/groqClient');
 const { parseModelJson } = require('../utils/parseModelJson');
 const logger = require('../utils/logger');
+const { sampleContent } = require('../utils/longText');
 
 /**
  * One quiz generator for every section (notes, videos, doubts, learning plans),
@@ -136,7 +137,6 @@ async function requestQuestions({ subject, content, options, count, avoid, model
     model,
     temperature: 0.6,
     // ~350 tokens per question with its explanation, plus headroom.
-    maxTokens: Math.min(8000, 800 + count * 350),
   });
   const parsed = parseModelJson(text, { context: 'quiz' });
   const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.questions) ? parsed.questions : [];
@@ -177,23 +177,6 @@ async function generateQuiz({ subject, content, options, model = MODELS.REASONIN
     throw error;
   }
   return questions;
-}
-
-/**
- * Keep quiz material within the prompt budget while covering the whole
- * source: long text is sampled evenly from start to end rather than truncated
- * (the old notes quiz only ever read the first chunk of a document).
- */
-function sampleContent(text, maxChars = 24000) {
-  const clean = String(text || '').replace(/\s+\n/g, '\n').trim();
-  if (clean.length <= maxChars) return clean;
-  const parts = 6;
-  const slice = Math.floor(maxChars / parts);
-  const step = Math.floor((clean.length - slice) / (parts - 1));
-  // The last window is anchored to the end so rounding never drops the final lines.
-  return Array.from({ length: parts }, (_, i) =>
-    i === parts - 1 ? clean.slice(clean.length - slice) : clean.slice(i * step, i * step + slice)
-  ).join('\n...\n');
 }
 
 /**

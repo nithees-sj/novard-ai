@@ -17,7 +17,7 @@ const GapReport = ({ analysis, startOpen = true }) => {
   const [showAll, setShowAll] = useState(false);
   const gaps = showAll ? analysis.gaps : analysis.gaps.slice(0, 5);
   return (
-    <section className="rounded-xl border border-gray-200 bg-white">
+    <section className="rounded-xl border border-gray-200 bg-surface">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="w-full flex items-center gap-4 p-4 text-left">
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-3 mb-1.5">
@@ -52,7 +52,7 @@ const GapReport = ({ analysis, startOpen = true }) => {
               {gaps.map((g) => (
                 <li key={g.skill} className="py-2 first:pt-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{g.skill}{g.importance === 'nice' && <span className="ml-1.5 text-[10px] font-medium text-gray-400">nice to have</span>}</span>
+                    <span className="text-sm font-semibold text-gray-900">{g.skill}{g.importance === 'nice' && <span className="ml-1.5 text-[10px] font-medium text-gray-500">nice to have</span>}</span>
                     <span className="flex items-center gap-2 shrink-0">
                       <span className="text-xs text-gray-500 tabular-nums">~{g.effortWeeks}w</span>
                       <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${PRIORITY[g.priority]?.badge}`}>{PRIORITY[g.priority]?.label}</span>
@@ -81,7 +81,7 @@ const Bubble = ({ message, onReport }) => {
       {!mine && <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>}
       <div className={`max-w-[85%] min-w-0 rounded-2xl px-4 py-3 ${mine
         ? 'bg-blue-600 text-white rounded-br-md'
-        : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'}`}>
+        : 'bg-surface border border-gray-200 text-gray-900 rounded-bl-md'}`}>
         {mine
           ? <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
           : <MarkdownView content={message.content} />}
@@ -154,7 +154,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onUpdateSkills} className="px-3 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={onUpdateSkills} className="px-3 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50">
             Update my skills
           </button>
           {confirmDelete ? (
@@ -183,7 +183,7 @@ const SkillGapChat = ({ session, onSend, sending = false, error = null, onUpdate
         {sending && (
           <div className="flex gap-3">
             <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm" aria-hidden="true">🧭</div>
-            <div className="rounded-2xl rounded-bl-md bg-white border border-gray-200 px-4 py-3 flex items-center gap-1.5" aria-label="The coach is typing">
+            <div className="rounded-2xl rounded-bl-md bg-surface border border-gray-200 px-4 py-3 flex items-center gap-1.5" aria-label="The coach is typing">
               {[0, 150, 300].map((d) => <span key={d} className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
             </div>
           </div>

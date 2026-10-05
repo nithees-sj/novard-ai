@@ -55,17 +55,19 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
   return (
     <div
       onClick={onCancel}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-50"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
+        className="bg-surface-overlay rounded-2xl border border-gray-200 p-8 w-11/12 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl"
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Start a Discussion</h2>
           <button
+            type="button"
             onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700 text-2xl p-1"
+            aria-label="Close"
+            className="rounded-md text-gray-500 hover:text-gray-700 text-2xl p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
           >
             ×
           </button>
@@ -83,7 +85,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter a descriptive title for your issue"
-              className="px-4 py-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
               required
             />
           </div>
@@ -98,7 +100,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               value={formData.description}
               onChange={handleChange}
               placeholder="Describe your issue in detail. Include any relevant information, steps to reproduce, or context that might help others understand and help with your issue."
-              className="px-4 py-3 text-sm border border-gray-300 rounded-md min-h-[150px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg min-h-[150px] resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-600"
               required
             />
           </div>
@@ -116,7 +118,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                     formData.category === c.value
                       ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                      : 'bg-surface border-gray-300 text-gray-700 hover:border-blue-400'
                   }`}
                 >
                   {c.label}
@@ -135,7 +137,7 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
               value={formData.tags}
               onChange={handleChange}
               placeholder="Enter tags separated by commas (e.g., javascript, react, bug)"
-              className="px-4 py-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="px-4 py-3 text-sm border border-gray-300 bg-surface rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
@@ -146,14 +148,14 @@ const IssueForm = ({ onSubmit, onCancel, isVisible }) => {
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-md hover:bg-gray-300"
+              className="px-6 py-2 border border-gray-300 bg-surface text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60"
+              className="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
             >
               {isSubmitting ? 'Creating...' : 'Create Issue'}
             </button>

@@ -133,11 +133,11 @@ export function UserDetail() {
                   ) : (
                     (!isAdminAccount || superadmin) && <button type="button" disabled={busy} onClick={() => act('reactivate', {}, 'Reactivated.')} className={`${btn.primary} w-full`}>Reactivate</button>
                   )}
-                  <button type="button" disabled={busy} onClick={() => act('reset-quota', {}, "Today's AI allowance reset.")} className={`${btn.secondary} w-full`}>{busy ? <Spinner /> : null}Reset today's AI quota</button>
+                  <button type="button" disabled={busy} onClick={() => act('reset-quota', {}, "AI allowance reset: today's requests and this period's tokens.")} className={`${btn.secondary} w-full`}>{busy ? <Spinner /> : null}Reset AI quota and tokens</button>
                   {superadmin && (
                     <div className="flex gap-2 pt-2">
                       {['student', 'admin', 'superadmin'].filter((r) => r !== u.role).map((role) => (
-                        <button key={role} type="button" disabled={busy} onClick={() => act('role', { role }, `Role changed to ${role}.`)} className={`${btn.ghost} flex-1 border border-gray-200 py-1.5 text-xs`}>Make {role}</button>
+                        <button key={role} type="button" disabled={busy} onClick={() => act('role', { role }, `Role changed to ${role}.`)} className={`${btn.secondary} flex-1`}>Make {role}</button>
                       ))}
                     </div>
                   )}
@@ -166,6 +166,14 @@ export function UserDetail() {
                 { key: 'calls', label: 'Calls', className: 'tabular-nums' },
                 { key: 'tokens', label: 'Tokens', className: 'tabular-nums', render: (r) => r.tokens.toLocaleString() },
                 { key: 'usd', label: 'Cost', render: (r) => usd(r.usd) },
+              ]} />
+            </Section>
+            <Section title="Token limits" subtitle={`This ${data.ai.tokens.period}, per tool (set under Features & limits)`}>
+              <DataTable rowKey={(r) => r.tool} rows={data.ai.tokens.tools} empty="No AI tokens used this period." columns={[
+                { key: 'label', label: 'Tool' },
+                { key: 'used', label: 'Used', className: 'tabular-nums', render: (r) => r.used.toLocaleString() },
+                { key: 'limit', label: 'Limit', className: 'tabular-nums', render: (r) => (r.limit ? r.limit.toLocaleString() : 'Unlimited') },
+                { key: 'reached', label: '', render: (r) => (r.reached ? <Badge tone="red">At limit</Badge> : null) },
               ]} />
             </Section>
           </div>

@@ -110,6 +110,9 @@ async function list(admin) {
       source: sourceOf(key),
       updatedBy: stored?.updatedBy || null,
       updatedAt: stored?.updatedAt || null,
+      ...(def.labels ? { labels: def.labels } : {}),
+      // Number fields where 0 means no limit: the console shows them as "Unlimited".
+      ...(def.unlimited ? { unlimited: def.unlimited } : {}),
     };
   });
 }

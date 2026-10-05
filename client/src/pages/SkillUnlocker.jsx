@@ -23,7 +23,7 @@ const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
         cx={size / 2}
         cy={size / 2}
         r={radius}
-        stroke="#e5e7eb"
+        className="stroke-chart-track"
         strokeWidth={strokeWidth}
         fill="none"
       />
@@ -31,7 +31,7 @@ const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
         cx={size / 2}
         cy={size / 2}
         r={radius}
-        stroke="#2563eb"
+        className="stroke-blue-600"
         strokeWidth={strokeWidth}
         fill="none"
         strokeDasharray={circumference}
@@ -377,7 +377,7 @@ const SkillUnlocker = () => {
 
             {/* FORM VIEW */}
             {currentView === 'form' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 <form onSubmit={handleGeneratePlan} className="space-y-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -403,7 +403,7 @@ const SkillUnlocker = () => {
                           name="duration"
                           value={formData.duration}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-surface"
                         >
                           <option value={10}>10 Days (Sprint)</option>
                           <option value={15}>15 Days (Crash Course)</option>
@@ -421,7 +421,7 @@ const SkillUnlocker = () => {
                           name="level"
                           value={formData.level}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                          className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-surface"
                         >
                           <option value="beginner">Beginner (Start from zero)</option>
                           <option value="intermediate">Intermediate (Refine skills)</option>
@@ -439,7 +439,7 @@ const SkillUnlocker = () => {
                           name="language"
                           value={formData.language}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                          className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-surface"
                         >
                           <option value="English">English</option>
                           <option value="Spanish">Spanish</option>
@@ -456,7 +456,7 @@ const SkillUnlocker = () => {
                           name="teachingStyle"
                           value={formData.teachingStyle}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                          className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-surface"
                         >
                           <option value="Standard">Standard (Balanced)</option>
                           <option value="Fast-paced">Fast-paced / Crash Course</option>
@@ -498,7 +498,7 @@ const SkillUnlocker = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-700 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                    className="w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
                   >
                     {loading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -513,7 +513,7 @@ const SkillUnlocker = () => {
 
             {/* QUIZ CONFIGURATION VIEW */}
             {currentView === 'quiz-config' && currentPlan && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 <QuizSetup
                   source="plan"
                   itemId={currentPlan.planId || currentPlan._id}
@@ -535,7 +535,7 @@ const SkillUnlocker = () => {
             {currentView === 'planner' && currentPlan && (
               <div className="animate-fade-in">
                 {/* Progress Stats */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 flex items-center justify-between">
+                <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-6 mb-8 flex items-center justify-between">
                    <div>
                        <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
                        <p className="text-gray-500 text-sm mt-1">{completedDays.size} of {currentPlan.duration} days completed</p>
@@ -553,10 +553,10 @@ const SkillUnlocker = () => {
                   {currentPlan.dailyPlan?.map((day) => (
                     <div
                       key={day.day}
-                      className={`relative overflow-hidden bg-white rounded-xl p-5 border transition-all hover:shadow-md ${
+                      className={`relative overflow-hidden bg-surface rounded-xl p-5 border transition-all hover:shadow-md ${
                         completedDays.has(day.day) 
                           ? 'border-green-200 bg-green-50/30' 
-                          : 'border-gray-100'
+                          : 'border-gray-200'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -585,11 +585,11 @@ const SkillUnlocker = () => {
                       <div className="mt-auto">
                         {day.youtubeVideo && (
                             <div className="mb-4 group relative">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
                                   <span>Recommended Video</span>
                                 </h4>
                                 
-                                <div className="relative rounded-lg overflow-hidden bg-gray-900 aspect-video shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative rounded-lg overflow-hidden bg-slate-900 aspect-video shadow-sm hover:shadow-md transition-shadow">
                                     {/* Thumbnail or Placeholder */}
                                     {day.youtubeVideo.thumbnailUrl ? (
                                         <img 
@@ -599,7 +599,7 @@ const SkillUnlocker = () => {
                                         />
                                     ) : (
                                         <>
-                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 opacity-90"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 opacity-90"></div>
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                                                     <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
@@ -623,8 +623,9 @@ const SkillUnlocker = () => {
                                                 handleRefreshVideo(day.day);
                                             }}
                                             disabled={refreshingVideo === day.day}
-                                            className="p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-colors disabled:opacity-50"
+                                            className="p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                                             title="Get new recommendation"
+                                            aria-label="Get a new video recommendation"
                                         >
                                             <span className={`block ${refreshingVideo === day.day ? 'animate-spin' : ''}`}>↻</span>
                                         </button>
@@ -648,7 +649,7 @@ const SkillUnlocker = () => {
                             disabled={!videoInteracted.has(day.day) && !completedDays.has(day.day)}
                             className={`w-full py-2.5 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                             completedDays.has(day.day)
-                                ? 'bg-white border-2 border-gray-200 text-gray-500 hover:border-gray-300'
+                                ? 'bg-surface border-2 border-gray-200 text-gray-500 hover:border-gray-300'
                                 : videoInteracted.has(day.day)
                                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow'
                                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -677,7 +678,7 @@ const SkillUnlocker = () => {
 
             {/* QUIZ VIEW */}
             {currentView === 'quiz' && quiz && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
+              <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-8 max-w-3xl mx-auto">
                 {!quizScore ? (
                   <>
                     {/* Quiz Configuration Badge */}
@@ -700,7 +701,7 @@ const SkillUnlocker = () => {
                     <div className="mb-8">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-lg font-bold text-gray-900">
-                          {Object.keys(quizAnswers).length + 1} <span className="text-gray-400 font-normal">/ {quiz.questions.length}</span>
+                          {Object.keys(quizAnswers).length + 1} <span className="text-gray-500 font-normal">/ {quiz.questions.length}</span>
                         </span>
                         <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                            Quiz Phase
@@ -728,7 +729,7 @@ const SkillUnlocker = () => {
                                 className={`w-full text-left px-6 py-4 rounded-xl border-2 transition-all duration-200 group ${
                                   quizAnswers[qIndex] === oIndex
                                     ? 'bg-blue-50 border-blue-600 text-blue-900'
-                                    : 'bg-white border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-gray-50'
+                                    : 'bg-surface border-gray-100 text-gray-700 hover:border-blue-200 hover:bg-gray-50'
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
@@ -813,7 +814,7 @@ const SkillUnlocker = () => {
                       </button>
                       <button
                         onClick={() => { setQuizError(null); setCurrentView('quiz-config'); }}
-                        className="px-6 py-2.5 bg-white border border-blue-200 text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
+                        className="px-6 py-2.5 bg-surface border border-blue-200 text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors"
                       >
                         All marks · New quiz
                       </button>
@@ -833,7 +834,7 @@ const SkillUnlocker = () => {
         </div>
 
         {/* Your skills - right-hand panel */}
-        <aside className="w-80 shrink-0 bg-white border-l border-gray-200 flex flex-col h-full z-10" aria-label="Your skills">
+        <aside className="w-80 shrink-0 bg-surface border-l border-gray-200 flex flex-col h-full z-10" aria-label="Your skills">
             <div className="p-5 border-b border-gray-100">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">Your Skills</h3>
                 <button
@@ -858,7 +859,7 @@ const SkillUnlocker = () => {
             
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {plans.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400">
+                    <div className="text-center py-10 text-gray-500">
                         <p className="text-sm">No skills yet.</p>
                         <p className="text-xs mt-1">Fill in the form to create your first plan.</p>
                     </div>
@@ -866,11 +867,19 @@ const SkillUnlocker = () => {
                     plans.map((plan) => (
                         <div 
                           key={plan.planId || plan._id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleSelectPlan(plan)}
-                          className={`group relative p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
+                          onKeyDown={(e) => {
+                            if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault();
+                              handleSelectPlan(plan);
+                            }
+                          }}
+                          className={`group relative p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
                               (currentPlan && (currentPlan.planId === plan.planId || currentPlan.planId === plan._id || currentPlan._id === plan.planId || currentPlan._id === plan._id))
                               ? 'bg-blue-50/50 border-blue-200 shadow-sm border-l-4 border-l-blue-600' 
-                              : 'bg-white border-gray-100 hover:border-gray-200 border-l-4 border-l-transparent'
+                              : 'bg-surface border-gray-200 hover:border-gray-300 border-l-4 border-l-transparent'
                           }`}
                         >
                             <div className="flex items-start justify-between gap-3">
@@ -901,8 +910,9 @@ const SkillUnlocker = () => {
                             
                             <button
                                 onClick={(e) => handleDeletePlan(e, plan.planId || plan._id)}
-                                className="absolute -top-2 -right-2 bg-white text-gray-400 hover:text-red-500 p-1.5 rounded-full shadow-sm border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute -top-2 -right-2 bg-surface text-gray-400 hover:text-red-500 p-1.5 rounded-full shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
                                 title="Delete Plan"
+                                aria-label={`Delete the ${plan.skillName} plan`}
                             >
                                 <MdDeleteOutline size={16} />
                             </button>

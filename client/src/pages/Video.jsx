@@ -102,10 +102,11 @@ const Video = () => {
               {/* Feature Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 max-w-4xl">
                 {features.map((feature) => (
-                  <div
+                  <button
+                    type="button"
                     key={feature.id}
-                    className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-xl 
-                             transition-all duration-300 cursor-pointer group hover:-translate-y-1"
+                    className="w-full text-left bg-surface rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
+                             transition-all duration-300 cursor-pointer group hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                     onClick={() => {
                       if (feature.route === 'inline') {
                         if (feature.id === 'library') {
@@ -119,37 +120,37 @@ const Video = () => {
                     }}
                   >
                     {/* Icon */}
-                    <div className={`w-16 h-16 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4 
+                    <span className={`w-16 h-16 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4 
                                   group-hover:scale-110 transition-transform duration-300`}>
-                      <div className={feature.iconColor}>
+                      <span className={`block ${feature.iconColor}`}>
                         {feature.icon}
-                      </div>
-                    </div>
+                      </span>
+                    </span>
 
                     {/* Title */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    <span className="block text-xl font-bold text-gray-900 mb-3">
                       {feature.title}
-                    </h3>
+                    </span>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-600 leading-relaxed mb-5">
+                    <span className="block text-sm text-gray-600 leading-relaxed mb-5">
                       {feature.description}
-                    </p>
+                    </span>
 
                     {/* Explore Button */}
-                    <button className="w-full py-3 px-4 bg-blue-600 text-white text-sm font-semibold rounded-lg 
-                                     hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2">
+                    <span className="w-full py-3 px-4 bg-blue-600 text-white text-sm font-semibold rounded-lg 
+                                     group-hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2">
                       Explore
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
-                  </div>
+                    </span>
+                  </button>
                 ))}
               </div>
 
               {/* Promotional Banner */}
-              <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-10 relative overflow-hidden max-w-4xl">
+              <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-10 relative overflow-hidden max-w-4xl dark:ring-1 dark:ring-white/10">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
@@ -157,7 +158,7 @@ const Video = () => {
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
                   <div className="flex-1 mb-6 md:mb-0">
                     {/* Badge */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 bg-opacity-20 
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 
                                   border border-blue-500 rounded-full text-blue-400 text-xs font-semibold mb-4">
                       <span className="text-lg">🎬</span>
                       NEW VIDEO TUTORIALS AVAILABLE
@@ -169,7 +170,7 @@ const Video = () => {
                     </h2>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-base max-w-2xl">
+                    <p className="text-slate-300 text-base max-w-2xl">
                       Our video library is constantly updated with new masterclasses from top-tier industry professionals.
                     </p>
                   </div>

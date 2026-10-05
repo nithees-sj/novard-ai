@@ -5,6 +5,11 @@
  *   auth_token   the API session token (sent as "Authorization: Bearer ...")
  *   auth_user    { name, email, picture, role, displayName, photoURL }
  *   name, email, profilePic   older keys that some pages still read directly
+ *
+ * The account's theme is on the profile in memory but is not stored here:
+ * this browser's copy lives under its own key (context/ThemeContext.jsx), and
+ * a restored session waits for /api/auth/me, so a choice made on another
+ * device wins.
  */
 
 const TOKEN_KEY = 'auth_token';
@@ -50,10 +55,13 @@ export function saveSession({ token, user }) {
     // Older components read these names.
     displayName: user.name || '',
     photoURL: user.picture || '',
+    // 'light' | 'dark' | 'system', or null when the account never chose.
+    theme: user.theme ?? null,
   };
   try {
+    const { theme, ...stored } = profile;
     if (token) localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(profile));
+    localStorage.setItem(USER_KEY, JSON.stringify(stored));
     localStorage.setItem('name', profile.name);
     localStorage.setItem('email', profile.email);
     localStorage.setItem('profilePic', profile.picture);

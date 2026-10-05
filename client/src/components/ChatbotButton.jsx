@@ -2,7 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * Animated assistant mark (designed in Stitch), on a white face: an energy vortex around a
+ * Animated assistant mark (designed in Stitch), on a face in the page's
+ * surface colour (white, or charcoal in the dark theme): an energy vortex around a
  * pulsing star core, with a small "live" lightning badge. The SVG is its own
  * round button face; animations live in index.css (.bot-*) and stop for
  * users who prefer reduced motion.
@@ -11,9 +12,9 @@ export const BotMark = () => (
   <svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id="novard-bot-bg" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="#FFFFFF" />
-        <stop offset="75%" stopColor="#FFFFFF" />
-        <stop offset="100%" stopColor="#EFF6FF" />
+        <stop offset="0%" style={{ stopColor: 'rgb(var(--surface))' }} />
+        <stop offset="75%" style={{ stopColor: 'rgb(var(--surface))' }} />
+        <stop offset="100%" style={{ stopColor: 'rgb(var(--blue-50))' }} />
       </radialGradient>
       <linearGradient id="novard-bot-energy" x1="0%" x2="100%" y1="0%" y2="100%">
         <stop offset="0%" stopColor="#3B82F6" />
@@ -31,7 +32,7 @@ export const BotMark = () => (
       </filter>
     </defs>
 
-    {/* white base */}
+    {/* base */}
     <rect width="120" height="120" rx="60" fill="url(#novard-bot-bg)" />
     <rect x="1" y="1" width="118" height="118" rx="59" stroke="#3B82F6" strokeOpacity="0.35" strokeWidth="1.5" />
 
@@ -55,7 +56,7 @@ export const BotMark = () => (
 
     {/* "live" badge */}
     <g className="bot-badge">
-      <circle cx="86" cy="34" r="5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2" />
+      <circle cx="86" cy="34" r="5" fill="#2563EB" style={{ stroke: 'rgb(var(--surface))' }} strokeWidth="2" />
       <path d="M86 31 L84 34 L86 34 L85 37 L88 33.5 L86.5 33.5 Z" fill="#FFFFFF" />
     </g>
   </svg>
@@ -72,10 +73,10 @@ const ChatbotButton = () => {
       title="Ask the Novard Agent"
       aria-label="Open Novard Agent, the AI assistant"
       className="group fixed bottom-8 right-8 z-50 flex flex-col items-center gap-2 rounded-2xl
-                 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-300"
+                 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
     >
       <span
-        className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-blue-100 bg-white/95 px-3 py-1
+        className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-blue-100 bg-surface/95 px-3 py-1
                    text-[11px] font-semibold tracking-wide shadow-md shadow-blue-500/15 backdrop-blur
                    transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-blue-200 group-hover:shadow-blue-500/30"
         aria-hidden="true"
@@ -84,10 +85,10 @@ const ChatbotButton = () => {
           <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping motion-reduce:animate-none" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
         </span>
-        <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Novard Agent</span>
+        <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-cyan-400">Novard Agent</span>
       </span>
       <span
-        className="block w-16 h-16 rounded-full bg-white shadow-lg shadow-blue-500/25
+        className="block w-16 h-16 rounded-full bg-surface shadow-lg shadow-blue-500/25
                    transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-blue-500/40"
         aria-hidden="true"
       >

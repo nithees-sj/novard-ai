@@ -127,7 +127,7 @@ export default function ReportsInbox() {
               { key: 'ref', label: 'Report', render: (r) => <span className="font-semibold text-gray-900">{r.ref}</span> },
               { key: 'text', label: 'What they said', render: (r) => <span className="line-clamp-2 max-w-md text-gray-700">{r.text}</span> },
               { key: 'area', label: 'Area', render: (r) => r.areaLabel },
-              { key: 'urgency', label: 'Urgency', render: (r) => (r.enrichment?.urgency ? <Badge tone={URGENCY_TONE[r.enrichment.urgency]}>{r.enrichment.urgency}</Badge> : <span className="text-xs text-gray-400">{r.enrichment?.status === 'done' ? '–' : 'triaging'}</span>) },
+              { key: 'urgency', label: 'Urgency', render: (r) => (r.enrichment?.urgency ? <Badge tone={URGENCY_TONE[r.enrichment.urgency]}>{r.enrichment.urgency}</Badge> : <span className="text-xs text-gray-500">{r.enrichment?.status === 'done' ? '–' : 'triaging'}</span>) },
               { key: 'status', label: 'Status', render: (r) => <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge> },
               { key: 'createdAt', label: 'Sent', render: (r) => when(r.createdAt) },
             ]}

@@ -86,6 +86,14 @@ describe('Video Summarizer workflow', () => {
     expect((await YouTubeVideo.findById(video._id)).quizzes[0].score).toBe(3);
   });
 
+  it('does not store a placeholder summary when the model returns nothing', async () => {
+    const { body: video } = await addVideo();
+    complete.mockResolvedValueOnce('');
+    const res = await request(app).post('/summarize-youtube-video').set('Authorization', bearer()).send({ videoId: video._id });
+    expect(res.status).toBe(502);
+    expect((await YouTubeVideo.findById(video._id)).summary || '').toBe('');
+  });
+
   it('keeps videos private to their owner', async () => {
     const { body: video } = await addVideo(ALICE);
     const asBob = (path, body = {}) => request(app).post(path).set('Authorization', bearer(BOB)).send({ videoId: video._id, ...body });

@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import mainlogo from "../images/mainlogo.png";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 import { useReportProblem } from "../context/ReportContext";
 
 const ADMIN_ROLES = ["admin", "superadmin"];
 
 /**
- * The header of every signed-in page: title, the notification bell and the
- * account menu. The admin console reuses it with its own account (`account`,
- * `menuLinks`, `onSignOut`) and no bell.
+ * The header of every signed-in page: title, the theme switch, the
+ * notification bell and the account menu. The admin console reuses it with its
+ * own account (`account`, `menuLinks`, `onSignOut`) and no bell.
  */
 export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, sidebarOffset = 'ml-64', showBell = true, account, menuLinks, onSignOut, actions = null }) => {
   const auth = useAuth();
@@ -33,12 +34,12 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-40 bg-surface/95 backdrop-blur-md border-b border-gray-200 shadow-sm ${hasSidebar ? sidebarOffset : ''}`}>
       <div className="relative flex justify-between items-center gap-3 sm:gap-6 px-4 sm:px-6 h-14">
         {/* Logo - conditionally rendered */}
         {!hideLogo && (
           <div className="flex items-center space-x-3">
-            <img src={mainlogo} alt="CareerDev Logo" className="h-8 rounded-lg" />
+            <img src={mainlogo} alt="NOVARD-AI" className="h-8 rounded-lg dark:invert" />
             <span className="text-2xl font-extrabold text-gray-900 font-display tracking-tight">
               NOVARD-AI
             </span>
@@ -51,13 +52,17 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
         </div>
 
         {actions}
+        <ThemeToggle />
         {showBell && user && <NotificationBell />}
 
         {/* User Info */}
-        <div
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={showPopup}
           className="flex items-center space-x-3 px-5 py-2 rounded-full bg-gray-100 border border-gray-200 
-                   cursor-pointer hover:bg-primary-50 hover:border-primary-300 transition-all duration-300
-                   hover:-translate-y-0.5 hover:shadow-md"
+                   cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all duration-300
+                   hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
           onClick={togglePopup}
         >
           {user && (
@@ -73,16 +78,18 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
               />
             </>
           )}
-        </div>
+        </button>
 
         {/* Popup */}
         {showPopup && user && (
-          <div className="absolute top-16 right-6 w-80 p-8 bg-white border border-gray-200 
+          <div className="absolute top-16 right-6 w-80 p-8 bg-surface-overlay border border-gray-200 
                        rounded-3xl shadow-hard z-[60] animate-slide-down text-center">
             {/* Close Button */}
             <button
+              type="button"
+              aria-label="Close account menu"
               className="absolute top-3 right-5 w-8 h-8 flex items-center justify-center rounded-full 
-                       bg-gray-100 text-gray-900 hover:bg-primary-100 hover:scale-110 transition-all duration-300"
+                       bg-gray-100 text-gray-900 hover:bg-blue-100 hover:scale-110 transition-all duration-300"
               onClick={togglePopup}
             >
               &times;
@@ -113,7 +120,7 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
                   key={link.label}
                   type="button"
                   onClick={() => { setShowPopup(false); link.onClick(); }}
-                  className="w-full rounded-full border border-gray-200 bg-white px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-primary-300 hover:bg-primary-50"
+                  className="w-full rounded-full border border-gray-200 bg-surface px-6 py-2 text-sm font-semibold text-gray-700 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                 >
                   {link.label}
                 </button>
@@ -122,8 +129,9 @@ export const Navigationinner = ({ title, hideLogo = false, hasSidebar = true, si
 
             {/* Logout Button */}
             <button
-              className="w-full py-3 px-8 bg-gray-900 text-white font-bold rounded-full 
-                       hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg 
+              type="button"
+              className="w-full py-3 px-8 bg-ink text-on-ink font-bold rounded-full 
+                       hover:bg-ink-hover hover:-translate-y-0.5 hover:shadow-lg 
                        transition-all duration-300 uppercase tracking-wider text-sm"
               onClick={handleLogout}
             >

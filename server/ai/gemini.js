@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { MODELS } = require('../config/ai');
+const { MODELS, maxOutputTokens } = require('../config/ai');
 const { env } = require('../config/env');
 const logger = require('../utils/logger');
 const { beforeCall } = require('./usageGuard');
@@ -34,7 +34,7 @@ async function geminiGenerate(prompt) {
         // Every attempt is logged (model, tokens, latency, outcome).
         // eslint-disable-next-line no-await-in-loop
         const result = await logged({ provider: 'gemini', model: name, attempt: tries, routedBy: name === MODELS.GEMINI ? 'default' : 'fallback' }, async () => {
-          const response = await genAI.getGenerativeModel({ model: name }).generateContent(prompt);
+          const response = await genAI.getGenerativeModel({ model: name, generationConfig: { maxOutputTokens: maxOutputTokens(name) } }).generateContent(prompt);
           const usage = response.response.usageMetadata || {};
           return { result: response, tokensIn: usage.promptTokenCount || 0, tokensOut: usage.candidatesTokenCount || 0 };
         });

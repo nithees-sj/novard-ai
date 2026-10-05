@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { PageHeader, usd } from '../../components/admin/ui';
 import MarkdownView from '../../components/MarkdownView';
-import { Badge, Icon, ListEmpty, ListItem, SideList, Spinner, btn, formatDate } from '../../components/learning/LearningUI';
+import { Badge, Icon, ListEmpty, ListItem, SideList, Spinner, btn, formatDate, inputClass } from '../../components/learning/LearningUI';
 import { adminDelete, adminGet, adminPost } from '../../lib/adminApi';
 import { readAdminStream } from '../../lib/adminStream';
 import { errorMessage } from '../../lib/api';
@@ -35,7 +35,7 @@ function ActionCard({ action, conversationId, onUpdate }) {
     }
   };
   return (
-    <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4">
+    <div className="mt-3 rounded-xl border border-gray-200 bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-gray-900">{action.args?.summary || action.type.replace(/_/g, ' ')}</p>
         <Badge tone={CARD_TONE[action.status]}>{CARD_LABEL[action.status] || action.status}</Badge>
@@ -70,7 +70,7 @@ function Message({ message, conversationId, onCardUpdate }) {
         )}
         <MarkdownView content={message.content} size="base" />
         {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} conversationId={conversationId} onUpdate={(next) => onCardUpdate(a.id, next)} />)}
-        <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-400">
+        <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-500">
           {message.flags?.forcedTool && <span>looked up after a reminder</span>}
           {message.flags?.refused && <span>only the console can do this</span>}
           {message.flags?.capped && <span>stopped at the cost limit</span>}
@@ -140,7 +140,7 @@ export default function Assistant() {
     <AdminLayout title="ADMIN · ASSISTANT">
       <PageHeader title="Admin assistant" subtitle="Ask about risk, reports, costs, gateways and users. Changes are proposed as cards; nothing happens until you confirm." />
       <div className="flex h-[calc(100vh-230px)] min-h-[520px] flex-col gap-5 lg:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface">
           <div className="flex-1 overflow-y-auto" aria-live="polite">
             {!messages.length ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -159,7 +159,7 @@ export default function Assistant() {
           </div>
           {error && <p role="alert" className="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
           <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2 border-t border-gray-100 p-3">
-            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask the assistant…" aria-label="Message" className="flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" disabled={sending} />
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask the assistant…" aria-label="Message" className={`${inputClass} flex-1`} disabled={sending} />
             <button type="submit" disabled={sending || !draft.trim()} className={btn.primary}><Icon name="send" /></button>
           </form>
         </div>

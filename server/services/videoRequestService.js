@@ -129,7 +129,6 @@ async function keywordsFor({ title, description }, platformName) {
       ],
       model: MODELS.FAST,
       temperature: 0.7,
-      maxTokens: 500,
     });
     const parsed = parseModelJson(reply, { context: 'search keywords' });
     const keywords = (Array.isArray(parsed) ? parsed : []).filter((k) => typeof k === 'string' && k.trim()).map((k) => k.trim().slice(0, 100));

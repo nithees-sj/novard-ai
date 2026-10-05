@@ -56,7 +56,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
   const chip = (active) =>
     `rounded-lg border-2 text-sm font-semibold transition-colors ${active
       ? 'border-blue-600 bg-blue-50 text-blue-900'
-      : 'border-gray-200 bg-white text-gray-800 hover:border-blue-200'}`;
+      : 'border-gray-200 bg-surface text-gray-800 hover:border-blue-200'}`;
 
   return (
     <form onSubmit={submit} className="max-w-2xl mx-auto space-y-6" noValidate>
@@ -90,7 +90,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {ROLE_SUGGESTIONS.slice(0, 10).map((r) => (
             <button key={r} type="button" onClick={() => set({ targetRole: r })}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border ${form.targetRole === r ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'}`}>
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border ${form.targetRole === r ? 'bg-blue-600 border-blue-600 text-white' : 'bg-surface border-gray-300 text-gray-700 hover:border-blue-400'}`}>
               {r}
             </button>
           ))}
@@ -101,7 +101,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
         <label htmlFor="gap-skills" className="block text-sm font-semibold text-gray-900 mb-1.5">
           Which skills do you have right now?
         </label>
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-surface focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
           {form.currentSkills.map((s) => (
             <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-800">
               {s}
@@ -146,7 +146,7 @@ const SkillGapIntake = ({ onStart, starting = false, error = null, initial = nul
           </div>
         </fieldset>
         <div>
-          <label htmlFor="gap-goal" className={label}>Goal <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+          <label htmlFor="gap-goal" className={label}>Goal <span className="normal-case font-normal text-gray-500">(optional)</span></label>
           <input
             id="gap-goal"
             type="text"

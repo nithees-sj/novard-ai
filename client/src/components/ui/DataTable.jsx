@@ -1,5 +1,7 @@
 import React from 'react';
 
+export const rowFocus = 'focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500';
+
 /**
  * A table in the app's card style (the same classes as the Profile page's
  * tests-history table). Wide tables scroll inside their card on small screens.
@@ -24,8 +26,11 @@ export default function DataTable({ columns, rows, rowKey = (r, i) => r._id || r
           {rows.map((row, ri) => (
             <tr
               key={rowKey(row, ri)}
-              className={`hover:bg-gray-50/60 ${onRowClick ? 'cursor-pointer' : ''}`}
+              className={`hover:bg-gray-50/60 ${onRowClick ? `cursor-pointer ${rowFocus}` : ''}`}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
+              // Clickable rows open with the keyboard too (Tab to the row, then Enter).
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onRowClick(row); } : undefined}
             >
               {columns.map((c, i) => (
                 <td key={c.key} className={`${i === 0 ? 'px-6' : 'px-4'} py-3 ${c.className || ''}`}>{c.render ? c.render(row) : row[c.key]}</td>

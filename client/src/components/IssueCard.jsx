@@ -49,7 +49,7 @@ const IssueCard = ({ issue, onClick }) => {
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick())}
       role="button"
       tabIndex={0}
-      className="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-xl transition-all duration-300
+      className="bg-surface rounded-xl p-5 border border-gray-200 hover:shadow-xl transition-all duration-300
                  cursor-pointer hover:border-blue-300 group flex flex-col focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       {/* Header: category icon + category badge + status */}

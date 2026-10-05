@@ -146,13 +146,13 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                 Generate a personalised version
               </button>
             </div>
-            <img src={reference.imageUrl} alt={`${reference.name} reference roadmap`} loading="lazy" className="w-full h-auto rounded-xl border border-gray-200 bg-white" />
+            <img src={reference.imageUrl} alt={`${reference.name} reference roadmap`} loading="lazy" className="w-full h-auto rounded-xl border border-gray-200 bg-surface" />
           </div>
         )}
       </main>
 
       {/* Right panel: the student's roadmaps */}
-      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden" aria-label="Your roadmaps">
+      <aside className="w-80 shrink-0 flex flex-col rounded-xl border border-gray-200 bg-surface overflow-hidden" aria-label="Your roadmaps">
         <div className="p-4 border-b border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-3">Your Roadmaps</h3>
           <button
@@ -181,7 +181,7 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                 onClick={() => openRoadmap(r._id)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${active
                   ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600'
-                  : 'bg-white border-gray-200 hover:border-gray-300'}`}
+                  : 'bg-surface border-gray-200 hover:border-gray-300'}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className={`text-sm font-semibold truncate ${active ? 'text-blue-800' : 'text-gray-900'}`}>{r.role}</span>
@@ -213,7 +213,7 @@ const RoadmapWorkspace = ({ heightClass = 'h-[calc(100vh-200px)]' }) => {
                   type="button"
                   onClick={() => { setReference(r); setView('reference'); }}
                   className={`px-2 py-1.5 rounded-md text-xs font-medium text-left truncate ${view === 'reference' && reference?.name === r.name
-                    ? 'bg-gray-900 text-white'
+                    ? 'bg-ink text-on-ink'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   {r.name}

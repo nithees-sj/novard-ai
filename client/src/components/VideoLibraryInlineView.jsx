@@ -21,7 +21,7 @@ const VideoLibraryInlineView = () => {
   const [loaded, setLoaded] = useState(false);
 
   const platforms = {
-    youtube: { name: 'YouTube', icon: '📺', color: '#FF0000' }
+    youtube: { name: 'YouTube', icon: '📺' }
   };
 
   const showToast = (message, type) => {
@@ -197,7 +197,7 @@ const VideoLibraryInlineView = () => {
                 <div className="h-full overflow-y-auto p-5">
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {recommendedVideos.map((video, index) => (
-                      <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+                      <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-surface transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
                         <div className="relative aspect-video bg-gray-100">
                           <img src={video.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = '/courses.jpg'; }} />
                           {video.duration && video.duration !== 'Unknown' && <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-medium text-white">{video.duration}</span>}

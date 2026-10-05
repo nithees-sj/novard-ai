@@ -47,7 +47,7 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
   const polygon = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
+    <div className="bg-surface rounded-xl border border-gray-200 p-6 flex flex-col">
       <div className="mb-4">
         <h3 className="text-lg font-bold text-gray-900">Skill Proficiency</h3>
         <p className="text-sm text-gray-500">Quiz accuracy by subject · recent results count more</p>
@@ -63,14 +63,14 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
             <div className="relative mx-auto w-full max-w-[440px]">
               <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full h-auto overflow-visible" role="img" aria-label="Skill proficiency by subject">
                 {RINGS.map((r) => (
-                  <circle key={r} cx={CX} cy={CY} r={(r / 100) * MAX_RADIUS} fill="none" stroke="#e5e7eb" strokeWidth="1" />
+                  <circle key={r} cx={CX} cy={CY} r={(r / 100) * MAX_RADIUS} fill="none" className="stroke-chart-track" strokeWidth="1" />
                 ))}
                 {points.map((_, i) => {
                   const end = point(i, n, 100);
-                  return <line key={i} x1={CX} y1={CY} x2={end.x} y2={end.y} stroke="#e5e7eb" strokeWidth="1" />;
+                  return <line key={i} x1={CX} y1={CY} x2={end.x} y2={end.y} className="stroke-chart-track" strokeWidth="1" />;
                 })}
 
-                <path d={polygon} fill="rgba(14, 165, 233, 0.1)" stroke="#0ea5e9" strokeWidth="2" strokeLinejoin="round" />
+                <path d={polygon} className="fill-blue-500/10 stroke-blue-500" strokeWidth="2" strokeLinejoin="round" />
 
                 {points.map((p, i) => {
                   const assessed = p.skill.score !== null;
@@ -93,8 +93,7 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
                         cx={p.x}
                         cy={p.y}
                         r={active === i ? 6 : 4.5}
-                        fill={assessed ? '#0ea5e9' : '#ffffff'}
-                        stroke={assessed ? '#ffffff' : '#9ca3af'}
+                        className={assessed ? 'fill-blue-500 stroke-surface' : 'fill-surface stroke-gray-400'}
                         strokeWidth="2"
                       />
                       {/* hit target larger than the mark */}
@@ -120,14 +119,14 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
               {active !== null && (
                 <div
                   role="tooltip"
-                  className="absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 shadow-lg pointer-events-none"
+                  className="absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-lg pointer-events-none"
                   style={{ left: `${(points[active].x / WIDTH) * 100}%`, top: `calc(${(points[active].y / HEIGHT) * 100}% - 12px)` }}
                 >
-                  <span className="block text-sm font-bold text-white">
+                  <span className="block text-sm font-bold text-tooltip-fg">
                     {points[active].skill.score === null ? 'Not assessed' : `${points[active].skill.score}%`}
                   </span>
-                  <span className="block text-[11px] text-gray-300">{points[active].skill.name}</span>
-                  <span className="block text-[11px] text-gray-300">
+                  <span className="block text-[11px] text-tooltip-muted">{points[active].skill.name}</span>
+                  <span className="block text-[11px] text-tooltip-muted">
                     {points[active].skill.questions} questions · {points[active].skill.items} studied
                   </span>
                 </div>
@@ -146,8 +145,8 @@ const SkillProficiencyRadar = ({ skills = [] }) => {
                   )}
                 </span>
                 <span className="w-24 shrink-0 text-right tabular-nums text-gray-700">
-                  {s.score === null ? <span className="text-gray-400">—</span> : `${s.score}%`}
-                  <span className="text-xs text-gray-400"> · {s.questions}q</span>
+                  {s.score === null ? <span className="text-gray-500">—</span> : `${s.score}%`}
+                  <span className="text-xs text-gray-500"> · {s.questions}q</span>
                 </span>
                 <span className={`w-28 shrink-0 text-center text-[11px] font-semibold px-2 py-0.5 rounded ${LEVEL_BADGE[s.level] || LEVEL_BADGE['Not enough data']}`}>
                   {s.score === null ? 'Take a quiz' : s.level}

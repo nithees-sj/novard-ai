@@ -10,7 +10,7 @@ const shortDate = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numer
 const longDate = (d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const Card = ({ title, subtitle, children, className = '' }) => (
-  <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+  <div className={`bg-surface rounded-xl border border-gray-200 p-6 ${className}`}>
     <h3 className="text-base font-bold text-gray-900">{title}</h3>
     {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
     <div className="mt-5">{children}</div>
@@ -38,7 +38,7 @@ const TestPerformance = ({ tests }) => {
 
   if (!history.length) {
     return (
-      <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+      <div className="bg-surface rounded-xl border border-dashed border-gray-300 p-10 text-center">
         <p className="text-3xl mb-2" aria-hidden="true">📝</p>
         <h3 className="font-semibold text-gray-900">No tests taken yet</h3>
         <p className="text-sm text-gray-500 mt-1">Take a quiz on any note, video, doubt or skill plan and your results will be charted here.</p>
@@ -63,7 +63,7 @@ const TestPerformance = ({ tests }) => {
                   <span className={`w-2.5 h-2.5 rounded-sm ${BAND_COLORS[BAND_COLORS.length - 1 - ri]}`} aria-hidden="true" />
                   {b.label}
                 </span>
-                <span className="tabular-nums text-gray-900 font-semibold">{b.count} <span className="font-normal text-gray-400">{b.count === 1 ? 'test' : 'tests'}</span></span>
+                <span className="tabular-nums text-gray-900 font-semibold">{b.count} <span className="font-normal text-gray-500">{b.count === 1 ? 'test' : 'tests'}</span></span>
               </li>
             ))}
           </ul>
@@ -87,7 +87,7 @@ const TestPerformance = ({ tests }) => {
         </Card>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-surface rounded-xl border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-3 p-6 pb-4">
           <div>
             <h3 className="text-base font-bold text-gray-900">Test history</h3>
@@ -100,7 +100,7 @@ const TestPerformance = ({ tests }) => {
                 type="button"
                 aria-pressed={source === f.key}
                 onClick={() => { setSource(f.key); setShown(PAGE); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${source === f.key ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${source === f.key ? 'bg-primary-600 text-white border-primary-600' : 'bg-surface text-gray-600 border-gray-200 hover:border-gray-300'}`}
               >
                 {f.label}
               </button>
@@ -124,7 +124,7 @@ const TestPerformance = ({ tests }) => {
                 <tr key={`${t.at}-${i}`} className="hover:bg-gray-50/60">
                   <td className="px-6 py-3 max-w-xs">
                     <p className="font-medium text-gray-900 truncate" title={t.topic}>{t.topic}</p>
-                    <p className="text-xs text-gray-400">{t.domain}</p>
+                    <p className="text-xs text-gray-500">{t.domain}</p>
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{t.sourceLabel}</td>
                   <td className="px-4 py-3 text-gray-600 capitalize whitespace-nowrap">{t.difficulty || '—'}</td>

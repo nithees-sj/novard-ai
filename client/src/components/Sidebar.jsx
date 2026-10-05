@@ -154,14 +154,14 @@ const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = f
 
   return (
     <>
-    {drawer && drawerOpen && <div className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={onDrawerClose} aria-hidden="true" />}
+    {drawer && drawerOpen && <div className="fixed inset-0 z-30 bg-black/30 dark:bg-black/60 md:hidden" onClick={onDrawerClose} aria-hidden="true" />}
     <div
-      className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-30 transition-transform duration-300 ease-out ${visibility}`}
+      className={`fixed left-0 top-0 h-full w-64 bg-surface border-r border-gray-200 flex flex-col z-30 transition-transform duration-300 ease-out ${visibility}`}
     >
       {/* Logo Section */}
       <div className="px-4 border-b border-gray-200 h-14 flex items-center shrink-0">
         <div className="flex items-center space-x-2">
-          <img src={mainlogo} alt="NOVARD-AI" className="h-8 w-8 rounded-lg" />
+          <img src={mainlogo} alt="NOVARD-AI" className="h-8 w-8 rounded-lg dark:invert" />
           <span className="leading-tight">
             <span className="block text-xl font-bold text-gray-900">NOVARD-AI</span>
             {subtitle && <span className="block text-[11px] font-semibold uppercase tracking-wide text-blue-600">{subtitle}</span>}
@@ -177,10 +177,10 @@ const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = f
             type="button"
             aria-current={isActive(item.route) ? 'page' : undefined}
             onClick={() => go(item.route)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
               isActive(item.route)
                 ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
           >
             <span className={isActive(item.route) ? 'text-blue-600' : 'text-gray-500'}>
@@ -200,7 +200,7 @@ const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = f
           <button
             type="button"
             onClick={() => openReport({})}
-            className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-left text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-left text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
@@ -211,7 +211,7 @@ const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = f
       )}
       {!items && user && (
         <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+          <button type="button" className="w-full flex items-center space-x-3 p-3 rounded-lg bg-gray-50 text-left hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                onClick={() => navigate('/profile')}>
             <img
               src={user.photoURL || user.picture || '/img/team/user.jpeg'}
@@ -226,7 +226,7 @@ const Sidebar = ({ isHoverMode = false, items, footer, subtitle, matchPrefix = f
                 {user.displayName || user.name}
               </p>
             </div>
-          </div>
+          </button>
         </div>
       )}
     </div>

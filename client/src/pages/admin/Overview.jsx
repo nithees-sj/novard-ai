@@ -6,8 +6,8 @@ import { Stat } from '../../components/profile/blocks';
 import { Donut } from '../../components/profile/charts';
 import { btn } from '../../components/learning/LearningUI';
 import useAdminData from '../../lib/useAdminData';
+import { LEVEL_COLORS } from '../../lib/statusColors';
 
-const LEVEL_COLORS = { LOW: '#10b981', MEDIUM: '#f59e0b', HIGH: '#ef4444', CRITICAL: '#b91c1c' };
 const GATEWAY_NAMES = { groq: 'Groq (AI)', gemini: 'Gemini (AI)', youtube: 'YouTube', oauth: 'Google sign-in', mongodb: 'MongoDB' };
 
 /** Platform health at a glance. */

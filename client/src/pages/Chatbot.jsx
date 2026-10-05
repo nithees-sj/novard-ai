@@ -5,6 +5,7 @@ import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentMessage from '../components/agent/AgentMessage';
 import LearnerProfilePanel from '../components/agent/LearnerProfilePanel';
 import { BotMark } from '../components/ChatbotButton';
+import ThemeToggle from '../components/ThemeToggle';
 import { streamAgentReply, agentApi } from '../lib/agentStream';
 import { currentEmail, currentName } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
@@ -283,7 +284,7 @@ const Chatbot = () => {
       )}
       <form
         onSubmit={(e) => { e.preventDefault(); send(); }}
-        className="relative rounded-3xl border border-gray-200 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition focus-within:border-gray-300 focus-within:shadow-[0_4px_20px_rgba(37,99,235,0.10)]"
+        className="relative rounded-3xl border border-gray-200 bg-surface shadow-soft transition focus-within:border-gray-300 focus-within:shadow-lg focus-within:shadow-blue-600/10"
       >
         <textarea
           ref={inputRef}
@@ -302,11 +303,11 @@ const Chatbot = () => {
           className="block max-h-56 w-full resize-none rounded-3xl bg-transparent px-5 pt-4 pb-14 text-[15px] leading-relaxed text-gray-900 placeholder-gray-400 outline-none"
         />
         <div className="absolute inset-x-3 bottom-2.5 flex items-center justify-between">
-          <span className="hidden pl-2 text-[11px] text-gray-400 sm:inline">Enter to send · Shift + Enter for a new line</span>
+          <span className="hidden pl-2 text-[11px] text-gray-500 sm:inline">Enter to send · Shift + Enter for a new line</span>
           <span className="sm:hidden" />
           {streaming ? (
-            <button type="button" onClick={stop} className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-white transition hover:bg-gray-700" aria-label="Stop generating" title="Stop">
-              <span className="h-3 w-3 rounded-sm bg-white" />
+            <button type="button" onClick={stop} className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-on-ink transition hover:bg-ink-hover" aria-label="Stop generating" title="Stop">
+              <span className="h-3 w-3 rounded-sm bg-on-ink" />
             </button>
           ) : (
             <button type="submit" disabled={!draft.trim()} className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400" aria-label="Send message" title="Send">
@@ -315,12 +316,12 @@ const Chatbot = () => {
           )}
         </div>
       </form>
-      <p className="mt-2 text-center text-[11px] text-gray-400">Novard Agent asks what it needs, then shows you a draft - nothing is created until you press Create. It can make mistakes - check important information.</p>
+      <p className="mt-2 text-center text-[11px] text-gray-500">Novard Agent asks what it needs, then shows you a draft - nothing is created until you press Create. It can make mistakes - check important information.</p>
     </div>
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-screen overflow-hidden bg-surface">
       {/* chat history: fixed on desktop, a drawer on small screens */}
       <div className={`fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <AgentSidebar
@@ -336,7 +337,7 @@ const Chatbot = () => {
           onProfile={() => { setSidebarOpen(false); setProfileOpen(true); }}
         />
       </div>
-      {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
+      {sidebarOpen && <button type="button" className="fixed inset-0 z-30 bg-black/30 dark:bg-black/60 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close chat list" />}
 
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-4">
@@ -350,6 +351,7 @@ const Chatbot = () => {
               <span className="hidden sm:inline">New chat</span>
             </button>
           )}
+          <ThemeToggle />
         </header>
 
         {empty ? (
@@ -370,7 +372,7 @@ const Chatbot = () => {
                   key={s.title}
                   type="button"
                   onClick={() => send(s.text)}
-                  className="group rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
+                  className="group rounded-2xl border border-gray-200 bg-surface p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
                 >
                   <span className="text-lg" aria-hidden="true">{s.icon}</span>
                   <p className="mt-1 text-sm font-semibold text-gray-900">{s.title}</p>
@@ -411,7 +413,7 @@ const Chatbot = () => {
             </div>
             {!atBottom && (
               <div className="pointer-events-none relative">
-                <button type="button" onClick={() => scrollToBottom()} className="pointer-events-auto absolute -top-12 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-md hover:bg-gray-50" aria-label="Jump to latest">
+                <button type="button" onClick={() => scrollToBottom()} className="pointer-events-auto absolute -top-12 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-gray-200 bg-surface text-gray-600 shadow-md hover:bg-gray-50" aria-label="Jump to latest">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
                 </button>
               </div>

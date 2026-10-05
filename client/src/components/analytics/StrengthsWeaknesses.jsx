@@ -42,7 +42,7 @@ const Section = ({ title, hint, topics, empty }) => (
   <section>
     <div className="flex items-baseline justify-between mb-3">
       <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-      <span className="text-xs text-gray-400">{hint}</span>
+      <span className="text-xs text-gray-500">{hint}</span>
     </div>
     {topics.length > 0 ? (
       <ul className="space-y-4">{topics.map((t) => <TopicRow key={`${t.domain}-${t.name}`} topic={t} />)}</ul>
@@ -66,7 +66,7 @@ const StrengthsWeaknesses = ({ data }) => {
   const pending = data?.pendingTopics || 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
+    <div className="bg-surface rounded-xl border border-gray-200 p-6 flex flex-col">
       <div className="mb-5">
         <h3 className="text-lg font-bold text-gray-900">Strengths & Weaknesses</h3>
         <p className="text-sm text-gray-500">

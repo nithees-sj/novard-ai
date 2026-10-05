@@ -7,7 +7,7 @@ const LEVEL_LABEL = { beginner: 'Complete beginner', intermediate: 'Knows the ba
 
 const LEGEND = [
   { label: 'Core topic', swatch: 'bg-sky-100 border-sky-600' },
-  { label: 'Optional', swatch: 'bg-white border-slate-400 border-dashed' },
+  { label: 'Optional', swatch: 'bg-surface border-slate-400 border-dashed' },
   { label: 'You already know it', swatch: 'bg-green-100 border-green-600' },
   { label: 'Stage project', swatch: 'bg-fuchsia-50 border-fuchsia-600' },
 ];
@@ -48,7 +48,7 @@ const StageCard = ({ stage, index, defaultOpen }) => {
   const [open, setOpen] = useState(defaultOpen);
   const core = stage.topics.filter((t) => t.type === 'core' && !t.known).length;
   return (
-    <section className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <section className="rounded-xl border border-gray-200 bg-surface overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -62,7 +62,7 @@ const StageCard = ({ stage, index, defaultOpen }) => {
             <span className="text-xs font-medium text-gray-500">{weeks(stage)} · {stage.weeks} {stage.weeks === 1 ? 'week' : 'weeks'}</span>
           </span>
           {stage.objective && <span className="block text-sm text-gray-600 mt-0.5">{stage.objective}</span>}
-          <span className="block text-xs text-gray-400 mt-1">{stage.topics.length} topics · {core} core to learn{stage.project ? ' · 1 project' : ''}</span>
+          <span className="block text-xs text-gray-500 mt-1">{stage.topics.length} topics · {core} core to learn{stage.project ? ' · 1 project' : ''}</span>
         </span>
         <span className={`shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true">▾</span>
       </button>
@@ -81,7 +81,7 @@ const StageCard = ({ stage, index, defaultOpen }) => {
                 {stage.project.skills?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {stage.project.skills.map((k) => (
-                      <span key={k} className="text-[11px] px-2 py-0.5 rounded-full bg-white border border-fuchsia-200 text-fuchsia-800">{k}</span>
+                      <span key={k} className="text-[11px] px-2 py-0.5 rounded-full bg-surface border border-fuchsia-200 text-fuchsia-800">{k}</span>
                     ))}
                   </div>
                 )}
@@ -125,7 +125,7 @@ const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
             label="Report a problem"
             onClick={() => openReport({ area: 'roadmap', source: { tool: 'roadmap', itemType: 'roadmap', itemId: roadmap._id, excerpt: roadmap.summary || roadmap.role } })}
           />
-          <button type="button" onClick={onRegenerate} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={onRegenerate} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50">
             Adjust & regenerate
           </button>
           {confirmDelete ? (
@@ -150,7 +150,7 @@ const RoadmapView = ({ roadmap, onDelete, onRegenerate, deleting = false }) => {
           ['Topics', topics],
           ['Projects', projects],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <div key={k} className="rounded-lg border border-gray-200 bg-surface px-4 py-3">
             <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{k}</div>
             <div className="text-2xl font-bold text-gray-900 tabular-nums">{v}</div>
           </div>

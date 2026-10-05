@@ -1,11 +1,22 @@
 import React, { useState } from "react";
 import logo from "../images/mainlogo.png";
+import ThemeToggle from "./ThemeToggle";
 
-export const Navigation = (props) => {
+// Sections of the landing page (pages/Landing.jsx).
+const LINKS = [
+  { href: "#features", label: "Features" },
+  { href: "#about", label: "Why Novard-AI" },
+  { href: "#contact", label: "Contact" },
+];
+
+const linkClass = "text-gray-700 hover:text-blue-600 font-medium transition-colors rounded-lg hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40";
+
+/** The landing page's top bar. */
+export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-md shadow-sm dark:border-b dark:border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -13,126 +24,73 @@ export const Navigation = (props) => {
             <img
               src={logo}
               alt="Logo"
-              className="w-12 h-12 rounded-lg transition-transform group-hover:scale-105"
+              className="w-12 h-12 rounded-lg transition-transform group-hover:scale-105 dark:invert"
             />
             <span className="text-2xl font-bold text-gray-900 font-display tracking-tight">
               Novard-AI
             </span>
           </a>
 
-          {/* Desktop Navigation */}
-          <ul className="hidden md:flex items-center space-x-1">
-            <li>
-              <a
-                href="#features"
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-gray-50"
-              >
-                Features
-              </a>
-            </li>
-            <li>
-              <a
-                href="#about"
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-gray-50"
-              >
-                About
-              </a>
-            </li>
-            <li>
-              <a
-                href="#services"
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-gray-50"
-              >
-                Services
-              </a>
-            </li>
-            <li>
-              <a
-                href="#team"
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-gray-50"
-              >
-                Team
-              </a>
-            </li>
-            <li>
-              <a
-                href="#contact"
-                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-gray-50"
-              >
-                Contact
-              </a>
-            </li>
-          </ul>
+          <div className="flex items-center gap-2">
+            {/* Desktop Navigation */}
+            <ul className="hidden md:flex items-center space-x-1">
+              {LINKS.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href} className={`px-4 py-2 ${linkClass}`}>{link.label}</a>
+                </li>
+              ))}
+            </ul>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <ThemeToggle className="ml-1" />
+
+            {/* Mobile Menu Button */}
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={isMenuOpen}
             >
-              {isMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                {isMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 animate-slide-down">
-            <a
-              href="#features"
-              className="block px-4 py-3 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </a>
-            <a
-              href="#about"
-              className="block px-4 py-3 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About
-            </a>
-            <a
-              href="#services"
-              className="block px-4 py-3 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Services
-            </a>
-            <a
-              href="#team"
-              className="block px-4 py-3 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Team
-            </a>
-            <a
-              href="#contact"
-              className="block px-4 py-3 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
-            </a>
+            {LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`block px-4 py-3 ${linkClass}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
         )}
       </div>

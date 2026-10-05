@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, errorMessage } from '../lib/api';
+import { api, errorMessage, LONG_AI_TIMEOUT_MS } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
@@ -149,7 +149,7 @@ const DoubtClearanceInlineView = () => {
       const response = await api.post(`/summarize-doubt-clearance`, {
         doubtId: selectedDoubt._id,
         userId: currentEmail()
-      });
+      }, { timeout: LONG_AI_TIMEOUT_MS });
       setSummary(response.data.summary);
       loadUserDoubts(); // refresh the list in the background - the result is already on screen
     } catch (error) {
@@ -365,7 +365,7 @@ const DoubtClearanceInlineView = () => {
               {activeTab === 'summary' && (
                 <TabBody>
                   {isSummarizing ? (
-                    <GeneratingState icon="summary" title="Summarizing your doubt" hint="Turning the conversation into a clear, structured summary with a diagram. This usually takes 10-20 seconds." />
+                    <GeneratingState icon="summary" title="Summarizing your doubt" hint="Turning the conversation into a clear, structured summary with a diagram. Long conversations can take a minute or more." />
                   ) : summary ? (
                     <SummaryView icon="summary" title="Summary" content={summary} onReport={reportSummary} />
                   ) : (
@@ -418,7 +418,7 @@ const DoubtClearanceInlineView = () => {
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {youtubeRecommendations.map((video, index) => (
-                          <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+                          <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-gray-200 bg-surface transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
                             <div className="relative aspect-video bg-gray-100">
                               {video.thumbnail && (
                               <img

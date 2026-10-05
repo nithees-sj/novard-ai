@@ -1,8 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import logger from '../../lib/logger';
-import { loadMermaid } from '../MermaidDiagram';
+import { renderMermaid } from '../MermaidDiagram';
+import { useTheme } from '../../context/ThemeContext';
 
 let seq = 0;
+
+// The roadmap source carries its own node colours (server/services/roadmapService.js,
+// the classDef/style lines), drawn for a white page. In the dark theme they are
+// swapped for dark equivalents here, so roadmaps saved earlier are themed too.
+const DARK_STYLES = [
+  ['fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e', 'fill:#172a46,stroke:#38bdf8,color:#e0f2fe'],
+  ['fill:#ffffff,stroke:#94a3b8,color:#334155', 'fill:#121821,stroke:#64748b,color:#cbd5e1'],
+  ['fill:#dcfce7,stroke:#16a34a,color:#14532d', 'fill:#14301f,stroke:#22c55e,color:#bbf7d0'],
+  ['fill:#fdf4ff,stroke:#c026d3,color:#701a75', 'fill:#2e1a33,stroke:#e879f9,color:#f5d0fe'],
+  ['fill:#f8fafc,stroke:#cbd5e1,color:#0f172a', 'fill:#161d28,stroke:#334155,color:#e6eaf0'],
+];
+const forTheme = (source, theme) => (theme === 'dark' ? DARK_STYLES.reduce((s, [light, dark]) => s.split(light).join(dark), source) : source);
 const ZOOM_MIN = 0.3;
 const ZOOM_MAX = 2.5;
 
@@ -13,7 +26,7 @@ const ToolButton = ({ onClick, label, children, disabled }) => (
     disabled={disabled}
     aria-label={label}
     title={label}
-    className="h-8 min-w-[2rem] px-2 inline-flex items-center justify-center rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+    className="h-8 min-w-[2rem] px-2 inline-flex items-center justify-center rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
   >
     {children}
   </button>
@@ -31,6 +44,7 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
   const [zoom, setZoom] = useState(1);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [fullScreen, setFullScreen] = useState(false);
+  const { resolved: theme } = useTheme();
 
   const applyZoom = useCallback((z) => {
     const svg = canvasRef.current?.querySelector('svg');
@@ -51,10 +65,9 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    loadMermaid()
-      .then(async (mermaid) => {
-        seq += 1;
-        const { svg } = await mermaid.render(`roadmap-${seq}`, source);
+    seq += 1;
+    renderMermaid(`roadmap-${seq}`, forTheme(source, theme), theme)
+      .then(({ svg }) => {
         if (cancelled || !canvasRef.current) return;
         canvasRef.current.innerHTML = svg;
         const el = canvasRef.current.querySelector('svg');
@@ -71,7 +84,7 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
         if (!cancelled) setStatus('error');
       });
     return () => { cancelled = true; };
-  }, [source, fit]);
+  }, [source, theme, fit]);
 
   // Re-fit when entering or leaving full screen.
   useEffect(() => {
@@ -85,17 +98,24 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [fullScreen]);
 
-  const download = () => {
-    const svg = canvasRef.current?.querySelector('svg');
-    if (!svg) return;
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    clone.setAttribute('width', natural.current.width);
-    clone.setAttribute('height', natural.current.height);
-    clone.style.width = '';
-    clone.style.height = '';
-    clone.style.background = '#ffffff';
-    const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' });
+  // The download is always the light diagram on white, whatever the page's theme.
+  const download = async () => {
+    if (status !== 'ready') return;
+    let markup;
+    try {
+      seq += 1;
+      ({ svg: markup } = await renderMermaid(`roadmap-${seq}`, source, 'light'));
+    } catch (error) {
+      logger.error('Roadmap diagram could not be prepared for download', error);
+      return;
+    }
+    const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svg.setAttribute('width', natural.current.width);
+    svg.setAttribute('height', natural.current.height);
+    svg.style.maxWidth = '';
+    svg.style.background = '#ffffff';
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -105,8 +125,8 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
   };
 
   const frame = fullScreen
-    ? 'fixed inset-0 z-[70] bg-white flex flex-col'
-    : 'relative rounded-xl border border-gray-200 bg-white flex flex-col';
+    ? 'fixed inset-0 z-[70] bg-surface flex flex-col'
+    : 'relative rounded-xl border border-gray-200 bg-surface flex flex-col';
 
   return (
     <div className={frame}>
@@ -130,7 +150,7 @@ const RoadmapDiagram = ({ source, fileName = 'roadmap' }) => {
       <div ref={viewportRef} className={`overflow-auto p-4 ${fullScreen ? 'flex-1' : 'max-h-[70vh]'}`}>
         {status === 'loading' && (
           <div className="h-64 flex items-center justify-center">
-            <span className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-primary-600 animate-spin" aria-hidden="true" />
+            <span className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-blue-600 animate-spin" aria-hidden="true" />
           </div>
         )}
         {status === 'error' && (

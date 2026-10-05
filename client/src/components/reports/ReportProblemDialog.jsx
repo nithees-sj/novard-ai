@@ -161,8 +161,8 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !sending) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="report-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-hard animate-scale-in">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 dark:bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !sending) onClose(); }}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="report-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-surface-overlay shadow-hard animate-scale-in">
         <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"><Icon name="flag" className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1">
@@ -213,7 +213,7 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
             </Field>
 
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-900">Add more <span className="font-normal text-gray-400">(optional)</span></p>
+              <p className="text-sm font-semibold text-gray-900">Add more <span className="font-normal text-gray-500">(optional)</span></p>
               <FilePick label="Add a screenshot" icon="image" accept={SCREENSHOT_TYPES} value={files.screenshot} onChange={setFile('screenshot')} disabled={sending} />
               {voiceEnabled && <VoiceRecorder value={files.voice} onChange={setFile('voice')} disabled={sending} />}
               <FilePick label="Attach a PDF" icon="paperclip" accept="application/pdf" value={files.pdf} onChange={setFile('pdf')} disabled={sending} />
@@ -229,7 +229,7 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
             )}
 
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-400">Up to {maxOpenPerArea || 2} open reports per area.</p>
+              <p className="text-xs text-gray-500">Up to {maxOpenPerArea || 2} open reports per area.</p>
               <div className="flex gap-2">
                 <button type="button" onClick={onClose} disabled={sending} className={btn.secondary}>Cancel</button>
                 <button type="submit" disabled={sending} className={btn.primary}>{sending ? <><Spinner /> Sending…</> : 'Send report'}</button>

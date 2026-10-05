@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { chart } from '../../lib/statusColors';
 
 /**
  * Small SVG chart primitives for the profile page. No chart library: each is a
@@ -30,7 +31,7 @@ const niceMax = (v, steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000]) => steps
  * `thresholds` draws dashed reference lines: [{ value, label, color }].
  * `decimals` keeps fractional axis ticks (for 0-1 scores).
  */
-export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284c7', emptyText = 'No data yet', caption, thresholds = [], decimals = 0 }) => {
+export const LineChart = ({ points, height = 200, max, unit = '', color = chart.brand, emptyText = 'No data yet', caption, thresholds = [], decimals = 0 }) => {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState(null);
   const pad = { top: 16, right: 12, bottom: 26, left: 36 };
@@ -43,7 +44,8 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ');
   const area = points.length > 1 ? `${line} L${x(points.length - 1)},${pad.top + h} L${x(0)},${pad.top + h} Z` : '';
   const labelEvery = Math.max(1, Math.ceil(points.length / Math.max(1, Math.floor(w / 64))));
-  const gradientId = `lc-${color.replace('#', '')}`;
+  // Colours are CSS variables (rgb(var(--…))), so the id cannot be built from them.
+  const gradientId = `lc-${useId().replace(/:/g, '')}`;
 
   return (
     <div ref={ref} className="relative w-full" style={{ height }}>
@@ -53,30 +55,30 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284
         <svg width={width} height={height} role="img" aria-label={caption} onMouseLeave={() => setHover(null)}>
           <defs>
             <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-              <stop offset="100%" stopColor={color} stopOpacity="0" />
+              <stop offset="0%" style={{ stopColor: color }} stopOpacity="0.22" />
+              <stop offset="100%" style={{ stopColor: color }} stopOpacity="0" />
             </linearGradient>
           </defs>
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} stroke="#f3f4f6" />
+              <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className="stroke-chart-grid" />
               <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-gray-400 text-[10px] tabular-nums">{t}{unit}</text>
             </g>
           ))}
           {area && <path d={area} fill={`url(#${gradientId})`} />}
           {thresholds.filter((t) => t.value <= top).map((t) => (
             <g key={t.label}>
-              <line x1={pad.left} x2={pad.left + w} y1={y(t.value)} y2={y(t.value)} stroke={t.color || '#9ca3af'} strokeDasharray="4 4" />
-              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="text-[10px]" fill={t.color || '#6b7280'}>{t.label}</text>
+              <line x1={pad.left} x2={pad.left + w} y1={y(t.value)} y2={y(t.value)} style={{ stroke: t.color || chart.axis }} strokeDasharray="4 4" />
+              <text x={pad.left + w} y={y(t.value) - 3} textAnchor="end" className="fill-gray-500 text-[10px]" style={t.color ? { fill: t.color } : undefined}>{t.label}</text>
             </g>
           ))}
-          <path d={line} fill="none" stroke={color} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
+          <path d={line} fill="none" style={{ stroke: color }} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((p, i) => (
             <g key={i}>
               {(i === points.length - 1 || (i % labelEvery === 0 && points.length - 1 - i >= labelEvery)) && (
                 <text x={x(i)} y={height - 6} textAnchor={i === points.length - 1 && points.length > 1 ? 'end' : i === 0 && points.length > 1 ? 'start' : 'middle'} className="fill-gray-500 text-[10px]">{p.label}</text>
               )}
-              <circle cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} fill="#fff" stroke={color} strokeWidth="2" />
+              <circle cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} style={{ fill: chart.surface, stroke: color }} strokeWidth="2" />
               <rect
                 x={x(i) - (points.length > 1 ? w / (points.length - 1) / 2 : w / 2)}
                 width={points.length > 1 ? w / (points.length - 1) : w}
@@ -87,17 +89,17 @@ export const LineChart = ({ points, height = 200, max, unit = '', color = '#0284
               />
             </g>
           ))}
-          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.top} y2={pad.top + h} stroke="#d1d5db" strokeDasharray="3 3" pointerEvents="none" />}
+          {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pad.top} y2={pad.top + h} className="stroke-chart-line" strokeDasharray="3 3" pointerEvents="none" />}
         </svg>
       )}
       {hover !== null && points[hover] && (
         <div
           role="tooltip"
-          className="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 px-3 py-2 shadow-lg whitespace-nowrap"
+          className="absolute z-10 pointer-events-none -translate-x-1/2 -translate-y-full rounded-lg bg-tooltip px-3 py-2 shadow-lg whitespace-nowrap"
           style={{ left: x(hover), top: y(points[hover].value) - 10 }}
         >
-          <span className="block text-sm font-bold text-white tabular-nums">{points[hover].value}{unit}</span>
-          <span className="block text-[11px] text-gray-300">{points[hover].sub || points[hover].label}</span>
+          <span className="block text-sm font-bold text-tooltip-fg tabular-nums">{points[hover].value}{unit}</span>
+          <span className="block text-[11px] text-tooltip-muted">{points[hover].sub || points[hover].label}</span>
         </div>
       )}
       <table className="sr-only">
@@ -116,7 +118,7 @@ export const Donut = ({ segments, size = 168, thickness = 22, centerValue, cente
   let offset = 0;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={segments.map((s) => `${s.label} ${s.value}`).join(', ')} className="shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f3f4f6" strokeWidth={thickness} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="stroke-chart-grid" strokeWidth={thickness} />
       {total > 0 && segments.map((s) => {
         const len = (s.value / total) * c;
         const el = (
@@ -126,7 +128,7 @@ export const Donut = ({ segments, size = 168, thickness = 22, centerValue, cente
             cy={size / 2}
             r={r}
             fill="none"
-            stroke={s.color}
+            style={{ stroke: s.color }}
             strokeWidth={thickness}
             strokeDasharray={`${Math.max(0, len - (segments.length > 1 ? 2 : 0))} ${c}`}
             strokeDashoffset={-offset}
@@ -145,19 +147,19 @@ export const Donut = ({ segments, size = 168, thickness = 22, centerValue, cente
 };
 
 /** Circular progress ring, 0-100. */
-export const Ring = ({ value, size = 64, thickness = 7, color = '#0284c7', label }) => {
+export const Ring = ({ value, size = 64, thickness = 7, color = chart.brand, label }) => {
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
   const v = Math.max(0, Math.min(100, value || 0));
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label || `${v}%`} className="shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={thickness} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="stroke-chart-track" strokeWidth={thickness} />
       <circle
         cx={size / 2}
         cy={size / 2}
         r={r}
         fill="none"
-        stroke={color}
+        style={{ stroke: color }}
         strokeWidth={thickness}
         strokeLinecap="round"
         strokeDasharray={`${(v / 100) * c} ${c}`}
@@ -183,7 +185,7 @@ export const BarList = ({ rows, max = 100, unit = '%', emptyText = 'No data yet'
             </span>
           </div>
           <div className="h-2 rounded-full bg-gray-100" role="meter" aria-valuemin={0} aria-valuemax={r.max || max} aria-valuenow={r.value} aria-label={r.label}>
-            <div className={`h-2 rounded-full ${r.color || 'bg-primary-500'}`} style={{ width: `${Math.min(100, (r.value / (r.max || max)) * 100)}%` }} />
+            <div className={`h-2 rounded-full ${r.color || 'bg-blue-500'}`} style={{ width: `${Math.min(100, (r.value / (r.max || max)) * 100)}%` }} />
           </div>
         </li>
       ))}
@@ -191,7 +193,8 @@ export const BarList = ({ rows, max = 100, unit = '%', emptyText = 'No data yet'
   );
 };
 
-const HEAT = ['bg-gray-100', 'bg-primary-100', 'bg-primary-300', 'bg-primary-500', 'bg-primary-700'];
+// Opacity steps of one blue, so "more" reads as stronger on both a white and a dark page.
+const HEAT = ['bg-gray-100', 'bg-blue-500/25', 'bg-blue-500/50', 'bg-blue-500/75', 'bg-blue-600'];
 const heatLevel = (count, peak) => (count === 0 ? 0 : Math.min(4, Math.ceil((count / Math.max(1, peak)) * 4)));
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -210,12 +213,12 @@ export const Heatmap = ({ days }) => {
   // Column-major grid: a label column, then one column per week (month label + 7 days).
   const cells = [<span key="corner" />];
   ['', 'Mon', '', 'Wed', '', 'Fri', ''].forEach((l, i) => cells.push(
-    <span key={`wd${i}`} className="self-center text-[10px] leading-none text-gray-400" aria-hidden="true">{l}</span>
+    <span key={`wd${i}`} className="self-center text-[10px] leading-none text-gray-500" aria-hidden="true">{l}</span>
   ));
   weeks.forEach((week, wi) => {
     const showMonth = wi === 0 ? week[0].date.slice(8) <= '21' : month(week) !== month(weeks[wi - 1]);
     cells.push(
-      <span key={`m${week[0].date}`} className="text-[10px] leading-[14px] text-gray-400 whitespace-nowrap overflow-visible" aria-hidden="true">
+      <span key={`m${week[0].date}`} className="text-[10px] leading-[14px] text-gray-500 whitespace-nowrap overflow-visible" aria-hidden="true">
         {showMonth ? MONTHS[month(week)] : ''}
       </span>
     );
@@ -259,22 +262,22 @@ export const Heatmap = ({ days }) => {
 };
 
 /** A tiny trend line for tables and cards. values: numbers (oldest first). */
-export const Sparkline = ({ values = [], width = 96, height = 28, max, color = '#0284c7', label }) => {
-  if (!values.length) return <span className="text-xs text-gray-400">no data</span>;
+export const Sparkline = ({ values = [], width = 96, height = 28, max, color = chart.brand, label }) => {
+  if (!values.length) return <span className="text-xs text-gray-500">no data</span>;
   const top = max ?? Math.max(...values, 0.0001);
   const x = (i) => (values.length === 1 ? width / 2 : (i / (values.length - 1)) * (width - 4) + 2);
   const y = (v) => height - 3 - (Math.min(v, top) / top) * (height - 6);
   const d = values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   return (
     <svg width={width} height={height} role="img" aria-label={label || `trend, latest ${values[values.length - 1]}`} className="shrink-0 overflow-visible">
-      <path d={d} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r="2.5" fill={color} />
+      <path d={d} fill="none" style={{ stroke: color }} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r="2.5" style={{ fill: color }} />
     </svg>
   );
 };
 
 /** Vertical bars with hover. bars: [{ label, value, sub?, color? }]. */
-export const ColumnChart = ({ bars = [], height = 180, unit = '', color = '#0284c7', emptyText = 'No data yet', caption, format = (v) => v }) => {
+export const ColumnChart = ({ bars = [], height = 180, unit = '', color = chart.brand, emptyText = 'No data yet', caption, format = (v) => v }) => {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState(null);
   const pad = { top: 12, right: 8, bottom: 24, left: 8 };
@@ -290,14 +293,14 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = '#0284
         <div className="flex h-full items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500">{emptyText}</div>
       ) : width > 0 && (
         <svg width={width} height={height} role="img" aria-label={caption} onMouseLeave={() => setHover(null)}>
-          <line x1={pad.left} x2={pad.left + w} y1={pad.top + h} y2={pad.top + h} stroke="#e5e7eb" />
+          <line x1={pad.left} x2={pad.left + w} y1={pad.top + h} y2={pad.top + h} className="stroke-chart-track" />
           {bars.map((b, i) => {
             const bh = (b.value / top) * h;
             const cx = pad.left + slot * i + slot / 2;
             return (
               <g key={`${b.label}-${i}`} onMouseEnter={() => setHover(i)}>
                 <rect x={cx - slot / 2} y={pad.top} width={slot} height={h} fill="transparent" />
-                <rect x={cx - barW / 2} y={pad.top + h - bh} width={barW} height={Math.max(bh, b.value ? 1 : 0)} rx="2" fill={b.color || color} opacity={hover === null || hover === i ? 1 : 0.55} />
+                <rect x={cx - barW / 2} y={pad.top + h - bh} width={barW} height={Math.max(bh, b.value ? 1 : 0)} rx="2" style={{ fill: b.color || color }} opacity={hover === null || hover === i ? 1 : 0.55} />
                 {(i % labelEvery === 0 || i === bars.length - 1) && <text x={cx} y={height - 6} textAnchor="middle" className="fill-gray-500 text-[10px]">{b.label}</text>}
               </g>
             );
@@ -305,9 +308,9 @@ export const ColumnChart = ({ bars = [], height = 180, unit = '', color = '#0284
         </svg>
       )}
       {hover !== null && bars[hover] && (
-        <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 shadow-lg" style={{ left: pad.left + slot * hover + slot / 2 }}>
-          <span className="block text-sm font-bold tabular-nums text-white">{format(bars[hover].value)}{unit}</span>
-          <span className="block text-[11px] text-gray-300">{bars[hover].sub || bars[hover].label}</span>
+        <div role="tooltip" className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 shadow-lg" style={{ left: pad.left + slot * hover + slot / 2 }}>
+          <span className="block text-sm font-bold tabular-nums text-tooltip-fg">{format(bars[hover].value)}{unit}</span>
+          <span className="block text-[11px] text-tooltip-muted">{bars[hover].sub || bars[hover].label}</span>
         </div>
       )}
       <table className="sr-only">

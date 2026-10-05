@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, errorMessage } from '../lib/api';
+import { api, errorMessage, LONG_AI_TIMEOUT_MS } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
@@ -147,7 +147,7 @@ const VideoSummarizerInlineView = () => {
       const response = await api.post(`/summarize-youtube-video`, {
         videoId: selectedVideo._id,
         userId: currentEmail()
-      });
+      }, { timeout: LONG_AI_TIMEOUT_MS });
       setSummary(response.data.summary);
       loadUserVideos(); // refresh the list in the background - the result is already on screen
     } catch (error) {
@@ -343,7 +343,7 @@ const VideoSummarizerInlineView = () => {
               {activeTab === 'summary' && (
                 <TabBody>
                   {isSummarizing ? (
-                    <GeneratingState icon="summary" title="Summarising the video" hint="Reading the transcript and writing a structured summary with a diagram. This usually takes 10-20 seconds." />
+                    <GeneratingState icon="summary" title="Summarising the video" hint="Reading the whole transcript and writing a structured summary with a diagram. Long videos can take a few minutes." />
                   ) : summary ? (
                     <SummaryView icon="video" title="Video summary" content={summary} onReport={reportSummary} />
                   ) : (

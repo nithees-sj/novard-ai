@@ -78,7 +78,7 @@ const NewVideoRequestForm = ({ onSubmit, onCancel, submitting = false, error = n
             key={ex.title}
             type="button"
             onClick={() => setForm(ex)}
-            className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-full border border-gray-200 bg-surface px-2.5 py-1 text-xs text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
           >
             {ex.title}
           </button>

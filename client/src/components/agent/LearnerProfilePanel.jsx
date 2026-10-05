@@ -22,7 +22,7 @@ const FIELDS = [
   { key: 'notes', label: 'Anything else the agent should know', type: 'textarea', max: 500 },
 ];
 
-const inputClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'w-full rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 const LearnerProfilePanel = ({ open, onClose }) => {
   const [state, setState] = useState({ loading: true, error: null, values: {}, derivedKeys: [] });
@@ -72,8 +72,8 @@ const LearnerProfilePanel = ({ open, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" className="absolute inset-0 bg-black/30" onClick={onClose} aria-label="Close learner profile" />
-      <aside role="dialog" aria-modal="true" aria-labelledby="learner-profile-title" className="relative flex h-full w-full max-w-md flex-col bg-white shadow-xl">
+      <button type="button" className="absolute inset-0 bg-black/30 dark:bg-black/60" onClick={onClose} aria-label="Close learner profile" />
+      <aside role="dialog" aria-modal="true" aria-labelledby="learner-profile-title" className="relative flex h-full w-full max-w-md flex-col bg-surface-overlay shadow-xl dark:border-l dark:border-gray-200">
         <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
           <div>
             <h2 id="learner-profile-title" className="text-base font-semibold text-gray-900">Your learner profile</h2>
@@ -122,7 +122,7 @@ const LearnerProfilePanel = ({ open, onClose }) => {
             <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-5 py-3">
               {message && <p className="mr-auto text-xs text-gray-600" role="status">{message}</p>}
               <button type="button" onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Close</button>
-              <button type="submit" disabled={saving} className="rounded-lg bg-gray-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+              <button type="submit" disabled={saving} className="rounded-lg bg-ink px-4 py-1.5 text-sm font-semibold text-on-ink hover:bg-ink-hover disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         )}

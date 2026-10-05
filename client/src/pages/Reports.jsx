@@ -6,6 +6,7 @@ import { Badge, EmptyState, Icon, Spinner, btn, fieldClass, formatDate } from '.
 import { useReportProblem } from '../context/ReportContext';
 import { reportsApi, attachmentUrl, STATUS_LABEL, STATUS_TONE } from '../lib/reports';
 import { errorMessage } from '../lib/api';
+import { rowFocus } from '../components/ui/DataTable';
 
 const StatusBadge = ({ status }) => <Badge tone={STATUS_TONE[status] || 'gray'}>{STATUS_LABEL[status] || status}</Badge>;
 
@@ -37,7 +38,13 @@ function ReportList({ reports, loading, onOpen }) {
         </thead>
         <tbody className="divide-y divide-gray-100">
           {reports.map((r) => (
-            <tr key={r.ref} className="cursor-pointer hover:bg-gray-50/60" onClick={() => onOpen(r.ref)}>
+            <tr
+              key={r.ref}
+              className={`cursor-pointer hover:bg-gray-50/60 ${rowFocus}`}
+              onClick={() => onOpen(r.ref)}
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(r.ref); }}
+            >
               <td className="px-6 py-3">
                 <p className="font-semibold text-gray-900">{r.ref}</p>
                 <p className="line-clamp-1 max-w-md text-xs text-gray-500">{r.text}</p>
@@ -118,7 +125,7 @@ function ReportDetail({ reportRef, onBack }) {
 
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-gray-900">What you reported</h3>
-        <p className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800">{report.text}</p>
+        <p className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-surface px-4 py-3 text-sm text-gray-800">{report.text}</p>
         {report.transcript && <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"><strong className="text-gray-900">Voice note: </strong>{report.transcript}</p>}
         {report.source?.excerpt && (
           <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
@@ -136,7 +143,7 @@ function ReportDetail({ reportRef, onBack }) {
         {report.notes.length === 0 && <p className="text-sm text-gray-500">No replies yet. The Novard team will reply here, and you will get a notification.</p>}
         <ol className="space-y-3">
           {report.notes.map((n, i) => (
-            <li key={i} className={`rounded-lg border px-4 py-3 text-sm ${n.authorRole === 'student' ? 'border-gray-200 bg-white' : 'border-blue-100 bg-blue-50/60'}`}>
+            <li key={i} className={`rounded-lg border px-4 py-3 text-sm ${n.authorRole === 'student' ? 'border-gray-200 bg-surface' : 'border-blue-100 bg-blue-50/60'}`}>
               <p className="mb-1 text-xs font-semibold text-gray-500">{n.from === 'you' ? 'You' : 'Novard team'} · {formatDate(n.at)}</p>
               <p className="whitespace-pre-wrap text-gray-800">{n.body}</p>
             </li>
@@ -178,18 +185,18 @@ export default function Reports() {
           <div className="mx-auto max-w-5xl space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">My reports</h1>
+                <h1 className="text-3xl font-bold text-gray-900">My reports</h1>
                 <p className="text-sm text-gray-500">Problems you told us about, and what we did. You can have up to {data.maxOpenPerArea} open reports per area.</p>
               </div>
               <button type="button" onClick={() => openReport({})} className={btn.primary}><Icon name="flag" /> Report a problem</button>
             </div>
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-surface">
               {ref
                 ? <ReportDetail reportRef={ref} onBack={() => navigate('/reports')} />
                 : <ReportList reports={data.reports} loading={loading} onOpen={(r) => navigate(`/reports/${r}`)} />}
             </div>
             {!ref && data.reports.length > 0 && (
-              <p className="text-center text-xs text-gray-400">Something else? <Link to="#" onClick={(e) => { e.preventDefault(); openReport({}); }} className="text-blue-600 hover:underline">Send another report</Link></p>
+              <p className="text-center text-xs text-gray-500">Something else? <Link to="#" onClick={(e) => { e.preventDefault(); openReport({}); }} className="text-blue-600 hover:underline">Send another report</Link></p>
             )}
           </div>
         </div>

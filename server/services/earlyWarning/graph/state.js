@@ -43,7 +43,7 @@ const RiskState = Annotation.Root({
   revisionCount: replace(0),
   prediction: replace(null),
   loopCount: replace(0),
-  budget: replace({ usdMax: 0.03, tokensMax: 40000, laneConcurrency: 2 }),
+  budget: replace({ usdMax: 0, tokensMax: 0, laneConcurrency: 2 }), // caps off unless an admin sets them
   degraded: replace(false),
   next: replace(null),
 });

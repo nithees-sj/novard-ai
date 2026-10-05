@@ -11,6 +11,7 @@ const ChatbotConversation = require('../../models/chatbotConversation');
 const audit = require('../auditService');
 const { view, findUser } = require('../adminUserService');
 const { studentUsageToday } = require('../../ai/usageGuard');
+const { tokenUsage } = require('../../ai/tokenLimits');
 const { integer, oneOf, text } = require('../../utils/validate');
 
 /**
@@ -53,7 +54,7 @@ async function userDetail(id) {
   const user = await findUser(id);
   const email = user.email;
   const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
-  const [notes, doubts, videos, plans, roadmaps, chats, usage, reports, ai, aiToday] = await Promise.all([
+  const [notes, doubts, videos, plans, roadmaps, chats, usage, reports, ai, aiToday, tokens] = await Promise.all([
     Notes.countDocuments({ userId: email }),
     DoubtClearance.countDocuments({ userId: email }),
     YouTubeVideo.countDocuments({ userId: email }),
@@ -68,6 +69,7 @@ async function userDetail(id) {
       { $sort: { calls: -1 } },
     ]),
     studentUsageToday(email),
+    tokenUsage(email),
   ]);
   return {
     user: masked(user),
@@ -77,7 +79,7 @@ async function userDetail(id) {
       activeDays: usage.map((d) => ({ day: d.day, minutes: Math.round((d.seconds || 0) / 60) })),
     },
     reports,
-    ai: { last30Days: ai.map((a) => ({ feature: a._id, calls: a.calls, usd: a.usd, tokens: a.tokens })), requestsToday: aiToday },
+    ai: { last30Days: ai.map((a) => ({ feature: a._id, calls: a.calls, usd: a.usd, tokens: a.tokens })), requestsToday: aiToday, tokens },
   };
 }
 

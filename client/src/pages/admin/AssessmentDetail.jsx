@@ -7,6 +7,7 @@ import { Badge, Spinner, btn, fieldClass } from '../../components/learning/Learn
 import useAdminData from '../../lib/useAdminData';
 import { adminPost } from '../../lib/adminApi';
 import { errorMessage } from '../../lib/api';
+import { chart } from '../../lib/statusColors';
 
 const LANE_LABEL = { temporal: 'Trend', peers: 'Peers', history: 'History', semantic: 'What students say', telemetry: 'AI, YouTube & PDF' };
 const VERDICT = { accept: ['green', 'Accepted'], revise: ['amber', 'Revised'], need_more_evidence: ['amber', 'Needed more evidence'] };
@@ -138,7 +139,7 @@ export default function AssessmentDetail() {
               <ul className="space-y-3 px-6 pb-6">
                 {a.hypotheses.map((h, i) => (
                   <li key={i} className="flex gap-4 rounded-lg border border-gray-200 p-4">
-                    <Ring value={Math.round((h.confidence || 0) * 100)} size={56} color={h.degraded ? '#9ca3af' : '#0284c7'} label={`confidence ${Math.round((h.confidence || 0) * 100)}%`} />
+                    <Ring value={Math.round((h.confidence || 0) * 100)} size={56} color={h.degraded ? chart.muted : chart.brand} label={`confidence ${Math.round((h.confidence || 0) * 100)}%`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-gray-900">{h.cause}</p>
                       {h.uncited && <p className="mt-1 text-xs text-amber-700">No valid citation: confidence capped at 35%.</p>}

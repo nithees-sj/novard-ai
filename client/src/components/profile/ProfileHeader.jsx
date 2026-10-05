@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../AuthContext';
+import { inputClass } from '../learning/LearningUI';
 
 
 const formatDate = (d, opts = { day: 'numeric', month: 'short', year: 'numeric' }) =>
@@ -21,7 +22,7 @@ const Detail = ({ icon, label, children }) => (
   <div className="flex items-start gap-3 min-w-0">
     <span className="w-9 h-9 shrink-0 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500" aria-hidden="true">{icon}</span>
     <div className="min-w-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
       <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
     </div>
   </div>
@@ -79,10 +80,10 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
     }
   };
 
-  const input = 'w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500';
+  const input = inputClass;
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 overflow-hidden" aria-label="Your details">
+    <section className="bg-surface rounded-xl border border-gray-200 overflow-hidden" aria-label="Your details">
       <div className="h-28 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-400 relative">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_85%_20%,white_0,transparent_45%)]" aria-hidden="true" />
       </div>
@@ -95,10 +96,10 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
                 src={picture}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="w-24 h-24 rounded-2xl border-4 border-white shadow-md object-cover bg-primary-100"
+                className="w-24 h-24 rounded-2xl border-4 border-surface shadow-md object-cover bg-primary-100"
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
               />
-              <span className="hidden w-24 h-24 rounded-2xl border-4 border-white shadow-md bg-primary-600 text-white text-2xl font-bold items-center justify-center" aria-hidden="true">{initials}</span>
+              <span className="hidden w-24 h-24 rounded-2xl border-4 border-surface shadow-md bg-primary-600 text-white text-2xl font-bold items-center justify-center" aria-hidden="true">{initials}</span>
             </div>
             <div className="min-w-0 pb-1">
               <h1 className="text-2xl font-bold text-gray-900 truncate">{account.name || 'Your profile'}</h1>
@@ -109,7 +110,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
             <button
               type="button"
               onClick={() => { setEditing(true); setNotice(null); }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50"
             >
               <Icon d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               Edit profile
@@ -135,11 +136,11 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
             </label>
             <label className="block md:col-span-2">
               <span className="block text-sm font-medium text-gray-700 mb-1.5">Email address</span>
-              <input className={`${input} bg-gray-100 text-gray-500 cursor-not-allowed`} value={account.email} disabled />
+              <input className={`${input} disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`} value={account.email} disabled />
               <span className="block mt-1 text-xs text-gray-500">Your email comes from your Google sign-in and cannot be changed.</span>
             </label>
             <label className="block md:col-span-2">
-              <span className="flex justify-between text-sm font-medium text-gray-700 mb-1.5">Bio <span className="font-normal text-xs text-gray-400">{form.bio.length}/300</span></span>
+              <span className="flex justify-between text-sm font-medium text-gray-700 mb-1.5">Bio <span className="font-normal text-xs text-gray-500">{form.bio.length}/300</span></span>
               <textarea className={`${input} resize-none`} rows={3} maxLength={300} value={form.bio} placeholder="What are you studying, and what are you aiming for?" onChange={(e) => setForm({ ...form, bio: e.target.value })} />
             </label>
             <div className="md:col-span-2 flex justify-end gap-2">
@@ -155,7 +156,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
           <>
             {account.bio
               ? <p className="mt-5 text-sm text-gray-700 leading-relaxed max-w-3xl">{account.bio}</p>
-              : <p className="mt-5 text-sm text-gray-400 italic">No bio yet. Add a line about what you are studying.</p>}
+              : <p className="mt-5 text-sm text-gray-500 italic">No bio yet. Add a line about what you are studying.</p>}
 
             <dl className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <Detail icon={<Icon d={ICONS.mail} />} label="Email">{account.email}</Detail>
@@ -171,7 +172,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-9 h-9 shrink-0 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center" aria-hidden="true">🎯</span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Current goal</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Current goal</p>
                 <p className="text-sm font-semibold text-gray-900 truncate">
                   {goal.role}{goal.goal && <span className="font-normal text-gray-600"> · {goal.goal}</span>}
                 </p>
@@ -184,7 +185,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
             {goal.skills?.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {goal.skills.slice(0, 8).map((s) => <span key={s} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700">{s}</span>)}
-                {goal.skills.length > 8 && <span className="text-xs text-gray-400">+{goal.skills.length - 8} more</span>}
+                {goal.skills.length > 8 && <span className="text-xs text-gray-500">+{goal.skills.length - 8} more</span>}
               </div>
             )}
           </div>

@@ -1,35 +1,23 @@
+const plugin = require('tailwindcss/plugin');
+const { variables, colorMap } = require('./src/theme/palette');
+
+// Colours are CSS variables that switch with the `dark` class on <html>; see
+// src/theme/palette.js for how the light and dark palettes are built.
+const surfaceColors = colorMap('surface');
+const textColors = colorMap('text');
+const c = (name) => `rgb(var(--${name}))`;
+
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
+    colors: surfaceColors,
+    textColor: textColors,
+    fill: { none: 'none', ...textColors },
+    stroke: { none: 'none', ...textColors },
     extend: {
-      colors: {
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-        },
-        accent: {
-          50: '#fdf4ff',
-          100: '#fae8ff',
-          200: '#f5d0fe',
-          300: '#f0abfc',
-          400: '#e879f9',
-          500: '#d946ef',
-          600: '#c026d3',
-          700: '#a21caf',
-          800: '#86198f',
-          900: '#701a75',
-        },
-      },
       fontFamily: {
         sans: ['Inter', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         display: ['Raleway', 'sans-serif'],
@@ -63,19 +51,37 @@ module.exports = {
       typography: {
         DEFAULT: {
           css: {
-            color: '#1f2937',
+            // Every colour prose uses, as theme variables, so Markdown flips with the theme.
+            '--tw-prose-body': c('gray-800'),
+            '--tw-prose-headings': c('gray-900'),
+            '--tw-prose-lead': c('gray-600'),
+            '--tw-prose-links': c('blue-text-600'),
+            '--tw-prose-bold': c('gray-900'),
+            '--tw-prose-counters': c('gray-500'),
+            '--tw-prose-bullets': c('gray-300'),
+            '--tw-prose-hr': c('gray-200'),
+            '--tw-prose-quotes': c('gray-900'),
+            '--tw-prose-quote-borders': c('gray-200'),
+            '--tw-prose-captions': c('gray-500'),
+            '--tw-prose-kbd': c('gray-900'),
+            '--tw-prose-code': c('blue-text-700'),
+            '--tw-prose-pre-code': c('code-fg'),
+            '--tw-prose-pre-bg': c('code'),
+            '--tw-prose-th-borders': c('gray-300'),
+            '--tw-prose-td-borders': c('gray-200'),
+            color: c('gray-800'),
             maxWidth: 'none',
-            a: { color: '#0284c7', textDecoration: 'none', fontWeight: '500' },
+            a: { color: c('blue-text-600'), textDecoration: 'none', fontWeight: '500' },
             'a:hover': { textDecoration: 'underline' },
-            'h1, h2, h3, h4': { color: '#111827', fontWeight: '700' },
+            'h1, h2, h3, h4': { color: c('gray-900'), fontWeight: '700' },
             h1: { fontSize: '1.5em', marginTop: '1.2em', marginBottom: '0.6em' },
             h2: { fontSize: '1.25em', marginTop: '1.2em', marginBottom: '0.5em' },
             h3: { fontSize: '1.1em', marginTop: '1em', marginBottom: '0.4em' },
-            strong: { color: '#111827', fontWeight: '600' },
-            hr: { borderColor: '#e5e7eb', marginTop: '1.5em', marginBottom: '1.5em' },
+            strong: { color: c('gray-900'), fontWeight: '600' },
+            hr: { borderColor: c('gray-200'), marginTop: '1.5em', marginBottom: '1.5em' },
             code: {
-              color: '#0369a1',
-              backgroundColor: '#f0f9ff',
+              color: c('blue-text-700'),
+              backgroundColor: c('blue-50'),
               padding: '0.15em 0.4em',
               borderRadius: '0.25rem',
               fontWeight: '500',
@@ -83,26 +89,32 @@ module.exports = {
             'code::before': { content: '""' },
             'code::after': { content: '""' },
             pre: {
-              backgroundColor: '#111827',
-              color: '#f9fafb',
+              backgroundColor: c('code'),
+              color: c('code-fg'),
               borderRadius: '0.5rem',
             },
             'pre code': { backgroundColor: 'transparent', color: 'inherit', padding: '0' },
-            blockquote: { borderLeftColor: '#0ea5e9', color: '#4b5563', fontStyle: 'normal' },
-            'ul > li::marker': { color: '#0ea5e9' },
-            'ol > li::marker': { color: '#0ea5e9' },
+            blockquote: { borderLeftColor: '#3b82f6', color: c('gray-600'), fontStyle: 'normal' },
+            'ul > li::marker': { color: '#3b82f6' },
+            'ol > li::marker': { color: '#3b82f6' },
             table: { fontSize: '0.9em' },
-            'thead th': { color: '#111827', backgroundColor: '#f9fafb' },
-            'td, th': { padding: '0.5em 0.75em', borderColor: '#e5e7eb' },
+            'thead th': { color: c('gray-900'), backgroundColor: c('gray-50') },
+            'td, th': { padding: '0.5em 0.75em', borderColor: c('gray-200') },
           },
         },
       },
       boxShadow: {
-        soft: '0 4px 20px rgba(0, 0, 0, 0.08)',
-        medium: '0 8px 30px rgba(0, 0, 0, 0.12)',
-        hard: '0 20px 48px rgba(0, 0, 0, 0.15)',
+        soft: '0 4px 20px rgb(0 0 0 / calc(0.08 * var(--shadow-strength)))',
+        medium: '0 8px 30px rgb(0 0 0 / calc(0.12 * var(--shadow-strength)))',
+        hard: '0 20px 48px rgb(0 0 0 / calc(0.15 * var(--shadow-strength)))',
       },
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [
+    require('@tailwindcss/typography'),
+    plugin(({ addBase }) => {
+      const { light, dark } = variables();
+      addBase({ ':root': light, '.dark': dark });
+    }),
+  ],
 };

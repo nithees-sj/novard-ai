@@ -4,7 +4,7 @@ const GatewayEvent = require('../../models/gatewayEvent');
 const settings = require('../settingsService');
 const { env } = require('../../config/env');
 const { MODELS, TASKS, PRICING } = require('../../config/ai');
-const { AI_FEATURES } = require('../../config/admin');
+const { AI_FEATURES, SETTINGS } = require('../../config/admin');
 const { runWithAi } = require('../../ai/aiContext');
 const { percentile } = require('../earlyWarning/scoring');
 const { badRequest, notFound } = require('../../utils/httpError');
@@ -39,20 +39,33 @@ const GATEWAYS = {
   mongodb: { name: 'MongoDB', kind: 'database' },
 };
 
-function lightFor(total, failures, { off = false, missing = false, idle = 'idle' } = {}) {
+/**
+ * A gateway's light from its last hour. Rate-limit answers (429) are not
+ * failures: the provider is up and answering, the plan's allowance is used for
+ * now, and the calls wait or fail over. They show as "rate-limited", never down.
+ */
+function lightFor(total, failures, { limited = 0, off = false, missing = false, idle = 'idle' } = {}) {
   if (missing) return 'missing';
   if (off) return 'off';
   if (!total) return idle;
   const rate = failures / total;
   if (rate > 0.5) return 'down';
   if (rate > 0.1) return 'degraded';
+  if (limited / total > 0.1) return 'limited';
   return 'ok';
 }
+
+const RATE_LIMITED = ['429', '429_daily'];
 
 async function lastHour(match) {
   const since = new Date(Date.now() - HOUR_MS);
   return match.provider
-    ? ModelCall.aggregate([{ $match: { provider: match.provider, createdAt: { $gte: since }, outcome: { $ne: 'blocked' } } }, { $group: { _id: null, n: { $sum: 1 }, bad: { $sum: { $cond: [{ $eq: ['$outcome', 'ok'] }, 0, 1] } } } }])
+    ? ModelCall.aggregate([{ $match: { provider: match.provider, createdAt: { $gte: since }, outcome: { $ne: 'blocked' } } }, { $group: {
+      _id: null,
+      n: { $sum: 1 },
+      bad: { $sum: { $cond: [{ $in: ['$outcome', ['ok', ...RATE_LIMITED]] }, 0, 1] } },
+      limited: { $sum: { $cond: [{ $in: ['$outcome', RATE_LIMITED] }, 1, 0] } },
+    } }])
     : GatewayEvent.aggregate([{ $match: { gateway: match.gateway, createdAt: { $gte: since }, outcome: { $in: ['ok', 'fail'] } } }, { $group: { _id: null, n: { $sum: 1 }, bad: { $sum: { $cond: [{ $eq: ['$outcome', 'fail'] }, 1, 0] } } } }]);
 }
 
@@ -69,7 +82,7 @@ async function gatewayLights() {
     const off = (g.provider && providers[g.provider] === false) || (id === 'youtube' && !youtube.enabled);
     const missing = (id === 'groq' && !env.groqApiKey) || (id === 'gemini' && !env.geminiApiKey) || (id === 'oauth' && !env.googleClientIds.length);
     // Google sign-in is configured and has nothing wrong to show: green, not "no traffic".
-    out[id] = lightFor(row?.n || 0, row?.bad || 0, { off, missing, idle: id === 'oauth' ? 'ok' : 'idle' });
+    out[id] = lightFor(row?.n || 0, row?.bad || 0, { limited: row?.limited || 0, off, missing, idle: id === 'oauth' ? 'ok' : 'idle' });
   }));
   return out;
 }
@@ -140,6 +153,8 @@ async function aiDetail(provider) {
       tiers: { REASONING: MODELS.REASONING, FAST: MODELS.FAST, GEMINI: MODELS.GEMINI, WHISPER: MODELS.WHISPER, EMBED: MODELS.EMBED },
       pricing: PRICING,
       features: Object.entries(AI_FEATURES).map(([key, f]) => ({ key, tool: f.tool, essential: f.essential })),
+      // Per setting, the number fields where 0 means no limit (shown as "Unlimited").
+      unlimited: Object.fromEntries(Object.keys(live).filter((k) => SETTINGS[k]?.unlimited).map((k) => [k, SETTINGS[k].unlimited])),
     },
     key: keyInfo(provider === 'groq' ? env.groqApiKey : env.geminiApiKey),
   };
@@ -199,7 +214,7 @@ async function testGateway(id) {
   try {
     if (id === 'groq') {
       const { complete } = require('../../ai/groqClient');
-      const text = await runWithAi({ feature: 'admin.test' }, () => complete({ messages: [{ role: 'user', content: 'Reply with the single word OK.' }], model: MODELS.FAST, maxTokens: 64, temperature: 0 }));
+      const text = await runWithAi({ feature: 'admin.test' }, () => complete({ messages: [{ role: 'user', content: 'Reply with the single word OK.' }], model: MODELS.FAST, temperature: 0 }));
       return done(true, text || '(empty reply)');
     }
     if (id === 'gemini') {

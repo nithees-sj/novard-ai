@@ -14,6 +14,7 @@ const LIGHT = {
   ok: ['bg-emerald-500', 'OK'],
   idle: ['bg-gray-300', 'No traffic'],
   degraded: ['bg-amber-500', 'Degraded'],
+  limited: ['bg-amber-500', 'Rate-limited'],
   down: ['bg-red-500', 'Down'],
   off: ['bg-gray-400', 'Switched off'],
   missing: ['bg-red-500', 'Not configured'],
@@ -50,7 +51,7 @@ export const ErrorNote = ({ error, onRetry }) => (error ? (
 ) : null);
 
 export const Section = ({ title, subtitle, right, children, className = '' }) => (
-  <section className={`overflow-hidden rounded-xl border border-gray-200 bg-white ${className}`}>
+  <section className={`overflow-hidden rounded-xl border border-gray-200 bg-surface ${className}`}>
     {(title || right) && (
       <div className="flex flex-wrap items-start justify-between gap-3 px-6 pb-3 pt-5">
         <div>
@@ -78,6 +79,6 @@ export const DriverList = ({ drivers = [] }) => (drivers.length
         : <li key={d.feature} className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">{d.label} {d.z > 0 ? '+' : ''}{Number(d.z).toFixed(1)}σ</li>))}
     </ul>
   )
-  : <span className="text-xs text-gray-400">no unusual signal</span>);
+  : <span className="text-xs text-gray-500">no unusual signal</span>);
 
 export const IconText = ({ icon, children }) => <span className="inline-flex items-center gap-1.5"><Icon name={icon} className="h-4 w-4" />{children}</span>;

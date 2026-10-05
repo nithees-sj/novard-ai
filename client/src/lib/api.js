@@ -19,9 +19,21 @@ export const API_URL = process.env.REACT_APP_API_ENDPOINT || '';
 // Generous, because plan and roadmap generation legitimately run for a minute or more.
 const TIMEOUT_MS = 120000;
 
+/**
+ * For summaries: a long PDF, transcript or chat is read in full, part by part,
+ * and on Groq's free tier (8k tokens a minute) that can take several minutes.
+ */
+export const LONG_AI_TIMEOUT_MS = 15 * 60 * 1000;
+
 const authHeaders = () => {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+/** Fired when a request is refused because the student used up a tool's AI token allowance. */
+export const AI_LIMIT_EVENT = 'novard:ai-limit';
+const notifyAiLimit = (status, data) => {
+  if (status === 429 && data?.code === 'AI_TOKEN_LIMIT') window.dispatchEvent(new CustomEvent(AI_LIMIT_EVENT));
 };
 
 const notifyExpired = (message) => window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }));
@@ -45,6 +57,7 @@ api.interceptors.response.use(
   (error) => {
     const ended = endsSession(error.response?.status, error.response?.data);
     if (ended) notifyExpired(ended.message);
+    notifyAiLimit(error.response?.status, error.response?.data);
     return Promise.reject(error);
   },
 );
@@ -53,11 +66,12 @@ api.interceptors.response.use(
 export async function apiFetch(path, { headers, ...init } = {}) {
   const response = await fetch(`${API_URL}${path}`, { ...init, headers: { ...authHeaders(), ...headers } });
   if (response.status === 401) notifyExpired();
-  if (response.status === 403) {
+  if (response.status === 403 || response.status === 429) {
     // Read a copy, so the caller can still read the body.
     const data = await response.clone().json().catch(() => ({}));
-    const ended = endsSession(403, data);
+    const ended = endsSession(response.status, data);
     if (ended) notifyExpired(ended.message);
+    notifyAiLimit(response.status, data);
   }
   return response;
 }

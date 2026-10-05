@@ -1,7 +1,8 @@
 const User = require('../models/user');
 const { publicUser, issueSessionToken } = require('./authService');
 const { badRequest, notFound } = require('../utils/httpError');
-const { text } = require('../utils/validate');
+const { text, oneOf } = require('../utils/validate');
+const { THEMES } = require('../config/preferences');
 
 /** The signed-in student's account details. */
 
@@ -34,4 +35,15 @@ async function updateProfile(email, { name, mobile, bio }) {
   return { user: profile, token: issueSessionToken(profile) };
 }
 
-module.exports = { getProfile, updateProfile };
+/**
+ * Save display preferences (just the theme for now). Unlike updateProfile this
+ * changes nothing in the session token, so none is issued.
+ */
+async function updatePreferences(email, { theme } = {}) {
+  const update = { theme: oneOf(theme, 'Theme', THEMES) };
+  const user = await User.findOneAndUpdate({ email }, { $set: update }, { new: true }).lean();
+  if (!user) throw notFound('User not found');
+  return { user: publicUser(user) };
+}
+
+module.exports = { getProfile, updateProfile, updatePreferences };

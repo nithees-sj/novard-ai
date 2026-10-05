@@ -11,6 +11,12 @@ describe('session storage', () => {
     expect(restoreSession()).toMatchObject({ email: 'alice@example.com' });
   });
 
+  it("keeps the account's theme in memory only, so a restored session waits for the API", () => {
+    const user = saveSession({ token: 'tok', user: { name: 'Alice', email: 'alice@example.com', theme: 'dark' } });
+    expect(user.theme).toBe('dark');
+    expect(restoreSession().theme).toBeUndefined();
+  });
+
   it('drops a session saved before sign-in used tokens', () => {
     localStorage.setItem('auth_user', JSON.stringify({ email: 'alice@example.com' }));
     localStorage.setItem('email', 'alice@example.com');

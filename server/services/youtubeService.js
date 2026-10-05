@@ -11,7 +11,6 @@ const gateway = require('./gatewayEvents');
 
 const SESSION_TTL_MS = 6 * 60 * 60 * 1000;
 const CAPTION_TIMEOUT_MS = 10000;
-const MAX_TRANSCRIPT_CHARS = 200000;
 
 let session = null; // { promise, createdAt }
 
@@ -49,7 +48,7 @@ function parseTranscriptXml(xml) {
     parts.push(decodeEntities(decodeEntities(match[1])));
     match = re.exec(xml);
   }
-  return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, MAX_TRANSCRIPT_CHARS);
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 /** Prefer English captions written by a person, then English auto-captions, then anything. */

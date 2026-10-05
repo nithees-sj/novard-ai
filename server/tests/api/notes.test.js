@@ -20,6 +20,7 @@ const { useTestDatabase } = require('../helpers/db');
 const { ALICE, BOB, bearer } = require('../helpers/auth');
 const { makePdf, makeBlankPdf } = require('../helpers/pdf');
 const { quizJson } = require('../helpers/fixtures');
+const { SOURCE_CHARS } = require('../../config/ai');
 
 useTestDatabase();
 const app = createApp();
@@ -158,6 +159,30 @@ describe('Notes & Quiz workflow', () => {
     expect(res.status).toBe(200);
     expect(res.body.summary).toMatch(/Photosynthesis/);
     expect((await Notes.findById(note._id)).summary).toMatch(/Photosynthesis/);
+  });
+
+  it('reads every page of a long note, part by part, before summarising', async () => {
+    const pages = Array.from({ length: 120 }, (_, i) => `Page ${i + 1}: ${'cell biology detail '.repeat(40)}`);
+    const note = await Notes.create({ userId: ALICE.email, title: 'Long', fileName: 'long.pdf', filePath: 'notes/long.pdf', extractedText: pages.join('\n') });
+    complete.mockResolvedValue('### Part');
+    const res = await request(app).post('/summarize-notes').set('Authorization', bearer()).send({ noteId: note._id });
+    expect(res.status).toBe(200);
+    const prompts = complete.mock.calls.map((c) => c[0].messages.map((m) => m.content).join('\n'));
+    const parts = prompts.slice(0, -1);
+    expect(parts.length).toBeGreaterThan(3); // no fixed cap on the number of parts
+    for (let page = 1; page <= 120; page += 1) {
+      expect(parts.some((p) => p.includes(`Page ${page}:`))).toBe(true); // nothing skipped
+    }
+    for (const p of parts) expect(p.length).toBeLessThan(SOURCE_CHARS + 1000); // each part fits one request
+    expect(prompts.at(-1)).toContain('mermaid'); // the final summary gets the formatting rules
+  });
+
+  it('does not store a placeholder when the model returns nothing', async () => {
+    const { body: note } = await upload();
+    complete.mockResolvedValue('');
+    const res = await request(app).post('/summarize-notes').set('Authorization', bearer()).send({ noteId: note._id });
+    expect(res.status).toBe(502);
+    expect((await Notes.findById(note._id)).summary).toBe('');
   });
 
   it('generates a quiz, then saves the submitted score', async () => {

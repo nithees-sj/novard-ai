@@ -149,6 +149,7 @@ const publicUser = (user, fallback = {}) => ({
   mobile: user?.mobile || '',
   bio: user?.bio || '',
   role: user?.role || 'student',
+  theme: user?.theme || null,
 });
 
 const suspended = () => forbidden(SUSPENDED_MESSAGE, { code: 'ACCOUNT_SUSPENDED' });

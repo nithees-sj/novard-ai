@@ -16,7 +16,7 @@ function NodeBox({ label, steps }) {
   const failed = steps.some((s) => s.error);
   const latency = steps.reduce((n, s) => n + (s.latencyMs || 0), 0);
   const cost = steps.reduce((n, s) => n + (s.usd || 0), 0);
-  const tone = failed ? 'border-red-200 bg-red-50' : done ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white';
+  const tone = failed ? 'border-red-200 bg-red-50' : done ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-surface';
   return (
     <div className={`min-w-[120px] flex-1 rounded-lg border px-3 py-2 transition ${tone}`} aria-label={`${label}: ${failed ? 'failed' : done ? 'done' : 'waiting'}`}>
       <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">

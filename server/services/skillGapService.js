@@ -135,7 +135,6 @@ async function analyse(profile) {
         ],
         model: MODELS.REASONING,
         temperature: 0.4,
-        maxTokens: 5000,
       });
       const analysis = normaliseAnalysis(parseModelJson(reply, { context: 'skill analysis' }), profile);
       if (analysis) return analysis;
@@ -251,7 +250,6 @@ async function sendCoachMessage(userId, id, message) {
     system: coachSystemPrompt(session.profile, session.analysis),
     input,
     tier: 'REASONING',
-    maxTokens: 3000,
     temperature: 0.6,
   });
 

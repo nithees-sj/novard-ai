@@ -46,9 +46,9 @@ const components = {
     }
 
     return (
-      <pre className="not-prose my-3 first:mt-0 last:mb-0 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs leading-relaxed">
+      <pre className="not-prose my-3 first:mt-0 last:mb-0 overflow-x-auto rounded-lg bg-code p-4 text-xs leading-relaxed dark:ring-1 dark:ring-gray-200">
         {/* Size and line height sit on the <pre>: the block's line boxes come from it, not from the inline <code>. */}
-        <code className="text-gray-100">{text}</code>
+        <code className="text-code-fg">{text}</code>
       </pre>
     );
   },

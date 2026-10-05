@@ -7,7 +7,8 @@ const logger = require('../utils/logger');
 
 /**
  * Model-call logging for every AI feature: one ModelCall row per call attempt
- * (model, feature, tokens, USD, latency, outcome), and the day's spend counter.
+ * (model, feature, tokens, USD, latency, outcome), the day's spend counter and
+ * the student's token count for the tool (ai/tokenLimits.js).
  * A logging failure is swallowed: it must never break a student's request.
  */
 
@@ -54,6 +55,8 @@ async function recordModelCall(entry, context = currentAi()) {
       usd,
     });
     await addSpend(usd);
+    // Required here: the token limits read settings, which this module must not load at start-up.
+    await require('./tokenLimits').addTokens(context, (entry.tokensIn || 0) + (entry.tokensOut || 0));
     return row;
   } catch (error) {
     logger.warn('Could not record a model call', { error: error.message });

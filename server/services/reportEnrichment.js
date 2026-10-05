@@ -128,7 +128,6 @@ async function enrichOne(report) {
       task: 'report_enrich',
       system: systemPrompt(areaIds),
       user: `${reportText(report, 4000)}\n\nReturn {"area","urgency","sentiment","intent","topic","isRepeat"}.`,
-      maxTokens: 400,
       temperature: 0,
     }));
     await applyEnrichment(report, clean(data, areaIds), model);
@@ -161,7 +160,6 @@ async function enrichPending({ limit = 500, batchSize = REPORTS.enrichBatchSize,
         task: 'report_enrich',
         system: systemPrompt(areaIds),
         user: `Analyse these ${batch.length} reports:\n\n${listing}\n\nReturn {"items": [{"i": <number>, "area", "urgency", "sentiment", "intent", "topic", "isRepeat"}, ...]} with one item per report.`,
-        maxTokens: 120 * batch.length + 200,
         temperature: 0,
       }));
       const items = Array.isArray(data.items) ? data.items : [];

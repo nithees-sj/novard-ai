@@ -15,7 +15,7 @@ const TagInput = ({ value = [], onChange, max = 20, placeholder = 'Type and pres
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1.5 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 bg-surface px-2 py-1.5 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
       {value.map((tag) => (
         <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-800">
           {tag}

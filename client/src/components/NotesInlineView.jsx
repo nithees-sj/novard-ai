@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { api, errorMessage } from '../lib/api';
+import { api, errorMessage, LONG_AI_TIMEOUT_MS } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
 import { useReportProblem } from '../context/ReportContext';
@@ -157,7 +157,7 @@ const NotesInlineView = () => {
       setActiveTab('summarizer');
       const response = await api.post(`/summarize-notes`, {
         noteId: selectedNote._id
-      });
+      }, { timeout: LONG_AI_TIMEOUT_MS });
       setSummary(response.data.summary);
       loadUserNotes(); // refresh the list in the background - the result is already on screen
     } catch (error) {
@@ -288,7 +288,7 @@ const NotesInlineView = () => {
                 <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1" role="tablist">
                   {[['notes', 'Notes'], ['quizzes', 'Quizzes']].map(([id, label]) => (
                     <button key={id} type="button" role="tab" aria-selected={sidebarTab === id} onClick={() => setSidebarTab(id)}
-                      className={`rounded-md py-1.5 text-sm font-medium transition ${sidebarTab === id ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
+                      className={`rounded-md py-1.5 text-sm font-medium transition ${sidebarTab === id ? 'bg-surface text-gray-900 shadow-sm ring-1 ring-gray-200 dark:bg-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
                       {label}
                     </button>
                   ))}
@@ -366,7 +366,7 @@ const NotesInlineView = () => {
               {activeTab === 'summarizer' && (
                 <TabBody>
                   {isSummarizing ? (
-                    <GeneratingState icon="summary" title="Summarising your notes" hint="Reading the PDF and writing a structured summary with a diagram. Longer notes can take up to 30 seconds." />
+                    <GeneratingState icon="summary" title="Summarising your notes" hint="Reading the PDF and writing a structured summary with a diagram. Long notes are read in full, page by page, and can take a few minutes." />
                   ) : summary ? (
                     <SummaryView icon="summary" title="Summary" content={summary} onReport={reportSummary} />
                   ) : (

@@ -1,4 +1,4 @@
-const { updateProfile } = require('../services/userService');
+const { updateProfile, updatePreferences } = require('../services/userService');
 const { currentUserId } = require('../middleware/auth');
 
 /** POST /updateUserProfile {name?, mobile?, bio?} -> {success, message, user, token} */
@@ -6,4 +6,9 @@ exports.updateUserProfile = async (req, res) => {
   const email = currentUserId(req, req.body.email);
   const { user, token } = await updateProfile(email, req.body);
   res.json({ success: true, message: 'Profile updated successfully', user, token });
+};
+
+/** PUT /api/auth/preferences {theme} -> {user} */
+exports.updatePreferences = async (req, res) => {
+  res.json(await updatePreferences(currentUserId(req), req.body || {}));
 };

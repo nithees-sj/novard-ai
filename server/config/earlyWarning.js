@@ -274,10 +274,6 @@ const GRAPH = {
   recursionLimit: 40,
   // Small prompts: Groq allows ~8k tokens a minute per model (PLAN.md §6.4).
   laneToolChars: 1500, // tool output a lane's model reads
-  laneMaxTokens: 300,
-  supervisorMaxTokens: 250,
-  rootCauseMaxTokens: 1200,
-  verifierMaxTokens: 500,
   maxCiteIds: 40, // ids offered to root cause (EWDI: 40)
   staleRunMinutes: 15, // a run still "running" after this was interrupted
   streamMaxMinutes: 10,
@@ -298,11 +294,12 @@ const RECOMMENDATION_TYPES = {
   advice: { label: 'Advice (nothing to run)', params: 'none' },
 };
 
-// Investigation budget (docs/early-warning/PLAN.md §6.4). Groq's free tier is
-// ~8k tokens/minute per model, so the budget is sized in tokens first.
+// Investigation budget (docs/early-warning/PLAN.md §6.4). Off by default (0):
+// an investigation runs to the end however many tokens it needs. An admin can
+// set caps under risk.budget.
 const BUDGET = {
-  usdMax: 0.03,
-  tokensMax: 40000,
+  usdMax: 0,
+  tokensMax: 0,
   laneConcurrency: 2,
 };
 

@@ -6,18 +6,28 @@ import { errorMessage } from '../../lib/api';
  * Edit one runtime setting in the console. The form is built from the value's
  * shape (switches for true/false, numbers, text, comma lists, nested groups);
  * the server validates on save and the error is shown here. `mapKeys` turns an
- * empty-by-default map (AI task -> model) into one field per key.
+ * empty-by-default map (AI task -> model) into one field per key. Fields named
+ * in `unlimited` are limits where 0 means no limit: shown empty, as
+ * "Unlimited", and saved as 0 when cleared.
  */
 
 const humanize = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[._]/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
-function FieldFor({ name, value, onChange, disabled, path }) {
+function FieldFor({ name, value, onChange, disabled, path, unlimited = [] }) {
   const id = `set-${path.join('-')}`;
   if (typeof value === 'boolean') {
     return (
       <label htmlFor={id} className="flex items-center justify-between gap-3 py-1.5 text-sm text-gray-800">
         {humanize(name)}
         <input id={id} type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} disabled={disabled} className="h-4 w-4 accent-blue-600" />
+      </label>
+    );
+  }
+  if (typeof value === 'number' && unlimited.includes(name)) {
+    return (
+      <label htmlFor={id} className="block py-1 text-sm text-gray-700">
+        {humanize(name)}
+        <input id={id} type="number" min="0" step="any" value={value === 0 ? '' : value} placeholder="Unlimited" onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))} disabled={disabled} className={`${fieldClass(false)} mt-1 py-1.5`} />
       </label>
     );
   }
@@ -32,7 +42,7 @@ function FieldFor({ name, value, onChange, disabled, path }) {
   if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
     return (
       <label htmlFor={id} className="block py-1 text-sm text-gray-700">
-        {humanize(name)} <span className="text-xs text-gray-400">(comma-separated, in order)</span>
+        {humanize(name)} <span className="text-xs text-gray-500">(comma-separated, in order)</span>
         <input id={id} value={value.join(', ')} onChange={(e) => onChange(e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} disabled={disabled} className={`${fieldClass(false)} mt-1 py-1.5`} />
       </label>
     );
@@ -41,7 +51,7 @@ function FieldFor({ name, value, onChange, disabled, path }) {
     return (
       <fieldset className="rounded-lg border border-gray-200 px-3 py-2">
         <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{humanize(name)}</legend>
-        {Object.entries(value).map(([k, v]) => <FieldFor key={k} name={k} value={v} path={[...path, k]} disabled={disabled} onChange={(next) => onChange({ ...value, [k]: next })} />)}
+        {Object.entries(value).map(([k, v]) => <FieldFor key={k} name={k} value={v} path={[...path, k]} disabled={disabled} unlimited={unlimited} onChange={(next) => onChange({ ...value, [k]: next })} />)}
       </fieldset>
     );
   }
@@ -53,7 +63,7 @@ function FieldFor({ name, value, onChange, disabled, path }) {
   );
 }
 
-export default function SettingEditor({ title, description, value, onSave, onReset, editable = true, critical = false, source, mapKeys, children }) {
+export default function SettingEditor({ title, description, value, onSave, onReset, editable = true, critical = false, source, mapKeys, unlimited, children }) {
   const expand = (v) => (mapKeys ? Object.fromEntries(mapKeys.map((k) => [k, v?.[k] || ''])) : v);
   const [draft, setDraft] = useState(() => expand(value));
   const [state, setState] = useState({ busy: false, error: null, saved: false });
@@ -80,7 +90,7 @@ export default function SettingEditor({ title, description, value, onSave, onRes
 
   const fields = draft && typeof draft === 'object' && !Array.isArray(draft) ? Object.entries(draft) : [];
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <div className="rounded-xl border border-gray-200 bg-surface p-5">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-gray-900">{title}</h3>
@@ -93,7 +103,7 @@ export default function SettingEditor({ title, description, value, onSave, onRes
       </div>
       {children || (
         <div className="space-y-1">
-          {fields.map(([k, v]) => <FieldFor key={k} name={k} value={v} path={[title, k]} disabled={!editable || state.busy} onChange={(next) => setDraft((d) => ({ ...d, [k]: next }))} />)}
+          {fields.map(([k, v]) => <FieldFor key={k} name={k} value={v} path={[title, k]} disabled={!editable || state.busy} unlimited={unlimited} onChange={(next) => setDraft((d) => ({ ...d, [k]: next }))} />)}
         </div>
       )}
       {editable ? (

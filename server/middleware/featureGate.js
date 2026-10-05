@@ -2,6 +2,7 @@ const { AI_FEATURES } = require('../config/admin');
 const settings = require('../services/settingsService');
 const { runWithAi } = require('../ai/aiContext');
 const { assertToolEnabled, consumeStudentQuota } = require('../ai/usageGuard');
+const { assertWithinTokenLimit } = require('../ai/tokenLimits');
 const { HttpError } = require('../utils/httpError');
 
 /**
@@ -9,7 +10,9 @@ const { HttpError } = require('../utils/httpError');
  *
  *   aiFeature('notes.chat')  an AI-backed route: its tool must be switched on,
  *                            it counts against the student's daily AI quota,
- *                            and every model call it makes is logged under
+ *                            the student must have token allowance left for
+ *                            the tool (ai/tokenLimits.js), and every model
+ *                            call it makes is logged under
  *                            that feature (ai/aiContext.js)
  *   toolGate('notes')        a route of a tool that makes no model call
  *                            (uploading a PDF, adding a video)
@@ -26,6 +29,7 @@ function aiFeature(feature, { quota = true, gate = true } = {}) {
     try {
       if (gate) await assertToolEnabled(def.tool);
       if (quota) await consumeStudentQuota(req.user?.email);
+      if (!def.admin) await assertWithinTokenLimit(req.user?.email, def.tool);
     } catch (error) {
       return next(error);
     }

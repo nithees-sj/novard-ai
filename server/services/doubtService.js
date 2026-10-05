@@ -8,6 +8,7 @@ const { FORMAT_RULES } = require('../ai/prompts');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { mapWithConcurrency } = require('../utils/concurrency');
 const { readQuizOptions, generateQuiz, sampleContent } = require('./quizService');
+const { condenseToFit } = require('../ai/condense');
 const { contextualTitle } = require('./doubtTitle');
 const { badRequest, notFound, upstreamError } = require('../utils/httpError');
 const { objectId, text, integer, httpUrl } = require('../utils/validate');
@@ -98,7 +99,6 @@ ${FORMAT_RULES}`;
     system,
     input: question,
     tier: 'REASONING',
-    maxTokens: 3200,
     temperature: 0.5,
   });
   await DoubtClearance.updateOne({ _id: doubt._id }, { $set: { updatedAt: new Date() } });
@@ -110,6 +110,8 @@ const transcriptOf = (chatHistory, separator = '\n') => chatHistory.map((m) => `
 async function summarizeDoubt({ userId, doubtId }) {
   const doubt = await findOwnDoubt(userId, doubtId, 'title description chatHistory summary');
   if (doubt.summary) return doubt.summary;
+  // The whole thread is read: a long one is condensed part by part until it fits one request.
+  const thread = await condenseToFit(transcriptOf(doubt.chatHistory), { what: 'tutoring conversation' });
 
   const summary = await complete({
     messages: [
@@ -132,15 +134,14 @@ ${MARKDOWN_WITH_FLOWCHART}`,
         content: `Doubt Title: "${doubt.title}"
           Doubt Description: "${doubt.description}"
 
-          Chat History:
-          ${sampleContent(transcriptOf(doubt.chatHistory))}
+          ${thread.condensed ? 'Detailed notes on each consecutive part of the chat, in order' : 'Chat History'}:
+          ${thread.text}
 
           Please create a comprehensive summary of this doubt clearance session.`,
       },
     ],
     model: MODELS.REASONING,
     temperature: 0.5,
-    maxTokens: 3000,
   });
   if (!summary) throw upstreamError('The summary could not be generated. Please try again.');
 
@@ -273,7 +274,6 @@ async function recommendVideosForDoubt({ userId, doubtId }) {
     ],
     model: MODELS.REASONING,
     temperature: 0.7,
-    maxTokens: 400,
   });
 
   let keywords = [];

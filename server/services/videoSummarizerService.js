@@ -5,9 +5,10 @@ const { complete } = require('../ai/groqClient');
 const { converse } = require('../ai/conversation');
 const { videoTutorPrompt } = require('../ai/prompts');
 const { readQuizOptions, generateQuiz, sampleContent } = require('./quizService');
+const { condenseToFit } = require('../ai/condense');
 const { extractVideoId, fetchVideoDetails } = require('./youtubeService');
 const { removeUpload } = require('../utils/uploads');
-const { badRequest, notFound } = require('../utils/httpError');
+const { badRequest, notFound, upstreamError } = require('../utils/httpError');
 const { objectId, text, integer } = require('../utils/validate');
 
 /** Video Summarizer: YouTube videos in a student's library, with chat, summary and quizzes. */
@@ -70,10 +71,9 @@ async function chatWithVideo({ userId, videoId, message }) {
     filter: { _id: video._id, userId },
     field: 'chatHistory',
     timeKey: 'timestamp',
-    system: videoTutorPrompt(video),
+    system: videoTutorPrompt(video, { question }),
     input: question,
     tier: 'FAST',
-    maxTokens: 2500,
     temperature: 0.5,
   });
   await YouTubeVideo.updateOne({ _id: video._id }, { $set: { updatedAt: new Date() } });
@@ -83,6 +83,8 @@ async function chatWithVideo({ userId, videoId, message }) {
 async function summarizeVideo({ userId, videoId }) {
   const video = await findOwnVideo(userId, videoId, 'title description summary transcript');
   if (video.summary) return video.summary;
+  // The whole transcript is read: a long one is condensed part by part until it fits one request.
+  const transcript = await condenseToFit(video.transcript, { what: `transcript of the video "${video.title}"` });
 
   const summary = await complete({
     messages: [
@@ -117,14 +119,14 @@ ${MARKDOWN_WITH_FLOWCHART}`,
       },
       {
         role: 'user',
-        // Long transcripts are sampled from start to end so they fit the model's context.
-        content: `Please create a comprehensive summary of this YouTube video:\n\nTitle: ${video.title}\nDescription: ${video.description}\nContent: ${sampleContent(video.transcript)}\n\nProvide a well-structured summary with main topics, key points, and important insights.`,
+        content: `Please create a comprehensive summary of this YouTube video:\n\nTitle: ${video.title}\nDescription: ${video.description}\n${transcript.condensed ? 'Detailed notes on each consecutive part of the transcript, in order' : 'Content'}: ${transcript.text}\n\nProvide a well-structured summary with main topics, key points, and important insights.`,
       },
     ],
     model: MODELS.FAST,
     temperature: 0.7,
-    maxTokens: 3200,
-  }) || 'Unable to generate summary.';
+  });
+  // Never store a placeholder: a stored summary is returned forever after.
+  if (!summary) throw upstreamError('The summary could not be generated. Please try again.');
 
   await YouTubeVideo.updateOne({ _id: video._id }, { $set: { summary, updatedAt: new Date() } });
   return summary;

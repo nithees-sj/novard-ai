@@ -7,7 +7,7 @@ services:
     image: mongodb/mongodb-atlas-local:8.3 # tested with mongod 8.3.11
     container_name: novard-ai-mongo
     ports:
-      - "27018:27017"
+      - "127.0.0.1:27018:27017" # local only: this MongoDB has no auth
     volumes:
       - mongodb_atlas_data:/data/db
       - mongodb_atlas_config:/data/configdb
@@ -29,7 +29,7 @@ services:
       - GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
       - CORS_ORIGINS=http://localhost:3000
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     volumes:
       - ./server/uploads:/app/uploads
     depends_on:
@@ -53,7 +53,7 @@ services:
         - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-821666149814-1cvmcovci4sgsn8ndedhlfbcg73scg0c.apps.googleusercontent.com}
     container_name: novard-ai-client
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"
     depends_on:
       server:
         condition: service_healthy

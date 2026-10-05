@@ -63,7 +63,7 @@ const Comment = ({ comment, issueOwnerEmail, nested = false, footer = null }) =>
   return (
     <article
       className={`rounded-lg p-4 min-w-0 ${
-        comment.isAI ? 'bg-blue-50 border border-blue-100' : 'bg-white border border-gray-200 shadow-sm'
+        comment.isAI ? 'bg-blue-50 border border-blue-100' : 'bg-surface border border-gray-200 shadow-sm'
       } ${nested ? '' : 'mb-3'}`}
     >
       <header className="flex justify-between items-start gap-3">
@@ -73,8 +73,8 @@ const Comment = ({ comment, issueOwnerEmail, nested = false, footer = null }) =>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-sm text-gray-900">{comment.isAI ? 'AI Assistant' : comment.userName}</span>
               {comment.isAI && <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">AI</span>}
-              {byAuthor && <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] font-bold rounded">AUTHOR</span>}
-              {byMe && !byAuthor && <span className="text-[11px] text-gray-400">(you)</span>}
+              {byAuthor && <span className="px-1.5 py-0.5 bg-ink text-on-ink text-[10px] font-bold rounded">AUTHOR</span>}
+              {byMe && !byAuthor && <span className="text-[11px] text-gray-500">(you)</span>}
             </div>
             {!comment.isAI && <div className="text-xs text-gray-500 truncate">{comment.userEmail}</div>}
           </div>
@@ -240,14 +240,14 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
 
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
-      <div className="px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="px-6 py-3 bg-surface border-b border-gray-200 flex-shrink-0">
         <button onClick={onBack} className="text-sm text-blue-600 hover:underline flex items-center gap-2">
           ← Back to discussions
         </button>
       </div>
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+      <div className="bg-surface border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-3">
           <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 min-w-0">
             <span className={`px-3 py-1 rounded-md text-xs font-bold text-white uppercase ${status.pill}`}>{status.label}</span>
@@ -265,7 +265,7 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
                 <span className="text-sm text-red-800">
                   Delete this discussion and its {comments.length} {comments.length === 1 ? 'reply' : 'replies'}?
                 </span>
-                <button onClick={() => setConfirmingDelete(false)} disabled={deleting} className={`${button} bg-white text-gray-700 border border-gray-300 hover:bg-gray-50`}>
+                <button onClick={() => setConfirmingDelete(false)} disabled={deleting} className={`${button} bg-surface text-gray-700 border border-gray-300 hover:bg-gray-50`}>
                   Cancel
                 </button>
                 <button onClick={handleDelete} disabled={deleting} className={`${button} bg-red-600 text-white hover:bg-red-700`}>
@@ -279,7 +279,7 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
                     <button onClick={() => handleStatusUpdate('resolved')} disabled={updatingStatus} className={`${button} bg-green-600 text-white hover:bg-green-700`}>
                       {updatingStatus ? 'Updating…' : 'Mark solved'}
                     </button>
-                    <button onClick={() => handleStatusUpdate('closed')} disabled={updatingStatus} className={`${button} bg-white text-gray-700 border border-gray-300 hover:bg-gray-50`}>
+                    <button onClick={() => handleStatusUpdate('closed')} disabled={updatingStatus} className={`${button} bg-surface text-gray-700 border border-gray-300 hover:bg-gray-50`}>
                       Close
                     </button>
                   </>
@@ -288,7 +288,7 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
                     {updatingStatus ? 'Updating…' : 'Reopen'}
                   </button>
                 )}
-                <button onClick={() => setConfirmingDelete(true)} className={`${button} bg-white text-red-600 border border-red-200 hover:bg-red-50`}>
+                <button onClick={() => setConfirmingDelete(true)} className={`${button} bg-surface text-red-600 border border-red-200 hover:bg-red-50`}>
                   Delete
                 </button>
               </div>
@@ -311,14 +311,14 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
       <div className="flex-1 flex flex-col p-4 min-h-0">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-bold text-gray-900">Replies ({comments.length})</h3>
-          <button onClick={() => fetchComments(true)} disabled={refreshing} className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 disabled:opacity-60">
+          <button onClick={() => fetchComments(true)} disabled={refreshing} className="px-3 py-2 border border-gray-300 bg-surface text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40">
             {refreshing ? 'Refreshing…' : '↻ Refresh'}
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto mb-4 min-h-0 pr-1">
           {/* The opening post */}
-          <article className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600">
+          <article className="bg-blue-50 rounded-lg p-5 mb-3 border-l-4 border-blue-600">
             <header className="flex justify-between items-start gap-3 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-9 h-9 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold text-white" aria-hidden="true">
@@ -404,7 +404,7 @@ const IssueDetail = ({ issue, onBack, onDeleted }) => {
         </div>
 
         {/* Reply box */}
-        <div className="bg-white border-t border-gray-200 pl-4 pr-24 py-4">
+        <div className="bg-surface border-t border-gray-200 pl-4 pr-24 py-4">
           {isClosed ? (
             <p className="text-sm text-gray-500 text-center">
               This discussion is closed{owner ? ' - reopen it to accept replies.' : ' to new replies.'}

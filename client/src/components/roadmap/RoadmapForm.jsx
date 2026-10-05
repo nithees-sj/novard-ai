@@ -26,7 +26,7 @@ const Choice = ({ active, onClick, children, className = '' }) => (
     onClick={onClick}
     className={`rounded-lg border-2 text-left transition-colors ${active
       ? 'border-blue-600 bg-blue-50'
-      : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-gray-50'} ${className}`}
+      : 'border-gray-200 bg-surface hover:border-blue-200 hover:bg-gray-50'} ${className}`}
   >
     {children}
   </button>
@@ -109,7 +109,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
               onClick={() => set({ role: r })}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${form.role === r
                 ? 'bg-blue-600 border-blue-600 text-white'
-                : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'}`}
+                : 'bg-surface border-gray-300 text-gray-700 hover:border-blue-400'}`}
             >
               {r}
             </button>
@@ -154,9 +154,9 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
 
       <div>
         <label htmlFor="roadmap-skills" className={label}>
-          Skills you already have <span className="normal-case font-normal text-gray-400">(optional - they will be marked, not re-taught)</span>
+          Skills you already have <span className="normal-case font-normal text-gray-500">(optional - they will be marked, not re-taught)</span>
         </label>
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-surface focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-500">
           {form.knownSkills.map((s) => (
             <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-800">
               {s}
@@ -188,7 +188,7 @@ const RoadmapForm = ({ onSubmit, generating = false, error = null, initial = nul
 
       <div>
         <label htmlFor="roadmap-goal" className={label}>
-          Your goal <span className="normal-case font-normal text-gray-400">(optional)</span>
+          Your goal <span className="normal-case font-normal text-gray-500">(optional)</span>
         </label>
         <input
           id="roadmap-goal"

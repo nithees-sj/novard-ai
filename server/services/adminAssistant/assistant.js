@@ -87,7 +87,7 @@ async function runTurn({ conversationId, admin, input, emit = () => {}, signal, 
   const { maxSteps, turnUsdMax } = await settings.get('assistant');
   const routes = await settings.get('ai.routes');
   return runWithAi({ feature: 'admin.assistant', userId: admin.email, conversationId: String(conversationId) }, async () => {
-    const base = deps.model || chatModel({ tier: 'REASONING', maxTokens: 1500, temperature: 0.2, model: routes.admin_assistant });
+    const base = deps.model || chatModel({ tier: 'REASONING', temperature: 0.2, model: routes.admin_assistant });
     const withTools = base.bindTools(TOOL_DEFS);
     const messages = [new SystemMessage(systemPrompt(admin.name)), ...past, new HumanMessage(input)];
 

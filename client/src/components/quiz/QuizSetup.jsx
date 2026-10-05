@@ -16,7 +16,7 @@ const formatWhen = (value) =>
   new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const Stat = ({ label, value, sub, subTone }) => (
-  <div className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+  <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2.5">
     <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{label}</div>
     <div className="text-xl font-bold text-gray-900 tabular-nums">{value}</div>
     {sub && <div className={`text-[11px] font-semibold ${subTone || 'text-gray-500'}`}>{sub}</div>}
@@ -64,7 +64,7 @@ const PreviousMarks = ({ state, onRetry }) => {
         />
       </div>
 
-      <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+      <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-surface">
         {visible.map((a, i) => {
           const tone = scoreTone(a.percentage);
           const details = [
@@ -170,7 +170,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
   const choice = (active) =>
     `rounded-lg border-2 text-left transition-colors ${active
       ? 'border-blue-600 bg-blue-50'
-      : 'border-gray-200 bg-white hover:border-blue-200 hover:bg-gray-50'}`;
+      : 'border-gray-200 bg-surface hover:border-blue-200 hover:bg-gray-50'}`;
 
   return (
     <form onSubmit={submit} className="max-w-3xl mx-auto space-y-6">
@@ -256,7 +256,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
                 aria-checked={settings.style === s.value}
                 onClick={() => update({ style: s.value })}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${settings.style === s.value
-                  ? 'bg-white text-blue-700 shadow-sm'
+                  ? 'bg-surface text-blue-700 shadow-sm dark:bg-gray-200'
                   : 'text-gray-600 hover:text-gray-900'}`}
               >
                 {s.label}
@@ -272,7 +272,7 @@ const QuizSetup = ({ source, itemId, topic, onStart, starting = false, error = n
 
         <div>
           <label htmlFor={`quiz-focus-${source}`} className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-            Focus on <span className="normal-case font-normal text-gray-400">(optional)</span>
+            Focus on <span className="normal-case font-normal text-gray-500">(optional)</span>
           </label>
           <input
             id={`quiz-focus-${source}`}

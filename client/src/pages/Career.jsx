@@ -104,7 +104,8 @@ const Career = () => {
               {/* Tools Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 max-w-4xl">
                 {careerTools.map((tool, index) => (
-                  <div
+                  <button
+                    type="button"
                     key={index}
                     onClick={() => {
                       if (tool.route === 'inline') {
@@ -117,40 +118,40 @@ const Career = () => {
                         navigate(tool.route);
                       }
                     }}
-                    className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl 
-                         transition-all duration-300 cursor-pointer group"
+                    className="w-full text-left bg-surface rounded-2xl border border-gray-200 p-6 hover:shadow-xl hover:border-blue-200
+                         transition-all duration-300 cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                   >
                     {/* Icon */}
-                    <div className={`w-14 h-14 ${tool.iconBg} rounded-xl flex items-center justify-center mb-4
+                    <span className={`w-14 h-14 ${tool.iconBg} rounded-xl flex items-center justify-center mb-4
                               group-hover:scale-110 transition-transform duration-200`}>
                       <span className={tool.iconColor}>{tool.icon}</span>
-                    </div>
+                    </span>
 
                     {/* Title */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    <span className="block text-lg font-bold text-gray-900 mb-2">
                       {tool.title}
-                    </h3>
+                    </span>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                    <span className="block text-sm text-gray-600 mb-4 leading-relaxed">
                       {tool.description}
-                    </p>
+                    </span>
 
                     {/* Button */}
-                    <button className={`${tool.buttonColor} font-medium text-sm flex items-center 
+                    <span className={`${tool.buttonColor} font-medium text-sm flex items-center 
                                    group-hover:gap-2 transition-all`}>
                       Get Started
                       <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
-                    </button>
-                  </div>
+                    </span>
+                  </button>
                 ))}
               </div>
 
               {/* Practice with AI Mentors Section */}
-              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-10 shadow-xl">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-10 shadow-xl dark:ring-1 dark:ring-white/10">
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
                   <div className="flex-1">
                     <div className="inline-block px-3 py-1 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-300 mb-3">
@@ -159,7 +160,7 @@ const Career = () => {
                     <h2 className="text-3xl font-bold text-white mb-3">
                       Practice with AI Mentors
                     </h2>
-                    <p className="text-gray-300 max-w-2xl">
+                    <p className="text-slate-300 max-w-2xl">
                       Prepare for your next big interview with our industry-specific AI simulation tool.
                       Real-time feedback on your performance.
                     </p>

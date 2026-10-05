@@ -14,9 +14,10 @@ export const FORUM_CATEGORIES = [
 ];
 
 export const FORUM_STATUSES = [
-  { value: 'open', label: 'Active', pill: 'bg-green-500' },
-  { value: 'resolved', label: 'Solved', pill: 'bg-teal-500' },
-  { value: 'closed', label: 'Closed', pill: 'bg-gray-500' },
+  // Solid tones that keep the pills' white text readable (AA) in both themes.
+  { value: 'open', label: 'Active', pill: 'bg-green-700' },
+  { value: 'resolved', label: 'Solved', pill: 'bg-teal-700' },
+  { value: 'closed', label: 'Closed', pill: 'bg-slate-500' },
 ];
 
 export const FORUM_SORTS = [

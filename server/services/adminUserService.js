@@ -121,14 +121,16 @@ async function reactivate(actor, idOrEmail, { ip } = {}) {
   return view(updated);
 }
 
-/** Give a student back today's AI allowance. */
+/** Give a student back today's AI request allowance and this period's token allowance. */
 async function resetQuota(actor, idOrEmail, { ip } = {}) {
   const user = await findUser(idOrEmail);
   // Required lazily: the AI layer is not needed by the rest of this module.
   const { studentUsageToday, resetStudentQuota } = require('../ai/usageGuard');
-  const before = await studentUsageToday(user.email);
+  const { tokenUsage, resetTokenUsage } = require('../ai/tokenLimits');
+  const before = { requestsToday: await studentUsageToday(user.email), tokens: (await tokenUsage(user.email)).tools.map(({ tool, used }) => ({ tool, used })) };
   await resetStudentQuota(user.email);
-  await audit.record({ actor, action: 'user.quota.reset', target: { type: 'user', id: user.email }, before: { requestsToday: before }, after: { requestsToday: 0 }, ip });
+  await resetTokenUsage(user.email);
+  await audit.record({ actor, action: 'user.quota.reset', target: { type: 'user', id: user.email }, before, after: { requestsToday: 0, tokens: [] }, ip });
   return { ...view(user), aiRequestsToday: 0 };
 }
 

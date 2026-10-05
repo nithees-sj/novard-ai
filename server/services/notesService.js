@@ -6,56 +6,16 @@ const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { complete } = require('../ai/groqClient');
 const { converse } = require('../ai/conversation');
 const { recognizePage } = require('./ocrService');
-const { readQuizOptions, generateQuiz, sampleContent } = require('./quizService');
+const { readQuizOptions, generateQuiz } = require('./quizService');
+const { condenseToFit } = require('../ai/condense');
+const { chunkText, relevantText, sampleContent } = require('../utils/longText');
 const { toStoredPath, removeUpload, hasSignature } = require('../utils/uploads');
-const { badRequest, notFound, unprocessable, unsupportedMediaType } = require('../utils/httpError');
+const { badRequest, notFound, unprocessable, unsupportedMediaType, upstreamError } = require('../utils/httpError');
 const { objectId, text } = require('../utils/validate');
 const logger = require('../utils/logger');
 const gateway = require('./gatewayEvents');
 
 /** Notes & Quiz: a student's PDFs, chat about them, summaries and quizzes. */
-
-// ── text helpers ───────────────────────────────────────────────────────────
-
-/** Split text into chunks of roughly `maxTokens` tokens (1 token ≈ 0.75 words). */
-function chunkText(input, maxTokens = 2000) {
-  const words = input.split(' ');
-  const chunks = [];
-  let currentChunk = '';
-
-  for (const word of words) {
-    const testChunk = currentChunk + (currentChunk ? ' ' : '') + word;
-    if ((testChunk.split(' ').length * 0.75) > maxTokens && currentChunk) {
-      chunks.push(currentChunk.trim());
-      currentChunk = word;
-    } else {
-      currentChunk = testChunk;
-    }
-  }
-
-  if (currentChunk.trim()) chunks.push(currentChunk.trim());
-  return chunks;
-}
-
-/** Up to ~16k characters of the note: all of it if it fits, otherwise the best-matching chunks in document order. */
-function relevantNoteText(fullText, query, budget = 16000) {
-  const all = String(fullText || '');
-  if (all.length <= budget) return all;
-  const chunks = chunkText(all, 1200);
-  const words = String(query).toLowerCase().split(/\W+/).filter((w) => w.length > 3);
-  const scored = chunks.map((chunk, index) => {
-    const lower = chunk.toLowerCase();
-    return { index, chunk, score: words.reduce((n, w) => n + (lower.includes(w) ? 1 : 0), 0) };
-  });
-  const picked = [];
-  let used = 0;
-  for (const c of [...scored].sort((a, b) => b.score - a.score || a.index - b.index)) {
-    if (used + c.chunk.length > budget) continue;
-    picked.push(c);
-    used += c.chunk.length;
-  }
-  return picked.sort((a, b) => a.index - b.index).map((c) => c.chunk).join('\n...\n');
-}
 
 // ── reading ────────────────────────────────────────────────────────────────
 
@@ -212,7 +172,7 @@ async function chatWithNote({ userId, noteId, message }) {
   // the chunks that best match this question *and* the student's recent
   // questions, so a follow-up like "explain that more" still finds the passage.
   const recentQuestions = (note.chatHistory || []).filter((m) => m.role === 'user').slice(-2).map((m) => m.content);
-  const context = relevantNoteText(note.extractedText, [question, ...recentQuestions].join(' '));
+  const context = relevantText(note.extractedText, [question, ...recentQuestions].join(' '));
 
   const system = `You are a patient tutor helping a student understand their own notes, titled "${note.title}".
 Answer from the notes below. If something is not covered by the notes, say so plainly, then give a brief general explanation marked as coming from outside the notes.
@@ -234,75 +194,39 @@ How to answer:
     system,
     input: question,
     tier: 'FAST',
-    maxTokens: 2500,
     temperature: 0.5,
   });
   await Notes.updateOne({ _id: note._id }, { $set: { lastAccessed: new Date() } });
   return reply;
 }
 
-async function summarizeNote({ userId, noteId }) {
-  const note = await findOwnNote(userId, noteId, 'title extractedText');
-  const noteText = note.extractedText;
-  const chunks = chunkText(noteText, 1800);
-  let summary;
-
-  if (chunks.length === 1) {
-    const systemPrompt = `Please provide a comprehensive summary of the following notes. The summary should:
+const SUMMARY_RULES = `The summary should:
 1. Cover every topic in the notes, each under its own heading - do not merge or skip any
 2. For each topic: explain the concept, the detail behind it, and why it matters
 3. Preserve specifics from the notes (names, numbers, commands, distinctions) rather than generalising them
 4. Expand on terms the notes only mention in passing, so the summary stands on its own
 
-${MARKDOWN_WITH_FLOWCHART}
+${MARKDOWN_WITH_FLOWCHART}`;
 
-Notes content:
-${noteText}`;
+async function summarizeNote({ userId, noteId }) {
+  const note = await findOwnNote(userId, noteId, 'title extractedText');
+  // Every page is read: long notes are condensed part by part until they fit one request.
+  const source = await condenseToFit(note.extractedText, { what: `set of notes titled "${note.title}"` });
+  const material = source.condensed
+    ? `Detailed notes on each consecutive part of the notes, in order:\n${source.text}`
+    : `Notes content:\n${source.text}`;
 
-    summary = await complete({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: 'Please summarize these notes comprehensively.' },
-      ],
-      model: MODELS.FAST,
-      maxTokens: 3000,
-      temperature: 0.5,
-    }) || 'Unable to generate summary.';
-  } else {
-    // Summarise the first chunks separately (bounded, to stay within token
-    // limits), then merge the partial summaries.
-    const chunkSummaries = [];
-    for (let i = 0; i < Math.min(chunks.length, 3); i += 1) {
-      // eslint-disable-next-line no-await-in-loop
-      const part = await complete({
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant that creates detailed, faithful summaries that preserve specifics.' },
-          {
-            role: 'user',
-            content: `Summarise the following text section in detail. Keep every distinct topic, definition, example, number and distinction it contains - this summary will be merged with others, so anything dropped here is lost for good:\n\n${chunks[i]}`,
-          },
-        ],
-        model: MODELS.FAST,
-        maxTokens: 900,
-        temperature: 0.5,
-      });
-      chunkSummaries.push(part || 'Unable to summarize this section.');
-    }
+  const summary = await complete({
+    messages: [
+      { role: 'system', content: `Please provide a comprehensive summary of the following notes, titled "${note.title}". ${SUMMARY_RULES}\n\n${material}` },
+      { role: 'user', content: 'Please summarize these notes comprehensively.' },
+    ],
+    model: MODELS.FAST,
+    temperature: 0.5,
+  });
 
-    summary = await complete({
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant that creates comprehensive summaries.' },
-        {
-          role: 'user',
-          content: `Please create a comprehensive summary from these partial summaries:\n\n${chunkSummaries.join('\n\n')}\n\nCombine them into a well-structured, comprehensive summary.`,
-        },
-      ],
-      model: MODELS.FAST,
-      maxTokens: 3000,
-      temperature: 0.5,
-    }) || 'Unable to generate comprehensive summary.';
-  }
-
+  // Never store a placeholder: the student would see it instead of a retry.
+  if (!summary) throw upstreamError('The summary could not be generated. Please try again.');
   await Notes.updateOne({ _id: note._id }, { $set: { summary, lastAccessed: new Date() } });
   return summary;
 }
@@ -381,5 +305,5 @@ module.exports = {
   generateNoteQuiz,
   saveNoteQuizResult,
   deleteNote,
-  _internal: { chunkText, relevantNoteText, readScore, readAnswers, pagesNeedingOcr, extractPdfText },
+  _internal: { chunkText, relevantNoteText: relevantText, readScore, readAnswers, pagesNeedingOcr, extractPdfText },
 };

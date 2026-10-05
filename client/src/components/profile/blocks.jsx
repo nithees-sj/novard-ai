@@ -6,7 +6,7 @@ import React from 'react';
  */
 
 export const Stat = ({ label, value, sub, accent }) => (
-  <div className="bg-white rounded-xl border border-gray-200 p-5 relative overflow-hidden">
+  <div className="bg-surface rounded-xl border border-gray-200 p-5 relative overflow-hidden">
     <span className={`absolute left-0 top-0 bottom-0 w-1 ${accent}`} aria-hidden="true" />
     <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
     <p className="mt-2 text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
@@ -24,7 +24,7 @@ export const SectionTitle = ({ title, subtitle }) => (
 );
 
 export const Card = ({ title, subtitle, right, children, className = '' }) => (
-  <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+  <div className={`bg-surface rounded-xl border border-gray-200 p-6 ${className}`}>
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h3 className="text-base font-bold text-gray-900">{title}</h3>

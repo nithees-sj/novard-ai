@@ -67,7 +67,7 @@ beforeEach(() => {
         windows: { '24h': { calls: 3, errorRate: 0, rateLimited: 0, dailyQuota: 0, p50Ms: 900, p95Ms: 1500, usd: 0.001 } },
         daily: [], byModel: [], byFeature: [],
         editableSettings: ['ai.params'],
-        settings: { 'ai.params': { reasoningEffort: 'low', maxTokensScale: 1, temperature: null } },
+        settings: { 'ai.params': { reasoningEffort: 'low', temperature: null } },
         reference: { tasks: [] },
       };
     }
@@ -154,6 +154,49 @@ describe('live investigation', () => {
   });
 });
 
+describe('token limits', () => {
+  it('sets a token limit per tool and the period, and saves them', async () => {
+    signedIn();
+    adminGet.mockImplementation(async (path) => (path === '/api/admin/settings' ? {
+      settings: [{
+        key: 'ai.tokenLimits', group: 'tokens', description: 'AI tokens each student may use per tool.', editable: true, source: 'default',
+        value: { period: 'day', perStudent: { notes: 0, doubts: 0 } },
+        labels: { notes: 'Notes & PDF chat', doubts: 'Doubt Clearance' },
+      }],
+    } : {}));
+    adminPut.mockResolvedValue({});
+    renderAt('/admin/settings');
+    fireEvent.click(await screen.findByRole('tab', { name: /token limits/i }));
+    const notes = await screen.findByLabelText('Token limit for Notes & PDF chat');
+    expect(notes).toHaveAttribute('placeholder', 'Unlimited');
+    fireEvent.change(notes, { target: { value: '20000' } });
+    fireEvent.change(screen.getByLabelText(/limit period/i), { target: { value: 'week' } });
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(adminPut).toHaveBeenCalledWith('/api/admin/settings/ai.tokenLimits', { value: { period: 'week', perStudent: { notes: 20000, doubts: 0 } } }));
+  });
+});
+
+describe('limits that default to unlimited', () => {
+  it('shows 0 as "Unlimited" and saves the number an admin types', async () => {
+    signedIn();
+    adminGet.mockImplementation(async (path) => (path === '/api/admin/settings' ? {
+      settings: [{
+        key: 'ai.limits', group: 'ai', description: 'Per-student AI requests per day and a global daily USD cap (0 = off).', editable: true, source: 'default',
+        value: { perStudentDaily: 0, globalDailyUsdCap: 0 }, unlimited: ['perStudentDaily', 'globalDailyUsdCap'],
+      }],
+    } : {}));
+    adminPut.mockResolvedValue({});
+    renderAt('/admin/settings');
+    fireEvent.click(await screen.findByRole('tab', { name: /^ai$/i }));
+    const perStudent = await screen.findByLabelText(/per student daily/i);
+    expect(perStudent).toHaveValue(null);
+    expect(perStudent).toHaveAttribute('placeholder', 'Unlimited');
+    fireEvent.change(perStudent, { target: { value: '50' } });
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(adminPut).toHaveBeenCalledWith('/api/admin/settings/ai.limits', { value: { perStudentDaily: 50, globalDailyUsdCap: 0 } }));
+  });
+});
+
 describe('gateway settings', () => {
   it('saves a setting from the gateway page and never shows the key', async () => {
     signedIn();
@@ -161,9 +204,9 @@ describe('gateway settings', () => {
     renderAt('/admin/gateways/groq');
     expect(await screen.findByText('Parameters')).toBeInTheDocument();
     expect(screen.getAllByText(/…abcd/).length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByLabelText(/max tokens scale/i), { target: { value: '0.5' } });
+    fireEvent.change(screen.getByLabelText(/temperature/i), { target: { value: '0.4' } });
     fireEvent.click(screen.getByText('Save'));
-    await waitFor(() => expect(adminPut).toHaveBeenCalledWith('/api/admin/gateways/groq/settings', { key: 'ai.params', value: { reasoningEffort: 'low', maxTokensScale: 0.5, temperature: null } }));
+    await waitFor(() => expect(adminPut).toHaveBeenCalledWith('/api/admin/gateways/groq/settings', { key: 'ai.params', value: { reasoningEffort: 'low', temperature: 0.4 } }));
     expect(adminPost).not.toHaveBeenCalled();
   });
 });

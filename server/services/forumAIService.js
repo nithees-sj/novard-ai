@@ -26,8 +26,8 @@ const prompt = ChatPromptTemplate.fromMessages([
   ['human', '{input}'],
 ]);
 
-const chain = (maxTokens = 1800) =>
-  prompt.pipe(chatModel({ tier: 'REASONING', maxTokens, temperature: 0.5 })).pipe(new StringOutputParser());
+const chain = () =>
+  prompt.pipe(chatModel({ tier: 'REASONING', temperature: 0.5 })).pipe(new StringOutputParser());
 
 function systemFor(issue) {
   return `You are the AI assistant in a technical Q&A forum. You are one participant in a thread with several people.

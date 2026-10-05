@@ -28,7 +28,7 @@ const AnalyticsCard = ({
   const color = trendColor || style?.color || 'text-green-600';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow flex flex-col">
+    <div className="bg-surface rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</span>
         <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center shrink-0`}>
@@ -46,7 +46,7 @@ const AnalyticsCard = ({
           <span className={`text-xs font-semibold whitespace-nowrap ${color}`} title={trendLabel || undefined}>
             {style?.arrow && <span aria-hidden="true">{style.arrow} </span>}
             {trend}
-            {trendLabel && <span className="font-normal text-gray-400"> {trendLabel}</span>}
+            {trendLabel && <span className="font-normal text-gray-500"> {trendLabel}</span>}
           </span>
         )}
       </div>

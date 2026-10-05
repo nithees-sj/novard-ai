@@ -42,7 +42,7 @@ const WeeklyActivityChart = ({ weekly }) => {
   const delta = total - previous;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-surface rounded-xl border border-gray-200 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Study time this week</h3>
@@ -50,7 +50,7 @@ const WeeklyActivityChart = ({ weekly }) => {
             Time you spent active in the app, updated every minute
           </p>
           {weekly?.estimated && (
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary-200" aria-hidden="true" />
               Lighter bars: days before time tracking, estimated from your activity
             </p>
@@ -81,7 +81,7 @@ const WeeklyActivityChart = ({ weekly }) => {
             {ticks.map((t) => (
               <span
                 key={t}
-                className="absolute right-0 -translate-y-1/2 text-[11px] text-gray-400 tabular-nums"
+                className="absolute right-0 -translate-y-1/2 text-[11px] text-gray-500 tabular-nums"
                 style={{ bottom: `${(t / top) * 100}%` }}
               >
                 {t}m
@@ -136,15 +136,15 @@ const WeeklyActivityChart = ({ weekly }) => {
                       {isActive && (
                         <span
                           role="tooltip"
-                          className="absolute z-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-left shadow-lg pointer-events-none"
+                          className="absolute z-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-tooltip px-3 py-2 text-left shadow-lg pointer-events-none"
                           style={{ bottom: `calc(${height}% + 10px)` }}
                         >
-                          <span className="block text-sm font-bold text-white">
+                          <span className="block text-sm font-bold text-tooltip-fg">
                             {formatMinutes(d.minutes)}
-                            <span className="ml-1.5 text-[10px] font-medium text-gray-400">{d.tracked ? 'in the app' : 'estimated'}</span>
+                            <span className="ml-1.5 text-[10px] font-medium text-tooltip-muted">{d.tracked ? 'in the app' : 'estimated'}</span>
                           </span>
-                          <span className="block text-[11px] text-gray-300">{formatDate(d.date)}</span>
-                          <span className="block text-[11px] text-gray-300">
+                          <span className="block text-[11px] text-tooltip-muted">{formatDate(d.date)}</span>
+                          <span className="block text-[11px] text-tooltip-muted">
                             {d.activities} {d.activities === 1 ? 'activity' : 'activities'}
                             {d.quizzes > 0 && ` · ${d.quizzes} ${d.quizzes === 1 ? 'quiz' : 'quizzes'}`}
                           </span>

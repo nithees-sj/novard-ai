@@ -61,7 +61,7 @@ ${evidence}
 
 Decide the next step. JSON only.`;
     try {
-      const res = await deps.callJson({ task: 'risk_supervisor', system: SUPERVISOR_SYSTEM, user, maxTokens: GRAPH.supervisorMaxTokens, temperature: 0.1 });
+      const res = await deps.callJson({ task: 'risk_supervisor', system: SUPERVISOR_SYSTEM, user, temperature: 0.1 });
       const out = res.data || {};
       let action = ['investigate', 'analyze', 'monitor'].includes(out.action) ? out.action : 'investigate';
       let lanes = (Array.isArray(out.lanes) ? out.lanes : []).filter((l) => GRAPH.lanes.includes(l));
@@ -116,7 +116,6 @@ function makeLane(deps) {
         task: 'risk_lane',
         system: `${LANE_SYSTEM[lane.lane]} Reply with JSON only: {"finding": "1-2 sentences"}.`,
         user: `${riskLine(lane)}\n\nYour lane's tool output:\n${toolText}\n\nIn 1-2 sentences, what does this tell us about the risk? If nothing useful, say exactly that. JSON only.`,
-        maxTokens: GRAPH.laneMaxTokens,
         temperature: 0.2,
       });
       const finding = clip(res.data?.finding, 600) || toolText.slice(0, 400);
@@ -212,7 +211,7 @@ ALLOWED IDS you may cite: ${allowed.join(', ') || '(none)'}${critique}
 
 Give 1-3 hypotheses and 2-4 recommendations. JSON only.`;
     try {
-      const res = await deps.callJson({ task: 'risk_root_cause', system: ANALYST_SYSTEM, user, maxTokens: GRAPH.rootCauseMaxTokens, temperature: 0.3, attempt: state.revisionCount ? 1 : 0 });
+      const res = await deps.callJson({ task: 'risk_root_cause', system: ANALYST_SYSTEM, user, temperature: 0.3, attempt: state.revisionCount ? 1 : 0 });
       const allowedSet = new Set(allowed);
       const hypotheses = cleanHypotheses(res.data?.hypotheses, allowedSet);
       const recommendations = (Array.isArray(res.data?.recommendations) ? res.data.recommendations : []).slice(0, 4)
@@ -259,7 +258,7 @@ ${hyps.map((h, i) => `${i + 1}. ${h.cause} (confidence ${h.confidence}) cites: $
 
 Audit it. JSON only.`;
     try {
-      const res = await deps.callJson({ task: 'risk_verifier', system: VERIFIER_SYSTEM, user, maxTokens: GRAPH.verifierMaxTokens, temperature: 0.1, avoid: state.rootCauseModel });
+      const res = await deps.callJson({ task: 'risk_verifier', system: VERIFIER_SYSTEM, user, temperature: 0.1, avoid: state.rootCauseModel });
       const d = res.data || {};
       const list = (x) => (Array.isArray(x) ? x.map((y) => clip(y, 300)).slice(0, 6) : []);
       const verification = {

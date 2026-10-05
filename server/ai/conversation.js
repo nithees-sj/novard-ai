@@ -4,9 +4,10 @@ const { RunnableWithMessageHistory } = require('@langchain/core/runnables');
 const { StringOutputParser } = require('@langchain/core/output_parsers');
 const { BaseListChatMessageHistory } = require('@langchain/core/chat_history');
 const { HumanMessage, AIMessage, SystemMessage } = require('@langchain/core/messages');
-const { MODELS } = require('../config/ai');
+const { MODELS, REQUEST_TOKEN_LIMIT, maxOutputTokens } = require('../config/ai');
 const { env } = require('../config/env');
 const { withRateLimitRetry } = require('./errors');
+const { condenseToFit } = require('./condense');
 const { beforeCall } = require('./usageGuard');
 const { ModelCallHandler } = require('./modelCallLog');
 const { withFailover, logged, chainFor, liveModelSettings } = require('./modelGateway');
@@ -27,9 +28,12 @@ const settings = require('../services/settingsService');
  * prompt ever overflowing the model's context.
  */
 
+// Sized from the provider's per-request limit (config/ai.js), so the history
+// always fits beside the instructions and source text: 2,000 / 1,200 on Groq's
+// free tier, and proportionally more once AI_REQUEST_TOKEN_LIMIT is raised.
 const MEMORY = {
-  summarizeAt: Number(process.env.MEMORY_SUMMARIZE_AT_TOKENS) || 10000,
-  keepRecent: Number(process.env.MEMORY_KEEP_RECENT_TOKENS) || 6000,
+  summarizeAt: Number(process.env.MEMORY_SUMMARIZE_AT_TOKENS) || Math.round(REQUEST_TOKEN_LIMIT * 0.25),
+  keepRecent: Number(process.env.MEMORY_KEEP_RECENT_TOKENS) || Math.round(REQUEST_TOKEN_LIMIT * 0.15),
 };
 
 // A conservative estimate (~4 characters per token) - exact counts are not
@@ -57,7 +61,7 @@ class NovardChatGroq extends ChatGroq {
     const live = await liveModelSettings();
     return withFailover(chainFor(request.model, live), async (model, attempt) => {
       if (model === request.model) return this.loggedFailure(model, attempt, () => super.completionWithRetry(request, options));
-      return this.loggedFailure(model, attempt, () => super.completionWithRetry({ ...request, model }, options));
+      return this.loggedFailure(model, attempt, () => super.completionWithRetry({ ...request, model, max_tokens: maxOutputTokens(model) }, options));
     }, { serverTries: 1 }); // LangChain's caller already retries 5xx
   }
 
@@ -73,8 +77,8 @@ class NovardChatGroq extends ChatGroq {
   }
 }
 
-function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6, model: explicitModel } = {}) {
-  // Cached settings (no await here): at their defaults this is the old model, 'low' effort and the given limits.
+function chatModel({ tier = 'REASONING', temperature = 0.6, model: explicitModel } = {}) {
+  // Cached settings (no await here): at their defaults this is the old model and 'low' effort.
   const tiers = settings.peek('ai.tiers');
   const params = settings.peek('ai.params');
   const handler = new ModelCallHandler();
@@ -82,7 +86,6 @@ function chatModel({ tier = 'REASONING', maxTokens = 2500, temperature = 0.6, mo
     apiKey: env.groqApiKey || 'missing-key',
     model: explicitModel || tiers[tier] || MODELS[tier] || MODELS.REASONING,
     temperature: params.temperature ?? temperature,
-    maxTokens: Math.max(64, Math.round(maxTokens * params.maxTokensScale)),
     // gpt-oss models are reasoning models; keep the token budget for the answer.
     reasoningEffort: params.reasoningEffort || 'low',
     callbacks: [handler],
@@ -178,9 +181,9 @@ class MongoChatHistory extends BaseListChatMessageHistory {
 async function summarize(existing, messages) {
   const transcript = messages
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-    .join('\n\n')
-    .slice(0, 60000);
-  const llm = chatModel({ tier: 'FAST', maxTokens: 900, temperature: 0.2 });
+    .join('\n\n');
+  const { text: newMessages } = await condenseToFit(transcript, { what: 'tutoring conversation' });
+  const llm = chatModel({ tier: 'FAST', temperature: 0.2 });
   const result = await withRateLimitRetry(() => llm.invoke([
     new SystemMessage(
       'You maintain the memory of a tutoring conversation. Update the summary so a tutor could continue ' +
@@ -189,7 +192,7 @@ async function summarize(existing, messages) {
       'decisions taken, and anything the user said about themselves or their progress. Be dense; use short bullet ' +
       'points; stay under 350 words. Return only the updated summary.'
     ),
-    new HumanMessage(`Current summary:\n${existing || '(none yet)'}\n\nNew messages to fold in:\n${transcript}`),
+    new HumanMessage(`Current summary:\n${existing || '(none yet)'}\n\nNew messages to fold in:\n${newMessages}`),
   ]));
   return String(result.content || existing).trim();
 }
@@ -214,10 +217,10 @@ const prompt = ChatPromptTemplate.fromMessages([
  * @param {string} opts.input    the user's message
  * @returns {Promise<string>} the assistant's reply (already saved)
  */
-async function converse({ Model, filter, field, timeKey, system, input, tier, maxTokens, temperature }) {
+async function converse({ Model, filter, field, timeKey, system, input, tier, temperature }) {
   const history = new MongoChatHistory({ Model, filter, field, timeKey });
   const chain = new RunnableWithMessageHistory({
-    runnable: prompt.pipe(chatModel({ tier, maxTokens, temperature })).pipe(new StringOutputParser()),
+    runnable: prompt.pipe(chatModel({ tier, temperature })).pipe(new StringOutputParser()),
     getMessageHistory: async () => history,
     inputMessagesKey: 'input',
     historyMessagesKey: 'history',

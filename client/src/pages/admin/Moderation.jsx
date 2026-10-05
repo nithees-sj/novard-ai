@@ -38,7 +38,7 @@ function Thread({ issueId, onClose, onChanged }) {
           {issue.status === 'closed'
             ? <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/issues/${issueId}/status`, { status: 'open' }), 'Reopened.')} className={btn.secondary}>Reopen</button>
             : <button type="button" onClick={() => run(() => adminPut(`/api/admin/forum/issues/${issueId}/status`, { status: 'closed' }), 'Closed.')} className={btn.secondary}>Close</button>}
-          <button type="button" onClick={() => { if (window.confirm('Delete this discussion and all its replies?')) run(() => adminDelete(`/api/admin/forum/issues/${issueId}`).then(onClose), 'Deleted.'); }} className={`${btn.secondary} text-red-700`}>Delete discussion</button>
+          <button type="button" onClick={() => { if (window.confirm('Delete this discussion and all its replies?')) run(() => adminDelete(`/api/admin/forum/issues/${issueId}`).then(onClose), 'Deleted.'); }} className={btn.danger}>Delete discussion</button>
         </div>
       </div>
       {note && <p className="text-sm text-gray-700" role="status">{note}</p>}

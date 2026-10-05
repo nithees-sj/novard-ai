@@ -8,8 +8,7 @@ import { Badge, Spinner, btn } from '../../components/learning/LearningUI';
 import useAdminData from '../../lib/useAdminData';
 import { adminPost } from '../../lib/adminApi';
 import { errorMessage } from '../../lib/api';
-
-const SPARK_COLOR = { LOW: '#10b981', MEDIUM: '#f59e0b', HIGH: '#ef4444', CRITICAL: '#b91c1c' };
+import { LEVEL_COLORS } from '../../lib/statusColors';
 
 /** Every app area's risk: level, score, 28-day trend and what drives it. */
 export default function RiskBoard() {
@@ -36,10 +35,10 @@ export default function RiskBoard() {
     { key: 'label', label: 'Area', render: (r) => <span className="font-semibold text-gray-900">{r.label}</span> },
     { key: 'level', label: 'Level', render: (r) => <span className="flex items-center gap-2"><LevelBadge level={r.level} />{r.complaints?.raised && <Badge tone="red">complaints</Badge>}{r.status === 'insufficient_baseline' && !r.complaints?.raised && <Badge>new area</Badge>}</span> },
     { key: 'score', label: 'Score', className: 'tabular-nums', render: (r) => r.score.toFixed(3) },
-    { key: 'trend', label: '28-day trend', render: (r) => <Sparkline values={r.sparkline.map((p) => p.score)} max={1} color={SPARK_COLOR[r.level]} label={`${r.label} risk trend`} /> },
+    { key: 'trend', label: '28-day trend', render: (r) => <Sparkline values={r.sparkline.map((p) => p.score)} max={1} color={LEVEL_COLORS[r.level]} label={`${r.label} risk trend`} /> },
     { key: 'drivers', label: 'Driven by', render: (r) => <DriverList drivers={r.drivers} /> },
     { key: 'reports', label: 'Open reports', className: 'tabular-nums', render: (r) => `${r.openReports}${r.urgentReports ? ` (${r.urgentReports} urgent)` : ''}` },
-    { key: 'object', label: 'Tracking', render: (r) => (r.riskObject ? <span className="text-xs text-gray-600">{r.riskObject.topic} · {r.riskObject.state}{r.riskObject.flagged ? ' · flagged' : ''}</span> : <span className="text-xs text-gray-400">–</span>) },
+    { key: 'object', label: 'Tracking', render: (r) => (r.riskObject ? <span className="text-xs text-gray-600">{r.riskObject.topic} · {r.riskObject.state}{r.riskObject.flagged ? ' · flagged' : ''}</span> : <span className="text-xs text-gray-500">–</span>) },
   ];
 
   return (
