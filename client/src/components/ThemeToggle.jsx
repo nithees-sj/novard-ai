@@ -1,3 +1,4 @@
+import { SegmentedControl } from './ui/Tabs';
 import React, { useEffect, useRef, useState } from 'react';
 import { FiCheck, FiMonitor, FiMoon, FiSun } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
@@ -111,26 +112,13 @@ export default function ThemeToggle({ className = '' }) {
 
 /** The same three choices as a segmented control (the Settings page). */
 export function ThemeOptions() {
-  const { preference, resolved, setPreference } = useTheme();
+  const { preference, setPreference } = useTheme();
   return (
-    <div role="radiogroup" aria-label="Theme" className="inline-flex rounded-xl border border-gray-200 bg-gray-100 p-1">
-      {OPTIONS.map(({ value, label, Icon }) => {
-        const active = preference === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setPreference(value)}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${focusRing} ${active ? 'bg-surface text-gray-900 shadow-sm dark:bg-gray-200' : 'text-gray-600 hover:text-gray-900'}`}
-          >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            {label}
-            {value === 'system' && active && <span className="text-xs font-normal text-gray-500">({resolved})</span>}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      label="Theme"
+      value={preference}
+      onChange={setPreference}
+      options={[{ id: 'light', label: 'Light', icon: 'sun' }, { id: 'dark', label: 'Dark', icon: 'moon' }, { id: 'system', label: 'System', icon: 'monitor' }]}
+    />
   );
 }

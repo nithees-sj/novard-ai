@@ -1,37 +1,28 @@
 import React from 'react';
+import { Stat as UIStat, SectionHeader } from '../ui';
 
 /**
- * Card blocks shared by the profile page and the admin console: a stat tile
- * with an accent bar, a section heading and a titled card.
+ * Blocks shared by the profile page and the admin console: a stat (one cell
+ * of a StatStrip), a section heading and a titled card.
+ * `accent` is accepted for older callers and ignored: stats are not colour-coded.
  */
 
-export const Stat = ({ label, value, sub, accent }) => (
-  <div className="bg-surface rounded-xl border border-gray-200 p-5 relative overflow-hidden">
-    <span className={`absolute left-0 top-0 bottom-0 w-1 ${accent}`} aria-hidden="true" />
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-    <p className="mt-2 text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
-    <p className="mt-1 text-xs text-gray-500 truncate" title={typeof sub === 'string' ? sub : undefined}>{sub}</p>
-  </div>
-);
+// eslint-disable-next-line no-unused-vars
+export const Stat = ({ label, value, sub, accent, tone }) => <UIStat label={label} value={value} sub={sub} tone={tone} />;
 
-export const SectionTitle = ({ title, subtitle }) => (
-  <div className="flex items-end justify-between gap-4 pt-4">
-    <div>
-      <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-      {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-    </div>
-  </div>
+export const SectionTitle = ({ title, subtitle, actions }) => (
+  <SectionHeader title={title} description={subtitle} actions={actions} className="mb-0 pt-2" />
 );
 
 export const Card = ({ title, subtitle, right, children, className = '' }) => (
-  <div className={`bg-surface rounded-xl border border-gray-200 p-6 ${className}`}>
+  <section className={`rounded-xl bg-raised p-5 ring-1 ring-line-subtle ${className}`}>
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h3 className="text-base font-bold text-gray-900">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+      <div className="min-w-0">
+        <h3 className="text-body font-semibold text-fg">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-small text-fg-subtle">{subtitle}</p>}
       </div>
       {right}
     </div>
-    <div className="mt-5">{children}</div>
-  </div>
+    <div className="mt-4">{children}</div>
+  </section>
 );

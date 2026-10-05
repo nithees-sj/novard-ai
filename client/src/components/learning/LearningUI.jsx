@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MarkdownView from '../MarkdownView';
 import Icon from '../ui/Icon';
+import UISpinner from '../ui/Spinner';
+import { buttonClass } from '../ui/Button';
+import { inputClass as uiInputClass, fieldClass as uiFieldClass, Field as UIField } from '../ui/Field';
+import UIBadge from '../ui/Badge';
+import { Tabs } from '../ui/Tabs';
+import { EmptyState as UIEmptyState, SkeletonRows } from '../ui/States';
+import UIToast from '../ui/Toast';
+import cx from '../ui/cx';
 import { isCorrectAnswer } from '../../lib/quiz';
 
 /**
@@ -9,9 +17,8 @@ import { isCorrectAnswer } from '../../lib/quiz';
  * loading state, one quiz and one list style, so every tool looks and behaves
  * the same.
  *
- * Palette: blue-600 for actions and "selected", neutral greys for surfaces
- * and text, and soft tints only for status (emerald = done / correct,
- * amber = in progress, red = wrong / error).
+ * Built on the shared primitives in components/ui: semantic tokens only, the
+ * accent for actions and "selected", soft tones for status.
  */
 
 // ── icons ──────────────────────────────────────────────────────────────────
@@ -20,28 +27,26 @@ import { isCorrectAnswer } from '../../lib/quiz';
 // the learning tools keep importing it from one place.
 export { Icon };
 
-export const Spinner = ({ className = 'h-4 w-4' }) => (
-  <span className={`inline-block shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} aria-hidden="true" />
-);
+export const Spinner = UISpinner;
 
 // ── buttons ────────────────────────────────────────────────────────────────
 
 export const btn = {
-  primary: 'inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50',
-  secondary: 'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-surface px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50',
-  ghost: 'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40',
+  primary: buttonClass({ variant: 'primary' }),
+  secondary: buttonClass({ variant: 'secondary' }),
+  ghost: buttonClass({ variant: 'ghost' }),
   // A dark button (light in the dark theme), for confirming a step in a card.
-  inverse: 'inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-on-ink transition hover:bg-ink-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50',
-  danger: 'inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-surface px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50',
+  inverse: buttonClass({ variant: 'inverse' }),
+  danger: buttonClass({ variant: 'danger' }),
 };
-export const inputClass = 'w-full rounded-lg border border-gray-300 bg-surface px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+export const inputClass = uiInputClass;
 
 /** The small "Report" action shown under AI output when a tool passes onReport. */
 export const ReportAction = ({ onClick, label = 'Report', className = '' }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 focus:opacity-100 ${className}`}
+    className={`inline-flex items-center gap-1 rounded px-1.5 py-1 text-caption font-medium text-fg-subtle transition-colors hover:bg-sunken hover:text-fg focus:opacity-100 ${className}`}
     title="Report a problem with this"
   >
     <Icon name="flag" className="h-3.5 w-3.5" />
@@ -94,41 +99,15 @@ export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => (
 /** The content area of one tab inside an ItemFrame. */
 export const TabBody = ({ children }) => <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
 
-/** Segmented tab bar. tabs: [{ id, label, icon, busy }] */
-export const TabBar = ({ tabs, active, onChange, size = 'md' }) => (
-  <div className={`inline-flex max-w-full flex-wrap rounded-lg bg-gray-100 ${size === 'sm' ? 'gap-0.5 p-0.5' : 'gap-1 p-1'}`} role="tablist">
-    {tabs.map((t) => {
-      const on = active === t.id;
-      return (
-        <button
-          key={t.id}
-          type="button"
-          role="tab"
-          aria-selected={on}
-          onClick={() => onChange(t.id)}
-          className={`inline-flex items-center gap-1.5 rounded-md font-medium transition ${size === 'sm' ? 'px-3 py-1 text-[13px]' : 'px-3.5 py-1.5 text-sm'} ${
-            on ? 'bg-surface text-gray-900 shadow-sm ring-1 ring-gray-200 dark:bg-gray-200' : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          {t.busy ? <Spinner className="h-3.5 w-3.5 text-blue-600" /> : <Icon name={t.icon} className={`h-4 w-4 ${on ? 'text-blue-600' : ''}`} />}
-          {t.label}
-        </button>
-      );
-    })}
-  </div>
+/** The tabs of an open item. tabs: [{ id, label, icon, busy }] */
+export const TabBar = ({ tabs, active, onChange, size = 'md', label = 'Sections' }) => (
+  <Tabs tabs={tabs} active={active} onChange={onChange} size={size} label={label} />
 );
 
 // ── states ─────────────────────────────────────────────────────────────────
 
 export const EmptyState = ({ icon = 'sparkles', title, text, action }) => (
-  <div className="flex h-full min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center">
-    <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-      <Icon name={icon} className="h-7 w-7" strokeWidth={1.8} />
-    </span>
-    <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-    {text && <p className="mt-1 max-w-sm text-sm text-gray-500">{text}</p>}
-    {action && <div className="mt-5">{action}</div>}
-  </div>
+  <UIEmptyState icon={icon} title={title} text={text} action={action} className="h-full" />
 );
 
 /**
@@ -432,18 +411,8 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
 
 // ── side list ──────────────────────────────────────────────────────────────
 
-/** The right-hand list of the student's items (notes, doubts, videos, requests). */
 /** Placeholder rows while a side list is loading, instead of a false "nothing yet". */
-const ListSkeleton = () => (
-  <div className="space-y-2" role="status" aria-label="Loading">
-    {[0, 1, 2].map((i) => (
-      <div key={i} className="animate-pulse rounded-lg border border-gray-100 p-3" style={{ animationDelay: `${i * 120}ms` }}>
-        <div className="h-3.5 w-4/5 rounded bg-gray-200" />
-        <div className="mt-2 h-3 w-1/2 rounded bg-gray-100" />
-      </div>
-    ))}
-  </div>
-);
+const ListSkeleton = () => <SkeletonRows rows={4} />;
 
 /** The main area while the student's items are first loaded. */
 export const LoadingPanel = ({ label = 'Loading…' }) => (
@@ -468,36 +437,28 @@ export const SideList = ({ title, count, action, children, loading = false, clas
   </aside>
 );
 
-export const Badge = ({ tone = 'gray', children }) => {
-  const tones = {
-    gray: 'bg-gray-100 text-gray-600',
-    blue: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100',
-    green: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
-    amber: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
-    red: 'bg-red-50 text-red-700 ring-1 ring-red-100', // status only (errors, critical risk)
-  };
-  return <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}>{children}</span>;
-};
+export const Badge = UIBadge;
 
+/** One of the student's items in a side list: selected by a soft tint, not an edge bar. */
 export const ListItem = ({ active, title, subtitle, meta, badges, onSelect, onDelete, deleteLabel }) => (
   <div
     role="button"
     tabIndex={0}
     onClick={onSelect}
-    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+    onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSelect(); } }}
     aria-current={active ? 'true' : undefined}
-    className={`group relative cursor-pointer rounded-lg border p-3 pl-4 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
-      active ? 'border-blue-200 bg-blue-50/70' : 'border-gray-200 bg-surface hover:border-gray-300 hover:bg-gray-50'
-    }`}
+    className={cx(
+      'group relative cursor-pointer rounded-lg px-3 py-2.5 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
+      active ? 'bg-accent-soft' : 'hover:bg-sunken',
+    )}
   >
-    <span className={`absolute inset-y-2 left-0 w-1 rounded-r-full ${active ? 'bg-blue-600' : 'bg-transparent'}`} aria-hidden="true" />
     <div className="flex items-start gap-2">
-      <p className={`min-w-0 flex-1 text-sm font-semibold leading-snug ${active ? 'text-blue-900' : 'text-gray-900'} line-clamp-2`}>{title}</p>
+      <p className={cx('min-w-0 flex-1 text-body font-medium leading-snug line-clamp-2', active ? 'text-accent-fg' : 'text-fg')}>{title}</p>
       {onDelete && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover:opacity-100"
+          className="-mr-1 -mt-0.5 shrink-0 rounded p-1 text-fg-subtle opacity-0 transition hover:bg-danger-soft hover:text-danger-fg focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
           aria-label={deleteLabel || `Delete ${title}`}
           title="Delete"
         >
@@ -505,63 +466,30 @@ export const ListItem = ({ active, title, subtitle, meta, badges, onSelect, onDe
         </button>
       )}
     </div>
-    {subtitle && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{subtitle}</p>}
+    {subtitle && <p className="mt-0.5 line-clamp-2 text-small text-fg-muted">{subtitle}</p>}
     {(meta || badges) && (
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {meta && <span className="text-[11px] text-gray-500">{meta}</span>}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        {meta && <span className="text-caption text-fg-subtle">{meta}</span>}
         {badges}
       </div>
     )}
   </div>
 );
 
-export const ListEmpty = ({ icon, title, text }) => (
-  <div className="px-4 py-10 text-center">
-    <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gray-50 text-gray-400 ring-1 ring-gray-100"><Icon name={icon} className="h-5 w-5" /></span>
-    <p className="text-sm font-semibold text-gray-900">{title}</p>
-    {text && <p className="mt-0.5 text-xs text-gray-500">{text}</p>}
-  </div>
-);
+export const ListEmpty = ({ icon, title, text }) => <UIEmptyState compact icon={icon} title={title} text={text} />;
 
 // ── toast ──────────────────────────────────────────────────────────────────
 
-export const Toast = ({ toast, onClose }) => {
-  if (!toast) return null;
-  const ok = toast.type === 'success';
-  return (
-    <div className="fixed right-6 top-20 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-gray-200 bg-surface px-4 py-3 shadow-lg" role={ok ? 'status' : 'alert'}>
-      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white ${ok ? 'bg-emerald-500' : 'bg-red-500'}`}>
-        <Icon name={ok ? 'check' : 'x'} className="h-3 w-3" strokeWidth={3} />
-      </span>
-      <p className="flex-1 text-sm text-gray-800">{toast.message}</p>
-      {onClose && <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Dismiss"><Icon name="x" className="h-4 w-4" /></button>}
-    </div>
-  );
-};
+export const Toast = ({ toast, onClose }) => (toast ? <UIToast message={toast.message} type={toast.type === 'success' ? 'success' : 'error'} onClose={onClose} /> : null);
 
 export const formatDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 // ── "add new" forms in the main area ───────────────────────────────────────
 
 /** A labelled form field with an optional hint, error and character counter. */
-export const Field = ({ id, label, optional = false, required = false, hint, error, count, max, children }) => (
-  <div>
-    <div className="mb-1.5 flex items-baseline justify-between gap-3">
-      <label htmlFor={id} className="text-sm font-semibold text-gray-900">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-        {optional && <span className="font-normal text-gray-500"> (optional)</span>}
-      </label>
-      {max && (
-        <span className={`text-xs tabular-nums ${count > max ? 'font-semibold text-red-600' : count > max * 0.9 ? 'text-amber-600' : 'text-gray-500'}`}>{count}/{max}</span>
-      )}
-    </div>
-    {children}
-    {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
-  </div>
-);
+export const Field = UIField;
 
-export const fieldClass = (bad) => `${inputClass} ${bad ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`;
+export const fieldClass = uiFieldClass;
 
 /**
  * The page for adding something new (a video, a video request, ...), shown in
