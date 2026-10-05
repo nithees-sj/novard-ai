@@ -72,7 +72,7 @@ const ProfileHeader = ({ account, goal, fallbackPicture, onSaved }) => {
   const input = inputClass;
 
   return (
-    <section aria-label="Your details">
+    <section aria-label="Your details" className="animate-view-in">
       <div>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">

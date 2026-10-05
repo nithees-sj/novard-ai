@@ -159,7 +159,7 @@ const ForumGrid = ({ onIssueSelect, onCreateIssue, refreshKey = 0 }) => {
               : <Button icon="plus" onClick={onCreateIssue}>New post</Button>}
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3 animate-view-in">
             {issues.map((issue) => (
               <IssueCard key={issue.issueId} issue={issue} onClick={() => onIssueSelect(issue)} />
             ))}

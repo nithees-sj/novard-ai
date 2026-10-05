@@ -16,4 +16,5 @@ export { default as Tooltip } from './Tooltip';
 export { Tabs, SegmentedControl } from './Tabs';
 export { default as Toast } from './Toast';
 export { default as useFocusTrap } from './useFocusTrap';
+export { default as useEnterAnimation } from './useEnterAnimation';
 export { default as cx } from './cx';

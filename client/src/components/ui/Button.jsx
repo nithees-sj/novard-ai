@@ -9,7 +9,7 @@ import Spinner from './Spinner';
  * ghost (toolbars, quiet actions), danger (destructive), inverse (a dark
  * confirm button), link (inline text action).
  */
-const BASE = 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:pointer-events-none disabled:opacity-50';
+const BASE = 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded font-medium transition-[color,background-color,box-shadow,transform] duration-150 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:pointer-events-none disabled:opacity-50';
 
 const VARIANTS = {
   primary: 'bg-accent text-on-accent hover:bg-accent-hover',

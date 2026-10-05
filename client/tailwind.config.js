@@ -97,11 +97,17 @@ module.exports = {
         'slide-down': 'slideDown 0.15s ease-out',
         'scale-in': 'scaleIn 0.15s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        // Content arriving: a page, a tool, a tab, a message (see ui/useEnterAnimation).
+        'view-in': 'viewIn 0.22s cubic-bezier(0.2, 0, 0, 1) both',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
+        },
+        viewIn: {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
           '0%': { transform: 'translateY(6px)', opacity: '0' },

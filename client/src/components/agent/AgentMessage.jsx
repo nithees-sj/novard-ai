@@ -33,7 +33,7 @@ const CopyButton = ({ text }) => {
 const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer, onReport }) => {
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end animate-view-in">
         <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-lg bg-sunken px-4 py-2.5 text-body leading-relaxed text-fg">
           {message.content}
         </div>
@@ -43,7 +43,7 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
 
   const waiting = streaming && !message.content;
   return (
-    <div className="group flex gap-3.5">
+    <div className="group flex gap-3.5 animate-view-in">
       <AgentAvatar size="h-8 w-8" className="mt-0.5" />
       <div className="min-w-0 flex-1">
         {waiting ? (

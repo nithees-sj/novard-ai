@@ -9,6 +9,7 @@ import { Tabs } from '../ui/Tabs';
 import { EmptyState as UIEmptyState, SkeletonRows, Skeleton as SkeletonBar } from '../ui/States';
 import UIToast from '../ui/Toast';
 import cx from '../ui/cx';
+import useEnterAnimation from '../ui/useEnterAnimation';
 import AgentAvatar from '../agent/AgentAvatar';
 import { isCorrectAnswer } from '../../lib/quiz';
 
@@ -80,7 +81,10 @@ export const Panel = ({ children, fill = false, padded = true, className = '' })
  * The open item: a heading bar (title, one line of detail, then its tabs or
  * actions) and the active tab's content below.
  */
-export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => (
+export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => {
+  const body = useRef(null);
+  useEnterAnimation(body, title);
+  return (
   <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle md:rounded-none md:ring-0">
     <header className="border-b border-line-subtle px-5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-3.5">
@@ -93,12 +97,13 @@ export const ItemFrame = ({ icon, title, meta, tabs, actions, children }) => (
       </div>
       {tabs ? <div className="mt-1.5">{tabs}</div> : <div className="h-3.5" />}
     </header>
-    <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+    <div ref={body} className="flex min-h-0 flex-1 flex-col">{children}</div>
   </section>
-);
+  );
+};
 
 /** The content area of one tab inside an ItemFrame. */
-export const TabBody = ({ children }) => <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
+export const TabBody = ({ children }) => <div className="flex min-h-0 flex-1 flex-col animate-view-in">{children}</div>;
 
 /** The tabs of an open item. tabs: [{ id, label, icon, busy }] */
 export const TabBar = ({ tabs, active, onChange, size = 'md', label = 'Sections' }) => (
@@ -216,13 +221,13 @@ export const ChatPanel = ({ messages = [], sending = false, onSend, placeholder,
         ) : (
           <div className="mx-auto w-full max-w-3xl space-y-7 px-6 py-8">
             {messages.map((m, i) => (m.role === 'user' ? (
-              <div key={i} className="flex justify-end">
+              <div key={i} className="flex justify-end animate-view-in">
                 <div className="max-w-[80%] whitespace-pre-wrap break-words rounded-xl rounded-br-sm bg-accent px-4 py-2.5 text-body leading-relaxed text-on-accent">
                   {m.content}
                 </div>
               </div>
             ) : (
-              <div key={i} className="group flex gap-4">
+              <div key={i} className="group flex gap-4 animate-view-in">
                 <Avatar />
                 <div className="min-w-0 flex-1 pt-0.5">
                   <MarkdownView content={m.content} size="base" />
@@ -509,7 +514,7 @@ export const fieldClass = uiFieldClass;
 export const FormPage = ({ title, subtitle, steps = [], onSubmit, children, error, submitLabel, submitting = false, submittingLabel, onCancel }) => (
   <Panel fill>
     <div className="h-full overflow-y-auto">
-      <form onSubmit={onSubmit} className="mx-auto w-full max-w-3xl space-y-7 px-5 py-8 sm:px-8" noValidate>
+      <form onSubmit={onSubmit} className="mx-auto w-full max-w-3xl space-y-7 px-5 py-8 animate-view-in sm:px-8" noValidate>
         <div>
           <h2 className="text-display font-semibold text-fg">{title}</h2>
           {subtitle && <p className="mt-1.5 max-w-2xl text-body text-fg-muted">{subtitle}</p>}

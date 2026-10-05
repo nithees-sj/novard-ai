@@ -47,6 +47,13 @@ Defined in `client/src/theme/palette.js`. Each token is a CSS variable with a li
 - **Spacing:** the Tailwind 4px grid. Arbitrary text sizes are banned.
 - **Shadows** are for elevation only: `shadow-raised` (a 1px hairline), `shadow-popover` and `shadow-modal`. They scale up in dark mode through `--shadow-strength`.
 - **Motion:** 150–200ms transitions. A global reduced-motion reset turns off transitions and looping animation.
+- **Flow between screens:** one entrance everywhere, a fade with a 6px rise over 220ms (`ui/useEnterAnimation`, `animate-view-in`). It plays on:
+  - a page change, or any breadcrumb change: opening a tool, a forum thread, a chat, a skill plan, the learner profile;
+  - switching the open item or tab in a learning tool;
+  - new chat messages;
+  - content arriving after its skeleton.
+
+  Each new page also starts at the top. Buttons give a 1px press. Navigation uses React Router's `v7_startTransition`, so the current page stays on screen while the next one loads. The student pages are preloaded in the background once you are signed in, so moving between them never shows the loading screen. All of this is skipped under reduced motion.
 - **Focus:** one 2px `focus` outline everywhere, keyboard only (`:focus-visible`).
 
 ### Icons

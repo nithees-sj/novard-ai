@@ -125,7 +125,7 @@ const HomePage = () => {
           onRetry={() => { setLoading(true); loadAnalytics(); }}
         />
       ) : (
-        <div className={`transition-opacity duration-200 ${refreshing ? 'opacity-60' : ''}`}>
+        <div className={`animate-view-in transition-opacity duration-200 ${refreshing ? 'opacity-60' : ''}`}>
           {!analytics?.hasActivity && (
             <p className="mb-4 text-body text-fg-muted">
               Nothing to measure yet. Study something below, then take a quiz on it, and these numbers start to move.
