@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Modal from '../ui/Modal';
+import { Select } from '../ui/Field';
 import { Link } from 'react-router-dom';
 import { Field, Icon, Spinner, btn, fieldClass } from '../learning/LearningUI';
 import { useAppStatus } from '../../context/AppStatusContext';
@@ -57,10 +59,10 @@ function VoiceRecorder({ value, onChange, disabled }) {
 
   if (value && !recording) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-        <Icon name="mic" className="h-4 w-4 text-blue-600" />
+      <div className="flex items-center gap-2 rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-fg-muted">
+        <Icon name="mic" className="h-4 w-4 text-accent-fg" />
         <span className="flex-1">Voice note recorded</span>
-        <button type="button" className="text-xs font-semibold text-gray-500 hover:text-gray-800" onClick={() => onChange(null)} disabled={disabled}>Remove</button>
+        <button type="button" className="text-xs font-semibold text-fg-subtle hover:text-fg" onClick={() => onChange(null)} disabled={disabled}>Remove</button>
       </div>
     );
   }
@@ -70,7 +72,7 @@ function VoiceRecorder({ value, onChange, disabled }) {
         <Icon name={recording ? 'stop' : 'mic'} />
         {recording ? `Stop recording (${seconds}s)` : 'Record a voice note'}
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }
@@ -81,10 +83,10 @@ function FilePick({ label, icon, accept, value, onChange, disabled }) {
     <div className="flex items-center gap-2">
       <input ref={input} type="file" accept={accept} className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} aria-label={label} />
       {value ? (
-        <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-          <Icon name={icon} className="h-4 w-4 text-blue-600" />
+        <div className="flex flex-1 items-center gap-2 rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-fg-muted">
+          <Icon name={icon} className="h-4 w-4 text-accent-fg" />
           <span className="flex-1 truncate">{value.name}</span>
-          <button type="button" className="text-xs font-semibold text-gray-500 hover:text-gray-800" onClick={() => { onChange(null); if (input.current) input.current.value = ''; }} disabled={disabled}>Remove</button>
+          <button type="button" className="text-xs font-semibold text-fg-subtle hover:text-fg" onClick={() => { onChange(null); if (input.current) input.current.value = ''; }} disabled={disabled}>Remove</button>
         </div>
       ) : (
         <button type="button" onClick={() => input.current?.click()} disabled={disabled} className={`${btn.secondary} w-full py-2`}>
@@ -121,13 +123,6 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
     setTimeout(() => dialog.current?.querySelector('select, textarea')?.focus(), 0);
   }, [open, context.area]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape' && !sending) onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, sending, onClose]);
-
   if (!open) return null;
 
   const setFile = (key) => (file) => setFiles((f) => ({ ...f, [key]: file }));
@@ -161,23 +156,21 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 dark:bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !sending) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="report-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-200 bg-surface-overlay shadow-hard animate-scale-in">
-        <div className="flex items-start gap-3 border-b border-gray-100 px-6 py-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100"><Icon name="flag" className="h-5 w-5" /></span>
-          <div className="min-w-0 flex-1">
-            <h2 id="report-title" className="text-lg font-bold text-gray-900">Report a problem</h2>
-            <p className="text-sm text-gray-500">Tell the Novard team what went wrong. We will let you know when it is fixed.</p>
-          </div>
-          <button type="button" onClick={onClose} disabled={sending} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close"><Icon name="x" className="h-5 w-5" /></button>
-        </div>
-
+    <Modal
+      open={open}
+      onClose={onClose}
+      dismissible={!sending}
+      labelledBy="report-title"
+      title="Report a problem"
+      description="Tell the Novard team what went wrong. You will hear back under the bell when it is fixed."
+    >
+      <div ref={dialog}>
         {sent ? (
-          <div className="space-y-4 px-6 py-8 text-center">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100"><Icon name="check" className="h-6 w-6" strokeWidth={2.5} /></span>
+          <div className="space-y-4 py-6 text-center">
+            <Icon name="success" className="mx-auto h-7 w-7 text-success-fg" strokeWidth={1.5} />
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Report {sent.ref} sent</h3>
-              <p className="mt-1 text-sm text-gray-600">Thank you. You will get a notification under the bell when we reply or fix it.</p>
+              <h3 className="text-lead font-semibold text-fg">Report {sent.ref} sent</h3>
+              <p className="mt-1 text-body text-fg-muted">Thank you. You will get a notification under the bell when we reply or fix it.</p>
             </div>
             <div className="flex justify-center gap-3">
               <Link to={`/reports/${sent.ref}`} onClick={onClose} className={btn.secondary}>View report</Link>
@@ -185,19 +178,19 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
             </div>
           </div>
         ) : (
-          <form onSubmit={submit} className="space-y-5 px-6 py-5" noValidate>
+          <form onSubmit={submit} className="space-y-5 pb-1 pt-1" noValidate>
             {context.source?.excerpt && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">You are reporting</p>
-                <p className="line-clamp-4 whitespace-pre-wrap text-sm text-gray-700">{context.source.excerpt}</p>
+              <div className="rounded-lg bg-sunken px-3 py-2.5">
+                <p className="mb-1 text-caption font-medium text-fg-subtle">You are reporting</p>
+                <p className="line-clamp-4 whitespace-pre-wrap text-small text-fg-muted">{context.source.excerpt}</p>
               </div>
             )}
 
             <Field id="report-area" label="Which part of Novard-AI?" required>
-              <select id="report-area" value={area} onChange={(e) => setArea(e.target.value)} className={fieldClass(error && !area)} disabled={sending}>
+              <Select id="report-area" value={area} onChange={(e) => setArea(e.target.value)} invalid={!!(error && !area)} disabled={sending} data-autofocus>
                 <option value="">Choose…</option>
                 {areas.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             <Field id="report-text" label="What went wrong?" required count={text.length} max={MAX} hint="What you did, what happened, and what you expected instead.">
@@ -213,14 +206,14 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
             </Field>
 
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-900">Add more <span className="font-normal text-gray-500">(optional)</span></p>
+              <p className="text-small font-medium text-fg">Add more <span className="font-normal text-fg-subtle">(optional)</span></p>
               <FilePick label="Add a screenshot" icon="image" accept={SCREENSHOT_TYPES} value={files.screenshot} onChange={setFile('screenshot')} disabled={sending} />
               {voiceEnabled && <VoiceRecorder value={files.voice} onChange={setFile('voice')} disabled={sending} />}
               <FilePick label="Attach a PDF" icon="paperclip" accept="application/pdf" value={files.pdf} onChange={setFile('pdf')} disabled={sending} />
             </div>
 
             {error && (
-              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-body text-danger-fg">
                 {error.message}
                 {error.existingRef && (
                   <> <Link to={`/reports/${error.existingRef}`} onClick={onClose} className="font-semibold underline">Open {error.existingRef}</Link></>
@@ -229,7 +222,7 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
             )}
 
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-500">Up to {maxOpenPerArea || 2} open reports per area.</p>
+              <p className="text-caption text-fg-subtle">Up to {maxOpenPerArea || 2} open reports per area.</p>
               <div className="flex gap-2">
                 <button type="button" onClick={onClose} disabled={sending} className={btn.secondary}>Cancel</button>
                 <button type="submit" disabled={sending} className={btn.primary}>{sending ? <><Spinner /> Sending…</> : 'Send report'}</button>
@@ -238,6 +231,6 @@ export default function ReportProblemDialog({ open, context = {}, onClose }) {
           </form>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

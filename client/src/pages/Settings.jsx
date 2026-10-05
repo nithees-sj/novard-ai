@@ -1,86 +1,36 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import AppShell from '../components/layout/AppShell';
 import { ThemeOptions } from '../components/ThemeToggle';
+import { PageHeader } from '../components/ui/Headers';
+import { buttonClass } from '../components/ui/Button';
 
-const Settings = () => {
-  return (
-    <AppShell page="settings">
-          <div>
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-              <p className="text-gray-600">Manage your account preferences and configurations</p>
-            </div>
+/** One setting: what it is on the left, its control on the right. */
+const Row = ({ id, title, description, children }) => (
+  <section aria-labelledby={id} className="grid gap-4 py-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-10">
+    <div>
+      <h2 id={id} className="text-body font-semibold text-fg">{title}</h2>
+      <p className="mt-1 max-w-sm text-small text-fg-muted">{description}</p>
+    </div>
+    <div className="flex items-start md:justify-end">{children}</div>
+  </section>
+);
 
-            {/* Appearance */}
-            <section className="mb-6 bg-surface rounded-xl border border-gray-200 p-6" aria-labelledby="appearance-title">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 id="appearance-title" className="text-lg font-semibold text-gray-900">Appearance</h2>
-                  <p className="text-sm text-gray-600">
-                    Choose light or dark, or follow your device. Saved to your account, so it follows you to other devices.
-                  </p>
-                </div>
-                <ThemeOptions />
-              </div>
-            </section>
-
-            {/* Placeholder Content */}
-            <div className="bg-surface rounded-xl border border-gray-200 p-12">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                  <svg 
-                    className="w-10 h-10 text-gray-400" 
-                    aria-hidden="true"
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" 
-                    />
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
-                    />
-                  </svg>
-                </div>
-                
-                <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-                  More Settings Coming Soon
-                </h2>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  We're working on bringing you powerful settings and customization options. 
-                  Stay tuned for updates!
-                </p>
-              </div>
-
-              {/* Placeholder Settings Sections */}
-              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Account Settings</h3>
-                  <p className="text-sm text-gray-600">Manage your account preferences and security options</p>
-                </div>
-                
-                <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Notifications</h3>
-                  <p className="text-sm text-gray-600">Configure how you receive updates and alerts</p>
-                </div>
-                
-                <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Privacy</h3>
-                  <p className="text-sm text-gray-600">Control your privacy and data sharing preferences</p>
-                </div>
-              </div>
-            </div>
-          </div>
-    </AppShell>
-  );
-};
+const Settings = () => (
+  <AppShell page="settings">
+    <PageHeader title="Settings" description="How Novard-AI looks, and where your account details live." />
+    <div className="max-w-4xl divide-y divide-line-subtle border-y border-line-subtle">
+      <Row id="appearance-title" title="Appearance" description="Light, dark, or follow your device. Saved to your account, so it follows you to other devices.">
+        <ThemeOptions />
+      </Row>
+      <Row id="account-title" title="Account" description="Your name, mobile number and bio. Your email comes from your Google sign-in.">
+        <Link to="/profile" className={buttonClass({ variant: 'secondary' })}>Edit on your profile</Link>
+      </Row>
+      <Row id="reports-title" title="Problem reports" description="Problems you have reported and the Novard team's replies.">
+        <Link to="/reports" className={buttonClass({ variant: 'secondary' })}>Open my reports</Link>
+      </Row>
+    </div>
+  </AppShell>
+);
 
 export default Settings;

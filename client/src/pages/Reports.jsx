@@ -6,13 +6,15 @@ import { useReportProblem } from '../context/ReportContext';
 import { reportsApi, attachmentUrl, STATUS_LABEL, STATUS_TONE } from '../lib/reports';
 import { errorMessage } from '../lib/api';
 import { rowFocus } from '../components/ui/DataTable';
+import { SkeletonRows } from '../components/ui/States';
+import { PageHeader } from '../components/ui/Headers';
 
 const StatusBadge = ({ status }) => <Badge tone={STATUS_TONE[status] || 'gray'}>{STATUS_LABEL[status] || status}</Badge>;
 
 function ReportList({ reports, loading, onOpen }) {
   const openReport = useReportProblem();
   if (loading) {
-    return <div className="flex items-center justify-center py-16 text-sm text-gray-500"><Spinner className="mr-2 h-5 w-5 text-blue-600" /> Loading your reports…</div>;
+    return <SkeletonRows rows={3} label="Loading your reports" />;
   }
   if (!reports.length) {
     return (
@@ -28,29 +30,29 @@ function ReportList({ reports, loading, onOpen }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-y border-gray-100 bg-gray-50/70 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          <tr className="border-b border-line-subtle bg-sunken/60 text-left text-caption font-medium text-fg-subtle">
             <th className="px-6 py-2.5">Report</th>
             <th className="px-4 py-2.5">Area</th>
             <th className="px-4 py-2.5">Status</th>
             <th className="px-4 py-2.5">Sent</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-line-subtle">
           {reports.map((r) => (
             <tr
               key={r.ref}
-              className={`cursor-pointer hover:bg-gray-50/60 ${rowFocus}`}
+              className={`cursor-pointer hover:bg-sunken/60 ${rowFocus}`}
               onClick={() => onOpen(r.ref)}
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(r.ref); }}
             >
               <td className="px-6 py-3">
-                <p className="font-semibold text-gray-900">{r.ref}</p>
-                <p className="line-clamp-1 max-w-md text-xs text-gray-500">{r.text}</p>
+                <p className="num font-medium text-fg">{r.ref}</p>
+                <p className="line-clamp-1 max-w-md text-xs text-fg-subtle">{r.text}</p>
               </td>
-              <td className="px-4 py-3 text-gray-700">{r.areaLabel}</td>
+              <td className="px-4 py-3 text-fg-muted">{r.areaLabel}</td>
               <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(r.createdAt)}</td>
+              <td className="px-4 py-3 text-fg-subtle whitespace-nowrap">{formatDate(r.createdAt)}</td>
             </tr>
           ))}
         </tbody>
@@ -72,8 +74,8 @@ function Attachment({ reportRef, attachment }) {
   const icon = { screenshot: 'image', voice: 'mic', pdf: 'paperclip' }[attachment.kind] || 'paperclip';
   return (
     <div>
-      <button type="button" onClick={open} className={`${btn.secondary} py-1.5`}><Icon name={icon} /> {attachment.originalName || attachment.kind}</button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      <button type="button" onClick={open} className={btn.secondary}><Icon name={icon} /> {attachment.originalName || attachment.kind}</button>
+      {error && <p className="mt-1 text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }
@@ -107,29 +109,29 @@ function ReportDetail({ reportRef, onBack }) {
 
   if (!report) {
     return error
-      ? <div className="p-6"><p role="alert" className="text-sm text-red-600">{error}</p><button type="button" onClick={onBack} className={`${btn.ghost} mt-3`}>Back to my reports</button></div>
-      : <div className="flex items-center justify-center py-16 text-sm text-gray-500"><Spinner className="mr-2 h-5 w-5 text-blue-600" /> Loading…</div>;
+      ? <div className="p-6"><p role="alert" className="text-sm text-danger-fg">{error}</p><button type="button" onClick={onBack} className={`${btn.ghost} mt-3`}>Back to my reports</button></div>
+      : <div className="p-6"><SkeletonRows rows={3} label="Loading the report" /></div>;
   }
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <button type="button" onClick={onBack} className="mb-2 text-xs font-semibold text-blue-600 hover:underline">← All my reports</button>
-          <h2 className="text-xl font-bold text-gray-900">{report.ref}</h2>
-          <p className="text-sm text-gray-500">{report.areaLabel} · sent {formatDate(report.createdAt)}{report.resolvedAt ? ` · resolved ${formatDate(report.resolvedAt)}` : ''}</p>
+          <button type="button" onClick={onBack} className="-ml-1 mb-2 inline-flex items-center gap-1 rounded px-1 py-0.5 text-small text-fg-subtle hover:bg-sunken hover:text-fg"><Icon name="arrowLeft" className="h-3.5 w-3.5" /> All my reports</button>
+          <h2 className="num text-title font-semibold text-fg">{report.ref}</h2>
+          <p className="text-sm text-fg-subtle">{report.areaLabel} · sent {formatDate(report.createdAt)}{report.resolvedAt ? ` · resolved ${formatDate(report.resolvedAt)}` : ''}</p>
         </div>
         <StatusBadge status={report.status} />
       </div>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">What you reported</h3>
-        <p className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-surface px-4 py-3 text-sm text-gray-800">{report.text}</p>
-        {report.transcript && <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"><strong className="text-gray-900">Voice note: </strong>{report.transcript}</p>}
+        <h3 className="text-sm font-semibold text-fg">What you reported</h3>
+        <p className="whitespace-pre-wrap text-body text-fg">{report.text}</p>
+        {report.transcript && <p className="rounded-lg bg-sunken px-4 py-3 text-body text-fg-muted"><strong className="text-fg">Voice note: </strong>{report.transcript}</p>}
         {report.source?.excerpt && (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">About this AI output</p>
-            <p className="line-clamp-6 whitespace-pre-wrap text-sm text-gray-700">{report.source.excerpt}</p>
+          <div className="rounded-lg bg-sunken px-4 py-3">
+            <p className="mb-1 text-caption font-medium text-fg-subtle">About this AI output</p>
+            <p className="line-clamp-6 whitespace-pre-wrap text-sm text-fg-muted">{report.source.excerpt}</p>
           </div>
         )}
         {report.attachments?.length > 0 && (
@@ -138,22 +140,22 @@ function ReportDetail({ reportRef, onBack }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">Conversation</h3>
-        {report.notes.length === 0 && <p className="text-sm text-gray-500">No replies yet. The Novard team will reply here, and you will get a notification.</p>}
-        <ol className="space-y-3">
+        <h3 className="text-sm font-semibold text-fg">Conversation</h3>
+        {report.notes.length === 0 && <p className="text-sm text-fg-subtle">No replies yet. The Novard team will reply here, and you will get a notification.</p>}
+        <ol className="divide-y divide-line-subtle border-y border-line-subtle">
           {report.notes.map((n, i) => (
-            <li key={i} className={`rounded-lg border px-4 py-3 text-sm ${n.authorRole === 'student' ? 'border-gray-200 bg-surface' : 'border-blue-100 bg-blue-50/60'}`}>
-              <p className="mb-1 text-xs font-semibold text-gray-500">{n.from === 'you' ? 'You' : 'Novard team'} · {formatDate(n.at)}</p>
-              <p className="whitespace-pre-wrap text-gray-800">{n.body}</p>
+            <li key={i} className={`py-3 text-body ${n.authorRole === 'student' ? '' : 'pl-3 shadow-[inset_2px_0_0_rgb(var(--accent))]'}`}>
+              <p className="mb-1 text-caption font-medium text-fg-subtle">{n.from === 'you' ? 'You' : 'Novard team'} · {formatDate(n.at)}</p>
+              <p className="whitespace-pre-wrap text-fg">{n.body}</p>
             </li>
           ))}
         </ol>
         <form onSubmit={send} className="space-y-2">
-          <label htmlFor="report-reply" className="text-sm font-semibold text-gray-900">
+          <label htmlFor="report-reply" className="text-sm font-semibold text-fg">
             {report.status === 'resolved' || report.status === 'closed' ? 'Still a problem? Reply to reopen it' : 'Add more detail'}
           </label>
           <textarea id="report-reply" rows={3} value={reply} onChange={(e) => setReply(e.target.value)} maxLength={4000} className={fieldClass(false)} placeholder="Write a message to the Novard team…" disabled={sending} />
-          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-danger-fg">{error}</p>}
           <button type="submit" disabled={sending || !reply.trim()} className={btn.primary}>{sending ? <><Spinner /> Sending…</> : 'Send'}</button>
         </form>
       </section>
@@ -178,20 +180,19 @@ export default function Reports() {
   return (
     <AppShell page="reports">
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">My reports</h1>
-                <p className="text-sm text-gray-500">Problems you told us about, and what we did. You can have up to {data.maxOpenPerArea} open reports per area.</p>
-              </div>
-              <button type="button" onClick={() => openReport({})} className={btn.primary}><Icon name="flag" /> Report a problem</button>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-surface">
+            <PageHeader
+              className="mb-0"
+              title="My reports"
+              description={`Problems you told us about, and what we did. You can have up to ${data.maxOpenPerArea} open reports per area.`}
+              actions={<button type="button" onClick={() => openReport({})} className={btn.primary}><Icon name="flag" /> Report a problem</button>}
+            />
+            <div className="overflow-hidden rounded-xl bg-raised ring-1 ring-line-subtle">
               {ref
                 ? <ReportDetail reportRef={ref} onBack={() => navigate('/reports')} />
                 : <ReportList reports={data.reports} loading={loading} onOpen={(r) => navigate(`/reports/${r}`)} />}
             </div>
             {!ref && data.reports.length > 0 && (
-              <p className="text-center text-xs text-gray-500">Something else? <Link to="#" onClick={(e) => { e.preventDefault(); openReport({}); }} className="text-blue-600 hover:underline">Send another report</Link></p>
+              <p className="text-center text-small text-fg-subtle">Something else? <Link to="#" onClick={(e) => { e.preventDefault(); openReport({}); }} className="text-accent-fg hover:underline">Send another report</Link></p>
             )}
           </div>
     </AppShell>
