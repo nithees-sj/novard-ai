@@ -3,6 +3,7 @@ const { MODELS } = require('../config/ai');
 const { complete } = require('../ai/groqClient');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { converse } = require('../ai/conversation');
+const { scopeRules } = require('../ai/prompts');
 const { badRequest, notFound } = require('../utils/httpError');
 const { objectId, text } = require('../utils/validate');
 
@@ -195,8 +196,9 @@ function coachSystemPrompt(profile, analysis) {
     '  GitHub-flavoured Markdown (### headings, lists, a table when comparing).',
     '- Never emit raw HTML.',
     '- If they say they have learned something new, acknowledge it and re-prioritise their remaining gaps.',
-    '- If they ask about something unrelated to their learning or career, answer briefly and steer back.',
     '- Be honest about difficulty and timelines, and encouraging.',
+    '',
+    scopeRules('closing your skill gap or your career plans'),
   ].join('\n');
 }
 

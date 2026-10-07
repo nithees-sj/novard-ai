@@ -47,9 +47,14 @@ const Chatbot = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  // The reply being written in this session: it is typed out (AgentMessage).
+  const [liveKey, setLiveKey] = useState(null);
   const openReport = useReportProblem();
 
   const scrollRef = useRef(null);
+  const contentRef = useRef(null);
+  const atBottomRef = useRef(true);
+  atBottomRef.current = atBottom;
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const activeRef = useRef(null);
@@ -130,8 +135,16 @@ const Chatbot = () => {
     const el = scrollRef.current;
     if (el) setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
   };
-  // Follow the reply as it streams, unless the student scrolled up to read.
+  // Follow the reply as it is written, unless the student scrolled up to read.
   useEffect(() => { if (atBottom) scrollToBottom('auto'); }, [messages, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The typed reply and its cards grow after the messages stop changing: follow the height instead.
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => { if (atBottomRef.current) scrollToBottom('auto'); });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [Boolean(activeId) || messages.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps -- the list mounts once the chat is not empty
 
   // ── sending ────────────────────────────────────────────────
   const updateLast = (fn) => setMessages((list) => {
@@ -149,7 +162,9 @@ const Chatbot = () => {
     setStreaming(true);
     setStatus('');
     setAtBottom(true);
-    setMessages((list) => [...list, { role: 'user', content: text, createdAt: new Date().toISOString() }, { role: 'assistant', content: '', actions: [], pending: true }]);
+    const clientKey = `live-${Date.now()}`;
+    setLiveKey(clientKey);
+    setMessages((list) => [...list, { role: 'user', content: text, createdAt: new Date().toISOString() }, { role: 'assistant', content: '', actions: [], pending: true, clientKey }]);
     requestAnimationFrame(() => scrollToBottom('smooth'));
 
     // Tokens arrive faster than React should re-render; flush them once per frame.
@@ -200,7 +215,8 @@ const Chatbot = () => {
         onDone: ({ message }) => {
           if (frame) cancelAnimationFrame(frame);
           buffer = '';
-          if (activeRef.current === conversationId) updateLast(() => message);
+          // Keep the client key, so the reply keeps typing where it was instead of starting over.
+          if (activeRef.current === conversationId) updateLast((m) => ({ ...message, clientKey: m.clientKey }));
         },
         onError: ({ error: e }) => { throw new Error(e); },
       });
@@ -208,6 +224,7 @@ const Chatbot = () => {
       if (frame) cancelAnimationFrame(frame);
       flush();
       if (controller.signal.aborted) {
+        setLiveKey(null); // stopped: show what was written at once
         updateLast((m) => ({ ...m, pending: false, content: m.content ? `${m.content}\n\n*(stopped)*` : '*(stopped)*' }));
       } else {
         // Remove the empty reply; keep the student's message and show why.
@@ -404,7 +421,7 @@ const Chatbot = () => {
         ) : (
           <>
             <div ref={scrollRef} onScroll={onScroll} className="relative flex-1 overflow-y-auto">
-              <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
+              <div ref={contentRef} className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
                 {loadingChat ? (
                   <div className="space-y-6" aria-label="Loading chat">
                     {[0, 1].map((i) => (
@@ -417,9 +434,10 @@ const Chatbot = () => {
                   </div>
                 ) : messages.map((m, i) => (
                   <AgentMessage
-                    key={`${m.createdAt || 'pending'}-${i}`}
+                    key={m.clientKey || `${m.createdAt || 'pending'}-${i}`}
                     message={m}
                     streaming={streaming && i === messages.length - 1 && m.role === 'assistant'}
+                    animate={Boolean(m.clientKey) && m.clientKey === liveKey}
                     status={status}
                     onDecide={decide}
                     busy={streaming}

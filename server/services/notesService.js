@@ -6,6 +6,7 @@ const { MODELS } = require('../config/ai');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { complete } = require('../ai/groqClient');
 const { converse } = require('../ai/conversation');
+const { scopeRules } = require('../ai/prompts');
 const { recognizePage } = require('./ocrService');
 const { readQuizOptions, generateQuiz } = require('./quizService');
 const { condenseToFit } = require('../ai/condense');
@@ -187,7 +188,9 @@ How to answer:
 - Match the length to the question: a quick question gets a short, direct answer; "explain" or "compare" gets more.
 - Use GitHub-flavoured Markdown: ### headings only for longer answers, lists for steps and key points, fenced code blocks with a language tag for code.
 - Quote or point to the relevant part of the notes when it helps.
-- Never emit raw HTML.`;
+- Never emit raw HTML.
+
+${scopeRules('these notes, or anything else you are studying')}`;
 
   const reply = await converse({
     Model: Notes,

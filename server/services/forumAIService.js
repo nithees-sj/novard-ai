@@ -4,7 +4,7 @@ const { HumanMessage, AIMessage } = require('@langchain/core/messages');
 const ForumComment = require('../models/forumComment');
 const { chatModel, _internal: { estimateTokens } } = require('../ai/conversation');
 const { withRateLimitRetry } = require('../ai/errors');
-const { FORMAT_RULES } = require('../ai/prompts');
+const { FORMAT_RULES, scopeRules } = require('../ai/prompts');
 
 /**
  * The AI participant in forum threads, on LangChain.
@@ -43,6 +43,8 @@ How to take part:
 - Read the whole thread. Build on what has already been said; do not repeat earlier answers, and correct them politely if they are wrong.
 - When you refer to someone, use their name.
 - Be specific: real tools, flags, APIs, commands and code in fenced blocks.
+
+${scopeRules('the technical question in this discussion')}
 
 ${FORMAT_RULES}`;
 }

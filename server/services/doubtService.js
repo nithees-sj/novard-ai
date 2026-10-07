@@ -4,7 +4,7 @@ const { MODELS } = require('../config/ai');
 const { MARKDOWN_WITH_FLOWCHART } = require('../config/prompts');
 const { complete } = require('../ai/groqClient');
 const { converse } = require('../ai/conversation');
-const { FORMAT_RULES } = require('../ai/prompts');
+const { FORMAT_RULES, scopeRules } = require('../ai/prompts');
 const { parseModelJson } = require('../utils/parseModelJson');
 const { mapWithConcurrency } = require('../utils/concurrency');
 const { readQuizOptions, generateQuiz, sampleContent } = require('./quizService');
@@ -86,6 +86,8 @@ Teaching approach:
 - Build understanding step by step; use a concrete example, analogy or code where it helps.
 - When there is a common misconception behind the doubt, name it.
 - If the student seems stuck, check understanding with a quick question at the end.
+
+${scopeRules('this doubt, or anything else you are studying')}
 
 ${FORMAT_RULES}`;
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MarkdownView from '../MarkdownView';
+import useTypewriter from '../../hooks/useTypewriter';
 import AgentAvatar from './AgentAvatar';
 import ActionCard from './ActionCard';
 import AskCard from './AskCard';
@@ -29,17 +30,26 @@ const CopyButton = ({ text }) => {
 /**
  * One turn in the conversation. Assistant turns render Markdown, their cards,
  * and any questions the agent asked (answerable only on the latest turn).
+ *
+ * A reply written in this session (`animate`) is typed out at a steady pace
+ * behind a caret; its cards and questions follow once the text is written.
+ * Replies loaded from history show at once.
  */
-const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer, onReport }) => {
-  if (message.role === 'user') {
-    return (
-      <div className="flex justify-end animate-view-in">
-        <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-lg bg-sunken px-4 py-2.5 text-body leading-relaxed text-fg">
-          {message.content}
-        </div>
-      </div>
-    );
-  }
+const AgentMessage = (props) => (props.message.role === 'user' ? <UserTurn message={props.message} /> : <AssistantTurn {...props} />);
+
+const UserTurn = ({ message }) => (
+  <div className="flex justify-end animate-view-in">
+    <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-lg bg-sunken px-4 py-2.5 text-body leading-relaxed text-fg">
+      {message.content}
+    </div>
+  </div>
+);
+
+const AssistantTurn = ({ message, streaming = false, animate = false, status = '', onDecide, busy = false, canAnswer = false, onAnswer, onReport }) => {
+  const { shown, typing } = useTypewriter(message.content, animate);
+  const writing = streaming || typing;
+  // Cards, questions and the copy button wait until the reply is written.
+  const settled = !animate || !writing;
 
   const waiting = streaming && !message.content;
   return (
@@ -57,8 +67,8 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
             )}
           </div>
         ) : (
-          <div className={streaming ? 'agent-streaming' : ''}>
-            <MarkdownView content={message.content} size="base" />
+          <div className={writing ? `agent-caret${typing ? ' is-typing' : ''}` : ''} aria-busy={writing || undefined}>
+            <MarkdownView content={shown} size="base" />
           </div>
         )}
 
@@ -68,11 +78,14 @@ const AgentMessage = ({ message, streaming = false, status = '', onDecide, busy 
           </p>
         )}
 
-        {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} onDecide={onDecide} busy={busy} />)}
+        {settled && (
+          <div className={animate ? 'animate-view-in' : undefined}>
+            {(message.actions || []).map((a) => <ActionCard key={a.id} action={a} onDecide={onDecide} busy={busy} />)}
+            {message.ask && <AskCard ask={message.ask} active={canAnswer} onAnswer={onAnswer} />}
+          </div>
+        )}
 
-        {message.ask && <AskCard ask={message.ask} active={canAnswer} onAnswer={onAnswer} />}
-
-        {!streaming && message.content && (
+        {settled && !streaming && message.content && (
           <div className="mt-1.5 flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
             <CopyButton text={message.content} />
             {onReport && <ReportAction onClick={() => onReport(message)} />}

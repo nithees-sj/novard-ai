@@ -9,7 +9,7 @@ const SkillPlan = require('../models/skillPlan');
 const SkillGapSession = require('../models/skillGapSession');
 const { chatModel, MongoChatHistory } = require('../ai/conversation');
 const { withRateLimitRetry } = require('../ai/errors');
-const { FORMAT_RULES } = require('../ai/prompts');
+const { FORMAT_RULES, scopeRules } = require('../ai/prompts');
 const { searchVideos } = require('../services/youtubeService');
 const { loadActivity } = require('../services/analyticsService');
 const { getProfile, profileForPrompt } = require('../services/learnerProfileService');
@@ -132,6 +132,8 @@ You can also look at their workspace (get_my_workspace), search YouTube (search_
 
 FIRST DECIDE WHAT THE MESSAGE IS
 
+0) OUT OF SCOPE - not about learning or careers (see "Stay educational" below), e.g. "who is the CM of Tamil Nadu?", "who won the match?", "suggest a movie" (but "how is a CM chosen?" is a civics question - answer it). Checked before anything else: reply with the short, kind decline and call no tools.
+
 B) A REQUEST TO CREATE - checked first. They ask you to create, make, build, generate, find, fetch, add, save, post or set up one of the things above ("make me a roadmap", "find me a short video on git branching", "create a doubt about Docker", "a 7-day plan for React"), or say yes to your offer, or send details for something they asked for earlier.
    Then do NOT write the item in the chat (no roadmap, plan or explanation in your reply) - prepare it:
    1. Your FIRST step is always the matching prepare_* call - before asking anything, even if a value looks wrong or details are missing; the server checks everything at once and tells you exactly what to ask. Pass what you know from the conversation, listing in \`stated\` only the fields the student actually told you. Leave out what you do not know - never guess to fill the form.
@@ -153,9 +155,11 @@ A) A QUESTION or learning request - "what is Docker?", "I have a doubt in React 
 
 ALWAYS
 - Never say something was created unless the conversation shows its card with status "done". A draft is not created yet.
-- If they mention a lasting fact about themselves (level, experience, skills, weekly time, goal, preferred language or style) outside a draft, you may offer remember_about_student - once per fact.
+- If they mention a lasting fact about themselves (level, experience, skills, weekly time, goal, preferred language or style) outside a draft, you may offer remember_about_student - once per fact. It is saved only if they press Yes, so never say you have noted, saved or remembered it; say you can remember it if they confirm.
 - Use get_my_workspace when their existing work matters (progress, scores, what to do next).
 - Be warm, specific and concise. Use their name occasionally.
+
+${scopeRules('anything you are learning, a doubt, a roadmap, a study plan or your career')}
 
 ${FORMAT_RULES}`;
 }
@@ -324,7 +328,7 @@ async function runTurn({ conversationId, userId, userName, input, emit, signal }
         return { error: error.message };
       }
       addCard({ id: newActionId(), type: 'profile_update', origin: 'suggested', status: 'proposed', args: patch, updatedAt: new Date() });
-      return { ok: true, note: 'The "Remember this?" card is shown; it is saved only if they press Yes. Continue your reply.' };
+      return { ok: true, note: 'The "Remember this?" card is shown; nothing is saved unless they press Yes. Continue your reply, but do not say you noted, saved or will remember it - say you can remember it for future chats if they confirm below.' };
     }
 
     if (name === SUGGEST_TOOL.function.name) {
