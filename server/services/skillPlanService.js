@@ -17,13 +17,16 @@ const LEVELS = ['beginner', 'intermediate'];
 const QUIZ_DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 
 /** Clean the student's plan request; throws 400 on anything unusable. */
-function readPlanRequest({ skillName, duration, description, preferences }) {
+function readPlanRequest({ skillName, duration, description, preferences, topics }) {
   if (!skillName || !duration || !description) throw badRequest('Missing required fields');
   const days = number(duration, 'Duration', { min: -Infinity });
   if (days < MIN_DAYS) throw badRequest(`Duration must be at least ${MIN_DAYS} days`);
   if (days > MAX_DAYS || !Number.isInteger(days)) throw badRequest(`Duration must be a whole number of days, at most ${MAX_DAYS}`);
 
   const prefs = preferences && typeof preferences === 'object' ? preferences : {};
+  const cleanTopics = (Array.isArray(topics) ? topics : [])
+    .filter((t) => typeof t === 'string' || typeof t === 'number')
+    .map((t) => String(t).replace(/\s+/g, ' ').trim().slice(0, 200)).filter(Boolean).slice(0, MAX_DAYS);
   return {
     skillName: text(skillName, 'Skill name', { max: 100 }),
     duration: days,
@@ -35,10 +38,12 @@ function readPlanRequest({ skillName, duration, description, preferences }) {
       language: text(prefs.language, 'Language', { required: false, max: 40 }) || 'English',
       teachingStyle: text(prefs.teachingStyle, 'Teaching style', { required: false, max: 60 }) || 'Standard',
     },
+    // Tasks the plan must follow, in order (a todo list turned into a plan).
+    ...(cleanTopics.length ? { topics: cleanTopics } : {}),
   };
 }
 
-function planPrompt({ skillName, duration, description, preferences }) {
+function planPrompt({ skillName, duration, description, preferences, topics = [] }) {
   return `Generate a ${duration}-day learning plan for "${skillName}".
 
 Learning Goal: ${description}
@@ -46,7 +51,10 @@ Level: ${preferences.level}
 ${preferences.focusAreas.length > 0 ? `Focus Areas: ${preferences.focusAreas.join(', ')}` : ''}
 Language Preference: ${preferences.language}
 Teaching Style Preference: ${preferences.teachingStyle}
-
+${topics.length > 0 ? `
+The student's own task list - the plan must cover every task, in this order. Give a big task several days, combine small related ones into one day, and use any spare days for practice and revision:
+${topics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+` : ''}
 Create a structured day-by-day learning plan from absolute basics to practical application.
 
 For each day (Days 1-${duration}), provide:
@@ -142,7 +150,9 @@ async function createSkillPlan({ userId, ...request }) {
     completed: false,
   }));
 
-  return SkillPlan.create({ userId, ...plan, dailyPlan });
+  const fields = { ...plan };
+  delete fields.topics; // they shaped the prompt; the plan's days carry them
+  return SkillPlan.create({ userId, ...fields, dailyPlan });
 }
 
 async function findOwnPlan(userId, planId) {

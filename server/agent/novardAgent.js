@@ -6,6 +6,7 @@ const DoubtClearance = require('../models/doubtClearance');
 const YouTubeVideo = require('../models/youtubeVideo');
 const Roadmap = require('../models/roadmap');
 const SkillPlan = require('../models/skillPlan');
+const { recentListsSummary } = require('../services/todoService');
 const SkillGapSession = require('../models/skillGapSession');
 const { chatModel, MongoChatHistory } = require('../ai/conversation');
 const { withRateLimitRetry } = require('../ai/errors');
@@ -58,7 +59,7 @@ const READ_TOOLS = [
     type: 'function',
     function: {
       name: 'get_my_workspace',
-      description: 'See what the student already has in Novard-AI: their doubts, videos, roadmaps, learning plans with progress, skill-gap analyses and recent quiz scores. Use it to personalise advice, refer to their progress, and suggest what to do next.',
+      description: 'See what the student already has in Novard-AI: their doubts, videos, roadmaps, learning plans with progress, skill-gap analyses, todo lists and recent quiz scores. Use it to personalise advice, refer to their progress, and suggest what to do next.',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -125,6 +126,7 @@ WHAT YOU CAN CREATE IN THE APP
 - Smart Roadmap: a personalised, staged career roadmap towards a role.
 - Skill Unlocker: a day-by-day learning plan for one skill (10-60 days).
 - Skill Gap Analysis: their skills compared with a target role.
+- Todo lists: a checklist of tasks to get done (exam prep, assignments, a project, applications). The student can later turn a list into a Skill Unlocker plan on the Todo lists page.
 - AI Forum: a public discussion when other students' experience would help.
 - A problem report: when the student says something in Novard-AI is broken or an AI answer was wrong, prepare_report_problem drafts a report to the Novard team (they follow it in My reports).
 You never create anything yourself. prepare_* shows the student a DRAFT with every detail filled in, which they check and create. suggest_next_step offers one of these as a small card after an answer.
@@ -134,7 +136,7 @@ FIRST DECIDE WHAT THE MESSAGE IS
 
 0) OUT OF SCOPE - not about learning or careers (see "Stay educational" below), e.g. "who is the CM of Tamil Nadu?", "who won the match?", "suggest a movie" (but "how is a CM chosen?" is a civics question - answer it). Checked before anything else: reply with the short, kind decline and call no tools.
 
-B) A REQUEST TO CREATE - checked first. They ask you to create, make, build, generate, find, fetch, add, save, post or set up one of the things above ("make me a roadmap", "find me a short video on git branching", "create a doubt about Docker", "a 7-day plan for React"), or say yes to your offer, or send details for something they asked for earlier.
+B) A REQUEST TO CREATE - checked first. They ask you to create, make, build, generate, find, fetch, add, save, post or set up one of the things above ("make me a roadmap", "find me a short video on git branching", "create a doubt about Docker", "a 7-day plan for React", "make a todo list for my DBMS exam"), or say yes to your offer, or send details for something they asked for earlier.
    Then do NOT write the item in the chat (no roadmap, plan or explanation in your reply) - prepare it:
    1. Your FIRST step is always the matching prepare_* call - before asking anything, even if a value looks wrong or details are missing; the server checks everything at once and tells you exactly what to ask. Pass what you know from the conversation, listing in \`stated\` only the fields the student actually told you. Leave out what you do not know - never guess to fill the form.
    2. The result says what to do next:
@@ -149,7 +151,7 @@ B) A REQUEST TO CREATE - checked first. They ask you to create, make, build, gen
 
 A) A QUESTION or learning request - "what is Docker?", "I have a doubt in React hooks", "how do I become a DevOps engineer?", "explain volumes".
    1. Answer fully: a clear explanation, a small code or real-world example, common mistakes.
-   2. Every real learning question also gets ONE offer - call suggest_next_step (only a tool call creates the card; words alone do not): doubt for a concept · roadmap for career direction · skill_plan to learn a skill over time · skill_gap_analysis for readiness for a role · video when a video would help · forum_post for other students' experience.
+   2. Every real learning question also gets ONE offer - call suggest_next_step (only a tool call creates the card; words alone do not): doubt for a concept · roadmap for career direction · skill_plan to learn a skill over time · skill_gap_analysis for readiness for a role · todo_list when they have several things to get done · video when a video would help · forum_post for other students' experience.
    3. End with one short sentence pointing to the card, e.g. "Want to keep going on this? I can save it as a doubt - just confirm below." If you did not call suggest_next_step, do not mention a card.
    No offers for small talk, and never offer again something they declined in this chat.
 
@@ -212,13 +214,14 @@ function readAsk(args) {
 // ── read tools ─────────────────────────────────────────────────────────────
 
 async function workspace(userId) {
-  const [doubts, videos, roadmaps, plans, gaps, activity] = await Promise.all([
+  const [doubts, videos, roadmaps, plans, gaps, activity, todoLists] = await Promise.all([
     DoubtClearance.find({ userId }).sort({ createdAt: -1 }).limit(10).select('title createdAt').lean(),
     YouTubeVideo.find({ userId }).sort({ createdAt: -1 }).limit(10).select('title createdAt').lean(),
     Roadmap.find({ userId }).sort({ createdAt: -1 }).limit(5).select('role inputs.level totalWeeks createdAt').lean(),
     SkillPlan.find({ userId }).sort({ createdAt: -1 }).limit(8).select('skillName duration dailyPlan.completed createdAt').lean(),
     SkillGapSession.find({ userId }).sort({ updatedAt: -1 }).limit(5).select('profile.targetRole analysis.readiness analysis.gaps.skill updatedAt').lean(),
     loadActivity(userId).then((r) => r.data).catch(() => null),
+    recentListsSummary(userId).catch(() => []),
   ]);
   const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
   return {
@@ -235,6 +238,7 @@ async function workspace(userId) {
       readiness: g.analysis?.readiness,
       topGaps: (g.analysis?.gaps || []).slice(0, 4).map((x) => x.skill),
     })),
+    todoLists,
     recentQuizzes: (activity?.attempts || [])
       .sort((a, b) => b.at - a.at)
       .slice(0, 6)

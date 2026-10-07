@@ -19,6 +19,7 @@ const inputClass = 'w-full rounded-lg border border-line bg-raised px-3 py-1.5 t
 
 function problemFor(f, v) {
   const required = f.need === 'must' || f.need === 'auto';
+  if (f.type === 'lines') return required && !(v || []).some((x) => String(x).trim()) ? `Add at least one ${f.label.toLowerCase().replace(/s$/, '')}.` : null;
   if (f.type === 'tags' || f.type === 'video') return null;
   if (v === undefined || v === null || String(v).trim() === '') return required ? `${f.label} is required.` : null;
   if (f.type === 'int') {
@@ -53,6 +54,15 @@ const VideoPicker = ({ candidates = [], value, onChange }) => (
 
 function Input({ f, value, onChange, id, candidates }) {
   if (f.type === 'video') return <VideoPicker candidates={candidates} value={value} onChange={onChange} />;
+  // One entry per line (todo tasks), so commas stay part of the text.
+  if (f.type === 'lines') {
+    return (
+      <>
+        <textarea id={id} rows={Math.min(10, Math.max(3, (value || []).length + 1))} value={(value || []).join('\n')} onChange={(e) => onChange(e.target.value.split('\n'))} className={`${inputClass} resize-y leading-relaxed`} />
+        <p className="mt-1 text-caption text-fg-subtle">One per line</p>
+      </>
+    );
+  }
   if (f.type === 'tags') return <TagInput id={id} value={value || []} onChange={onChange} max={f.maxItems || 20} />;
   if (f.type === 'textarea') return <textarea id={id} rows={3} value={value ?? ''} maxLength={f.max} onChange={(e) => onChange(e.target.value)} className={`${inputClass} resize-y`} />;
   if (f.type === 'int') return <input id={id} type="number" min={f.min} max={f.max} value={value ?? ''} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} className={`${inputClass} w-28`} />;
@@ -99,7 +109,8 @@ const DraftForm = ({ action, confirmLabel, onCreate, onCancel, busy }) => {
     setTouched(true);
     if (problems.length) return;
     // Only the draft's own fields are sent; the server re-checks them.
-    const edits = Object.fromEntries(fields.map((f) => [f.key, values[f.key] === '' ? null : values[f.key]]).filter(([, v]) => v !== undefined));
+    const clean = (f, v) => (f.type === 'lines' && Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : v);
+    const edits = Object.fromEntries(fields.map((f) => [f.key, values[f.key] === '' ? null : clean(f, values[f.key])]).filter(([, v]) => v !== undefined));
     onCreate(edits, remember);
   };
 

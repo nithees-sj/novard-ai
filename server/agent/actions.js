@@ -3,6 +3,7 @@ const { addYouTubeVideo } = require('../services/videoSummarizerService');
 const { createRoadmapFor } = require('../services/roadmapService');
 const { createSkillPlan } = require('../services/skillPlanService');
 const { startSession } = require('../services/skillGapService');
+const { createList } = require('../services/todoService');
 const { openIssue, CATEGORIES } = require('../services/forumService');
 const { searchVideos } = require('../services/youtubeService');
 const { cleanPatch, updateProfile, FIELDS: PROFILE_FIELDS } = require('../services/learnerProfileService');
@@ -10,6 +11,7 @@ const DoubtClearance = require('../models/doubtClearance');
 const Roadmap = require('../models/roadmap');
 const SkillPlan = require('../models/skillPlan');
 const SkillGapSession = require('../models/skillGapSession');
+const TodoList = require('../models/todoList');
 const { badRequest } = require('../utils/httpError');
 const { AREAS } = require('../config/earlyWarning');
 
@@ -92,6 +94,12 @@ function readField(f, raw) {
     }
     case 'tags': {
       const items = list(raw, f.maxItems || 20, f.maxLen || 40);
+      return items.length ? { value: items } : { missing: true, empty: true };
+    }
+    case 'lines': { // one entry per line (todo tasks): commas are part of the text
+      const items = (Array.isArray(raw) ? raw : String(raw).split('\n'))
+        .filter((x) => typeof x === 'string' || typeof x === 'number')
+        .map((x) => clean(String(x).replace(/^\s*(?:[-*•]|\d+[.)])\s+/, ''), f.maxLen || 200)).filter(Boolean).slice(0, f.maxItems || 30);
       return items.length ? { value: items } : { missing: true, empty: true };
     }
     case 'video':
@@ -386,6 +394,30 @@ const ACTIONS = {
     },
   },
 
+  create_todo_list: {
+    tool: 'todo_list',
+    label: 'Create a todo list',
+    section: 'Todo lists',
+    prepareHint: 'the tasks they need to do (from what they said, split into clear steps that start with a verb).',
+    fields: [
+      { key: 'title', label: 'List name', type: 'text', need: 'auto', min: 2, max: 120, describe: 'You write it: 2-6 words, e.g. "DBMS exam prep"' },
+      { key: 'items', label: 'Tasks', type: 'lines', need: 'must', maxItems: 30, maxLen: 200, ask: 'What do you need to get done? List the tasks, or tell me the goal and deadline and I will break it down.', describe: 'One concrete task per entry, in order, e.g. "Revise normalisation (1NF-BCNF)". Stated = they gave the tasks or a goal you broke down' },
+      { key: 'description', label: 'About this list', type: 'textarea', need: 'should', max: 500, describe: 'Optional: the goal or deadline, in their words' },
+    ],
+    summary: (a) => [a.title, a.items?.length && `${a.items.length} ${a.items.length === 1 ? 'task' : 'tasks'}`].filter(Boolean).join(' · '),
+    async findExisting(a, userId) {
+      if (!a.title) return null;
+      const hit = await TodoList.findOne({ userId, title: sameText(a.title) }).sort({ updatedAt: -1 }).select('title items.done').lean();
+      if (!hit) return null;
+      const items = hit.items || [];
+      return { label: `a list called "${hit.title}"`, route: `/todos?open=${hit._id}`, progress: `${items.filter((i) => i.done).length} of ${items.length} tasks done` };
+    },
+    async run(a, ctx) {
+      const list = await createList({ userId: ctx.userId, title: a.title, description: a.description || '', items: a.items, source: 'agent' });
+      return { itemId: list._id, route: `/todos?open=${list._id}`, label: 'Open list', note: `${list.total} ${list.total === 1 ? 'task' : 'tasks'}` };
+    },
+  },
+
   skill_gap_analysis: {
     tool: 'skill_gap_analysis',
     label: 'Run a skill gap analysis',
@@ -494,7 +526,7 @@ const paramFor = (f) => {
   const d = description ? { description } : {};
   if (f.type === 'int') return { type: ['integer', 'null'], ...d };
   if (f.type === 'select') return { type: ['string', 'null'], ...d };
-  if (f.type === 'tags') return { type: ['array', 'null'], items: { type: 'string' }, ...d };
+  if (f.type === 'tags' || f.type === 'lines') return { type: ['array', 'null'], items: { type: 'string' }, ...d };
   return { type: ['string', 'null'], ...d };
 };
 
@@ -518,7 +550,7 @@ const KIND_TO_TYPE = Object.fromEntries(Object.entries(ACTIONS).filter(([, a]) =
 
 const SUGGEST_TOOL = fn(
   'suggest_next_step',
-  'After answering a learning question, offer ONE next step as a small card. Never use it when they asked you to create something (use prepare_* then). If they say Yes, you gather the details and call prepare_*. Kinds: doubt = keep exploring a concept (chat, diagram, quiz) · video = a video would help · roadmap = career direction · skill_plan = learn a skill day by day · skill_gap_analysis = readiness for a role · forum_post = other students\' experience.',
+  'After answering a learning question, offer ONE next step as a small card. Never use it when they asked you to create something (use prepare_* then). If they say Yes, you gather the details and call prepare_*. Kinds: doubt = keep exploring a concept (chat, diagram, quiz) · video = a video would help · roadmap = career direction · skill_plan = learn a skill day by day · skill_gap_analysis = readiness for a role · todo_list = a checklist of tasks to get done (exam prep, a project, applications) · forum_post = other students\' experience.',
   {
     kind: { type: 'string', description: `One of: ${Object.keys(KIND_TO_TYPE).join(', ')}` },
     topic: { type: 'string', description: 'What it would be about, e.g. "Docker volumes vs bind mounts"' },
@@ -541,6 +573,7 @@ const SUGGEST_LINES = {
   add_video: 'I can find a good video on this and add it to your library - just confirm below.',
   generate_roadmap: 'I can turn this into a personalised roadmap for you in Smart Roadmap - just confirm below.',
   create_skill_plan: 'Want a day-by-day plan for this? I can build one in Skill Unlocker - just confirm below.',
+  create_todo_list: 'I can turn this into a todo list so you can tick things off as you go - just confirm below.',
   skill_gap_analysis: 'I can check exactly which skills you are missing for this role - just confirm below.',
   forum_post: 'Other students may have been through this - I can post it to the AI Forum for you, just confirm below.',
 };

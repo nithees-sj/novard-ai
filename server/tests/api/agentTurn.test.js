@@ -298,3 +298,44 @@ describe('Novard Agent memory view', () => {
     expect(text).toMatch(/\[You asked, with tap-to-answer options: Which level\?\]/);
   });
 });
+
+describe('Novard Agent turn: todo lists', () => {
+  const TodoList = require('../../models/todoList');
+  const { decideAction } = require('../../agent/conversations');
+
+  it('drafts a todo list one task per line, and creates it only on Create, with the student’s edits', async () => {
+    const { message, saved } = await turn('Make me a todo list for my DBMS exam on Friday', [
+      { tools: [{ name: 'prepare_todo_list', args: { title: 'DBMS exam prep', items: ['1. Revise ER diagrams, keys and constraints', '- Practise SQL joins', ''], description: null, stated: ['items'] } }] },
+    ]);
+    const [draft] = message.actions;
+    expect(draft).toMatchObject({
+      type: 'create_todo_list',
+      status: 'draft',
+      args: { title: 'DBMS exam prep', items: ['Revise ER diagrams, keys and constraints', 'Practise SQL joins'] },
+      provenance: { items: 'chat', title: 'auto' },
+    });
+    expect(draft.meta.fields.find((f) => f.key === 'items')).toMatchObject({ type: 'lines', need: 'must' });
+    expect(message.content).toMatch(/create a todo list: \*\*DBMS exam prep · 2 tasks\*\*/);
+    expect(await TodoList.countDocuments()).toBe(0);
+
+    const action = await decideAction({
+      userId: ALICE.email, userName: 'Alice', conversationId: String(saved._id), actionId: draft.id, decision: 'create',
+      args: { items: 'Revise ER diagrams, keys and constraints\nPractise SQL joins\nSolve past papers' },
+    });
+    expect(action).toMatchObject({ status: 'done', result: { label: 'Open list', note: '3 tasks' } });
+    const list = await TodoList.findOne({ userId: ALICE.email }).lean();
+    expect(list).toMatchObject({ title: 'DBMS exam prep', source: 'agent' });
+    expect(list.items.map((i) => i.text)).toEqual(['Revise ER diagrams, keys and constraints', 'Practise SQL joins', 'Solve past papers']);
+    expect(action.result.route).toBe(`/todos?open=${list._id}`);
+  });
+
+  it('asks for the tasks when the student has not said what they need to do', async () => {
+    await turn('Make me a todo list', [
+      { tools: [{ name: 'prepare_todo_list', args: { title: 'My tasks', items: null, stated: [] } }] },
+      { tools: [{ name: 'prepare_todo_list', args: { title: 'My tasks', items: null, stated: [] } }] },
+      { tools: [{ name: 'ask_student', args: { questions: [{ question: 'What do you need to get done?', options: ['Exam prep', 'A project'] }] } }] },
+    ]);
+    expect(toolResults().some((r) => r.status === 'needs_info' && r.missing.some((m) => m.key === 'items'))).toBe(true);
+    expect(await TodoList.countDocuments()).toBe(0);
+  });
+});

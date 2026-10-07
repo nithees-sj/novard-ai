@@ -48,6 +48,13 @@ const TYPES = {
     running: 'Building your plan and finding a video for each day - up to a minute…',
     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   },
+  create_todo_list: {
+    title: 'Create a todo list',
+    section: 'Todo lists',
+    confirm: 'Create list',
+    running: 'Saving your list…',
+    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+  },
   skill_gap_analysis: {
     title: 'Analyse your skill gap',
     section: 'Skill Gap Analysis',
@@ -116,7 +123,11 @@ function ReadOnly({ action }) {
       )}
       {fields.filter((f) => f.type !== 'video' && a[f.key] !== undefined && a[f.key] !== '').map((f) => (
         <Field key={f.key} label={f.label}>
-          <span className={f.type === 'textarea' ? 'text-fg-muted line-clamp-3' : ''}>{show(f, a[f.key])}</span>
+          {f.type === 'lines' && Array.isArray(a[f.key]) ? (
+            <ol className="list-decimal space-y-0.5 pl-5 text-fg-muted">{a[f.key].map((x, i) => <li key={i}>{x}</li>)}</ol>
+          ) : (
+            <span className={f.type === 'textarea' ? 'text-fg-muted line-clamp-3' : ''}>{show(f, a[f.key])}</span>
+          )}
         </Field>
       ))}
       {/* A card from before drafts existed: fall back to its one-line summary. */}

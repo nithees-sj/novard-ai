@@ -1,4 +1,5 @@
 import { api, apiFetch } from './api';
+import { localToday } from './todos';
 
 /**
  * Problem reports and notifications (the student side).
@@ -24,7 +25,8 @@ export const reportsApi = {
   mine: () => api.get('/api/reports/mine').then((r) => r.data),
   get: (ref) => api.get(`/api/reports/${encodeURIComponent(ref)}`).then((r) => r.data),
   reply: (ref, body) => api.post(`/api/reports/${encodeURIComponent(ref)}/notes`, { body }).then((r) => r.data),
-  notifications: () => api.get('/api/notifications').then((r) => r.data),
+  // `today` (the student's local date) lets the server turn due todo tasks into reminders.
+  notifications: () => api.get('/api/notifications', { params: { today: localToday() } }).then((r) => r.data),
   markRead: (ids) => api.post('/api/notifications/read', ids ? { ids } : {}).then((r) => r.data),
 };
 

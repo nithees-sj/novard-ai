@@ -21,6 +21,7 @@ const PAGE_LOADERS = {
   forum: () => import("./pages/Forum"),
   video: () => import("./pages/Video"),
   skillUnlocker: () => import("./pages/SkillUnlocker"),
+  todos: () => import("./pages/Todos"),
   reports: () => import("./pages/Reports"),
 };
 const Landing = lazy(() => import("./pages/Landing"));
@@ -33,6 +34,7 @@ const Doubts = lazy(PAGE_LOADERS.doubts);
 const Forum = lazy(PAGE_LOADERS.forum);
 const Video = lazy(PAGE_LOADERS.video);
 const SkillUnlocker = lazy(PAGE_LOADERS.skillUnlocker);
+const Todos = lazy(PAGE_LOADERS.todos);
 const Reports = lazy(PAGE_LOADERS.reports);
 
 /**
@@ -98,6 +100,7 @@ function AppRoutes() {
         <Route path="/chatbot" element={protectedRoute(<Chatbot />)} />
         <Route path="/career" element={protectedRoute(<Career />)} />
         <Route path="/skill-unlocker" element={protectedRoute(<SkillUnlocker />)} />
+        <Route path="/todos" element={protectedRoute(<Todos />)} />
         <Route path="/doubts" element={protectedRoute(<Doubts />)} />
         <Route path="/forum" element={protectedRoute(<Forum />)} />
         <Route path="/video" element={protectedRoute(<Video />)} />

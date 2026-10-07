@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
  */
 const notificationSchema = new mongoose.Schema({
   userId: { type: String, required: true }, // email
-  kind: { type: String, enum: ['report_resolved', 'report_reply', 'announcement', 'ai_limit'], required: true },
+  kind: { type: String, enum: ['report_resolved', 'report_reply', 'announcement', 'ai_limit', 'todo_due'], required: true },
   title: { type: String, required: true, maxlength: 200 },
   body: { type: String, default: '', maxlength: 2000 },
   reportRefs: [String],

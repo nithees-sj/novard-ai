@@ -8,6 +8,7 @@ router.use(require('./doubts'));
 router.use(require('./videos'));
 router.use(require('./forum'));
 router.use(require('./learning'));
+router.use(require('./todos'));
 router.use(require('./agent'));
 router.use(require('./appStatus'));
 router.use(require('./aiUsage'));

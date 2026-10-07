@@ -2,7 +2,7 @@
 
 **An AI-driven career development and learning platform built on the MERN stack.**
 
-Novard-AI bundles career planning, self-paced learning, document/video comprehension and a community Q&A forum into one application. Nearly every feature is backed by a large language model — Groq (gpt-oss) for text generation and Google Gemini for course discovery — so plans, quizzes, summaries and answers are generated on demand rather than pulled from a fixed catalogue.
+Novard-AI bundles career planning, self-paced learning, task planning, document/video comprehension and a community Q&A forum into one application, with an AI agent that can set any of it up for the student. Nearly every feature is backed by a large language model — Groq (gpt-oss) for text generation and Google Gemini for course discovery — so plans, quizzes, summaries and answers are generated on demand rather than pulled from a fixed catalogue. Behind the student app sits an admin console with an early-warning system that spots problems in each area of the app before they grow.
 
 <p align="center">
   <img src="NOVARD_AI_SYSTEM_ARCHITECTURE.png" alt="Novard-AI system architecture" width="820">
@@ -12,7 +12,9 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 
 ## Table of Contents
 
+- [At a glance](#at-a-glance)
 - [Features](#features)
+- [Novard Agent](#novard-agent)
 - [Early warning & admin console](#early-warning--admin-console)
 - [Architecture](#architecture)
 - [Security](#security)
@@ -31,13 +33,41 @@ Novard-AI bundles career planning, self-paced learning, document/video comprehen
 
 ---
 
+## At a glance
+
+Everything in the application, and where to read more.
+
+**For students** (every page is in the sidebar; sign-in is with Google):
+
+| Page | Path | What it is for |
+| --- | --- | --- |
+| Home | `/home` | Dashboard: skill score, quiz accuracy, plan completion, study streak, 7-day study time, subject radar, strengths and weak spots. [More](#dashboard-analytics-home) |
+| Novard Agent | `/chatbot` | An AI assistant that teaches and, after the student confirms a draft, creates things anywhere in the app: doubts, videos, roadmaps, skill plans, todo lists, skill-gap analyses, forum posts and problem reports. [More](#novard-agent) |
+| Doubts & Notes | `/doubts` | **Doubt Clearance** (ask a tutor, then summary, quiz and videos per doubt) and **Notes & Quiz** (chat with, summarise and get quizzed on your PDFs, scanned ones included). [More](#doubts--notes-doubts) |
+| Skill Plans | `/skill-unlocker` | **Skill Unlocker**: a day-by-day learning plan (10–60 days) with a YouTube video per day, progress tracking and quizzes on what you finished. [More](#skill-unlocker-skill-unlocker) |
+| Todo lists | `/todos` | Lists of tasks with due dates, priorities, notes and steps. Write them yourself, let AI draft them, or ask the agent; turn any list into a Skill Plan; get reminders in the bell. [More](#todo-lists-todos) |
+| Videos | `/video` | **Video Library** (AI-searched videos and courses for what you want to learn) and **Video Summarizer** (chat, summary and quiz for any YouTube video). [More](#videos-video) |
+| Career | `/career` | **Smart Roadmap** (a personalised, staged roadmap to a role, drawn as a diagram) and **Skill Gap Analysis** (what you are missing for a role, plus a coaching chat). [More](#career-career) |
+| Forum | `/forum` | A Q&A board where the AI answers every post and reply, with categories, status, search, sorting and voting. [More](#ai-forum-forum) |
+| Profile | `/profile` | Your details, current goal, activity charts, 52-week study calendar, every test taken, learning path and subject mastery. [More](#profile-profile) |
+| Settings | `/settings` | Light, dark or system theme (saved to your account) and links to your account details and reports. |
+| My reports | `/reports` | Problems you reported and the Novard team's replies. |
+
+**Across the whole app:** "Report a problem" on every AI answer, a notification bell (report replies, announcements, AI-limit notices, todo reminders), every quiz built from one customisable setup screen, every chat with long-term memory, AI kept to educational topics, and a responsive light/dark design. [More](#everywhere-else)
+
+**For admins** (`/admin`, the same Google sign-in): a risk board that scores every area of the app from student reports and the app's own logs, AI investigations with cited evidence, a reports inbox, gateway health and AI spend, users, forum moderation, every runtime setting (tool switches, rate limits, per-student AI token limits), announcements, an admin assistant and an audit log. [More](#early-warning--admin-console)
+
+**Under the hood:** React 18 + Tailwind client, Express + MongoDB API, Groq gpt-oss models through LangChain/LangGraph, Gemini, YouTube, Tesseract OCR; Jest test suites on both sides; Docker and Google Cloud Run deployment. [More](#architecture)
+
+---
+
 ## Features
 
 ### Authentication & profile
 
-Sign-in is **Google OAuth 2.0** through `@react-oauth/google` (implicit flow). The browser sends the Google access token to `POST /api/auth/google`; the API asks Google whether the token is valid, was issued to *this* app's OAuth client and belongs to a verified email, creates the account on first sign-in, and returns a signed **session token** (JWT, 7 days by default). The client keeps it in `localStorage` ([lib/session.js](client/src/lib/session.js)) and sends it as `Authorization: Bearer …` on every request ([lib/api.js](client/src/lib/api.js)); when the API answers 401 the student is signed out. Every application route in [App.js](client/src/App.js) is guarded — unauthenticated visitors are redirected to the landing page. Users can extend their profile with a mobile number and bio from the Profile page.
+Sign-in is **Google OAuth 2.0** through `@react-oauth/google` (implicit flow). The browser sends the Google access token to `POST /api/auth/google`; the API asks Google whether the token is valid, was issued to *this* app's OAuth client and belongs to a verified email, creates the account on first sign-in, and returns a signed **session token** (JWT, 7 days by default). The client keeps it in `localStorage` ([lib/session.js](client/src/lib/session.js)) and sends it as `Authorization: Bearer …` on every request ([lib/api.js](client/src/lib/api.js)); when the API answers 401 the student is signed out. Every application route in [App.js](client/src/App.js) is guarded — unauthenticated visitors are redirected to the landing page. Users can extend their profile with a mobile number and bio from the Profile page. Admins use the same "Continue with Google" and also get into the [admin console](#early-warning--admin-console).
 
-### Career development hub (`/career`)
+### Career (`/career`)
 
 Two tools rendered inline in a single workspace:
 
@@ -57,15 +87,32 @@ The most involved module. You describe a skill, a duration (minimum 10 days), yo
 
 From there you can tick days complete, regenerate a single day's video if the match was poor (`refresh-video`), generate a configurable quiz (5–20 questions, beginner/intermediate/advanced) scoped to the days you have actually finished, and keep a history of every quiz attempt with score and completion date.
 
-### Notes: chat with your PDFs (Doubts & Learning → Notes & Quiz)
+A plan can also be made **from a todo list** (see below): the list's open tasks are passed to the same generator, which must cover them in order, giving big tasks several days and combining small ones. The Novard Agent makes plans with the same function too.
 
-Upload a PDF (the app accepts files up to 2 MB; the API itself allows 10 MB, and checks the file really is a PDF). The text is extracted with `pdf-parse` v2 (current pdf.js), chunked to fit the model context, and stored. You can then:
+### Todo lists (`/todos`)
+
+Lists of what the student needs to get done ([services/todoService.js](server/services/todoService.js), [pages/Todos.jsx](client/src/pages/Todos.jsx)):
+
+- **Lists and tasks.** Several lists, each with a name, an optional description and a progress bar. Tasks can be added, edited in place, ticked off, reordered (drag and drop, or *Move up/down* from the keyboard) and deleted, with a 5-second **Undo**. Each task can have a **due date** (badges show *Overdue*, *Today* or the day), a **priority** (high, medium, low), **notes** and a checklist of **steps**. Tasks can be filtered (to do / done, priority, due date) and sorted (my order, due date, priority), and completed ones cleared in one go.
+- **Three ways to make a list**, all in the main pane rather than a dialog:
+  - **New list:** a name, what it is for, and the first tasks typed one after another (Enter adds the next).
+  - **Plan with AI:** describe the goal and deadline; the AI drafts 3–15 concrete tasks with priorities, due dates spread before the deadline and steps for the bigger ones. The student edits the draft before it is saved. Off-topic requests get a polite decline.
+  - **The Novard Agent:** "make me a todo list for my DBMS exam" gives a draft card to check and create.
+- **Turn into a Skill Plan.** A form prefilled from the list (subject, 10–60 days, goal, level, language, style) builds a Skill Unlocker plan that follows the list's open tasks in order. The list then links to the plan, and converting it twice is refused.
+- **Reminders.** When tasks are due or overdue, the notification bell gets one reminder per list, and again if a due date changes. There is no scheduler: the check runs when the bell loads, using the student's own date, so a reminder appears the next time they open the app.
+- **Deleting a list** is offered from its row in the list rail, the list header and its menu, always after a confirmation. A Skill Plan made from the list is kept.
+
+Only the AI parts can be switched off or limited by an admin (the *Todo lists AI drafts* tool; converting counts as making a Skill Unlocker plan). The lists themselves always work.
+
+### Notes: chat with your PDFs (Doubts & Notes → Notes & Quiz)
+
+Upload a PDF (the app accepts files up to 2 MB; the API itself allows 10 MB, and checks the file really is a PDF). The text is extracted with `pdf-parse` v2 (current pdf.js). Pages without a text layer (scans) are read with **Tesseract OCR** ([services/ocrService.js](server/services/ocrService.js), up to 30 pages); a scan with no confident text is refused. The text is chunked to fit the model context and stored. You can then:
 
 - **Chat** with the document — questions are answered from the extracted text, with full chat history retained per note.
 - **Summarize** it — long documents are summarized chunk-by-chunk and then consolidated.
 - **Generate a quiz** from the content, submit answers, and store a scored result (correct / total / percentage).
 
-### Video Sessions (`/video`)
+### Videos (`/video`)
 
 Two tools behind one page:
 
@@ -76,10 +123,10 @@ Two tools behind one page:
   - The caption track (English preferred) is downloaded through Innertube's iOS client and used as the transcript; videos without captions fall back to title + description.
   - Each video then has **Chat** (answers from the transcript), **Summary** (long transcripts are sampled from start to end) and **Quiz** with saved results.
 
-### Doubts & Learning (`/doubts`)
+### Doubts & Notes (`/doubts`)
 
 - **Notes & Quiz** — entry point into the notes workflow above.
-- **Doubt Clearance** (Doubts & Learning → Doubt Clearance) — describe the doubt (plus an optional screenshot link) and the tutor answers straight away; your question becomes the first message of the chat.
+- **Doubt Clearance** (Doubts & Notes → Doubt Clearance) — describe the doubt (plus an optional screenshot link) and the tutor answers straight away; your question becomes the first message of the chat.
   - The AI writes a short, specific title from the question ([services/doubtTitle.js](server/services/doubtTitle.js)), e.g. "State Remains Old After setCount". The heading and the list show that title with the date and message count, never the description again. `npm run retitle-doubts --prefix server` retitles older doubts and keeps each old title in `previousTitle`.
   - Each doubt has four tabs: **Chat** (follow-up questions), **Summarize** (a structured recap with a flowchart), **Quiz** (after at least two exchanges) and **Videos** (YouTube recommendations picked for the doubt).
 
@@ -90,12 +137,11 @@ Notes & Quiz, Doubt Clearance, Video Summarizer and Video Library share one set 
 - **One container per item:** a slim heading bar (icon, title, one line of detail, tabs on the right) above the active tab. The list of your items sits on the right.
 - **Chat:**
   - a centred reading column;
-  - your messages in blue bubbles, the assistant's as plain 16px Markdown beside its avatar;
+  - your messages in blue bubbles, the assistant's as plain Markdown beside its avatar;
   - a typing indicator, suggested first questions, and an input box that grows as you type (Enter to send).
 - **Waiting on the AI:** summaries, quizzes and video searches show a spinner around the tool's icon, what is happening, how long it usually takes, a live seconds counter and a content skeleton. The tab shows a small spinner too.
 - **Quizzes:** lettered answers and an answered-count progress bar. After you submit, you see a score ring and every question marked right or wrong with a "Why" explanation.
 - **Adding something new:** a new doubt, video or video request is added through a form in the main area, vertically centred, with a short "how it works" strip. The list button shows when the form is open, and the form opens by itself when you have nothing yet.
-- **One palette:** blue for actions and the selected item, neutral greys, and green, amber and red only for status.
 
 ### AI Forum (`/forum`)
 
@@ -148,14 +194,18 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 - A floating **Novard Agent** button available across the app (see [Novard Agent](#novard-agent) below).
 - **Report a problem** from any AI answer, summary, quiz question, agent or coach message, forum AI reply or roadmap, from the sidebar or from the user menu (with an optional screenshot, voice note or PDF). A **notification bell** in the header and a **My reports** page (`/reports`) show the Novard team's replies and fixes. See [Early warning & admin console](#early-warning--admin-console).
-- Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output.
-- Tailwind layouts with a persistent sidebar. Every student page is reachable from it:
-  - Home, Profile and Settings;
-  - Career Development (Smart Roadmap, Skill Gap Analysis);
-  - Doubts & Learning (Notes & Quiz, Doubt Clearance);
-  - AI Forum;
-  - My Learning (Skill Unlocker);
-  - Video Sessions (Video Library, Video Summarizer).
+- **The notification bell** collects report replies and fixes, announcements, AI-limit notices and todo reminders, with an unread count.
+- **AI limits are explained, not hidden.** If an admin switches a tool off, its page says so (with the admin's message). If a student uses up a tool's AI token allowance, the tool shows when it comes back, the dashboard warns at 80% and 100%, and the bell says so once.
+- **Educational scope.** Every student chatbot (agent, doubts, notes, videos, forum AI, skill-gap coach, the todo drafter) answers learning and career questions only. Off-topic requests ("who won the match?") get a short, kind decline; explaining a subject ("how is a Chief Minister chosen?") is still answered.
+- Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output. The Novard Agent's replies are typed out smoothly as they arrive.
+- **Navigation.** A persistent sidebar (a drawer on phones), grouped as:
+  - Home and Novard Agent;
+  - **Learn:** Doubts & Notes, Skill Plans, Todo lists, Videos;
+  - **Grow:** Career, Forum;
+  - Profile and Settings (plus My reports and Report a problem).
+
+  Each page has one name, used in the sidebar, the breadcrumb, the page heading and the browser tab ([lib/pages.js](client/src/lib/pages.js)). Unknown URLs show a proper 404 page.
+- **Design system.** Semantic colour tokens with separate light and dark palettes (checked to WCAG AA contrast), one type scale (Geist), one icon set (Lucide) and shared UI primitives in [components/ui/](client/src/components/ui/): buttons, fields, menus, dialogs, badges, empty/error/loading states. Theme is chosen in Settings and saved to the account. A test ([themeGuard.test.js](client/src/__tests__/themeGuard.test.js)) keeps new code on the system. Details: [docs/ui-changes.md](docs/ui-changes.md).
 
   Tools inside a hub can be linked directly with `?tool=` and `?open=<id>` ([lib/openParam.js](client/src/lib/openParam.js)). The old standalone pages were removed. Their URLs (`/roadmap`, `/skills-required`, `/doubt-clearance`, `/notes`, `/youtube-video-summarizer`, `/youtube-videos`) redirect to the same tool inside its hub.
 
@@ -165,7 +215,7 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 ```
 ┌──────────────────────┐        ┌───────────────────────────┐
-│  React 18 SPA        │ HTTPS  │  Express API (133 routes) │
+│  React 18 SPA        │ HTTPS  │  Express API (145 routes) │
 │  CRA + Tailwind      │ Bearer │  routes → controllers →   │
 │  react-router v6     ├───────►│  services → Mongoose      │
 │  Google OAuth (impl.)│ token  │  JWT sessions, rate limits│
@@ -175,7 +225,7 @@ The charts are small SVG components written for this app ([components/profile/ch
               ▼                           ▼                          ▼
       ┌───────────────┐          ┌─────────────────┐        ┌────────────────┐
       │ MongoDB Atlas │          │ Groq (gpt-oss)  │        │ YouTube        │
-      │ 31 collections│          │ Gemini Flash    │        │ (Innertube +   │
+      │ 32 collections│          │ Gemini Flash    │        │ (Innertube +   │
       └───────────────┘          └─────────────────┘        │  search API)   │
                                                             └────────────────┘
 ```
@@ -206,7 +256,7 @@ Each can be overridden with `GROQ_MODEL_REASONING`, `GROQ_MODEL_FAST` or `GEMINI
 - **Authorization.** The student's id always comes from the session. Routes that still carry a user id in the URL or body (kept for compatibility) must match it, or the request is refused with 403. Every read, update and delete of a note, doubt, video, plan, roadmap, analysis or chat is scoped to its owner; forum posts and replies are attributed to the signed-in student, and only the author can change a discussion's status or delete it.
 - **Input validation.** Ids must be valid ObjectIds (which also blocks `{"$ne": …}`-style operator injection), text fields are length-bounded, numbers are range-checked, uploads must really be PDFs (the file signature is checked, not just the MIME type), and links that come from model output must be `http(s)`.
 - **Rate limiting** ([middleware/rateLimit.js](server/middleware/rateLimit.js)): 300 requests/min per IP, 30 AI requests/min per student, 30 sign-in attempts per 15 min per IP (all configurable).
-- **Headers & CORS.** `helmet` sets standard security headers; `CORS_ORIGINS` restricts which sites may call the API. Sessions are bearer tokens, not cookies, so there is no CSRF surface.
+- **Headers & CORS.** `helmet` sets standard security headers on the API; the client's Nginx adds a Content-Security-Policy, HSTS, `X-Frame-Options: DENY`, `nosniff`, a referrer policy and a permissions policy ([nginx.conf.template](client/nginx.conf.template)). `CORS_ORIGINS` restricts which sites may call the API. Sessions are bearer tokens, not cookies, so there is no CSRF surface.
 - **XSS.** AI output is rendered by `react-markdown` without raw HTML, and Mermaid runs with `securityLevel: 'strict'`.
 - **Admin console.** There is one "Continue with Google": when the account is an active admin, `POST /api/auth/google` also returns a separate admin token, so admins reach `/admin` without signing in again (an admin whose admin token expired gets a new one from `POST /api/auth/admin-session` while the app session is valid; `/admin/login` stays as a fallback). Signing out of either signs out of both. The admin token has its own audience and `ADMIN_JWT_EXPIRES_IN` (default 12h). A student token never passes an admin check and vice versa. Every admin request re-reads the role and status from the database, so a demoted or suspended admin loses access on the next request. Only superadmins grant or revoke admin, and the last active superadmin can never be demoted or suspended. Suspended students are signed out on their next request.
 - **Audit log.** Every admin change (settings, gateways, users, reports, approvals, announcements, moderation, email reveals, the assistant's confirmed actions) is written to `AdminAuditLog` with who, what, before and after. The console shows it read-only.
@@ -232,6 +282,7 @@ Every chat in the app runs on one LangChain conversation engine,
 - **Summary-buffer memory:** recent turns go to the model word for word. Once the unsummarised part of a chat passes `MEMORY_SUMMARIZE_AT_TOKENS` (default 10,000), the older turns are folded into a running summary saved in the document's `memory` field, keeping about `MEMORY_KEEP_RECENT_TOKENS` (default 6,000) verbatim. The student can keep asking about anything earlier in the chat, and long chats never overflow the model.
 - **Forum:** the AI participant uses the same LangChain pieces with the thread as its history. Human comments are labelled with the author's name, so replies can build on the whole discussion.
 
+- **Scope:** every student chat's system prompt includes the same "stay educational" rules (`scopeRules` in [ai/prompts.js](server/ai/prompts.js)); the admin assistant is the only chat without them.
 - **Rate limits:** Groq's free tier allows about 8,000 tokens per minute per model. When a request is refused with "try again in N s" (up to 30 s), every chat waits and retries automatically. The Novard Agent shows "The AI is busy - continuing in N s…" while it waits. The student never sees a raw provider error.
 
 ## Novard Agent
@@ -243,40 +294,36 @@ The assistant behind the floating button (`/chatbot`) is an **agent**: it teache
 - **Centre:** the conversation. Replies stream in word by word, with a Stop button. Assistant messages have a Copy button, and there is a jump-to-latest button when you scroll up.
 - **Other touches:** each chat gets an AI-written title, the empty screen offers starter prompts, and on phones the history becomes a drawer.
 
-**How a turn works** ([agent/novardAgent.js](server/agent/novardAgent.js)): it is a LangChain tool-calling loop on `ChatGroq`, with at most 5 model calls per turn.
-- **Read tools** run immediately:
-  - `get_my_workspace` returns the student's doubts, videos, roadmaps, plans with progress, skill-gap results and recent quiz scores;
-  - `search_youtube_videos` searches YouTube.
-- **Questions and tasks are handled differently.** Every action has two tools:
-  - **A question** ("what is Docker?", "how do I become a DevOps engineer?") gets a full answer plus ONE **suggestion** from a `propose_*` tool. It appears as a card with *Yes* / *No thanks*, and nothing is created until *Yes*. If the model forgets to suggest after a real learning question, one small extra call adds the suggestion (or none, if nothing fits or the student declined it before).
-  - **A command** ("create a doubt about…", "fetch me a video on…", "make me a roadmap for…", or "yes" to a suggestion) runs at once with the matching do tool (`create_doubt`, `add_video`, `generate_roadmap`, `create_skill_plan`, `run_skill_gap_analysis`, `post_to_forum`). Commands are recognised in code (a create/add/make… verb plus a doubt/video/roadmap/plan… object, "yes" to a suggestion, or the answer to the agent's clarifying question). For a command:
-    - the model is told to do it or ask the one missing detail, and suggestion cards are refused;
-    - its text is held back instead of streamed;
-    - once the task has run, the reply is a fixed confirmation ("Done! I've created the doubt "…" in Doubt Clearance.") with no further model call. A command never turns into an explanation.
-  - **Vague tasks get one question.** "Create a doubt about Docker" makes the agent ask which concept (images, volumes, networking…), then create it from the answer. Only the essential detail is ever asked for: the concept, the role or the skill. Level, hours and timeline are inferred.
-  - **A question can never create something by itself.** Do tools are refused unless the student's message, or their previous one, is actually a request (create, add, fetch, make, yes…).
-  - **Old suggestions are retired.** When a task is done, any earlier unanswered suggestion of the same kind is marked *Replaced*.
+**How a turn works** ([agent/novardAgent.js](server/agent/novardAgent.js)): a LangChain tool-calling loop on `ChatGroq` (gpt-oss-120b), with at most 5 model calls and 2 cards per turn. The agent never creates anything by itself: it goes **clarify → draft → Create**.
 
-  What each action does:
+- **Questions get an answer and one suggestion.** "What is Docker?" or "how do I become a DevOps engineer?" gets a full explanation, then `suggest_next_step` adds one small offer card (save it as a doubt, find a video, a roadmap, a skill plan, a todo list, a skill-gap analysis or a forum post). *Yes* continues the chat to gather the details; nothing is created yet.
+- **Requests become an editable draft.** "Make me a roadmap for…", "a 20-day SQL plan", "a todo list for my exam" call the matching `prepare_*` tool ([agent/actions.js](server/agent/actions.js)). The server fills every field it can, from what the student said in the chat, from their saved **learner profile**, or from a sensible default, and then either:
+  - reports what is still missing, and the agent asks for it with `ask_student` (up to 4 tap-to-answer questions in one go);
+  - points out an item the student already has (with its progress), and makes a new one only if they want;
+  - or shows a **draft card**. Each field shows where its value came from ("from your profile", "assumed - check"). The student edits anything and presses **Create**; only then does it run.
+- **What is never asked.** Titles, tags and categories are written by the agent. Values out of range ("a 7-day plan" when plans run 10–60 days) are asked about, never silently changed.
+- **Learner profile.** Level, experience, target role, known skills, interests, weekly hours, timeline, goal, language and teaching style are stored per student (`LearnerProfile`). The agent can offer to remember a fact ("Remember this?" card, `remember_about_student`), and a draft can be saved back with "Remember these details". Nothing is saved without the student's Yes.
+- **Read tools** run at once: `get_my_workspace` (doubts, videos, roadmaps, plans with progress, skill-gap results, todo lists and recent quiz scores) and `search_youtube_videos`.
+- **Educational only.** Off-topic messages get a short, kind decline and no tools.
+- **Rendering.** Replies stream in and are typed out smoothly; cards and questions appear when the text is done. History loads instantly.
 
-| Card | What *Yes* does | Opens |
+What each draft creates:
+
+| Card | What *Create* does | Opens |
 |------|-----------------|-------|
-| Save as a doubt | Creates a doubt in Doubt Clearance, already containing the agent's explanation | `/doubts?tool=doubts&open=<id>` |
-| Add a video | Adds the chosen YouTube video (from a real search) to Video Summarizer | `/video?tool=summarizer&open=<id>` |
+| Create a doubt | Creates a doubt in Doubt Clearance, already containing the agent's explanation | `/doubts?tool=doubts&open=<id>` |
+| Add a video | Adds the video the student picked from real search results to Video Summarizer | `/video?tool=summarizer&open=<id>` |
 | Generate a career roadmap | Generates a Smart Roadmap for the role, marking skills the student already knows | `/career?tool=roadmap&open=<id>` |
 | Create a learning plan | Builds a day-by-day Skill Unlocker plan with a video per day | `/skill-unlocker?open=<id>` |
-| Analyse your skill gap | Runs a Skill Gap analysis and opens the coaching chat | `/career?tool=skills&open=<id>` |
-| Start a forum discussion | Posts to the AI Forum (the forum AI replies as usual) | `/forum?open=<issueId>` |
+| Create a todo list | Saves the list (one task per line on the draft) in Todo lists | `/todos?open=<id>` |
+| Run a skill gap analysis | Runs a Skill Gap analysis and opens the coaching chat | `/career?tool=skills&open=<id>` |
+| Post to the AI Forum | Posts to the AI Forum (the forum AI replies as usual) | `/forum?open=<issueId>` |
+| Report a problem to the Novard team | Files a problem report (area, description) to the Novard team | `/reports/<ref>` |
 
-- **Same code as the pages:** each action calls the same function the page uses (`createDoubt`, `addYouTubeVideo`, `createRoadmapFor`, `createSkillPlan`, `startSession`, `openIssue`), so an item the agent creates is identical to one made by hand. Cards go from *needs your OK* → *working* → *done* (with an Open button), or *failed* with *Try again*.
-- **No duplicates:** a card is claimed atomically, so a double click never creates two items.
-- **Memory:** the agent remembers the whole conversation through the same summary-buffer memory as every other chat, including which cards it offered and whether the student accepted or declined them. So "make that roadmap intermediate instead" or "what did you suggest earlier?" work.
-- **Safeguards:**
-  - the model's arguments are cleaned and bounded, and video ids must come from a real search, never invented;
-  - at most 2 proposals per turn;
-  - if a reply says "confirm below" without calling a tool, one extra call recovers the card or removes the sentence.
-
-Other pages can open the agent with a question already sent: *Start Mock Interview* (Career) and *Explore New Topics* (Doubts & Learning) do this with `navigate('/chatbot', { state: { prompt } })`.
+- **Same code as the pages:** each action calls the same function the page uses (`createDoubt`, `addYouTubeVideo`, `createRoadmapFor`, `createSkillPlan`, `createList`, `startSession`, `openIssue`), so an item the agent creates is identical to one made by hand. Cards go *suggestion* → *draft* → *working* → *done* (with an Open button), or *failed* with *Try again*. Asking for a change ("make it 20 days") replaces the earlier draft, which is marked *Replaced*.
+- **No duplicates:** pressing Create claims the card atomically, so a double click never creates two items. The student's edits are re-checked on the server first.
+- **Memory:** the agent remembers the whole conversation through the same summary-buffer memory as every other chat, including each card and its status, so "what did you suggest earlier?" works.
+- **Built for Groq's limits:** tool schemas are kept loose (Groq rejects a whole call whose arguments don't match), a rejected or empty tool call is retried once, and a draft is confirmed with a fixed sentence instead of another model call, to stay within about 8,000 tokens a minute.
 
 Routes: see [Novard Agent in the API Reference](#api-reference).
 
@@ -291,6 +338,8 @@ Students report problems; Novard-AI turns those reports and its own logs into a 
 **Investigation.** For a HIGH or CRITICAL area, a LangGraph.js graph ([services/earlyWarning/graph/](server/services/earlyWarning/graph/)): a zero-token spine; a supervisor that opens up to five lanes in parallel (trend, peers, history, what students say via Atlas Vector Search or text search, and telemetry: AI provider, YouTube or PDF vs the product); a root cause whose every claim cites report refs, model calls or evidence ids (uncited claims are capped); a verifier on a different model; a what-if outlook by re-scoring; and recommendations. Only flagging the area runs by itself; everything else (a known-issue notice, switching a tool off, rerouting a model, resolving reports, an announcement) waits for an admin's approval and then runs through the console's own control. Budget per run and parallel lanes are capped for Groq's per-minute limits; with no model at all it still ends with a cited, statistics-only answer.
 
 **Admin console** (`/admin`, same look and components as the app): overview, risk board, area and investigation pages, the live investigation (nodes light up over SSE), run history, reports inbox, gateways (Groq, Gemini, YouTube, Google sign-in, MongoDB: health, spend, settings, a Test button; API keys are never shown), users, moderation, features & limits (every runtime setting: tool switches, maintenance, rate limits, quotas, areas, thresholds, budgets, model routes), announcements, the admin assistant and the audit log. Runtime settings are stored in MongoDB and layered DB > env > default, cached 30 s per instance.
+
+**AI usage limits.** Besides switching any tool off (with a message students see) and a global daily spend cap, admins set **per-student AI token limits for each tool** (`ai.tokenLimits`: per day, week or month; 0 = unlimited, the default) in *Features & limits → Token limits*. Every AI route passes through one gate (`aiFeature()` in [middleware/featureGate.js](server/middleware/featureGate.js)) that checks the tool switch, the daily request quota and the token limit before any model call; tokens are counted after each call ([ai/tokenLimits.js](server/ai/tokenLimits.js)). A student at a limit gets a clear notice in the tool, on the dashboard and once in the bell, and `GET /api/ai-usage` reports their usage. The user page shows usage per tool and can reset it. Problem reports are never limited. Model calls send each model's full output allowance and long inputs are condensed rather than cut, so big requests are never truncated.
 
 **Admin assistant.** The Novard Agent's engine with admin-only tools: it reads the live platform (risk board, areas, reports, search, gateways, costs, runs, findings, users) and proposes investigations, report resolutions, tool switches and model routes as confirmation cards. It must look live data up before answering, every figure must come from a tool result, and it refuses to touch API keys, admin roles or account suspensions.
 
@@ -460,7 +509,7 @@ Open <http://localhost:3000>. `GET /health` reports `{ "status": "OK", "database
 | `npm run lint` | ESLint on server and client. |
 | `npm run build` | Production build of the client into `client/build/`. |
 
-The server test suites cover every endpoint's authentication, ownership and validation rules, each feature's workflow (notes, doubts, videos, video library, forum, learning plans, roadmaps, skill-gap coach, analytics, profile, study time, the Novard Agent's turn loop and action cards) and the business logic behind them (quiz validation, analytics scoring, roadmap and readiness maths, transcript parsing, JSON recovery from model output).
+The server test suites cover every endpoint's authentication, ownership and validation rules, each feature's workflow (notes, doubts, videos, video library, forum, learning plans, todo lists and their reminders, roadmaps, skill-gap coach, analytics, profile, study time, reports, risk scoring and investigations, the admin console, AI token limits, the Novard Agent's turn loop and action cards) and the business logic behind them (quiz validation, analytics scoring, roadmap and readiness maths, transcript parsing, JSON recovery from model output). The client suites cover the main pages and flows (todo lists, reports, notes, the admin console, the agent's streaming and typing), and a theme-guard test keeps every component on the design system.
 
 ---
 
@@ -552,7 +601,7 @@ Remember to add your deployed client URL to the **Authorized JavaScript origins*
 
 ## API Reference
 
-Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for reports, notifications and the admin console). Base URL is `REACT_APP_API_ENDPOINT`. Except where marked *public*, every route needs `Authorization: Bearer <session token>`; the `:userId` path segments and `userId` body fields that some routes still accept must be the signed-in student's email. Errors use the format shown under [Architecture](#architecture); AI-backed routes (marked **AI**) share a per-student rate limit.
+Routes live in [server/routes/](server/routes/) (145 in total, 56 of them in the admin console). Base URL is `REACT_APP_API_ENDPOINT`. Except where marked *public*, every route needs `Authorization: Bearer <session token>`; the `:userId` path segments and `userId` body fields that some routes still accept must be the signed-in student's email. Errors use the format shown under [Architecture](#architecture); AI-backed routes (marked **AI**) share a per-student rate limit.
 
 <details>
 <summary><b>Health, sign-in & account</b></summary>
@@ -656,7 +705,27 @@ Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for re
 | `GET` | `/api/analytics/:userId` | Dashboard analytics (`?tzOffset=` minutes). |
 | `GET` | `/api/profile/:userId/overview` | Profile page data (`?tzOffset=`). |
 | `GET` | `/api/quiz-history/:source/:itemId` | Previous marks; `source` is `notes`, `youtube`, `doubt` or `plan`. |
+| `GET` | `/api/ai-usage` | The student's AI token usage per tool against the admin's limits, and when it resets. |
 | `POST` | `/api/usage/heartbeat` | Study time: `{day: "YYYY-MM-DD", seconds}`. `text/plain` bodies (from `sendBeacon`) may carry `token` instead of the header. Capped at 5 minutes per call and 24 hours per day. |
+
+</details>
+
+<details>
+<summary><b>Todo lists</b></summary>
+
+Every route accepts `today` (the student's local date, `YYYY-MM-DD`, as a query or body field) for due and overdue counts. Mutations return the whole list.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/todos` | The student's lists with counts (`total`, `done`, `overdue`, `dueToday`, `nextDue`), newest activity first. |
+| `POST` | `/api/todos` | `{title, description?, items?, source?}` → 201. Items are strings or `{text, notes?, priority?, dueDate?, subtasks?, done?}`. Up to 100 lists and 200 tasks per list. |
+| `GET` / `PATCH` / `DELETE` | `/api/todos/:id` | Open, rename (`{title?, description?}`) or delete a list. |
+| `POST` | `/api/todos/:id/items` | Add a task → 201. |
+| `PATCH` / `DELETE` | `/api/todos/:id/items/:itemId` | Change any of `text`, `notes`, `priority`, `dueDate`, `done`, `subtasks`; or delete the task. |
+| `PUT` | `/api/todos/:id/order` | `{itemIds}`: the list's own task ids in the new order (409 if the list changed meanwhile). |
+| `POST` | `/api/todos/:id/clear-completed` | Remove the ticked-off tasks. |
+| `POST` | `/api/todos/draft` | **AI.** `{prompt, today?}` → `{title, items}` (nothing saved), or `{declined}` for an off-topic request. |
+| `POST` | `/api/todos/:id/skill-plan` | **AI.** `{skillName, duration (10-60), description, preferences?}` → 201 `{list, plan}`. 409 `ALREADY_CONVERTED` if the list already has a plan. |
 
 </details>
 
@@ -665,8 +734,9 @@ Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for re
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/agent/chat` | **AI.** `{message, conversationId?}` → Server-Sent Events: `meta`, `token`, `status`, `action`, `superseded`, `title`, `done`, `error`. |
-| `POST` | `/api/agent/conversations/:id/actions/:actionId` | **AI.** `{decision: confirm\|dismiss}` → `{action}`. |
+| `POST` | `/api/agent/chat` | **AI.** `{message, conversationId?}` → Server-Sent Events: `meta`, `token`, `status`, `action`, `ask`, `superseded`, `title`, `done`, `error`. |
+| `POST` | `/api/agent/conversations/:id/actions/:actionId` | **AI.** `{decision: create\|accept\|confirm\|dismiss, args?, remember?}` → `{action}`. `create` runs a draft with the student's edits; `accept` takes up a suggestion; `confirm` saves a "Remember this?" card. |
+| `GET` / `PUT` | `/api/agent/profile` | The student's learner profile; `PUT` saves edited fields. |
 | `GET` | `/api/agent/conversations/user/:userId`, `/api/agent/conversations/:id` | List / open chats. |
 | `PATCH` | `/api/agent/conversations/:id` | `{title}`. |
 | `DELETE` | `/api/agent/conversations/:id` | Delete a chat. |
@@ -682,7 +752,7 @@ Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for re
 | `GET` | `/api/reports/mine`, `/api/reports/:ref` | The student's own reports (public notes only). |
 | `POST` | `/api/reports/:ref/notes` | `{body}`: add to a report; reopens a resolved one. |
 | `GET` | `/api/reports/:ref/attachments/:n` | An attachment of the student's own report. |
-| `GET` | `/api/notifications` | `{notifications, unread}` for the bell. |
+| `GET` | `/api/notifications` | `{notifications, unread}` for the bell. `?today=YYYY-MM-DD` first turns due todo tasks into reminders. |
 | `POST` | `/api/notifications/read` | `{ids?}`; no ids = all. |
 | `GET` | `/api/app-status` | *Public.* Tool switches, known-issue notices, maintenance, dashboard banner, report areas and whether voice is enabled. |
 
@@ -725,7 +795,7 @@ Routes live in [server/routes/](server/routes/) (132 in total, 65 of them for re
 
 ## Data Models
 
-Thirty-one Mongoose schemas in [server/models/](server/models/), each indexed on the fields its list queries filter and sort by:
+Thirty-two Mongoose schemas in [server/models/](server/models/), each indexed on the fields its list queries filter and sort by:
 
 | Model | Holds |
 | --- | --- |
@@ -735,20 +805,21 @@ Thirty-one Mongoose schemas in [server/models/](server/models/), each indexed on
 | `DoubtClearance` | Title, description, optional image link, chat history and memory, summary, quizzes, YouTube recommendations. |
 | `SkillPlan` | Skill, duration, preferences, per-day plan with matched video and completion flags, quiz configuration and attempt history. |
 | `ForumIssue` / `ForumComment` | Discussions with category, tags and status; threaded replies with an `isAI` flag. |
+| `TodoList` | A todo list: title, description, where it came from (manual, AI, agent), the Skill Plan made from it, and its ordered tasks (text, notes, done, priority, due date, steps, the due date already reminded). |
 | `Video` | Video Library learning requests. |
 | `Roadmap` | Generated career roadmaps (stages, topics, projects). |
 | `SkillGapSession` | A skill-gap analysis and its coaching chat. |
 | `ChatbotConversation` | Novard Agent chats, with action cards and their status. |
 | `AppUsage` | Tracked study seconds per student per local day. |
-| `LearnerProfile` | What the Novard Agent knows about the student. |
+| `LearnerProfile` | What the Novard Agent knows about the student: level, experience, target role, skills, interests, weekly hours, timeline, goal, language and teaching style. |
 | `Report` | A student's problem report (`NV-…`): text, transcript, attachments, the AI message it is about, triage, status, notes, quota slot. |
 | `ReportEmbedding` / `ReportTopic` | One vector per report (Atlas Vector Search index `report_vec`); greedy-cosine topics per area. |
-| `Notification` | The bell: resolved reports, replies, announcements. |
+| `Notification` | The bell: resolved reports, replies, announcements, AI-limit notices, todo reminders. |
 | `AreaFeature` / `RiskScore` | Per area and day: raw metrics and the 7-day-vs-baseline features; score, level and attribution. |
 | `RiskObject` / `RiskAlert` / `RiskPrecedent` | A tracked risk (area + topic) and its lifecycle; escalation alerts (one per episode); what fixed earlier risks. |
 | `RiskAssessment` / `RiskStep` / `RiskFeedback` | An investigation run (evidence, findings, review, outlook, recommendations, budget); its trace; admins' accuracy verdicts. |
 | `ModelCall` / `GatewayEvent` | Every AI call and every YouTube / Google sign-in / PDF call (45-day TTL). |
-| `UsageCounter` | Today's AI spend, students' daily AI requests, locks. |
+| `UsageCounter` | Today's AI spend, students' daily AI requests and per-tool token use, locks. |
 | `Setting` / `AdminAuditLog` | Runtime settings changed from the console; the audit log. |
 | `AdminConversation` | The admin assistant's chats. |
 
@@ -764,11 +835,14 @@ novard-ai/
 │   │   ├── AuthContext.js         # Google sign-in → API session
 │   │   ├── lib/api.js             # Axios/fetch client: base URL, timeout, session token, 401 handling
 │   │   ├── lib/session.js         # Session storage (token + profile)
-│   │   ├── pages/                 # Route-level pages
-│   │   ├── components/            # Sidebar, hub views, analytics widgets, agent, forum, reports, admin
+│   │   ├── lib/pages.js           # Every page's name, path and icon; the sidebar groups
+│   │   ├── pages/                 # Route-level pages (Home, Career, Doubts, Todos, Forum, ...)
+│   │   ├── components/            # Hub views, analytics widgets, agent, forum, todos, reports, admin
+│   │   ├── components/ui/         # Design-system primitives (Button, Field, Modal, Menu, Badge, states, ...)
+│   │   ├── theme/                 # Colour tokens for the light and dark palettes
 │   │   ├── pages/admin/           # The admin console (lazy-loaded)
 │   │   ├── context/               # App status (switches, notices) and the "Report a problem" dialog
-│   │   ├── hooks/                 # useStudyTimeTracker
+│   │   ├── hooks/                 # useStudyTimeTracker, useTypewriter, useAiUsage
 │   │   └── **/__tests__/          # Jest + React Testing Library
 │   ├── .env.example
 │   ├── Dockerfile                 # Node build → Nginx serve
@@ -785,7 +859,7 @@ novard-ai/
 │   ├── services/earlyWarning/graph/ # The LangGraph.js investigation
 │   ├── services/adminAssistant/   # The admin assistant: turn loop, tools, guards, cards
 │   ├── services/admin/            # Console read models: overview, risk board, gateways, costs, users, moderation
-│   ├── ai/                        # Groq client, LangChain memory, Gemini, AI error handling
+│   ├── ai/                        # Groq client, model gateway, LangChain memory, Gemini, prompts, token limits
 │   ├── middleware/                # auth, rate limits, async wrapper, error handler
 │   ├── models/                    # Mongoose schemas
 │   ├── config/                    # env, db, model IDs, shared prompts
@@ -801,6 +875,7 @@ novard-ai/
 ├── deploy.sh                      # One-command Cloud Run deploy
 ├── CLOUD_RUN_SETUP.md             # Cloud Run guide
 ├── docs/early-warning/            # PLAN.md and ARCHITECTURE.md for reports, risk and the admin console
+├── docs/ui-changes.md             # The design system: tokens, type, primitives, page names
 ├── DOCKER_SETUP.md                # Docker guide
 └── vercel.json                    # Client-only SPA deploy config
 ```
@@ -818,7 +893,7 @@ Worth knowing before you build on this:
 - **The client is built with Create React App**, which is deprecated; most remaining `npm audit` findings are in its build tooling. Migrating to Vite would clear them.
 - **YouTube captions are not always available** (and YouTube changes its private API regularly); without captions the summarizer falls back to title + description.
 - **Two PDF size limits:** the Notes page rejects files over 2 MB, while the API accepts up to 10 MB.
-- **Scanned PDFs have no text layer**, so notes upload rejects them with a 422 rather than running OCR.
+- **OCR is English only and capped at 30 pages** per PDF, and it is slow (seconds per page) on small instances.
 - **Report attachments are on local disk too** (screenshots, voice notes, PDFs), with the same Cloud Run caveat.
 - **Announcements to "all students" write one notification per student.** Fine for thousands of students; a much larger audience would want a shared announcement read at request time.
 - **Investigations run in the background of the instance that started them.** On Cloud Run with CPU throttling, keep the live view open (the stream keeps the instance busy) or deploy with `--no-cpu-throttling`; a run stuck for over 15 minutes shows as interrupted.
@@ -826,6 +901,7 @@ Worth knowing before you build on this:
 - **USD prices are approximate** (the `PRICING` table in [config/ai.js](server/config/ai.js)); free-tier keys are billed $0.
 - **Settings reach every instance within 30 seconds** (the cache TTL), and the rate limits are still per instance.
 - **Vector search needs Atlas** (or the atlas-local image) and a Gemini key; without them similar reports are found with MongoDB text search.
+- **Todo reminders need the student to open the app.** Nothing runs on a timer, so a reminder is created when the bell loads, not at a set time, and there are no emails or push notifications.
 - **Risk levels need history.** An area with less than a week of baseline is scored against fixed thresholds only; percentile levels start after 120 scored windows.
 
 ---

@@ -46,4 +46,26 @@ ${content}
 ${FORMAT_RULES}`;
 }
 
-module.exports = { FORMAT_RULES, scopeRules, videoTutorPrompt };
+/**
+ * The Todo lists drafter: turns what a student says they need to do into a
+ * list they review before saving. JSON only, so no FORMAT_RULES.
+ */
+function todoDraftPrompt() {
+  return `You turn a student's description of what they need to do into a practical todo list.
+
+${scopeRules('planning your studies, exams, projects or career steps')}
+For an out-of-scope request, return {"declined": "<those one or two kind sentences>"} instead of a list.
+Planning everyday study life (a study timetable, exam prep, assignments, a project, job applications, interview prep) is in scope.
+
+Rules for the list:
+- 3 to 15 tasks, in the order the student should do them. Each task starts with a verb and is concrete ("Solve 10 SQL join problems", not "SQL").
+- priority: "high", "medium" or "low". Only mark what truly matters most as high.
+- dueInDays: whole days from today (0 = today) when the student gave a deadline or timeframe, spreading tasks sensibly before it; otherwise null. Never invent a deadline.
+- subtasks: 0 to 5 short steps, only for tasks that clearly need them.
+- title: a short name for the list (max 60 characters).
+
+Return ONLY JSON, no other text:
+{"title": "...", "items": [{"text": "...", "priority": "high", "dueInDays": 2, "subtasks": ["..."]}]}`;
+}
+
+module.exports = { FORMAT_RULES, scopeRules, videoTutorPrompt, todoDraftPrompt };

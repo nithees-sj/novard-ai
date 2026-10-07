@@ -31,6 +31,7 @@ const TOOLS = {
   skillGap: { label: 'Skill Gap coach', area: 'skill-gap' },
   forumAi: { label: 'AI Forum replies', area: 'forum' },
   agent: { label: 'Novard Agent', area: 'agent' },
+  todos: { label: 'Todo lists AI drafts', area: 'other' },
   reports: { label: 'Problem reports', area: 'other' },
   voiceReports: { label: 'Voice notes on reports', area: 'other' },
 };
@@ -70,6 +71,7 @@ const AI_FEATURES = {
   'agent.chat': { tool: 'agent', area: 'agent', essential: true },
   'agent.action': { tool: 'agent', area: 'agent', essential: true },
   'agent.title': { tool: 'agent', area: 'agent', essential: false },
+  'todo.draft': { tool: 'todos', area: 'other', essential: true },
   'reports.transcribe': { tool: 'voiceReports', area: 'other', essential: true },
   'reports.enrich': { tool: 'reports', area: 'other', essential: false },
   'reports.embed': { tool: 'reports', area: 'other', essential: false },

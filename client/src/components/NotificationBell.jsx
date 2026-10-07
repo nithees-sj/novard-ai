@@ -5,7 +5,7 @@ import { reportsApi } from '../lib/reports';
 
 const REFRESH_MS = 60 * 1000;
 
-const KIND_ICON = { report_resolved: 'check', report_reply: 'chat', announcement: 'sparkles', ai_limit: 'bolt' };
+const KIND_ICON = { report_resolved: 'check', report_reply: 'chat', announcement: 'sparkles', ai_limit: 'bolt', todo_due: 'todo' };
 
 /**
  * The bell in the header: updates on the student's reports and announcements
