@@ -54,11 +54,26 @@ const skillPlanSchema = new mongoose.Schema({
       url: String,
       thumbnailUrl: String
     },
+    // Completed only by passing the day's quiz (config/learning.js PASS_PERCENT).
     completed: {
       type: Boolean,
       default: false
     },
-    completedAt: Date
+    completedAt: Date,
+    // The quiz in progress for this day; the answers never leave the server before submitting.
+    quiz: {
+      questions: [{ _id: false, question: String, options: [String], correctAnswer: Number, explanation: String }],
+      createdAt: Date,
+    },
+    quizAttempts: [{
+      _id: false,
+      correct: Number,
+      total: Number,
+      percentage: Number,
+      passed: Boolean,
+      difficulty: String,
+      at: { type: Date, default: Date.now },
+    }],
   }],
   quizCompleted: {
     type: Boolean,

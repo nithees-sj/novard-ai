@@ -305,6 +305,7 @@ async function deleteNote({ userId, noteId }) {
 module.exports = {
   extractPdfText,
   listNotes,
+  findOwnNote,
   createNote,
   chatWithNote,
   summarizeNote,

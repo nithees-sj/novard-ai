@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AppShell from '../components/layout/AppShell';
 import { useNavigate } from 'react-router-dom';
 import AnalyticsCard from '../components/analytics/AnalyticsCard';
+import NextExamCard from '../components/exams/NextExamCard';
 import SkillProficiencyRadar from '../components/analytics/SkillProficiencyRadar';
 import StrengthsWeaknesses from '../components/analytics/StrengthsWeaknesses';
 import WeeklyActivityChart from '../components/analytics/WeeklyActivityChart';
@@ -163,6 +164,8 @@ const HomePage = () => {
               detail={streak?.longest ? `Longest: ${streak.longest} ${streak.longest === 1 ? 'day' : 'days'}` : undefined}
             />
           </div>
+
+          <NextExamCard />
 
           <section className="mt-10" aria-labelledby="home-start">
             <SectionHeader as="h2" title={<span id="home-start">Start something</span>} />

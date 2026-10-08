@@ -44,6 +44,8 @@ Everything in the application, and where to read more.
 | Home | `/home` | Dashboard: skill score, quiz accuracy, plan completion, study streak, 7-day study time, subject radar, strengths and weak spots. [More](#dashboard-analytics-home) |
 | Novard Agent | `/chatbot` | An AI assistant that teaches and, after the student confirms a draft, creates things anywhere in the app: doubts, videos, roadmaps, skill plans, todo lists, skill-gap analyses, forum posts and problem reports. [More](#novard-agent) |
 | Doubts & Notes | `/doubts` | **Doubt Clearance** (ask a tutor, then summary, quiz and videos per doubt) and **Notes & Quiz** (chat with, summarise and get quizzed on your PDFs, scanned ones included). [More](#doubts--notes-doubts) |
+| Exam Autopilot | `/exams` | Give an exam date and syllabus (PDF, note or pasted). Novard maps it into weighted topics with prerequisites, measures readiness per topic from real results, and keeps a day-by-day plan that **re-plans itself** after every quiz, teach-back, skipped task or missed day, with an exam-day **forecast** and what would close the gap. [More](#exam-autopilot-exams) |
+| Teach-Back | `/teach-back` | **Teach-Back Arena**: explain a concept (from your PDF or any topic) to Novard by talking or typing. Novard plays a curious classmate and asks "but why?", then marks your understanding as a step-by-step flow of the concept showing where you lag, corrects your misconceptions, and teaches you the weak steps. [More](#teach-back-arena-teach-back) |
 | Skill Plans | `/skill-unlocker` | **Skill Unlocker**: a day-by-day learning plan (10–60 days) with a YouTube video per day, progress tracking and quizzes on what you finished. [More](#skill-unlocker-skill-unlocker) |
 | Todo lists | `/todos` | Lists of tasks with due dates, priorities, notes and steps. Write them yourself, let AI draft them, or ask the agent; turn any list into a Skill Plan; get reminders in the bell. [More](#todo-lists-todos) |
 | Videos | `/video` | **Video Library** (AI-searched videos and courses for what you want to learn) and **Video Summarizer** (chat, summary and quiz for any YouTube video). [More](#videos-video) |
@@ -77,6 +79,32 @@ Two tools rendered inline in a single workspace:
 | **Skill Gap Analysis** | A coaching chatbot. A short intake (target role, current skills, background, hours per week, goal) produces a gap report: the skills the role needs, which ones the student already has, and the missing ones ranked by priority with effort and a first step. The estimated readiness is *computed* from that list (core skills count double). The student then chats with a coach that knows their profile and gaps: short conversational answers by default, full plans when asked, with suggested questions based on their top gaps. Every conversation is saved per student. |
 
 
+### Exam Autopilot (`/exams`)
+
+Answers the question a student actually has: *"Will I be ready on the 24th, and what should I do today?"* The AI is used only to read the syllabus and write questions; the plan, the mastery estimates, the forecast and every reason shown are a deterministic, unit-tested engine ([services/examAutopilot/](server/services/examAutopilot/), [services/examService.js](server/services/examService.js), [pages/Exams.jsx](client/src/pages/Exams.jsx)).
+
+1. **Exam and syllabus.** Name, date, study minutes a day, rest days and a target readiness (70% by default), plus the syllabus as pasted text, a PDF (OCR included, also saved to Notes) or an existing note.
+2. **Check the topics.** Novard reads the syllabus into 4-15 topics with each one's share of the exam, difficulty and the topics it builds on. The student edits them (weights, difficulty, prerequisites, order, an optional confidence rating) before anything is planned. Prerequisite loops are removed, keeping the syllabus order.
+3. **The engine.**
+   - *Mastery* per topic comes only from evidence: graded quizzes, Teach-Back marks (worth more than a quiz: explaining beats recognising), a diagnostic or mock exam, and a weak self-rating. Recent results decide the average; the amount of evidence decides how far to trust it; a forgetting curve lowers it over time, more slowly after each successful review (spaced repetition).
+   - *Readiness* is each topic's mastery weighted by its share of the exam.
+   - *The plan* runs from today to the day before the exam within the daily minutes: new topics paced evenly through the learning phase (foundations first, a topic waits until what it builds on is learned), then every remaining minute goes to the task with the **largest expected gain in exam-day readiness per minute** (simulated, forgetting included); reviews when memory fades; a full mock exam two days before; a light review the day before. Every task carries a plain-English reason and its expected gain.
+   - *The forecast* replays the plan on a simulated student: the projected exam-day readiness, a band for slower and faster progress, the day the target is reached, and - when the plan falls short - the fewest minutes a day that would reach it (one click applies it).
+4. **Following it.** Each exam opens in the same frame as the other learning tools, with four tabs: **Today** (where you stand, the verdict, today's tasks with their reasons and expected gain, the week ahead), **Tutor**, **Topics** (mastery against the target per topic, sortable) and **Progress** (the forecast chart, plan changes and every quiz). Plan settings are one dialog; saving re-plans. Today's tasks start in place: practice and review quizzes (graded on the server; answers are never sent before submitting), a Teach-Back on the topic (its marks flow back into the plan), or a lesson from the exam's own tutor.
+   - **The exam tutor** is a chat inside Exam Autopilot, not the Novard Agent. It knows the exam, every topic's mastery, today's plan and the passages of the student's syllabus or PDF that match the question, and can be focused on one topic. A "learn" task opens it on that topic with a lesson that ends in check questions; when the student is ready, a 5-question **topic check** completes the task. Each exam keeps its own conversation (with long-term memory) and can start a new one. A 10-question **diagnostic** calibrates a new plan. After every result the plan re-plans; past unfinished tasks become *missed* and are rescheduled; each change is logged in plain words ("Practice quiz on SQL: 5/6 - exam-day forecast 58% → 62%").
+5. **Everywhere else.** One bell reminder a day per exam (today's tasks and readiness, with a countdown a week, three days and one day out), a "next exam" card on Home, exam quizzes in the profile's tests and the Skill Score. Admins can switch the tool off and limit its tokens (*Exam Autopilot*); the plan keeps working when the AI is off.
+
+### Teach-Back Arena (`/teach-back`)
+
+The best test of understanding is explaining it (the Feynman technique). Every other assessment in the app is multiple choice, which tests *recognising* an answer; Teach-Back tests whether the student can *explain* it ([services/teachBackService.js](server/services/teachBackService.js), [pages/TeachBack.jsx](client/src/pages/TeachBack.jsx)).
+
+1. **Pick what to teach.** Upload a PDF (it is also saved to Notes & Quiz) or pick one of your notes, and say what part you will explain ("chapter 3: why we split tables into 2NF and 3NF"), or just name a concept. Notes have a *Teach it back* button too.
+2. **Explain it to Novard**, out loud (Groq Whisper transcribes it) or by typing. Novard plays a curious classmate who missed the class: it never lectures, and asks up to three short follow-ups about what you skipped or got wrong ("But why does it have to be sorted?").
+3. **Get your marks.** One grading call breaks the concept into its 3-8 key steps, in order, and rates each one: *explained well*, *partly*, *missed* or *misunderstood*. The result is drawn as a **flowchart of the concept** coloured step by step (built in code from the marks, so it always renders), with feedback per step, **corrections** ("You said … / Actually … / Why …"), strengths and what to work on first. Only understanding is marked: grammar, accent, fluency and filler words never cost marks. With a PDF, the explanation is judged against the passages of the PDF that match the concept and focus.
+4. **Get stronger.** *Teach me my weak spots* turns Novard into a tutor that teaches only the steps you lagged on, in flow order: starting from your own misconception, with a plain explanation, an example or analogy, and a quick check question. Keep chatting ("explain step 3 again", "give me an example"), then **Teach it back again**: the new marks show the change ("54 → 81").
+
+Starting a session costs no model call; each explanation is one small call, the marks one call and each coaching message one. Teach-back marks count as a 10-question attempt on the dashboard and profile (Skill Score, tests, strengths and weak spots). Admins can switch the tool off and limit its tokens like any other (*Teach-Back Arena*).
+
 ### Skill Unlocker (`/skill-unlocker`)
 
 The most involved module. You describe a skill, a duration (minimum 10 days), your level (beginner/intermediate), focus areas, preferred language and teaching style. The backend then:
@@ -85,7 +113,14 @@ The most involved module. You describe a skill, a duration (minimum 10 days), yo
 2. Searches YouTube for each suggested title via **youtubei.js (Innertube)**, attaching a real `videoId`, title and thumbnail to every day (falling back to a search URL when nothing matches).
 3. Persists the plan so progress survives sessions.
 
-From there you can tick days complete, regenerate a single day's video if the match was poor (`refresh-video`), generate a configurable quiz (5–20 questions, beginner/intermediate/advanced) scoped to the days you have actually finished, and keep a history of every quiz attempt with score and completion date.
+From there you **complete each day by passing its quiz** (see [Completing modules by quiz](#completing-modules-by-quiz)), regenerate a single day's video if the match was poor (`refresh-video`), generate a configurable quiz (5–20 questions, beginner/intermediate/advanced) scoped to the days you have actually finished, and keep a history of every quiz attempt with score and completion date.
+
+#### Completing modules by quiz
+
+A **Skill Plan day** and an **Exam Autopilot topic** are completed only by passing a quiz on them, with a pass mark of **50%** ([config/learning.js](server/config/learning.js)). There is no manual "mark done": the API refuses it (`409 QUIZ_REQUIRED`).
+
+- **Skill Plan day.** *Take the day quiz* writes 5 questions on that day's topic and objective, at the plan's level. It is graded on the server; the answers never reach the browser before submitting. 50% or more completes the day; less keeps it open, shows every answer with its explanation, and the next try gets new questions. Every attempt counts towards the Skill Score and the profile's tests.
+- **Exam Autopilot topic.** A learn task completes when its 5-question *topic check* is passed; practice and review tasks when their quiz is passed; a teach-back task when the teach-back scores 50/100 or more. A failed attempt still counts as evidence for mastery and re-plans, but the task stays open and the topic is not completed (the planner keeps scheduling it). A topic is *completed* once any graded result on it reaches the pass mark; the Topics tab and Progress show how many are.
 
 A plan can also be made **from a todo list** (see below): the list's open tasks are passed to the same generator, which must cover them in order, giving big tasks several days and combining small ones. The Novard Agent makes plans with the same function too.
 
@@ -194,13 +229,13 @@ The charts are small SVG components written for this app ([components/profile/ch
 
 - A floating **Novard Agent** button available across the app (see [Novard Agent](#novard-agent) below).
 - **Report a problem** from any AI answer, summary, quiz question, agent or coach message, forum AI reply or roadmap, from the sidebar or from the user menu (with an optional screenshot, voice note or PDF). A **notification bell** in the header and a **My reports** page (`/reports`) show the Novard team's replies and fixes. See [Early warning & admin console](#early-warning--admin-console).
-- **The notification bell** collects report replies and fixes, announcements, AI-limit notices and todo reminders, with an unread count.
+- **The notification bell** collects report replies and fixes, announcements, AI-limit notices, todo reminders and Exam Autopilot's daily plan, with an unread count.
 - **AI limits are explained, not hidden.** If an admin switches a tool off, its page says so (with the admin's message). If a student uses up a tool's AI token allowance, the tool shows when it comes back, the dashboard warns at 80% and 100%, and the bell says so once.
 - **Educational scope.** Every student chatbot (agent, doubts, notes, videos, forum AI, skill-gap coach, the todo drafter) answers learning and career questions only. Off-topic requests ("who won the match?") get a short, kind decline; explaining a subject ("how is a Chief Minister chosen?") is still answered.
 - Markdown rendering (`react-markdown` + GFM, with Mermaid diagrams) for all AI output. The Novard Agent's replies are typed out smoothly as they arrive.
 - **Navigation.** A persistent sidebar (a drawer on phones), grouped as:
   - Home and Novard Agent;
-  - **Learn:** Doubts & Notes, Skill Plans, Todo lists, Videos;
+  - **Learn:** Exam Autopilot, Doubts & Notes, Teach-Back, Skill Plans, Todo lists, Videos;
   - **Grow:** Career, Forum;
   - Profile and Settings (plus My reports and Report a problem).
 
@@ -690,7 +725,9 @@ Routes live in [server/routes/](server/routes/) (145 in total, 56 of them in the
 | --- | --- | --- |
 | `POST` | `/api/skill-unlocker/generate-plan` | **AI.** `{skillName, duration (10-60), description, preferences?}` → 201. |
 | `GET` | `/api/skill-unlocker/plans/:userId` | The student's plans with progress. |
-| `POST` | `/api/skill-unlocker/toggle-day-completion` | `{planId, dayNumber}`. |
+| `POST` | `/api/skill-unlocker/toggle-day-completion` | Refused with `409 QUIZ_REQUIRED`: a day is completed only by passing its quiz. |
+| `POST` | `/api/skill-unlocker/day-quiz` | `{planId, dayNumber}` → the day's quiz (questions only). The same quiz until it is submitted. |
+| `POST` | `/api/skill-unlocker/day-quiz/submit` | `{planId, dayNumber, answers}` → `{percentage, passed, completed, completedDays, questions (with answers), …}`. |
 | `POST` | `/api/skill-unlocker/refresh-video` | **AI.** `{planId, dayNumber}` — another video for that day. |
 | `POST` | `/api/skill-unlocker/generate-quiz` | **AI.** Quiz on the completed days. |
 | `POST` | `/api/skill-unlocker/save-quiz-result` | `{planId, quizId, score (0-100), totalQuestions, …}`. |

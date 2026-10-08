@@ -291,8 +291,9 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
  * with its explanation.
  * result: null while answering; { correct, total } after submitting.
  * onReport(question, index): a "Report" action on each question.
+ * retryLabel / header: the button under the score, and anything to show between the score and the answers.
  */
-export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onRetry, onReport }) => {
+export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onRetry, onReport, retryLabel = 'Try another quiz', header = null }) => {
   const answered = Object.keys(answers).filter((k) => answers[k] !== undefined).length;
   const total = questions.length;
 
@@ -315,8 +316,9 @@ export const QuizRunner = ({ questions, answers, onAnswer, onSubmit, result, onR
               <h3 className={`text-title font-semibold ${tone}`}>{pct >= 80 ? 'Strong result' : pct >= 50 ? 'Getting there' : 'Worth another go'}</h3>
               <p className="mt-1 text-body text-fg-muted">You got <strong className="font-semibold text-fg">{result.correct}</strong> of {result.total} right. Every answer is explained below.</p>
             </div>
-            <button type="button" onClick={onRetry} className={btn.primary}>Try another quiz</button>
+            <button type="button" onClick={onRetry} className={btn.primary}>{retryLabel}</button>
           </div>
+          {header}
 
           <ol className="divide-y divide-line-subtle">
             {questions.map((q, qi) => {

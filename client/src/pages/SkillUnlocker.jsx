@@ -13,6 +13,7 @@ import { currentEmail } from '../lib/session';
 import QuizSetup from '../components/quiz/QuizSetup';
 import { countCorrect } from '../lib/quiz';
 import FeatureNotice from '../components/FeatureNotice';
+import DayQuizDialog from '../components/skillplan/DayQuizDialog';
 
 
 const CircularProgress = ({ value, size = 40, strokeWidth = 4 }) => {
@@ -70,6 +71,7 @@ const SkillUnlocker = () => {
   // Current Plan state
   const [currentPlan, setCurrentPlan] = useState(null);
   const [completedDays, setCompletedDays] = useState(new Set());
+  const [quizDay, setQuizDay] = useState(null); // the day whose quiz is open
 
   // Quiz state
   const [quiz, setQuiz] = useState(null);
@@ -234,31 +236,14 @@ const SkillUnlocker = () => {
     }
   };
 
-  const handleDayComplete = async (dayNumber) => {
-    // Only allow if interacted or already completed (to undo)
-    if (!videoInteracted.has(dayNumber) && !completedDays.has(dayNumber)) return;
-
-    const flip = (prev) => {
-      const next = new Set(prev);
-      if (next.has(dayNumber)) next.delete(dayNumber);
-      else next.add(dayNumber);
-      return next;
-    };
-    setCompletedDays(flip); // optimistic
-
-    try {
-        await api.post('/api/skill-unlocker/toggle-day-completion', {
-            planId: currentPlan.planId || currentPlan._id,
-            dayNumber,
-        });
-        fetchPlans();
-    } catch (err) {
-        logger.error('Error toggling day', err);
-        setCompletedDays(flip); // put it back as it was
-        setError(errorMessage(err, 'Could not update that day. Please try again.'));
-    }
+  // A day is completed only by passing its quiz; the result comes back from the server.
+  const handleDayQuizResult = (result) => {
+    setCurrentPlan((plan) => (plan ? {
+      ...plan,
+      dailyPlan: plan.dailyPlan.map((d) => (d.day === result.day ? { ...d, ...result.dayState } : d)),
+    } : plan));
+    fetchPlans();
   };
-
 
   const handleShowQuizConfig = () => {
     // Check if at least one day is completed
@@ -369,7 +354,7 @@ const SkillUnlocker = () => {
               </h2>
               <p className="mt-1.5 max-w-2xl text-body text-fg-muted">
                 {currentView === 'form' && 'Pick a skill and how long you have. You get a day-by-day plan with topics, resources and practice, then a quiz to check it stuck.'}
-                {currentView === 'planner' && `${currentPlan?.duration || 0}-day plan · tick off each day as you finish it`}
+                {currentView === 'planner' && `${currentPlan?.duration || 0}-day plan · pass each day's quiz (${currentPlan?.passPercent ?? 50}% or more) to complete it`}
                 {currentView === 'quiz-config' && 'Choose the difficulty and length of the quiz.'}
                 {currentView === 'quiz' && 'Questions are drawn from the topics in this plan.'}
               </p>
@@ -497,7 +482,6 @@ const SkillUnlocker = () => {
                 <ol className="divide-y divide-line-subtle">
                   {currentPlan.dailyPlan?.map((day) => {
                     const done = completedDays.has(day.day);
-                    const canComplete = videoInteracted.has(day.day) || done;
                     return (
                     <li key={day.day} className="flex gap-4 py-5 sm:gap-6">
                       <span className={cx('num w-8 shrink-0 pt-0.5 text-lead font-medium', done ? 'text-success-fg' : 'text-fg-subtle')}>
@@ -509,17 +493,22 @@ const SkillUnlocker = () => {
                             <h3 className={cx('text-lead font-medium', done ? 'text-fg-muted' : 'text-fg')}>{day.topic}</h3>
                             {day.objective && <p className="mt-1 max-w-2xl text-body text-fg-muted">{day.objective}</p>}
                           </div>
-                          <Button
-                            size="sm"
-                            variant={done ? 'ghost' : 'secondary'}
-                            icon={done ? 'check' : undefined}
-                            onClick={() => handleDayComplete(day.day)}
-                            disabled={!canComplete}
-                            className={done ? 'text-success-fg' : ''}
-                            title={!canComplete ? 'Open the day’s video first' : done ? 'Mark as not done' : ''}
-                          >
-                            {done ? 'Done' : 'Mark done'}
-                          </Button>
+                          <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+                            {done ? (
+                              <Badge tone="success" dot>Completed{day.bestScore !== null && day.bestScore !== undefined ? ` · ${day.bestScore}%` : ''}</Badge>
+                            ) : (
+                              <Button size="sm" variant="secondary" icon="quiz" onClick={() => setQuizDay(day)}>
+                                {day.quizInProgress ? 'Continue the day quiz' : day.attempts ? 'Try the day quiz again' : 'Take the day quiz'}
+                              </Button>
+                            )}
+                            <span className="num text-caption text-fg-subtle">
+                              {done
+                                ? `Passed${day.attempts > 1 ? ` on try ${day.attempts}` : ''}`
+                                : day.lastScore !== null && day.lastScore !== undefined
+                                  ? `Last try ${day.lastScore}% · pass mark ${currentPlan.passPercent ?? 50}%`
+                                  : `5 questions · pass mark ${currentPlan.passPercent ?? 50}%`}
+                            </span>
+                          </div>
                         </div>
 
                         {day.youtubeVideo && (
@@ -539,7 +528,7 @@ const SkillUnlocker = () => {
                                 </span>
                               </span>
                               <span className="min-w-0">
-                                <span className="block text-caption text-fg-subtle">{videoInteracted.has(day.day) ? 'Watched' : 'Watch to complete the day'}</span>
+                                <span className="block text-caption text-fg-subtle">{videoInteracted.has(day.day) ? 'Watched' : 'Watch it, then pass the day quiz'}</span>
                                 <span className="mt-0.5 block line-clamp-2 text-small font-medium text-fg group-hover:text-accent-fg">{day.youtubeVideo.title}</span>
                               </span>
                             </a>
@@ -715,6 +704,9 @@ const SkillUnlocker = () => {
             </div>
         </aside>
       </div>
+      {quizDay && currentPlan && (
+        <DayQuizDialog key={quizDay.day} plan={currentPlan} day={quizDay} onClose={() => setQuizDay(null)} onResult={handleDayQuizResult} />
+      )}
     </AppShell>
   );
 };

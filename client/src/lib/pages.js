@@ -7,6 +7,8 @@ export const PAGES = {
   doubts: { path: '/doubts', name: 'Doubts & Notes', icon: 'doubt' },
   plans: { path: '/skill-unlocker', name: 'Skill Plans', icon: 'plan' },
   todos: { path: '/todos', name: 'Todo lists', icon: 'todo' },
+  teachBack: { path: '/teach-back', name: 'Teach-Back', icon: 'teach' },
+  exams: { path: '/exams', name: 'Exam Autopilot', icon: 'exam' },
   videos: { path: '/video', name: 'Videos', icon: 'video' },
   career: { path: '/career', name: 'Career', icon: 'career' },
   forum: { path: '/forum', name: 'Forum', icon: 'forum' },
@@ -29,7 +31,7 @@ export const TOOLS = {
 /** The sidebar, in groups. A group without a label is set apart by space only. */
 export const NAV_GROUPS = [
   { label: null, items: ['home', 'agent'] },
-  { label: 'Learn', items: ['doubts', 'plans', 'todos', 'videos'] },
+  { label: 'Learn', items: ['exams', 'doubts', 'teachBack', 'plans', 'todos', 'videos'] },
   { label: 'Grow', items: ['career', 'forum'] },
   { label: null, items: ['profile', 'settings'] },
 ];

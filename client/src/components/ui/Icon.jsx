@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  LuActivity, LuArrowDown, LuArrowLeft, LuArrowRight, LuArrowUp, LuAward, LuBell, LuBookOpen, LuBot, LuBrain,
+  LuActivity, LuPresentation, LuWorkflow, LuCalendarCheck, LuArrowDown, LuArrowLeft, LuArrowRight, LuArrowUp, LuAward, LuBell, LuBookOpen, LuBot, LuBrain,
   LuBriefcase, LuCalendarDays, LuCheck, LuChevronDown, LuChevronLeft, LuChevronRight, LuChevronUp, LuAlertCircle,
   LuCheckCircle2, LuHelpCircle, LuClock, LuCompass, LuCopy, LuDownload, LuMoreHorizontal, LuExternalLink, LuFileText,
   LuFlag, LuFlame, LuGripVertical, LuListTodo, LuGlobe, LuGraduationCap, LuHome, LuImage, LuInbox, LuInfo, LuLayers, LuLibrary, LuLightbulb,
@@ -43,6 +43,9 @@ const ICONS = {
   brain: LuBrain,
   plan: LuCalendarDays,
   todo: LuListTodo,
+  teach: LuPresentation,
+  flow: LuWorkflow,
+  exam: LuCalendarCheck,
   roadmap: LuMap,
   map: LuMapPin,
   compass: LuCompass,

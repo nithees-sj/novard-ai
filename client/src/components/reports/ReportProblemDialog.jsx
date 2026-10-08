@@ -7,6 +7,7 @@ import { Field, Icon, Spinner, btn, fieldClass } from '../learning/LearningUI';
 import { useAppStatus } from '../../context/AppStatusContext';
 import { submitReport } from '../../lib/reports';
 import { errorMessage } from '../../lib/api';
+import useVoiceRecorder from '../../hooks/useVoiceRecorder';
 
 const MIN = 10;
 const MAX = 4000;
@@ -15,48 +16,7 @@ const SCREENSHOT_TYPES = 'image/png,image/jpeg,image/webp';
 
 /** Record a short voice note with the browser's microphone. */
 function VoiceRecorder({ value, onChange, disabled }) {
-  const [recording, setRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState('');
-  const recorder = useRef(null);
-  const timer = useRef(null);
-
-  useEffect(() => () => {
-    clearInterval(timer.current);
-    recorder.current?.stream?.getTracks().forEach((t) => t.stop());
-  }, []);
-
-  const stop = () => {
-    clearInterval(timer.current);
-    if (recorder.current?.state === 'recording') recorder.current.stop();
-    setRecording(false);
-  };
-
-  const start = async () => {
-    setError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const type = window.MediaRecorder?.isTypeSupported?.('audio/webm') ? 'audio/webm' : '';
-      const rec = new window.MediaRecorder(stream, type ? { mimeType: type } : undefined);
-      const chunks = [];
-      rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-      rec.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
-        onChange(new File([blob], 'voice-note.webm', { type: blob.type }));
-      };
-      recorder.current = rec;
-      rec.start();
-      setSeconds(0);
-      setRecording(true);
-      timer.current = setInterval(() => setSeconds((s) => {
-        if (s + 1 >= MAX_VOICE_SECONDS) stop();
-        return s + 1;
-      }), 1000);
-    } catch {
-      setError('Your microphone could not be used. Check the browser permission, or type your report instead.');
-    }
-  };
+  const { recording, seconds, error, start, stop } = useVoiceRecorder({ onRecorded: onChange, maxSeconds: MAX_VOICE_SECONDS });
 
   if (value && !recording) {
     return (

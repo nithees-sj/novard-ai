@@ -41,7 +41,9 @@ router.post('/api/skill-unlocker/generate-plan', aiLimiter, aiFeature('skillplan
 router.post('/api/skill-unlocker/generate-quiz', aiLimiter, aiFeature('skillplan.quiz'), h(plans.generateQuiz));
 router.get('/api/skill-unlocker/plans/:userId', h(plans.getUserPlans));
 router.post('/api/skill-unlocker/save-quiz-result', h(plans.saveQuizResult));
-router.post('/api/skill-unlocker/toggle-day-completion', h(plans.toggleDayCompletion));
+router.post('/api/skill-unlocker/toggle-day-completion', h(plans.toggleDayCompletion)); // refused: days complete by quiz
+router.post('/api/skill-unlocker/day-quiz', aiLimiter, aiFeature('skillplan.quiz'), h(plans.startDayQuiz));
+router.post('/api/skill-unlocker/day-quiz/submit', h(plans.submitDayQuiz));
 router.delete('/api/skill-unlocker/plans/:planId', h(plans.deletePlan));
 router.post('/api/skill-unlocker/refresh-video', aiLimiter, toolGate('skillUnlocker', { area: 'skill-unlocker' }), h(plans.refreshVideo));
 

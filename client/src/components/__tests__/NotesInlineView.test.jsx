@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import NotesInlineView from '../NotesInlineView';
 import { api } from '../../lib/api';
 
@@ -25,7 +26,7 @@ describe('Notes & Quiz', () => {
       ? { data: { ...uploaded, message: 'ok' } }
       : { data: { response: 'Photosynthesis makes glucose.', noteId: 'n2' } }));
 
-    render(<NotesInlineView />);
+    render(<MemoryRouter><NotesInlineView /></MemoryRouter>);
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/notes/alice%40example.com'));
 
     const file = new File(['%PDF-1.4'], 'biology.pdf', { type: 'application/pdf' });
@@ -42,7 +43,7 @@ describe('Notes & Quiz', () => {
 
   it('refuses non-PDF files before uploading', async () => {
     api.get.mockResolvedValue({ data: [] });
-    render(<NotesInlineView />);
+    render(<MemoryRouter><NotesInlineView /></MemoryRouter>);
     const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
     fireEvent.change(screen.getByLabelText('Choose a PDF to upload'), { target: { files: [file] } });
     expect(await screen.findByText('Please select a PDF file')).toBeInTheDocument();
@@ -52,7 +53,7 @@ describe('Notes & Quiz', () => {
   it('shows the server’s reason when a chat message fails', async () => {
     api.get.mockResolvedValue({ data: [note('n1', 'a.pdf')] });
     api.post.mockRejectedValue({ response: { data: { error: 'You are sending AI requests very quickly.' } } });
-    render(<NotesInlineView />);
+    render(<MemoryRouter><NotesInlineView /></MemoryRouter>);
     fireEvent.change(await screen.findByLabelText('Ask a question about your notes…'), { target: { value: 'hi' } });
     fireEvent.click(screen.getByLabelText('Send'));
     expect(await screen.findByText('You are sending AI requests very quickly.')).toBeInTheDocument();

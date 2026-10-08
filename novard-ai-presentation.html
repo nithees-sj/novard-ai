@@ -1,0 +1,2078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOVARD-AI — Hackathon Presentation</title>
+<meta name="description" content="NOVARD-AI: Intelligent Learning, Career Guidance & Predictive Student Intelligence. Interactive presentation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   NOVARD-AI · Interactive presentation
+   Light theme · 1920×1080 stage scaled to the window
+   ========================================================================== */
+:root{
+  --navy:#0B1F3B; --blue:#1F5EC9; --blue-d:#1A51AE; --cyan:#12A8D6; --cyan-ink:#076985;
+  --bg:#F6F8FB; --bg-2:#EEF2F7; --white:#FFFFFF;
+  --line:#DDE4EE; --line-2:#C9DAF3; --line-3:#BFD3EE;
+  --ink:#0B1F3B; --muted:#52627A; --muted-2:#5F6F87; --faint:#9FB0C7; --faint-2:#B9C6DC;
+  --blue-50:#EAF2FD; --blue-100:#D6E4FB; --cyan-50:#E6F7FC;
+  --low:#1F6B4A; --low-bg:#E6F5EE; --low-line:#BFE3D0;
+  --med:#7A5200; --med-bg:#FFF4D6; --med-line:#F0DBA0;
+  --high:#9A4310; --high-bg:#FDE8D8; --high-line:#F3C5A2; --amber:#E07B39;
+  --crit:#A32727; --crit-bg:#FBE3E3; --crit-line:#F1B8B8;
+  --shadow:0 8px 24px rgba(11,31,59,.06);
+  --shadow-lg:0 18px 44px rgba(11,31,59,.12);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --font:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --s:1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#E8ECF2;font-family:var(--font);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit}
+svg{display:block}
+.ic{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- Stage ---------- */
+.stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--s));background:var(--bg);overflow:hidden;box-shadow:0 30px 80px rgba(11,31,59,.10)}
+.slide{position:absolute;inset:0;padding:80px 128px 136px;display:flex;flex-direction:column;gap:28px;background:var(--bg);
+  opacity:0;visibility:hidden;transform:translateX(48px);
+  transition:opacity .7s var(--ease),transform .7s var(--ease),visibility 0s linear .7s}
+.slide.is-past{transform:translateX(-48px)}
+.slide.is-current{opacity:1;visibility:visible;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease),visibility 0s}
+.slide:not(.is-current) *{animation-play-state:paused!important}
+.slide aside.notes{display:none}
+
+/* ---------- Entrance choreography ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+@keyframes left{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes right{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes growx{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:none}}
+@keyframes growy{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:none}}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes needle{from{transform:rotate(0deg)}}
+.slide [data-a]{opacity:0}
+.slide.play [data-a]{opacity:1;animation:rise .8s var(--ease) backwards;animation-delay:calc(var(--d,0) * 1ms)}
+.slide.play [data-a="fade"]{animation-name:fade;animation-duration:1s}
+.slide.play [data-a="pop"]{animation-name:pop;animation-duration:.6s}
+.slide.play [data-a="left"]{animation-name:left}
+.slide.play [data-a="right"]{animation-name:right}
+.slide.play [data-a="growx"]{animation-name:growx;animation-duration:.55s;transform-origin:left center}
+.slide.play [data-a="growy"]{animation-name:growy;animation-duration:.45s;transform-origin:center top}
+.slide.play [data-a="growup"]{animation-name:growy;animation-duration:.8s;transform-origin:center bottom}
+.draw{stroke-dasharray:1;stroke-dashoffset:1}
+.slide.play .draw{animation:draw 1.2s var(--ease) forwards;animation-delay:calc(var(--d,0) * 1ms)}
+/* Static copies (overview thumbnails, print) show the final frame */
+.static [data-a]{opacity:1!important;animation:none!important}
+.static .draw{stroke-dashoffset:0!important;animation:none!important}
+.static .needle{animation:none!important}
+.static *{animation-play-state:paused!important}
+.static .msg{display:block}.static .msg.sys{display:flex;align-items:center;gap:10px}.static .msg.typing{display:none!important}.static .msg.sys .spin{display:none}.static .msg.sys .tick{display:block}
+
+/* ---------- Shared type & components ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;min-height:64px}
+.title{text-wrap:balance;font-size:56px;font-weight:600;line-height:1.12;letter-spacing:-1.4px;color:var(--ink)}
+.eyebrow{font-size:20px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--blue)}
+.eyebrow.muted{color:var(--muted-2)}
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.chip{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:500;line-height:1.2;padding:11px 18px;background:#F1F5FA;border:1px solid var(--line);border-radius:11px;color:var(--ink);white-space:nowrap}
+.chip.blue{background:var(--blue-50);border-color:var(--line-2)}
+.chip.ml{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.chip.gen{background:var(--cyan-50);border:1.5px dashed var(--cyan)}
+.chip.tag{background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:20px;padding:9px 14px}
+.ict{width:56px;height:56px;border-radius:14px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;flex:none}
+.ict .ic{width:30px;height:30px}
+.ict.sm{width:44px;height:44px;border-radius:12px}
+.ict.sm .ic{width:24px;height:24px}
+.ict.cyan{background:var(--cyan-50);color:var(--cyan-ink)}
+.ict.nv{background:var(--navy);color:#fff}
+.legend{display:flex;gap:28px;align-items:center;font-size:20px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:10px}
+.legend i{width:26px;height:16px;border-radius:5px;display:inline-block}
+.statement{display:flex;gap:24px;align-items:stretch;padding:26px 32px;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.statement .bar{width:6px;border-radius:3px;background:var(--blue);flex:none}
+.statement p{text-wrap:pretty;font-size:28px;font-weight:500;line-height:1.4;color:var(--ink)}
+
+/* interactive affordance */
+.ix{cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),border-color .25s,background-color .25s}
+.ix:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 14px 30px rgba(31,94,201,.16)}
+.ix:focus-visible{outline:3px solid rgba(18,168,214,.55);outline-offset:3px}
+.ix:active{transform:translateY(-1px)}
+
+/* sequence highlight (flow pulse) */
+.seq{transition:box-shadow .35s var(--ease),border-color .35s,transform .35s var(--ease)}
+.seq.lit{border-color:var(--cyan)!important;box-shadow:0 0 0 5px rgba(18,168,214,.18),0 14px 30px rgba(31,94,201,.16)!important;transform:translateY(-3px)}
+
+/* connectors with travelling pulse */
+.cx{flex:none;width:44px;height:2px;background:var(--faint-2);position:relative;align-self:center}
+.cx::after{content:"";position:absolute;right:0;top:50%;width:9px;height:9px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translate(0,-50%) rotate(45deg)}
+.cx::before{content:"";position:absolute;top:50%;left:0;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--cyan);opacity:0;animation:flowx 2s linear infinite;animation-delay:calc(var(--i,0) * .28s)}
+@keyframes flowx{0%{left:0;opacity:0}15%{opacity:1}80%{opacity:1}100%{left:calc(100% - 6px);opacity:0}}
+.cy{flex:none;width:2px;height:30px;background:var(--faint-2);position:relative;align-self:center}
+.cy::after{content:"";position:absolute;bottom:0;left:50%;width:9px;height:9px;border-bottom:2px solid var(--faint);border-right:2px solid var(--faint);transform:translate(-50%,0) rotate(45deg)}
+.cy::before{content:"";position:absolute;left:50%;top:0;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--cyan);opacity:0;animation:flowy 1.8s linear infinite;animation-delay:calc(var(--i,0) * .3s)}
+@keyframes flowy{0%{top:0;opacity:0}15%{opacity:1}80%{opacity:1}100%{top:calc(100% - 6px);opacity:0}}
+
+/* per-slide footer */
+.foot{position:absolute;left:128px;right:128px;bottom:52px;display:flex;align-items:center;justify-content:space-between;font-size:20px;color:var(--muted-2);pointer-events:none}
+.foot .brand{display:flex;align-items:center;gap:12px;font-weight:600;color:var(--ink);letter-spacing:.5px}
+.foot .brand b{width:10px;height:10px;border-radius:3px;background:var(--cyan)}
+.foot .brand em{font-style:normal;font-weight:500;color:var(--muted-2)}
+.foot .hint{display:flex;align-items:center;gap:10px;font-size:19px;color:var(--muted-2)}
+.foot .hint .ic{width:22px;height:22px;color:var(--blue)}
+.foot .num{font-variant-numeric:tabular-nums;font-weight:500;visibility:hidden}
+@media print{.foot .num{visibility:visible}}
+
+/* ---------- 01 Cover ---------- */
+.s-cover{padding:128px;flex-direction:row;align-items:center;background:var(--white)}
+.cover-left{width:820px;display:flex;flex-direction:column;gap:30px;align-items:flex-start;position:relative;z-index:2}
+.cover-bar{width:72px;height:6px;border-radius:3px;background:var(--cyan)}
+.cover-title{font-size:150px;font-weight:700;letter-spacing:-5px;line-height:.95;color:var(--navy);white-space:nowrap}
+.cover-title span{color:var(--blue)}
+.cover-sub{font-size:36px;line-height:1.35;color:var(--muted);max-width:780px}
+.pill{font-size:28px;font-weight:600;color:var(--blue);background:#EEF4FD;border:1px solid var(--line-2);border-radius:999px;padding:12px 30px}
+.cover-cta{display:flex;gap:16px;align-items:center;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:12px;font-size:24px;font-weight:600;padding:18px 30px;border-radius:14px;transition:background-color .25s,transform .25s var(--ease),box-shadow .25s,border-color .25s}
+.btn .ic{width:24px;height:24px}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--blue);transform:translateY(-2px);box-shadow:0 14px 30px rgba(31,94,201,.25)}
+.btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px)}
+.cover-art{position:absolute;left:1000px;top:128px;width:792px;height:824px;border-radius:32px;background:var(--bg);overflow:hidden}
+.cover-art::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#D3DCE8 1.3px,transparent 1.4px);background-size:26px 26px;opacity:.7}
+.cover-art svg.links{position:absolute;inset:0}
+.c-student{position:absolute;left:112px;top:344px;width:136px;height:136px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;z-index:2}
+.c-student .ic{width:56px;height:56px;stroke-width:1.6}
+.c-student::before,.c-student::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:0;animation:ring 3.2s var(--ease) infinite}
+.c-student::after{animation-delay:1.6s}
+@keyframes ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.75);opacity:0}}
+.c-label{position:absolute;left:100px;top:494px;width:160px;text-align:center;font-size:24px;font-weight:500;color:var(--muted)}
+.c-node{position:absolute;left:500px;width:272px;height:68px;display:flex;align-items:center;gap:12px;padding:0 18px;white-space:nowrap;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);font-size:25px;font-weight:500;color:var(--ink)}
+.c-node .ic{width:26px;height:26px;color:var(--blue)}
+.c-node.hl{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.c-node.hl .ic{color:#fff}
+.cover-hint{font-size:20px;color:var(--muted-2);display:flex;align-items:center;gap:10px;margin-left:8px}
+.kbd{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 8px;border:1px solid var(--line);border-bottom-width:3px;border-radius:8px;background:#fff;font-size:17px;font-weight:600;color:var(--ink)}
+
+/* ---------- 02 Problem ---------- */
+.p-grid{display:flex;gap:32px;flex:1;min-height:0}
+.ring-card{width:820px;display:flex;flex-direction:column;gap:18px;padding:26px 30px 30px}
+.ring{position:relative;width:760px;height:540px;flex:none}
+.ring > svg{position:absolute;inset:0}
+.dashline{stroke:var(--faint-2);stroke-width:2;stroke-dasharray:6 9;stroke-linecap:round;animation:dash 2.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-30}}
+.tool-pos{position:absolute;width:210px;height:54px}
+.tool-bob{width:100%;height:100%;animation:bob 6s ease-in-out infinite;animation-delay:calc(var(--k,0) * -.85s)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.tool{width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:23px;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--ink)}
+.tool .ic{width:22px;height:22px;color:var(--muted-2)}
+.p-student{position:absolute;left:310px;top:200px;width:140px;height:140px;border-radius:50%;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:22px;font-weight:600}
+.p-student .ic{width:38px;height:38px;stroke-width:1.6}
+.frag-row{display:flex;align-items:center;gap:0}
+.frag-row p{flex:1;text-align:center;font-size:23px;font-weight:600;line-height:1.3;padding:15px 8px;background:var(--bg-2);border-radius:12px}
+.frag-row p.bad{color:#9B2C2C;background:#FBE9E9}
+.p-right{flex:1;display:flex;flex-direction:column;gap:24px}
+.cmp{display:flex;gap:24px}
+.cmp .col{flex:1;display:flex;flex-direction:column;gap:6px;padding:26px}
+.cmp .col.nv{border-color:var(--line-3)}
+.col-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.col-head .eyebrow{font-size:20px}
+.badge{font-size:17px;font-weight:600;letter-spacing:.5px;padding:6px 12px;border-radius:999px}
+.badge.red{background:#FBE9E9;color:#9B2C2C}
+.badge.blue{background:var(--blue-50);color:var(--blue)}
+.st{font-size:25px;font-weight:500;line-height:1.2;text-align:center;padding:12px 8px;background:var(--bg);border:1px solid var(--line);border-radius:12px}
+.st.b{background:var(--blue-50);border-color:var(--line-2)}
+.st.go{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.col .cy{height:22px}
+.col .note{font-size:22px;color:var(--muted);text-align:center;margin-top:10px}
+
+/* ---------- 03 Solution ---------- */
+.hub-area{position:relative;height:590px;flex:none}
+.hub-area > svg{position:absolute;inset:0}
+.hcard{position:absolute;width:520px;height:172px;display:flex;align-items:center;gap:22px;padding:0 30px}
+.hcard h3{font-size:28px;font-weight:600;line-height:1.2;color:var(--ink);margin-bottom:10px}
+.hcard ul{list-style:none;display:flex;flex-direction:column;gap:4px}
+.hcard li{font-size:22px;color:var(--muted);line-height:1.3;display:flex;align-items:center;gap:10px}
+.hcard li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.hcard.key{border-color:var(--line-3)}
+.hub{position:absolute;left:692px;top:155px;width:280px;height:280px;border-radius:28px;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.hub h3{font-size:44px;font-weight:700;letter-spacing:-1px}
+.hub p{font-size:20px;color:#BFD0EA}
+.hub .pulse{position:absolute;inset:-1px;border-radius:28px;border:2px solid var(--cyan);opacity:0;animation:hubring 3.6s var(--ease) infinite;pointer-events:none}
+.hub .pulse.p2{animation-delay:1.8s}
+@keyframes hubring{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.28);opacity:0}}
+.flowpath{fill:none;stroke:var(--faint-2);stroke-width:2}
+
+/* ---------- 04 Flow ---------- */
+.flow-card{padding:36px 40px;display:flex;flex-direction:column;gap:22px}
+.flow-row{display:flex;align-items:center}
+.fnode{width:156px;height:152px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);text-align:center;font-size:22px;font-weight:600;line-height:1.25;padding:0 10px}
+.fnode .ic{width:30px;height:30px;color:var(--blue)}
+.fnode.nv{background:var(--navy);border-color:var(--navy);color:#fff}
+.fnode.nv .ic{color:#fff}
+.fnode.lb{background:var(--blue-50);border-color:var(--line-2)}
+.fnode.go{background:var(--blue);border-color:var(--blue);color:#fff}
+.fnode.go .ic{color:#fff}
+.outs{display:flex;gap:16px}
+.out{flex:1;height:100px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:24px;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:12px}
+.out .ic{width:26px;height:26px;color:var(--blue)}
+
+/* ---------- 05 Agent ---------- */
+.ag-grid{display:flex;gap:40px;flex:1;min-height:0}
+.alist{width:500px;display:flex;flex-direction:column;gap:0;flex:none}
+.aitem{display:flex;align-items:center;gap:16px;padding:9px 18px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:24px;font-weight:500;transition:background-color .35s,border-color .35s,color .35s,box-shadow .35s}
+.aitem .n{width:38px;height:38px;border-radius:50%;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;font-size:20px;font-weight:600;flex:none;transition:background-color .35s,color .35s}
+.aitem.on{border-color:var(--blue);background:var(--blue-50);box-shadow:0 0 0 4px rgba(31,94,201,.10)}
+.aitem.done .n,.aitem.on .n{background:var(--blue);color:#fff}
+.aitem.last{background:var(--navy);border-color:var(--navy);color:#fff}
+.aitem.last .n{background:var(--blue);color:#fff}
+.aitem.last.on{box-shadow:0 0 0 5px rgba(18,168,214,.25)}
+.alist .cy{height:18px}
+.ag-right{flex:1;display:flex;flex-direction:column;gap:22px;min-width:0}
+.phases{display:flex;align-items:center}
+.phase{flex:1;height:118px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 22px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);position:relative;transition:all .4s var(--ease)}
+.phase small{font-size:18px;font-weight:600;letter-spacing:1px;color:var(--faint)}
+.phase h3{font-size:30px;font-weight:600;line-height:1.1}
+.phase p{font-size:20px;color:var(--muted)}
+.phase .ok{position:absolute;right:16px;top:16px;width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;opacity:0;transform:scale(.6);transition:all .35s var(--ease)}
+.phase .ok .ic{width:18px;height:18px;stroke-width:2.6}
+.phase.on{border-color:var(--blue);box-shadow:0 0 0 5px rgba(31,94,201,.12),var(--shadow);transform:translateY(-3px)}
+.phase.on small{color:var(--blue)}
+.phase.done .ok{opacity:1;transform:none}
+.phase.exe{background:var(--blue);border-color:var(--blue);color:#fff}
+.phase.exe p,.phase.exe small{color:#D6E4FB}
+.phase.exe .ok{background:#fff;color:var(--blue)}
+.chat{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.chat-top{display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)}
+.chat-top .who{display:flex;flex-direction:column}
+.chat-top b{font-size:22px;font-weight:600}
+.chat-top span{font-size:18px;color:var(--muted-2)}
+.live{display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:600;color:var(--blue);background:var(--blue-50);padding:6px 12px;border-radius:999px;margin-left:8px}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+.replay{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:19px;font-weight:600;color:var(--blue);padding:10px 16px;border-radius:10px;border:1px solid var(--line-2);background:#fff;transition:background-color .2s}
+.replay:hover{background:var(--blue-50)}
+.replay .ic{width:20px;height:20px}
+.chat-body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:22px 26px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 110px);mask-image:linear-gradient(to bottom,transparent 0,#000 110px)}
+.msg{display:none;max-width:80%;font-size:22px;line-height:1.42;padding:14px 18px;border-radius:18px;flex:none}
+.msg.show{display:block;animation:rise .45s var(--ease) both}
+.msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:6px}
+.msg.bot{align-self:flex-start;background:#F1F5FA;border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg.sys{align-self:flex-start;background:none;padding:0 4px;font-size:19px;color:var(--muted-2)}
+.msg.sys.show{display:flex;align-items:center;gap:10px}
+.msg.sys .ic{width:20px;height:20px}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line-2);border-top-color:var(--blue);animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg.sys .tick{display:none;color:#1F6B4A}
+.msg.sys.ok .spin{display:none}
+.msg.sys.ok .tick{display:block}
+.msg.typing.show{display:flex;gap:6px;padding:16px 18px}
+.msg.typing i{width:9px;height:9px;border-radius:50%;background:var(--faint);animation:typing 1.1s infinite}
+.msg.typing i:nth-child(2){animation-delay:.15s}.msg.typing i:nth-child(3){animation-delay:.3s}
+@keyframes typing{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-6px);opacity:1}}
+.draft{max-width:88%;background:#fff!important;border:1px solid var(--line-3)!important;box-shadow:var(--shadow)}
+.draft .dh{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.draft .dh b{font-size:21px}
+.draft .dh span{font-size:16px;font-weight:600;letter-spacing:1px;color:var(--blue);background:var(--blue-50);padding:4px 10px;border-radius:999px}
+.draft .wk{display:flex;gap:14px;align-items:baseline;font-size:20px;padding:7px 0;border-top:1px solid var(--bg-2)}
+.draft .wk em{font-style:normal;font-weight:600;color:var(--blue);width:88px;flex:none}
+.draft .acts{display:flex;gap:10px;margin-top:12px}
+.draft .acts span{font-size:19px;font-weight:600;padding:9px 18px;border-radius:10px;border:1px solid var(--line);transition:all .25s}
+.draft .acts .cf{background:var(--blue);border-color:var(--blue);color:#fff}
+.draft .acts .cf.pressed{transform:scale(.94);box-shadow:0 0 0 6px rgba(31,94,201,.2)}
+
+/* ---------- 06 Risk ---------- */
+.rpipe{display:flex;align-items:center}
+.rstep{width:172px;height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 12px;text-align:center;font-size:21px;font-weight:600;line-height:1.22;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.rstep .ic{width:28px;height:28px;color:var(--blue)}
+.rstep.ml{background:var(--blue);border-color:var(--blue);color:#fff}
+.rstep.ml .ic{color:#fff}
+.rstep.gen{background:var(--cyan-50);border:2px dashed var(--cyan)}
+.rstep.gen .ic{color:var(--cyan-ink)}
+.rstep.end{background:var(--navy);border-color:var(--navy);color:#fff}
+.rstep.end .ic{color:#fff}
+.rpipe .cx{width:34px}
+.r-row{display:flex;gap:24px}
+.sig{flex:1.6;padding:24px 28px;display:flex;flex-direction:column;gap:16px}
+.sig .chips{display:flex;flex-wrap:wrap;gap:10px}
+.lvl{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:16px}
+.lvls{display:flex;gap:10px}
+.lv{flex:1;height:60px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:21px;font-weight:700;letter-spacing:.5px;border-radius:12px;border:1px solid}
+.lv i{width:9px;height:9px;border-radius:50%;background:currentColor}
+.lv.l{background:var(--low-bg);border-color:var(--low-line);color:var(--low)}
+.lv.m{background:var(--med-bg);border-color:var(--med-line);color:var(--med)}
+.lv.h{background:var(--high-bg);border-color:var(--high-line);color:var(--high)}
+.lv.c{background:var(--crit-bg);border-color:var(--crit-line);color:var(--crit)}
+.lvl p,.sig p.sub{font-size:21px;color:var(--muted)}
+.role{flex:1;display:flex;align-items:center;gap:20px;padding:22px 26px}
+.role h3{font-size:28px;font-weight:600;margin-bottom:4px}
+.role p{font-size:21px;color:var(--muted);line-height:1.3}
+.role.gen{border:2px dashed var(--cyan)}
+
+/* ---------- 07 Example ---------- */
+.ex-row{display:flex;align-items:stretch}
+.ex-row .cx{width:44px}
+.excol{height:420px;display:flex;flex-direction:column;gap:12px;padding:24px}
+.excol .eyebrow{font-size:19px;letter-spacing:1.5px}
+.sigrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:20px;font-weight:500;padding:7px 0;border-top:1px solid var(--bg-2)}
+.sigrow svg{width:56px;height:26px}
+.sigrow .up{color:var(--amber);font-weight:700;font-size:20px}
+.spark{fill:none;stroke:var(--amber);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:6px}
+.riskbadge{font-size:28px;font-weight:700;letter-spacing:.5px;padding:12px 18px;border-radius:12px;background:var(--high-bg);border:1px solid var(--high-line);color:var(--high);text-align:center}
+.excol.gen{border:2px dashed var(--cyan)}
+.quote{font-size:22px;font-style:italic;line-height:1.4;color:var(--muted);min-height:124px}
+.quote .cur{display:inline-block;width:2px;height:24px;background:var(--cyan-ink);vertical-align:-4px;margin-left:2px;animation:blink 1s infinite}
+.excol.alert{background:#FFF6EE;border-color:var(--high-line);justify-content:center;animation:alertpulse 2.2s ease-in-out infinite;animation-delay:6s}
+@keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(224,123,57,0)}50%{box-shadow:0 0 0 10px rgba(224,123,57,.16)}}
+.bell{width:64px;height:64px;border-radius:16px;background:#fff;border:1px solid var(--high-line);color:var(--high);display:grid;place-items:center;animation:shake 2.2s ease-in-out infinite;animation-delay:6s;transform-origin:50% 10%}
+.bell .ic{width:32px;height:32px}
+@keyframes shake{0%,70%,100%{transform:none}75%{transform:rotate(12deg)}80%{transform:rotate(-10deg)}85%{transform:rotate(7deg)}90%{transform:rotate(-4deg)}}
+.alert h3{font-size:28px;font-weight:700;line-height:1.2}
+.alert p{font-size:20px;color:var(--high)}
+.chk{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:500;line-height:1.3;padding:11px 14px;border:1px solid var(--line);background:var(--bg);border-radius:10px}
+.chk .cc{width:28px;height:28px;border-radius:50%;border:2px solid var(--line-2);display:grid;place-items:center;flex:none;color:#fff}
+.chk .cc .ic{width:16px;height:16px;stroke-width:3;opacity:0}
+.slide.play .chk .cc{animation:ccfill .4s var(--ease) forwards;animation-delay:calc(var(--d,0) * 1ms)}
+.slide.play .chk .cc .ic{animation:fade .3s forwards;animation-delay:calc(var(--d,0) * 1ms + 150ms)}
+@keyframes ccfill{to{background:var(--blue);border-color:var(--blue)}}
+.static .chk .cc{background:var(--blue);border-color:var(--blue)}
+.static .chk .cc .ic{opacity:1}
+.chk.go{background:var(--blue-50);border-color:var(--line-2);font-weight:600}
+.ex-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:26px 36px;background:var(--blue-50);border-radius:18px}
+.ex-banner p{font-size:42px;font-weight:600;letter-spacing:-.6px;line-height:1.2}
+
+/* ---------- 08 Architecture ---------- */
+.layers{position:relative;display:flex;flex-direction:column;gap:12px;padding-left:64px}
+.spine{position:absolute;left:22px;top:30px;bottom:30px;width:2px;background:var(--line-2)}
+.packet{position:absolute;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 5px rgba(18,168,214,.18);animation:packet 3.6s var(--ease) infinite;animation-delay:2.2s;opacity:0}
+@keyframes packet{0%{top:0;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
+.layer{position:relative;display:flex;align-items:center;gap:24px;padding:13px 20px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.layer::before{content:"";position:absolute;left:-49px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:#fff;border:2px solid var(--blue)}
+.layer .lab{width:290px;flex:none;display:flex;align-items:center;gap:14px;font-size:20px;font-weight:600;letter-spacing:1.5px;color:var(--blue);text-transform:uppercase}
+.layer .lab .ic{width:26px;height:26px}
+.layer .chips{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.layer .chip{font-size:21px;padding:10px 16px}
+
+/* ---------- 09 Engine ---------- */
+.lanes{display:flex;flex-direction:column;gap:0}
+.lane{display:flex;align-items:center;gap:24px;padding:18px 20px;border-radius:16px}
+.lane .lab{width:230px;flex:none;display:flex;flex-direction:column;gap:2px}
+.lane .lab b{font-size:21px;font-weight:700;letter-spacing:1.5px}
+.lane .lab span{font-size:20px;color:var(--muted)}
+.lane .steps{display:flex;align-items:center}
+.lane .cx{width:30px}
+.estep{width:186px;height:84px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;font-size:21px;font-weight:500;line-height:1.25;background:#fff;border-radius:11px;border:1px solid var(--line)}
+.lane.ml{background:var(--blue-50)}
+.lane.ml .lab b{color:var(--blue)}
+.lane.ml .estep{border-color:#9DBFEF}
+.lane.ml .estep.core{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.lane.gen{background:var(--cyan-50)}
+.lane.gen .lab b{color:var(--cyan-ink)}
+.lane.gen .estep{border:2px dashed var(--cyan)}
+.lane.hu{background:var(--bg-2)}
+.lane.hu .estep{border-color:#C5D0E0}
+.lane.hu .estep.core{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.lane.fb{border:2px dotted var(--faint);background:transparent}
+.lane.fb .lab b{color:var(--muted-2);display:flex;align-items:center;gap:10px}
+.lane.fb .lab .ic{width:22px;height:22px;animation:spin 6s linear infinite}
+.lane .desc{flex:1;font-size:21px;line-height:1.35;color:var(--muted);padding-left:12px}
+.lanes > .cy{margin-left:136px;align-self:flex-start;height:26px}
+
+/* ---------- 10 Stack ---------- */
+.stack{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.scard{padding:32px;display:flex;flex-direction:column;gap:18px}
+.scard .top{display:flex;align-items:center;gap:18px}
+.scard h3{font-size:30px;font-weight:600}
+.scard .srole{font-size:21px;color:var(--muted);line-height:1.35}
+.scard .chips{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ---------- 11 Why ---------- */
+.why-head{display:flex;align-items:center}
+.why-head p{flex:1;font-size:20px;font-weight:600;letter-spacing:1.5px;padding:0 28px;text-transform:uppercase}
+.why-head .mid{width:72px;flex:none}
+.wrow{display:flex;align-items:center}
+.wold{flex:1;height:66px;display:flex;align-items:center;padding:0 28px;background:#EAEFF5;border-radius:12px;font-size:27px;color:var(--muted)}
+.wrow .cx{width:72px}
+.wnew{flex:1;height:66px;display:flex;align-items:center;gap:16px;padding:0 24px;background:#fff;border:1px solid var(--line-3);border-radius:12px;box-shadow:var(--shadow);font-size:27px;font-weight:600}
+.wnew .tk{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;flex:none}
+.wnew .tk .ic{width:17px;height:17px;stroke-width:3}
+.wnew .go{margin-left:auto;font-size:18px;font-weight:600;color:var(--blue);opacity:0;transform:translateX(-6px);transition:all .25s var(--ease);display:flex;align-items:center;gap:6px}
+.wnew .go .ic{width:18px;height:18px}
+.wnew:hover .go{opacity:1;transform:none}
+.why-quote{display:flex;gap:24px;padding:30px 34px;background:var(--blue-50);border-radius:18px}
+.why-quote .bar{width:6px;border-radius:3px;background:var(--blue);flex:none}
+.why-quote p{text-wrap:balance;font-size:36px;font-weight:600;line-height:1.3}
+
+/* ---------- 12 Vision ---------- */
+.stairs{display:flex;align-items:flex-end;gap:16px;height:232px}
+.stair{flex:1;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;justify-content:flex-start;gap:4px;border:1px solid var(--line)}
+.stair small{font-size:18px;font-weight:600;letter-spacing:1px;color:var(--blue)}
+.stair h3{font-size:30px;font-weight:600;line-height:1.15}
+.stair.s1{height:104px;background:#F1F6FD}
+.stair.s2{height:136px;background:#E3EDFB;border-color:var(--line-2)}
+.stair.s3{height:168px;background:#CFE0F7;border-color:#B5CDEF}
+.stair.s4{height:200px;background:#9DBFEF;border-color:#9DBFEF}
+.stair.s4 small{color:var(--navy)}
+.stair.s5{height:232px;background:var(--blue);border-color:var(--blue);color:#fff}
+.stair.s5 small{color:#D6E4FB}
+.v-cards{display:flex;gap:24px}
+.vcard{flex:1;padding:26px 30px;display:flex;flex-direction:column;gap:14px}
+.vcard .top{display:flex;align-items:center;gap:16px}
+.vcard h3{font-size:30px;font-weight:600}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.vgrid div{display:flex;align-items:center;gap:12px;font-size:22px;color:var(--muted)}
+.vgrid .ic{width:24px;height:24px;color:var(--blue);stroke-width:2.4}
+.v-brand{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px;background:var(--blue-50);border-radius:24px;text-align:center;position:relative;overflow:hidden}
+.v-brand h2{font-size:60px;font-weight:700;letter-spacing:-1.5px;line-height:1.05}
+.v-brand h2 span{color:var(--blue)}
+.v-brand .tag{font-size:34px;font-weight:600;color:var(--blue)}
+.v-brand .line{font-size:22px;color:var(--muted)}
+
+/* ==========================================================================
+   Viewer chrome (viewport pixels, not scaled)
+   ========================================================================== */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .6s var(--ease);z-index:30}
+.dock{position:fixed;right:18px;bottom:18px;display:flex;align-items:center;gap:2px;padding:6px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(11,31,59,.08);transition:opacity .4s;z-index:30}
+.dock.idle{opacity:.28}
+.dock:hover{opacity:1}
+.dock button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink);transition:background-color .2s,color .2s}
+.dock button:hover{background:var(--blue-50);color:var(--blue)}
+.dock button[aria-pressed="true"]{background:var(--blue-50);color:var(--blue)}
+.dock button .ic{width:19px;height:19px}
+.dock .count{min-width:70px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.dock .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--navy);color:#fff;border-radius:12px;font-size:14px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .4s,transform .4s var(--ease);z-index:31;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .kbd{min-width:24px;height:22px;font-size:12px;border-radius:6px;border-bottom-width:2px;color:var(--navy)}
+.notes-panel{position:fixed;left:50%;bottom:72px;transform:translate(-50%,16px);width:min(820px,calc(100vw - 32px));padding:16px 20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);font-size:15px;line-height:1.6;color:var(--muted);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s var(--ease);z-index:29}
+.notes-panel.open{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.notes-panel b{display:block;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);margin-bottom:6px}
+
+/* help */
+.help{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,31,59,.25);z-index:45;opacity:0;pointer-events:none;transition:opacity .3s}
+.help.open{opacity:1;pointer-events:auto}
+.help-card{width:min(460px,calc(100vw - 32px));background:#fff;border-radius:18px;padding:26px 28px;box-shadow:var(--shadow-lg)}
+.help-card h4{font-size:18px;margin-bottom:14px}
+.help-card div{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--bg-2);font-size:14px;color:var(--muted)}
+.help-card .kbd{font-size:12px;min-width:28px;height:26px}
+
+/* overview */
+.overview{position:fixed;inset:0;background:rgba(240,243,248,.97);z-index:35;overflow:auto;padding:40px 32px 60px;opacity:0;pointer-events:none;transition:opacity .35s}
+.overview.open{opacity:1;pointer-events:auto}
+.ov-head{max-width:1440px;margin:0 auto 24px;display:flex;align-items:center;justify-content:space-between}
+.ov-head h4{font-size:20px;font-weight:600}
+.ov-head span{font-size:14px;color:var(--muted)}
+.ov-grid{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.ov-item{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s;text-align:left}
+.ov-item:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--blue)}
+.ov-item.cur{border:2px solid var(--blue)}
+.ov-thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--bg);pointer-events:none}
+.ov-thumb .slide{width:1920px;height:1080px;transform-origin:0 0;transition:none!important;opacity:1;visibility:visible}
+.ov-cap{display:flex;gap:10px;align-items:center;padding:10px 14px;font-size:13px;color:var(--muted)}
+.ov-cap b{color:var(--blue);font-variant-numeric:tabular-nums}
+
+/* ---------- Detail drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,31,59,.18);opacity:0;pointer-events:none;transition:opacity .35s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(500px,100vw);background:#fff;z-index:41;transform:translateX(104%);transition:transform .5s var(--ease);box-shadow:-24px 0 60px rgba(11,31,59,.14);display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dr-top{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dr-top button{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.dr-top button:hover{background:var(--bg);color:var(--ink)}
+.dr-top button .ic{width:20px;height:20px}
+.dr-top .crumb{flex:1;font-size:13px;color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dr-top .back{display:none}
+.dr-top .back.show{display:grid}
+.dr-body{flex:1;overflow-y:auto;padding:26px 28px 40px}
+.dr-body > *{animation:rise .5s var(--ease) backwards;animation-delay:calc(var(--k,0) * 55ms)}
+.dr-hero{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.dr-hero .ict{width:48px;height:48px;border-radius:13px}
+.dr-hero .ict .ic{width:24px;height:24px}
+.dr-kind{font-size:11px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--blue)}
+.dr-layer{font-size:13px;color:var(--muted-2);margin-top:2px}
+.dr-title{font-size:28px;font-weight:650;font-weight:600;letter-spacing:-.5px;line-height:1.15;margin-bottom:10px}
+.dr-sum{font-size:16px;line-height:1.6;color:var(--muted);margin-bottom:22px}
+.dr-from{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FBF4EC;border:1px solid #F3DCC4;font-size:14px;line-height:1.5;color:#7A4A1E;margin-bottom:22px}
+.dr-from .ic{width:18px;height:18px;margin-top:2px}
+.dr-sec{font-size:11px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted-2);margin:22px 0 12px}
+.mflow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.mflow .n{font-size:13px;font-weight:600;padding:8px 11px;border-radius:9px;background:var(--blue-50);border:1px solid var(--line-2);color:var(--ink);animation:mlit 3.2s ease-in-out infinite;animation-delay:calc(var(--k,0) * .4s)}
+.mflow .ar{width:14px;height:14px;color:var(--faint)}
+@keyframes mlit{0%,20%,100%{border-color:var(--line-2);box-shadow:none}8%{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(18,168,214,.18)}}
+.dr-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.dr-list li{display:flex;gap:12px;font-size:15px;line-height:1.55;color:var(--ink)}
+.dr-list li .ic{width:18px;height:18px;margin-top:3px;color:var(--blue);stroke-width:2.4}
+.dr-chips{display:flex;flex-wrap:wrap;gap:8px}
+.dr-chip{font-size:13px;font-weight:600;padding:8px 12px;border-radius:9px;background:#F1F5FA;border:1px solid var(--line);color:var(--ink);transition:all .2s}
+button.dr-chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-50)}
+.dr-rel{display:flex;flex-direction:column;gap:8px}
+.dr-rel button{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:14px;font-weight:500;transition:all .2s}
+.dr-rel button:hover{border-color:var(--blue);background:var(--blue-50)}
+.dr-rel button b{font-size:12px;color:var(--blue);font-variant-numeric:tabular-nums;width:22px}
+.dr-rel button .ic{width:16px;height:16px;margin-left:auto;color:var(--blue)}
+.dr-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:18px;padding:14px;border-radius:12px;background:var(--navy);color:#fff;font-size:15px;font-weight:600;transition:background-color .2s}
+.dr-cta:hover{background:var(--blue)}
+.dr-cta .ic{width:18px;height:18px}
+.dr-note{font-size:12.5px;line-height:1.55;color:var(--muted-2);margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:10px}
+.dr-levels{display:flex;flex-direction:column;gap:8px}
+.dr-levels div{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.dr-levels span{font-size:12px;font-weight:700;letter-spacing:.6px;width:86px;text-align:center;padding:6px 0;border-radius:8px;border:1px solid;flex:none}
+/* simulator */
+.sim{display:flex;flex-direction:column;gap:14px}
+.sim-g{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px;border:1px solid var(--line);border-radius:14px}
+.sim-lv{font-size:15px;font-weight:700;letter-spacing:.6px;padding:7px 14px;border-radius:9px;border:1px solid;transition:all .3s}
+.sim-score{font-size:12px;color:var(--muted-2)}
+.sim-row{display:flex;flex-direction:column;gap:6px}
+.sim-row label{display:flex;justify-content:space-between;font-size:14px;font-weight:500}
+.sim-row label span{font-variant-numeric:tabular-nums;color:var(--blue);font-weight:600}
+.sim-row input{width:100%;accent-color:var(--blue)}
+.sim-ex{font-size:14px;line-height:1.55;color:var(--cyan-ink);background:var(--cyan-50);border:1.5px dashed var(--cyan);border-radius:12px;padding:12px 14px}
+.sim-ex b{display:block;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:4px}
+.sim-pre{display:flex;gap:8px;flex-wrap:wrap}
+.sim-pre button{font-size:13px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);transition:all .2s}
+.sim-pre button:hover{border-color:var(--blue);color:var(--blue)}
+.gauge .needle{transform-box:view-box;transform-origin:110px 110px;transition:transform .7s var(--ease)}
+.slide.play .gauge .needle{animation:needle 1.4s var(--ease) backwards;animation-delay:1350ms}
+
+
+/* ==========================================================================
+   v2 additions: two ways to create · architectural flow · full AI pipeline
+   ========================================================================== */
+.head.col{flex-direction:column;align-items:flex-start;gap:8px;justify-content:flex-start}
+.subtitle{font-size:26px;color:var(--muted);line-height:1.4}
+.subtitle b{color:var(--ink);font-weight:600}
+
+/* solution: mode bar */
+.modes{display:flex;align-items:center;justify-content:center;gap:18px}
+.modes .mlabel{font-size:20px;color:var(--muted-2);margin-right:8px}
+.mode{display:flex;align-items:center;gap:14px;padding:10px 24px 10px 12px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.mode b{display:block;font-size:22px;font-weight:600;line-height:1.2}
+.mode span.s{display:block;font-size:18px;color:var(--muted)}
+.mode.ag{border-color:var(--line-3)}
+.modes .or{font-size:20px;font-weight:600;color:var(--muted-2)}
+
+/* flow: two paths */
+.tw{position:relative;height:620px;flex:none}
+.tw > svg{position:absolute;inset:0}
+.tw-student{position:absolute;left:0;top:200px;width:200px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.tw-student .av{width:112px;height:112px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;position:relative}
+.tw-student .av .ic{width:46px;height:46px;stroke-width:1.6}
+.tw-student .av::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:0;animation:ring 3.2s var(--ease) infinite}
+.tw-student b{font-size:26px;font-weight:600}
+.tw-student .pc{font-size:18px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.tw-lane{position:absolute;left:300px;width:900px;height:210px;padding:22px 28px;display:flex;flex-direction:column;gap:18px}
+.tw-lane.a{top:40px}
+.tw-lane.b{top:370px;border-color:var(--line-3)}
+.tw-head{display:flex;align-items:center;gap:16px}
+.tw-head h3{font-size:28px;font-weight:600;line-height:1.15}
+.tw-head p{font-size:19px;color:var(--muted)}
+.tw-head .badge{margin-left:auto}
+.tw-steps{display:flex;align-items:center}
+.tstep{height:84px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 10px;font-size:21px;font-weight:500;line-height:1.25;background:var(--bg);border:1px solid var(--line);border-radius:11px}
+.tw-lane.a .tstep{width:240px}
+.tw-lane.a .cx{width:44px}
+.tw-lane.b .tstep{width:144px;background:var(--blue-50);border-color:var(--line-2)}
+.tw-lane.b .cx{width:28px}
+.tstep.go{background:var(--navy)!important;border-color:var(--navy)!important;color:#fff;font-weight:600}
+.tw-lane.b .tstep.go{background:var(--blue)!important;border-color:var(--blue)!important}
+.tw-out{position:absolute;left:1300px;top:20px;width:364px;height:580px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.tw-out h3{font-size:24px;font-weight:600;margin:2px 0 4px}
+.orow{display:flex;align-items:center;gap:14px;height:56px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-size:22px;font-weight:500}
+.orow .ic{width:24px;height:24px;color:var(--blue)}
+.tw-out .then{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:19px;color:var(--muted)}
+.tw-out .then .p{padding:6px 12px;border-radius:999px;background:var(--blue-50);color:var(--blue);font-weight:600}
+.tw-out .then .ic{width:16px;height:16px;color:var(--faint)}
+
+/* agent: toolkit */
+.toolkit{display:flex;align-items:center;gap:8px;padding:14px 20px;flex:none}
+.toolkit .tl{font-size:20px;font-weight:600;color:var(--muted-2);margin-right:6px;white-space:nowrap}
+.tk-chip{font-size:20px;font-weight:500;padding:8px 14px;border-radius:10px;background:#F1F5FA;border:1px solid var(--line);white-space:nowrap;transition:background-color .35s,border-color .35s,color .35s,box-shadow .35s}
+.tk-chip.hot{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 0 4px rgba(31,94,201,.16)}
+
+/* architectural flow */
+.af{position:relative;height:620px;flex:none}
+.af > svg{position:absolute;inset:0;overflow:visible}
+.af-lab{position:absolute;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue)}
+.af-lab i{font-style:normal;width:28px;height:28px;border-radius:8px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:16px;letter-spacing:0}
+.af-lab.r{color:var(--cyan-ink)}
+.af-lab.r i{background:var(--cyan-ink)}
+.afn{position:absolute;width:280px;height:100px;display:flex;align-items:center;gap:14px;padding:0 18px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.afn .no{position:absolute;left:-13px;top:-13px;width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-size:15px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 4px var(--bg)}
+.afn b{display:block;font-size:22px;font-weight:600;line-height:1.2}
+.afn .s{display:block;font-size:18px;color:var(--muted);line-height:1.3;margin-top:3px}
+.afn.ag{border-color:var(--blue)}
+.afn.ml .no{background:var(--blue)}
+.afn.gen{border:2px dashed var(--cyan)}
+.afn.gen .no{background:var(--cyan-ink)}
+.afp{fill:none;stroke:var(--faint-2);stroke-width:2}
+.afp.ret{stroke-dasharray:7 7}
+.af-ret{position:absolute;left:560px;top:274px;display:flex;align-items:center;gap:10px;padding:4px 14px;background:var(--bg);font-size:20px;color:var(--muted)}
+.af-ret .no{position:static;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-size:15px;font-weight:700;display:grid;place-items:center}
+.af-infra{position:absolute;left:0;right:0;top:546px;height:74px;display:flex;align-items:center;gap:14px;padding:0 24px}
+.af-infra .tl{font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted-2);margin-right:8px;display:flex;align-items:center;gap:10px}
+.af-infra .tl .ic{width:24px;height:24px;color:var(--blue)}
+.af-infra .chip{font-size:20px;padding:8px 14px}
+
+/* full AI pipeline */
+.lanes{position:relative}
+.lanes > svg{position:absolute;inset:0;overflow:visible;pointer-events:none}
+.lane.learn{background:#F3F7FD;border:1px dashed var(--line-2)}
+.lane.learn .lab b{color:var(--blue)}
+.lane.learn .estep{border-color:#C3D6F2}
+.lane.learn .estep.core{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.lane.ex{background:var(--cyan-50)}
+.lane.ex .lab b{color:var(--cyan-ink)}
+.lane.ex .estep.gen{border:2px dashed var(--cyan)}
+.lane.ex .estep.core{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.lane.ex .estep.hu{border-color:#C5D0E0}
+.dep-lab{position:absolute;left:1124px;top:125px;padding:2px 12px;background:var(--bg);font-size:18px;font-weight:600;color:var(--blue);white-space:nowrap}
+.lanes > .gap40{height:40px}
+
+/* detail drawer: two ways */
+.ways{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.way{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.way > b{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);margin-bottom:8px}
+.way > b .ic{width:16px;height:16px;color:var(--blue)}
+.way ol{padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink)}
+.way.ag{background:var(--blue-50);border-color:var(--line-2)}
+.way .pr{font-size:13.5px;line-height:1.5;font-style:italic;color:var(--navy);background:#fff;border:1px solid var(--line-2);border-radius:10px 10px 10px 3px;padding:8px 10px}
+.way .then{font-size:12px;color:var(--muted-2);margin-top:8px;line-height:1.45}
+@media (max-width:420px){.ways{grid-template-columns:1fr}}
+
+
+/* ---------- v3: slide 2 institution card · slide 6 compare ---------- */
+.inst{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:22px;padding:48px 52px}
+.inst .big{font-size:38px;font-weight:500;line-height:1.35;letter-spacing:-.3px;color:var(--ink);text-wrap:pretty}
+.late{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.late .ll{font-size:20px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#9B2C2C}
+.lchips{display:flex;gap:10px;flex-wrap:wrap}
+.lchip{display:inline-flex;align-items:center;gap:10px;font-size:22px;font-weight:500;padding:10px 16px;border-radius:11px;background:#FBE9E9;color:#9B2C2C;border:1px solid #F3CDCD}
+.lchip .ic{width:22px;height:22px}
+.cmp2{display:flex;flex-direction:column;gap:10px;padding:16px 24px}
+.crow{display:flex;align-items:center}
+.clab{width:360px;flex:none;display:flex;align-items:center;gap:12px}
+.clab .eyebrow{font-size:19px;white-space:nowrap}
+.cst{width:200px;height:48px;flex:none;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.cst.b{background:var(--blue-50);border-color:var(--line-2)}
+.cst.go{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.crow .cx{width:36px}
+.cnote{margin-left:24px;font-size:20px;color:var(--muted)}
+.statement.slim{padding:16px 28px}
+.statement.slim p{font-size:25px}
+.s-risk .rstep{height:116px}
+.s-risk .sig,.s-risk .lvl{padding:18px 24px;gap:12px}
+.s-risk .sig .chip{font-size:20px;padding:9px 15px}
+.s-risk .role{padding:20px 24px}
+.s-risk .role p{font-size:20px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+
+/* ---------- Print / Save as PDF: one slide per page ---------- */
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff}
+  .progress,.dock,.toast,.notes-panel,.overview,.scrim,.drawer,.help{display:none!important}
+  .stage{position:static;transform:none;width:1920px;height:auto;box-shadow:none;background:none;overflow:visible}
+  .slide{position:relative;inset:auto;width:1920px;height:1080px;opacity:1!important;visibility:visible!important;transform:none!important;break-after:page;page-break-after:always}
+  .slide [data-a]{opacity:1!important;animation:none!important}
+  .slide .draw{stroke-dashoffset:0!important;animation:none!important}
+  .chk .cc{background:var(--blue);border-color:var(--blue)}.chk .cc .ic{opacity:1}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .msg{display:block!important}.msg.sys{display:flex!important}.msg.typing{display:none!important}
+}
+</style>
+</head>
+<body>
+<!-- ======================= Icon sprite ======================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-check-square" viewBox="0 0 24 24"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01M6 18h.01"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="18.5" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M12 7.5v3M12 10.5l-5.2 5.4M12 10.5l5.2 5.4"/></symbol>
+  <symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-5M10 20v-8M15 20v-11M20 20V4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-chev-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8l-2.9-.8M14 4.1 12 6M6 12l-1.9 2"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 16h8M10 13h4"/></symbol>
+  <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+  <symbol id="i-profile" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17a3.5 3.5 0 0 1 7 0M15 9h3M15 13h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></symbol>
+</svg>
+
+<div class="progress" id="progress"></div>
+
+<main class="stage" id="stage" aria-live="polite">
+
+<!-- ======================= 01 · COVER ======================= -->
+<section class="slide s-cover" data-key="cover" data-sec="Introduction">
+  <div class="cover-art" data-a="fade" style="--d:80">
+    <svg class="links" viewBox="0 0 792 824" width="792" height="824" aria-hidden="true">
+      <path class="flowpath draw" pathLength="1" style="--d:700"  d="M256 412 C380 412 376 142 500 142"/>
+      <path class="flowpath draw" pathLength="1" style="--d:780"  d="M256 412 C380 412 376 250 500 250"/>
+      <path class="flowpath draw" pathLength="1" style="--d:860"  d="M256 412 C380 412 376 358 500 358"/>
+      <path class="flowpath draw" pathLength="1" style="--d:940"  d="M256 412 C380 412 376 466 500 466"/>
+      <path class="flowpath draw" pathLength="1" style="--d:1020" d="M256 412 C380 412 376 574 500 574"/>
+      <path class="flowpath draw" pathLength="1" style="--d:1100" d="M256 412 C380 412 376 682 500 682"/>
+      <g fill="#12A8D6">
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="2s" repeatCount="indefinite" path="M256 412 C380 412 376 142 500 142"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="2s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="2.35s" repeatCount="indefinite" path="M256 412 C380 412 376 250 500 250"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="2.35s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="2.7s" repeatCount="indefinite" path="M256 412 C380 412 376 358 500 358"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="2.7s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="3.05s" repeatCount="indefinite" path="M256 412 C380 412 376 466 500 466"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="3.05s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="3.4s" repeatCount="indefinite" path="M256 412 C380 412 376 574 500 574"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="3.4s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="2.8s" begin="3.75s" repeatCount="indefinite" path="M256 412 C380 412 376 682 500 682"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.8s" begin="3.75s" repeatCount="indefinite"/></circle>
+      </g>
+    </svg>
+    <div class="c-student" data-a="pop" style="--d:420" aria-label="Student"><svg class="ic"><use href="#i-user"/></svg></div>
+    <div class="c-label" data-a="fade" style="--d:600">Student</div>
+    <div class="c-node ix" data-info="career"     data-a="right" style="top:108px;--d:950"><svg class="ic"><use href="#i-compass"/></svg>Career</div>
+    <div class="c-node ix" data-info="learning"   data-a="right" style="top:216px;--d:1030"><svg class="ic"><use href="#i-book"/></svg>Learning</div>
+    <div class="c-node ix" data-info="agent"      data-a="right" style="top:324px;--d:1110"><svg class="ic"><use href="#i-cpu"/></svg>AI</div>
+    <div class="c-node ix" data-info="analytics"  data-a="right" style="top:432px;--d:1190"><svg class="ic"><use href="#i-chart"/></svg>Analytics</div>
+    <div class="c-node ix" data-info="predictive" data-a="right" style="top:540px;--d:1270"><svg class="ic"><use href="#i-activity"/></svg>Risk Prediction</div>
+    <div class="c-node hl ix" data-info="intervention" data-a="right" style="top:648px;--d:1350"><svg class="ic"><use href="#i-zap"/></svg>Action</div>
+  </div>
+  <div class="cover-left">
+    <div class="cover-bar" data-a="growx" style="--d:100"></div>
+    <h1 class="cover-title" data-a style="--d:200">NOVARD<span>-AI</span></h1>
+    <p class="cover-sub" data-a style="--d:380">Intelligent Learning, Career Guidance &amp; Predictive Student Intelligence</p>
+    <p class="pill" data-a style="--d:540">Predict. Personalise. Empower.</p>
+    <div class="cover-cta" data-a style="--d:760">
+      <button class="btn btn-primary" data-goto="1">Begin presentation<svg class="ic"><use href="#i-arrow-right"/></svg></button>
+      <button class="btn btn-ghost" data-action="overview"><svg class="ic"><use href="#i-grid"/></svg>All slides</button>
+    </div>
+    <p class="cover-hint" data-a="fade" style="--d:1300"><span class="kbd">←</span><span class="kbd">→</span>&nbsp;to navigate · click any card to explore it</p>
+  </div>
+  <aside class="notes">NOVARD-AI is one platform that guides a student through learning and career decisions, and gives institutions an early-warning view of where things are going wrong. Predict. Personalise. Empower.</aside>
+</section>
+
+<!-- ======================= 02 · PROBLEM ======================= -->
+<section class="slide" data-key="problem" data-sec="Problem">
+  <div class="head"><h2 class="title" data-a>The Student Experience Is Fragmented</h2></div>
+  <div class="p-grid">
+    <div class="card ring-card" data-a style="--d:120">
+      <p class="eyebrow muted">For students · six tools, nothing connected</p>
+      <div class="ring">
+        <svg viewBox="0 0 760 540" width="760" height="540" aria-hidden="true">
+          <line class="dashline" x1="380"   y1="184"   x2="380"   y2="100"/>
+          <line class="dashline" x1="458.8" y1="235.5" x2="543.1" y2="198.5"/>
+          <line class="dashline" x1="458.8" y1="304.5" x2="543.1" y2="341.5"/>
+          <line class="dashline" x1="380"   y1="356"   x2="380"   y2="440"/>
+          <line class="dashline" x1="301.2" y1="304.5" x2="216.9" y2="341.5"/>
+          <line class="dashline" x1="301.2" y1="235.5" x2="216.9" y2="198.5"/>
+        </svg>
+        <div class="tool-pos" data-a="pop" style="left:275px;top:38px;--d:380"><div class="tool-bob" style="--k:0"><div class="tool ix" data-info="video" data-from="YouTube">YouTube</div></div></div>
+        <div class="tool-pos" data-a="pop" style="left:509px;top:140px;--d:470"><div class="tool-bob" style="--k:1"><div class="tool ix" data-info="pdf" data-from="separate PDF readers">PDFs</div></div></div>
+        <div class="tool-pos" data-a="pop" style="left:509px;top:346px;--d:560"><div class="tool-bob" style="--k:2"><div class="tool ix" data-info="learning" data-from="separate course sites">Courses</div></div></div>
+        <div class="tool-pos" data-a="pop" style="left:275px;top:448px;--d:650"><div class="tool-bob" style="--k:3"><div class="tool ix" data-info="career" data-from="separate career platforms">Career Platforms</div></div></div>
+        <div class="tool-pos" data-a="pop" style="left:41px;top:346px;--d:740"><div class="tool-bob" style="--k:4"><div class="tool ix" data-info="productivity" data-from="a separate task manager">Task Managers</div></div></div>
+        <div class="tool-pos" data-a="pop" style="left:41px;top:140px;--d:830"><div class="tool-bob" style="--k:5"><div class="tool ix" data-info="agent" data-from="a general AI chatbot">AI Chatbots</div></div></div>
+        <div class="p-student" data-a="pop" style="--d:250"><svg class="ic"><use href="#i-user"/></svg>Student</div>
+      </div>
+      <div class="frag-row">
+        <p data-a="left" style="--d:1150">Fragmented tools</p>
+        <span class="cx" data-a="growx" style="--d:1300;--i:0"></span>
+        <p data-a="left" style="--d:1400">Fragmented learning</p>
+        <span class="cx" data-a="growx" style="--d:1550;--i:1"></span>
+        <p class="bad" data-a="left" style="--d:1650">Limited visibility</p>
+      </div>
+    </div>
+    <div class="card inst" data-a style="--d:400">
+      <span class="ict" data-a="pop" style="--d:700"><svg class="ic"><use href="#i-building"/></svg></span>
+      <p class="eyebrow muted" data-a="fade" style="--d:800">For institutions</p>
+      <p class="big" data-a style="--d:900">Administrators often discover problems only after they become visible through complaints, failures or declining engagement.</p>
+      <div class="late" data-a style="--d:1300">
+        <span class="ll">Usually the first sign</span>
+        <div class="lchips">
+          <span class="lchip" data-a="pop" style="--d:1450"><svg class="ic"><use href="#i-chat"/></svg>Complaints</span>
+          <span class="lchip" data-a="pop" style="--d:1550"><svg class="ic"><use href="#i-zap"/></svg>Failures</span>
+          <span class="lchip" data-a="pop" style="--d:1650"><svg class="ic"><use href="#i-trend"/></svg>Declining engagement</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Two sides of the same problem. Students juggle six disconnected tools and nothing connects them, so their learning is fragmented and no one sees the whole picture. Institutions face the same gap: administrators usually find out only once complaints, failures or falling engagement make the problem visible. The next slides show how NOVARD-AI fixes both. Tip: click any tool in the ring to see where it lives inside NOVARD-AI.</aside>
+</section>
+
+<!-- ======================= 03 · SOLUTION ======================= -->
+<section class="slide" data-key="solution" data-sec="Solution">
+  <div class="head"><h2 class="title" data-a>One Intelligent Platform for the Complete Student Journey</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px">
+    <div class="hub-area">
+      <svg viewBox="0 0 1664 590" width="1664" height="590" aria-hidden="true">
+        <path class="flowpath draw" pathLength="1" style="--d:450" d="M692 225 C595 225 617 86 520 86"/>
+        <path class="flowpath draw" pathLength="1" style="--d:520" d="M692 295 C606 295 606 295 520 295"/>
+        <path class="flowpath draw" pathLength="1" style="--d:590" d="M692 365 C595 365 617 504 520 504"/>
+        <path class="flowpath draw" pathLength="1" style="--d:660" d="M972 225 C1069 225 1047 86 1144 86"/>
+        <path class="flowpath draw" pathLength="1" style="--d:730" d="M972 295 C1058 295 1058 295 1144 295"/>
+        <path class="flowpath draw" pathLength="1" style="--d:800" d="M972 365 C1069 365 1047 504 1144 504"/>
+        <g fill="#12A8D6">
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="1.8s" repeatCount="indefinite" path="M692 225 C595 225 617 86 520 86"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="1.8s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="2.1s" repeatCount="indefinite" path="M692 295 C606 295 606 295 520 295"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="2.1s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="2.4s" repeatCount="indefinite" path="M692 365 C595 365 617 504 520 504"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="2.4s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="1.95s" repeatCount="indefinite" path="M972 225 C1069 225 1047 86 1144 86"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="1.95s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="2.25s" repeatCount="indefinite" path="M972 295 C1058 295 1058 295 1144 295"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="2.25s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="2.2s" begin="2.55s" repeatCount="indefinite" path="M972 365 C1069 365 1047 504 1144 504"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.85;1" dur="2.2s" begin="2.55s" repeatCount="indefinite"/></circle>
+        </g>
+      </svg>
+      <div class="card hcard ix" data-info="career" data-a="left" style="left:0;top:0;--d:650">
+        <span class="ict"><svg class="ic"><use href="#i-compass"/></svg></span>
+        <div><h3>Career Intelligence</h3><ul><li>Personalised roadmaps</li><li>Skill-gap analysis</li></ul></div>
+      </div>
+      <div class="card hcard ix" data-info="learning" data-a="left" style="left:0;top:209px;--d:730">
+        <span class="ict"><svg class="ic"><use href="#i-book"/></svg></span>
+        <div><h3>AI Learning</h3><ul><li>Skill plans</li><li>Doubt solving</li><li>Quizzes</li></ul></div>
+      </div>
+      <div class="card hcard ix" data-info="knowledge" data-a="left" style="left:0;top:418px;--d:810">
+        <span class="ict"><svg class="ic"><use href="#i-file"/></svg></span>
+        <div><h3>Knowledge Intelligence</h3><ul><li>PDF chat</li><li>Video summarisation</li></ul></div>
+      </div>
+      <div class="card hcard ix" data-info="productivity" data-a="right" style="left:1144px;top:0;--d:890">
+        <span class="ict"><svg class="ic"><use href="#i-check-square"/></svg></span>
+        <div><h3>Productivity</h3><ul><li>AI todo planning</li><li>Learning tasks</li></ul></div>
+      </div>
+      <div class="card hcard key ix" data-info="agent" data-a="right" style="left:1144px;top:209px;--d:970">
+        <span class="ict nv"><svg class="ic"><use href="#i-cpu"/></svg></span>
+        <div><h3>AI Agent</h3><ul><li>Understands your goal</li><li>Plans and drafts</li><li>Creates any feature for you</li></ul></div>
+      </div>
+      <div class="card hcard key ix" data-info="predictive" data-a="right" style="left:1144px;top:418px;--d:1050">
+        <span class="ict nv"><svg class="ic"><use href="#i-activity"/></svg></span>
+        <div><h3>Predictive Intelligence</h3><ul><li>Risk detection</li><li>Early warnings</li><li>Admin insights</li></ul></div>
+      </div>
+      <div class="hub ix" data-info="platform" data-a="pop" style="--d:200">
+        <span class="pulse"></span><span class="pulse p2"></span>
+        <h3>NOVARD-AI</h3><p>One platform. One journey.</p>
+      </div>
+    </div>
+    <div class="modes" data-a style="--d:1250">
+      <span class="mlabel">Every capability works two ways</span>
+      <div class="mode ix" data-info="selfserve"><span class="ict sm"><svg class="ic"><use href="#i-user"/></svg></span><div><b>Create on your own</b><span class="s">Full control, step by step</span></div></div>
+      <span class="or">or</span>
+      <div class="mode ag ix" data-info="agent"><span class="ict sm nv"><svg class="ic"><use href="#i-cpu"/></svg></span><div><b>Ask NOVARD Agent</b><span class="s">It creates it for you</span></div></div>
+    </div>
+  </div>
+  <aside class="notes">Six capabilities, one platform. Career, learning, knowledge and productivity serve the student directly. Every one of them works two ways: the student can create it themselves, or ask the NOVARD Agent to create it for them. Predictive Intelligence turns the platform's own signals into early warnings for administrators.</aside>
+</section>
+
+<!-- ======================= 04 · FLOW ======================= -->
+<section class="slide" data-key="flow" data-sec="Solution">
+  <div class="head col">
+    <h2 class="title" data-a>From Student Intent to Intelligent Action</h2>
+    <p class="subtitle" data-a style="--d:120">Every feature can be created <b>by the student directly</b>, or <b>by the NOVARD Agent</b> from one plain-language request.</p>
+  </div>
+  <div class="tw">
+    <svg viewBox="0 0 1664 620" width="1664" height="620" aria-hidden="true">
+      <path class="flowpath draw" pathLength="1" style="--d:500" d="M172 310 C236 310 236 145 300 145"/>
+      <path class="flowpath draw" pathLength="1" style="--d:560" d="M172 310 C236 310 236 475 300 475"/>
+      <path class="flowpath draw" pathLength="1" style="--d:1500" d="M1200 145 C1250 145 1250 260 1300 260"/>
+      <path class="flowpath draw" pathLength="1" style="--d:1560" d="M1200 475 C1250 475 1250 360 1300 360"/>
+      <g fill="#12A8D6">
+        <circle r="5" opacity="0"><animateMotion dur="1.6s" begin="2s" repeatCount="indefinite" path="M172 310 C236 310 236 145 300 145"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="1.6s" begin="2s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="1.6s" begin="2.5s" repeatCount="indefinite" path="M172 310 C236 310 236 475 300 475"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="1.6s" begin="2.5s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="1.6s" begin="2.8s" repeatCount="indefinite" path="M1200 145 C1250 145 1250 260 1300 260"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="1.6s" begin="2.8s" repeatCount="indefinite"/></circle>
+        <circle r="5" opacity="0"><animateMotion dur="1.6s" begin="3.3s" repeatCount="indefinite" path="M1200 475 C1250 475 1250 360 1300 360"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="1.6s" begin="3.3s" repeatCount="indefinite"/></circle>
+      </g>
+    </svg>
+
+    <div class="tw-student ix" data-info="student" data-a="pop" style="--d:250">
+      <span class="av"><svg class="ic"><use href="#i-user"/></svg></span>
+      <b>Student</b>
+      <span class="pc">Profile &amp; context</span>
+    </div>
+
+    <div class="card tw-lane a" data-a="right" style="--d:650">
+      <div class="tw-head ix" data-info="selfserve">
+        <span class="ict sm"><svg class="ic"><use href="#i-user"/></svg></span>
+        <div><h3>Create on your own</h3><p>Open any feature and create it step by step</p></div>
+        <span class="badge blue">Full control</span>
+      </div>
+      <div class="tw-steps" data-seq="2200" data-every="700">
+        <div class="tstep seq ix" data-info="selfserve" data-a="pop" style="--d:850">Choose a feature</div>
+        <span class="cx" data-a="growx" style="--d:930;--i:0"></span>
+        <div class="tstep seq ix" data-info="selfserve" data-a="pop" style="--d:990">Set your goal &amp; details</div>
+        <span class="cx" data-a="growx" style="--d:1070;--i:1"></span>
+        <div class="tstep go seq ix" data-info="selfserve" data-a="pop" style="--d:1130">Create</div>
+      </div>
+    </div>
+
+    <div class="card tw-lane b" data-a="right" style="--d:750">
+      <div class="tw-head ix" data-info="agent">
+        <span class="ict sm nv"><svg class="ic"><use href="#i-cpu"/></svg></span>
+        <div><h3>Ask NOVARD Agent</h3><p>Describe the goal once; the agent creates it for you</p></div>
+        <span class="badge blue">One request</span>
+      </div>
+      <div class="tw-steps" data-seq="2500" data-every="560">
+        <div class="tstep seq ix" data-info="agent" data-a="pop" style="--d:950">Describe the goal</div>
+        <span class="cx" data-a="growx" style="--d:1010;--i:0"></span>
+        <div class="tstep seq ix" data-info="agent" data-a="pop" style="--d:1060">Understand</div>
+        <span class="cx" data-a="growx" style="--d:1120;--i:1"></span>
+        <div class="tstep seq ix" data-info="agent" data-a="pop" style="--d:1170">Draft</div>
+        <span class="cx" data-a="growx" style="--d:1230;--i:2"></span>
+        <div class="tstep seq ix" data-info="agent" data-a="pop" style="--d:1280">Confirm</div>
+        <span class="cx" data-a="growx" style="--d:1340;--i:3"></span>
+        <div class="tstep go seq ix" data-info="agent" data-a="pop" style="--d:1390">Execute</div>
+      </div>
+    </div>
+
+    <div class="card tw-out" data-a="right" style="--d:1650">
+      <p class="eyebrow muted" style="font-size:18px">Same result, either way</p>
+      <h3>What gets created</h3>
+      <div class="orow ix" data-info="career"><svg class="ic"><use href="#i-compass"/></svg>Career Roadmap</div>
+      <div class="orow ix" data-info="learning"><svg class="ic"><use href="#i-book"/></svg>Learning Plan</div>
+      <div class="orow ix" data-info="productivity"><svg class="ic"><use href="#i-check-square"/></svg>Todo List</div>
+      <div class="orow ix" data-info="doubt"><svg class="ic"><use href="#i-chat"/></svg>Doubt Resolution</div>
+      <div class="orow ix" data-info="video"><svg class="ic"><use href="#i-play"/></svg>Video Summaries</div>
+      <div class="orow ix" data-info="quiz"><svg class="ic"><use href="#i-target"/></svg>Quizzes</div>
+      <div class="then">Then<span class="p">Learn</span><svg class="ic"><use href="#i-arrow-right"/></svg><span class="p">Measure</span></div>
+    </div>
+  </div>
+  <aside class="notes">Every feature in NOVARD-AI works two ways. A student can open the feature and create it themselves, with full control. Or they can describe the goal once and let the NOVARD Agent understand it, draft it, wait for their confirmation and then create it. Either way the result is the same: a roadmap, a plan, a todo list, answers, summaries or quizzes, which the student then learns from and measures progress on.</aside>
+</section>
+
+<!-- ======================= 05 · AGENT ======================= -->
+<section class="slide" data-key="agent" data-sec="Solution">
+  <div class="head"><h2 class="title" data-a>An AI Agent That Doesn't Just Answer — It Acts</h2></div>
+  <div class="ag-grid">
+    <div class="alist" data-alist>
+      <div class="aitem" data-a="left" style="--d:150"><span class="n">1</span>Student Request</div><span class="cy" data-a="growy" style="--d:200;--i:0"></span>
+      <div class="aitem" data-a="left" style="--d:230"><span class="n">2</span>Context + Learner Profile</div><span class="cy" data-a="growy" style="--d:280;--i:1"></span>
+      <div class="aitem" data-a="left" style="--d:310"><span class="n">3</span>AI Reasoning</div><span class="cy" data-a="growy" style="--d:360;--i:2"></span>
+      <div class="aitem" data-a="left" style="--d:390"><span class="n">4</span>Clarification</div><span class="cy" data-a="growy" style="--d:440;--i:3"></span>
+      <div class="aitem" data-a="left" style="--d:470"><span class="n">5</span>Editable Draft</div><span class="cy" data-a="growy" style="--d:520;--i:4"></span>
+      <div class="aitem" data-a="left" style="--d:550"><span class="n">6</span>Student Confirmation</div><span class="cy" data-a="growy" style="--d:600;--i:5"></span>
+      <div class="aitem" data-a="left" style="--d:630"><span class="n">7</span>Tool Execution</div><span class="cy" data-a="growy" style="--d:680;--i:6"></span>
+      <div class="aitem last" data-a="left" style="--d:710"><span class="n">8</span>Completed Action</div>
+    </div>
+    <div class="ag-right">
+      <div class="phases" data-phases>
+        <div class="phase ix" data-info="agent" data-a="pop" style="--d:300"><small>01</small><h3>Understand</h3><p>Intent + context</p><span class="ok"><svg class="ic"><use href="#i-check"/></svg></span></div>
+        <span class="cx" data-a="growx" style="--d:380;--i:0"></span>
+        <div class="phase ix" data-info="agent" data-a="pop" style="--d:420"><small>02</small><h3>Draft</h3><p>Editable plan</p><span class="ok"><svg class="ic"><use href="#i-check"/></svg></span></div>
+        <span class="cx" data-a="growx" style="--d:500;--i:1"></span>
+        <div class="phase ix" data-info="agent" data-a="pop" style="--d:540"><small>03</small><h3>Confirm</h3><p>Student approves</p><span class="ok"><svg class="ic"><use href="#i-check"/></svg></span></div>
+        <span class="cx" data-a="growx" style="--d:620;--i:2"></span>
+        <div class="phase exe ix" data-info="agent" data-a="pop" style="--d:660"><small>04</small><h3>Execute</h3><p>Tools run</p><span class="ok"><svg class="ic"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="card chat" data-a style="--d:760">
+        <div class="chat-top">
+          <span class="ict sm nv"><svg class="ic"><use href="#i-cpu"/></svg></span>
+          <div class="who"><b>NOVARD Agent</b><span>Example request</span></div>
+          <span class="live">Demo walkthrough</span>
+          <button class="replay" data-action="replay-agent"><svg class="ic"><use href="#i-refresh"/></svg>Replay</button>
+        </div>
+        <div class="chat-body" data-chat>
+          <div class="msg user" data-m="0">Create a 30-day Data Science learning plan for me.</div>
+          <div class="msg sys" data-m="1"><span class="spin"></span><svg class="ic tick"><use href="#i-check"/></svg>Reading learner profile &amp; goals</div>
+          <div class="msg typing" data-m="2"><i></i><i></i><i></i></div>
+          <div class="msg bot" data-m="3">Happy to help. Two quick questions so the plan fits you: how many hours a day can you study, and how comfortable are you with Python?</div>
+          <div class="msg user" data-m="4">Around 2 hours a day. I know basic Python.</div>
+          <div class="msg typing" data-m="5"><i></i><i></i><i></i></div>
+          <div class="msg bot draft" data-m="6">
+            <div class="dh"><b>30-day Data Science plan</b><span>DRAFT</span></div>
+            <div class="wk"><em>Week 1</em>Python, NumPy &amp; Pandas</div>
+            <div class="wk"><em>Week 2</em>Statistics &amp; data visualisation</div>
+            <div class="wk"><em>Week 3</em>Machine learning foundations</div>
+            <div class="wk"><em>Week 4</em>Mini project &amp; revision</div>
+            <div class="acts"><span>Edit</span><span class="cf" data-confirm>Confirm</span></div>
+          </div>
+          <div class="msg sys" data-m="7"><span class="spin"></span><svg class="ic tick"><use href="#i-check"/></svg>Creating your learning plan</div>
+          <div class="msg sys" data-m="8"><span class="spin"></span><svg class="ic tick"><use href="#i-check"/></svg>Adding daily tasks to your todo list</div>
+          <div class="msg sys" data-m="9"><span class="spin"></span><svg class="ic tick"><use href="#i-check"/></svg>Scheduling weekly quizzes</div>
+          <div class="msg bot" data-m="10">Done. Your 30-day plan is ready, and Day 1 starts with a Python refresher.</div>
+        </div>
+      </div>
+      <div class="card toolkit" data-a style="--d:900">
+        <span class="tl">Can create:</span>
+        <span class="tk-chip ix" data-info="career" data-tool="career">Roadmaps</span>
+        <span class="tk-chip ix" data-info="learning" data-tool="learning">Learning plans</span>
+        <span class="tk-chip ix" data-info="productivity" data-tool="todo">Todos</span>
+        <span class="tk-chip ix" data-info="quiz" data-tool="quiz">Quizzes</span>
+        <span class="tk-chip ix" data-info="pdf" data-tool="pdf">PDF chats</span>
+        <span class="tk-chip ix" data-info="video" data-tool="video">Video summaries</span>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">The agent can create anything a student can create by hand, using the same modules. It works in four moves: understand, draft, confirm, execute. It asks for missing details, shows an editable draft, and only runs tools after the student confirms. Watch the toolkit row: the learning plan, todo list and quizzes light up as the agent creates them. Use Replay to run it again.</aside>
+</section>
+
+<!-- ======================= 06 · RISK ======================= -->
+<section class="slide s-risk" data-key="risk" data-sec="Prediction" style="gap:16px">
+  <div class="head"><h2 class="title" data-a>From Reactive Support to Predictive Early Warning</h2></div>
+  <div class="card cmp2" data-a style="--d:150">
+    <div class="crow">
+      <div class="clab"><p class="eyebrow" style="color:#9B2C2C">Current</p><span class="badge red">Reactive</span></div>
+      <span class="cst" data-a="pop" style="--d:300">Problem</span><span class="cx" data-a="growx" style="--d:350"></span>
+      <span class="cst" data-a="pop" style="--d:400">Complaint</span><span class="cx" data-a="growx" style="--d:450"></span>
+      <span class="cst" data-a="pop" style="--d:500">Discovery</span><span class="cx" data-a="growx" style="--d:550"></span>
+      <span class="cst" data-a="pop" style="--d:600">Investigation</span><span class="cx" data-a="growx" style="--d:650"></span>
+      <span class="cst" data-a="pop" style="--d:700">Action</span>
+    </div>
+    <div class="crow">
+      <div class="clab"><p class="eyebrow">NOVARD approach</p><span class="badge blue">Predictive</span></div>
+      <span class="cst b" data-a="pop" style="--d:450">Signals</span><span class="cx" data-a="growx" style="--d:500;--i:0"></span>
+      <span class="cst b" data-a="pop" style="--d:550">Prediction</span><span class="cx" data-a="growx" style="--d:600;--i:1"></span>
+      <span class="cst b" data-a="pop" style="--d:650">Verification</span><span class="cx" data-a="growx" style="--d:700;--i:2"></span>
+      <span class="cst go" data-a="pop" style="--d:750">Early Action</span>
+      <span class="cnote" data-a="fade" style="--d:950">Found before the first complaint</span>
+    </div>
+  </div>
+  <div class="rpipe" data-seq="2400" data-every="560">
+    <div class="rstep seq ix" data-info="signals"      data-a="pop" style="--d:1000"><svg class="ic"><use href="#i-activity"/></svg>Signals</div>
+    <span class="cx" data-a="growx" style="--d:1060;--i:0"></span>
+    <div class="rstep seq ix" data-info="features"     data-a="pop" style="--d:1100"><svg class="ic"><use href="#i-sliders"/></svg>Feature Engineering</div>
+    <span class="cx" data-a="growx" style="--d:1160;--i:1"></span>
+    <div class="rstep ml seq ix" data-info="xgboost"   data-a="pop" style="--d:1200"><svg class="ic"><use href="#i-tree"/></svg>Trained XGBoost Model</div>
+    <span class="cx" data-a="growx" style="--d:1260;--i:2"></span>
+    <div class="rstep seq ix" data-info="riskpred"     data-a="pop" style="--d:1300"><svg class="ic"><use href="#i-gauge"/></svg>Risk Prediction</div>
+    <span class="cx" data-a="growx" style="--d:1360;--i:3"></span>
+    <div class="rstep gen seq ix" data-info="gemini"   data-a="pop" style="--d:1400"><svg class="ic"><use href="#i-spark"/></svg>Gemini Validation &amp; Explanation</div>
+    <span class="cx" data-a="growx" style="--d:1460;--i:4"></span>
+    <div class="rstep seq ix" data-info="risklevels"   data-a="pop" style="--d:1500"><svg class="ic"><use href="#i-bars"/></svg>Risk Level</div>
+    <span class="cx" data-a="growx" style="--d:1560;--i:5"></span>
+    <div class="rstep seq ix" data-info="alert"        data-a="pop" style="--d:1600"><svg class="ic"><use href="#i-bell"/></svg>Admin Alert</div>
+    <span class="cx" data-a="growx" style="--d:1660;--i:6"></span>
+    <div class="rstep end seq ix" data-info="intervention" data-a="pop" style="--d:1700"><svg class="ic"><use href="#i-shield"/></svg>Early Intervention</div>
+  </div>
+  <div class="legend" data-a="fade" style="--d:1750;justify-content:flex-end;margin-top:-4px">
+    <span><i style="background:var(--blue)"></i>ML prediction</span>
+    <span><i style="background:var(--cyan-50);border:2px dashed var(--cyan)"></i>Generative AI explanation</span>
+    <span><i style="background:var(--navy)"></i>Human decision</span>
+  </div>
+  <div class="r-row">
+    <div class="card sig" data-a style="--d:1800">
+      <p class="eyebrow muted">Input signals</p>
+      <div class="chips">
+        <span class="chip ix" data-info="signals">Complaint frequency</span>
+        <span class="chip ix" data-info="signals">Repeat reports</span>
+        <span class="chip ix" data-info="signals">Response latency</span>
+        <span class="chip ix" data-info="signals">AI errors</span>
+        <span class="chip ix" data-info="signals">Feature failures</span>
+        <span class="chip ix" data-info="signals">Negative sentiment</span>
+        <span class="chip ix" data-info="signals">Urgency</span>
+        <span class="chip ix" data-info="signals">Engagement changes</span>
+      </div>
+    </div>
+    <div class="card lvl" data-a style="--d:1900">
+      <p class="eyebrow muted">Risk levels</p>
+      <div class="lvls">
+        <span class="lv l ix" data-info="risklevels"><i></i>LOW</span>
+        <span class="lv m ix" data-info="risklevels"><i></i>MEDIUM</span>
+        <span class="lv h ix" data-info="risklevels"><i></i>HIGH</span>
+        <span class="lv c ix" data-info="risklevels"><i></i>CRITICAL</span>
+      </div>
+      <p>Every prediction is placed on one of four levels.</p>
+    </div>
+  </div>
+  <div class="r-row">
+    <div class="card role ix" data-info="xgboost" data-a style="--d:2000"><span class="ict" style="background:var(--blue);color:#fff"><svg class="ic"><use href="#i-tree"/></svg></span><div><h3>XGBoost</h3><p>Predicts risk</p></div></div>
+    <div class="card role gen ix" data-info="gemini" data-a style="--d:2100;flex:1.45"><span class="ict cyan"><svg class="ic"><use href="#i-spark"/></svg></span><div><h3>Gemini</h3><p>Provides contextual AI validation and explanation</p></div></div>
+    <div class="card role ix" data-info="admin" data-a style="--d:2200"><span class="ict nv"><svg class="ic"><use href="#i-users"/></svg></span><div><h3>Admin</h3><p>Makes the final decision</p></div></div>
+  </div>
+  <div class="statement slim" data-a style="--d:2350"><div class="bar"></div><p>Gemini acts as an independent AI validation and explanation layer around the ML prediction.</p></div>
+  <aside class="notes">Today support is reactive: a problem happens, someone complains, it gets discovered and investigated, and only then does anyone act. NOVARD turns that around: signals lead to a prediction, the prediction is verified, and action happens early, before the first complaint. The pipeline below shows how. Signals flow through feature engineering into a trained XGBoost model that predicts risk. Gemini then acts as an independent validation and explanation layer around that prediction. It adds context and does not prove the model's output. The admin always makes the final decision.</aside>
+</section>
+
+<!-- ======================= 07 · EXAMPLE ======================= -->
+<section class="slide" data-key="example" data-sec="Prediction">
+  <div class="head"><h2 class="title" data-a>Detect the Problem Before It Becomes a Bigger Problem</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px">
+    <div class="ex-row">
+      <div class="card excol ix" data-info="video" data-a style="width:330px;--d:200">
+        <p class="eyebrow">Video Summarizer</p>
+        <p style="font-size:22px;color:var(--muted);line-height:1.3">All five signals rising</p>
+        <div style="display:flex;flex-direction:column;margin-top:4px">
+          <div class="sigrow">Complaint frequency<svg viewBox="0 0 56 26" aria-hidden="true"><polyline class="spark draw" pathLength="1" style="--d:500" points="2,22 12,20 22,21 32,14 42,10 54,4"/></svg></div>
+          <div class="sigrow">Failure rate<svg viewBox="0 0 56 26" aria-hidden="true"><polyline class="spark draw" pathLength="1" style="--d:580" points="2,23 12,22 22,18 32,17 42,9 54,3"/></svg></div>
+          <div class="sigrow">Response latency<svg viewBox="0 0 56 26" aria-hidden="true"><polyline class="spark draw" pathLength="1" style="--d:660" points="2,20 12,21 22,17 32,15 42,12 54,5"/></svg></div>
+          <div class="sigrow">Negative feedback<svg viewBox="0 0 56 26" aria-hidden="true"><polyline class="spark draw" pathLength="1" style="--d:740" points="2,22 12,19 22,20 32,13 42,11 54,6"/></svg></div>
+          <div class="sigrow">Repeated reports<svg viewBox="0 0 56 26" aria-hidden="true"><polyline class="spark draw" pathLength="1" style="--d:820" points="2,23 12,21 22,19 32,16 42,8 54,4"/></svg></div>
+        </div>
+      </div>
+      <span class="cx" data-a="growx" style="--d:1000;--i:0"></span>
+      <div class="card excol ix" data-info="xgboost" data-a style="width:250px;--d:1100;align-items:center;justify-content:center">
+        <p class="eyebrow">XGBoost</p>
+        <div class="gauge-wrap" data-gauge="72.7"></div>
+        <p class="riskbadge" data-a="pop" style="--d:2700">HIGH RISK</p>
+        <p style="font-size:21px;color:var(--muted)">Risk prediction</p>
+      </div>
+      <span class="cx" data-a="growx" style="--d:3000;--i:1"></span>
+      <div class="card excol gen ix" data-info="gemini" data-a style="width:350px;--d:3100">
+        <p class="eyebrow" style="color:var(--cyan-ink)">Gemini</p>
+        <p style="font-size:23px;font-weight:600;line-height:1.3">Contextual Validation + Explanation</p>
+        <p class="quote" data-type="3450">“Risk is primarily associated with increasing failures, latency and repeated student complaints.”</p>
+      </div>
+      <span class="cx" data-a="growx" style="--d:5300;--i:2"></span>
+      <div class="card excol alert ix" data-info="alert" data-a style="width:250px;--d:5400">
+        <span class="bell"><svg class="ic"><use href="#i-bell"/></svg></span>
+        <p class="eyebrow" style="color:var(--high)">Admin alert</p>
+        <h3>HIGH-RISK AREA DETECTED</h3>
+        <p>Video Summarizer</p>
+      </div>
+      <span class="cx" data-a="growx" style="--d:6000;--i:3"></span>
+      <div class="card excol ix" data-info="intervention" data-a style="width:290px;--d:6100">
+        <p class="eyebrow">Action</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div class="chk" style="--d:6450"><span class="cc"><svg class="ic"><use href="#i-check"/></svg></span>Investigate</div>
+          <div class="chk" style="--d:6800"><span class="cc"><svg class="ic"><use href="#i-check"/></svg></span>Reroute model, fix the issue or publish a notice</div>
+          <div class="chk go" style="--d:7150"><span class="cc"><svg class="ic"><use href="#i-check"/></svg></span>Monitor again</div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-banner" data-a style="--d:7500">
+      <p>“Don’t wait for failure. Detect the pattern early.”</p>
+      <button class="btn btn-primary" data-info="risksim"><svg class="ic"><use href="#i-sliders"/></svg>Try the risk simulator</button>
+    </div>
+  </div>
+  <aside class="notes">An illustrative scenario for the Video Summarizer. Complaints, failures, latency, negative feedback and repeat reports all rise together. XGBoost flags high risk, Gemini explains what is driving it, and the admin gets an alert with a clear next step instead of discovering the issue weeks later. Open the risk simulator to let judges move the signals themselves.</aside>
+</section>
+
+<!-- ======================= 08 · ARCHITECTURE ======================= -->
+<section class="slide" data-key="architecture" data-sec="Build">
+  <div class="head"><h2 class="title" data-a>NOVARD-AI System Architecture</h2></div>
+  <div class="layers">
+    <div class="spine" data-a="fade" style="--d:1000"><span class="packet"></span></div>
+    <div class="layer" data-a="left" style="--d:150">
+      <div class="lab"><svg class="ic"><use href="#i-users"/></svg>Users</div>
+      <div class="chips"><span class="chip ix" data-info="student">Student</span><span class="chip ix" data-info="admin">Admin</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:270">
+      <div class="lab"><svg class="ic"><use href="#i-globe"/></svg>Frontend</div>
+      <div class="chips"><span class="chip ix" data-info="react">React 18</span><span class="chip ix" data-info="tailwind">Tailwind CSS</span><span class="chip ix" data-info="router">React Router</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:390">
+      <div class="lab"><svg class="ic"><use href="#i-server"/></svg>Backend</div>
+      <div class="chips"><span class="chip ix" data-info="node">Node.js</span><span class="chip ix" data-info="express">Express.js</span><span class="chip ix" data-info="rest">REST APIs</span><span class="chip ix" data-info="auth">Authentication</span><span class="chip ix" data-info="ratelimit">Rate Limiting</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:510">
+      <div class="lab"><svg class="ic"><use href="#i-layers"/></svg>Application<br>Services</div>
+      <div class="chips"><span class="chip ix" data-info="career">Career Engine</span><span class="chip ix" data-info="learning">Learning Engine</span><span class="chip ix" data-info="quiz">Quiz Engine</span><span class="chip ix" data-info="pdf">PDF Engine</span><span class="chip ix" data-info="video">Video Engine</span><span class="chip ix" data-info="agent">Novard Agent</span><span class="chip ix" data-info="predictive">Risk Intelligence</span><span class="chip tag ix" data-info="agent">Each engine works directly or through the Novard Agent</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:630">
+      <div class="lab"><svg class="ic"><use href="#i-cpu"/></svg>AI / ML</div>
+      <div class="chips"><span class="chip ix" data-info="groq">Groq / GPT-OSS</span><span class="chip ix" data-info="langchain">LangChain</span><span class="chip ix" data-info="langgraph">LangGraph</span><span class="chip ix" data-info="xgboost">XGBoost</span><span class="chip gen ix" data-info="gemini">Google Gemini</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:750">
+      <div class="lab"><svg class="ic"><use href="#i-database"/></svg>Data</div>
+      <div class="chips"><span class="chip blue ix" data-info="mongodb">MongoDB</span><span class="chip blue ix" data-info="vector">Atlas Vector Search</span><span class="chip tag ix" data-info="data">Student Data</span><span class="chip tag ix" data-info="data">Reports</span><span class="chip tag ix" data-info="analytics">Analytics</span><span class="chip tag ix" data-info="data">Risk Data</span><span class="chip tag ix" data-info="data">Model Logs</span></div>
+    </div>
+    <div class="layer" data-a="left" style="--d:870">
+      <div class="lab"><svg class="ic"><use href="#i-cloud"/></svg>Infrastructure</div>
+      <div class="chips"><span class="chip ix" data-info="docker">Docker</span><span class="chip ix" data-info="cloudrun">Google Cloud Run</span><span class="chip ix" data-info="nginx">Nginx</span><span class="chip ix" data-info="cloudbuild">Cloud Build</span></div>
+    </div>
+  </div>
+  <aside class="notes">Read top to bottom: students and admins use a React front end, an Express backend exposes authenticated REST APIs, seven application services hold the product logic, the AI and ML layer powers them, MongoDB stores everything including vector search, and the whole stack is containerised on Google Cloud Run. Every chip opens its role in the system.</aside>
+</section>
+
+<!-- ======================= 09 · ARCHITECTURAL FLOW ======================= -->
+<section class="slide" data-key="archflow" data-sec="Build">
+  <div class="head"><h2 class="title" data-a>How a Request Flows Through NOVARD-AI</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+    <div class="af" data-seq="2600" data-every="520">
+      <svg viewBox="0 0 1664 620" width="1664" height="620" aria-hidden="true" data-a="fade" style="--d:900">
+        <defs><marker id="afah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9FB0C7"/></marker></defs>
+        <path class="afp" marker-end="url(#afah)" d="M280 146 L344 146"/>
+        <path class="afp" marker-end="url(#afah)" d="M626 146 C659 146 659 90 690 90"/>
+        <path class="afp" marker-end="url(#afah)" d="M626 146 C659 146 659 202 690 202"/>
+        <path class="afp" marker-end="url(#afah)" d="M972 90 C1005 90 1005 146 1036 146"/>
+        <path class="afp" marker-end="url(#afah)" d="M972 202 C1005 202 1005 146 1036 146"/>
+        <path class="afp" marker-end="url(#afah)" d="M1318 146 L1382 146"/>
+        <path class="afp ret" marker-end="url(#afah)" d="M1524 196 L1524 290 L140 290 L140 198"/>
+        <path class="afp ret" marker-end="url(#afah)" d="M140 290 L140 378"/>
+        <path class="afp" marker-end="url(#afah)" d="M280 430 L344 430"/>
+        <path class="afp" marker-end="url(#afah)" d="M626 430 L690 430"/>
+        <path class="afp" marker-end="url(#afah)" d="M972 430 L1036 430"/>
+        <path class="afp" marker-end="url(#afah)" d="M1318 430 L1382 430"/>
+        <g fill="#12A8D6">
+          <circle r="5" opacity="0"><animateMotion dur="5.2s" begin="2s" repeatCount="indefinite" path="M140 146 L692 146 L832 90 L1178 146 L1524 146 L1524 290 L140 290 L140 196"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.95;1" dur="5.2s" begin="2s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0"><animateMotion dur="5.2s" begin="4.6s" repeatCount="indefinite" path="M140 146 L692 146 L832 202 L1178 146 L1524 146 L1524 290 L140 290 L140 196"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.95;1" dur="5.2s" begin="4.6s" repeatCount="indefinite"/></circle>
+          <circle r="5" opacity="0" fill="#076985"><animateMotion dur="3.6s" begin="3s" repeatCount="indefinite" path="M140 290 L140 430 L1524 430"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.06;.94;1" dur="3.6s" begin="3s" repeatCount="indefinite"/></circle>
+        </g>
+      </svg>
+
+      <p class="af-lab" data-a="fade" style="left:0;top:0;--d:150"><i>A</i>Student request flow</p>
+      <div class="afn seq ix" data-info="react" data-a="pop" style="left:0;top:96px;--d:300"><span class="no">1</span><div><b>React app</b><span class="s">Student &amp; admin interface</span></div></div>
+      <div class="afn seq ix" data-info="express" data-a="pop" style="left:346px;top:96px;--d:420"><span class="no">2</span><div><b>Express API</b><span class="s">Auth · rate limiting · REST</span></div></div>
+      <div class="afn seq ix" data-info="selfserve" data-a="pop" style="left:692px;top:40px;--d:540"><span class="no">3</span><div><b>Feature services</b><span class="s">Student creates it directly</span></div></div>
+      <div class="afn ag seq ix" data-info="agent" data-a="pop" style="left:692px;top:152px;--d:600"><span class="no">3</span><div><b>Novard Agent</b><span class="s">LangGraph · creates it for the student</span></div></div>
+      <div class="afn seq ix" data-info="context" data-a="pop" style="left:1038px;top:96px;--d:720"><span class="no">4</span><div><b>Context &amp; retrieval</b><span class="s">MongoDB · Vector Search</span></div></div>
+      <div class="afn seq ix" data-info="aigen" data-a="pop" style="left:1384px;top:96px;--d:840"><span class="no">5</span><div><b>AI generation</b><span class="s">Groq · GPT-OSS · LangChain</span></div></div>
+      <p class="af-ret seq" data-a="fade" style="--d:1100"><span class="no">6</span>Result saved and returned to the student</p>
+
+      <p class="af-lab r" data-a="fade" style="left:170px;top:318px;--d:1200"><i>B</i>Risk intelligence flow</p>
+      <div class="afn seq ix" data-info="signals" data-a="pop" style="left:0;top:380px;--d:1300"><span class="no">7</span><div><b>Signals &amp; logs</b><span class="s">Usage, errors, latency, feedback</span></div></div>
+      <div class="afn seq ix" data-info="features" data-a="pop" style="left:346px;top:380px;--d:1400"><span class="no">8</span><div><b>Feature engineering</b><span class="s">Signals become model features</span></div></div>
+      <div class="afn ml seq ix" data-info="xgboost" data-a="pop" style="left:692px;top:380px;--d:1500;border-color:var(--blue)"><span class="no">9</span><div><b>XGBoost</b><span class="s">Risk probability &amp; level</span></div></div>
+      <div class="afn gen seq ix" data-info="gemini" data-a="pop" style="left:1038px;top:380px;--d:1600"><span class="no">10</span><div><b>Gemini</b><span class="s">Validation &amp; explanation</span></div></div>
+      <div class="afn seq ix" data-info="admin" data-a="pop" style="left:1384px;top:380px;--d:1700"><span class="no">11</span><div><b>Admin dashboard</b><span class="s">Alert → decision → action</span></div></div>
+
+      <div class="card af-infra" data-a style="--d:1900">
+        <span class="tl"><svg class="ic"><use href="#i-cloud"/></svg>Runs on</span>
+        <span class="chip ix" data-info="docker">Docker</span>
+        <span class="chip ix" data-info="cloudrun">Google Cloud Run</span>
+        <span class="chip ix" data-info="nginx">Nginx</span>
+        <span class="chip ix" data-info="cloudbuild">Cloud Build</span>
+        <span style="margin-left:auto;font-size:20px;color:var(--muted)">Every service is containerised and deployed through Cloud Build</span>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Flow A is any student request. The React app calls the Express API, which handles authentication and rate limiting. The request goes either to a feature service, when the student creates something themselves, or to the Novard Agent, when they delegate it. Both load context from MongoDB and Vector Search, generate with Groq-hosted GPT-OSS through LangChain, then save and return the result. Flow B runs alongside: every request leaves signals and logs, which feed the risk pipeline from feature engineering to XGBoost, Gemini and the admin dashboard.</aside>
+</section>
+
+<!-- ======================= 10 · FULL AI PIPELINE ======================= -->
+<section class="slide" data-key="pipeline" data-sec="Build">
+  <div class="head"><h2 class="title" data-a>The Full AI Pipeline Behind Risk Prediction</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px">
+    <div class="lanes" data-seq="2600" data-every="420">
+      <svg viewBox="0 0 1664 572" width="1664" height="572" aria-hidden="true" data-a="fade" style="--d:1100">
+        <defs><marker id="plah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1F5EC9"/></marker></defs>
+        <path d="M1447 120 L1447 140 L1015 140 L1015 158" fill="none" stroke="#1F5EC9" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#plah)"/>
+      </svg>
+      <span class="dep-lab" data-a="fade" style="--d:1150">Deploys the trained model</span>
+
+      <div class="lane learn" data-a="left" style="--d:150">
+        <div class="lab"><b>LEARN</b><span>Offline training</span></div>
+        <div class="steps">
+          <div class="estep seq ix" data-info="historical">Historical data</div><span class="cx" style="--i:0"></span>
+          <div class="estep seq ix" data-info="labelling">Labelling</div><span class="cx" style="--i:1"></span>
+          <div class="estep seq ix" data-info="features">Feature engineering</div><span class="cx" style="--i:2"></span>
+          <div class="estep core seq ix" data-info="training">XGBoost training</div><span class="cx" style="--i:3"></span>
+          <div class="estep seq ix" data-info="evaluation">Evaluation</div><span class="cx" style="--i:4"></span>
+          <div class="estep seq ix" data-info="model">Versioned model</div>
+        </div>
+      </div>
+      <div class="gap40"></div>
+      <div class="lane ml" data-a="left" style="--d:500">
+        <div class="lab"><b>PREDICT</b><span>Live inference</span></div>
+        <div class="steps">
+          <div class="estep seq ix" data-info="signals">Live signals</div><span class="cx" style="--i:0"></span>
+          <div class="estep seq ix" data-info="nlp">Sentiment &amp; urgency</div><span class="cx" style="--i:1"></span>
+          <div class="estep seq ix" data-info="features">Feature engineering</div><span class="cx" style="--i:2"></span>
+          <div class="estep core seq ix" data-info="xgboost">XGBoost inference</div><span class="cx" style="--i:3"></span>
+          <div class="estep seq ix" data-info="riskpred">Risk probability</div><span class="cx" style="--i:4"></span>
+          <div class="estep seq ix" data-info="risklevels">Risk level</div>
+        </div>
+      </div>
+      <span class="cy" data-a="growy" style="--d:800"></span>
+      <div class="lane ex" data-a="left" style="--d:850">
+        <div class="lab"><b>EXPLAIN &amp; ACT</b><span>Gemini + human</span></div>
+        <div class="steps">
+          <div class="estep gen seq ix" data-info="gemini">Gemini validation</div><span class="cx" style="--i:0"></span>
+          <div class="estep gen seq ix" data-info="gemini">Explanation</div><span class="cx" style="--i:1"></span>
+          <div class="estep hu seq ix" data-info="alert">Admin alert</div><span class="cx" style="--i:2"></span>
+          <div class="estep core seq ix" data-info="admin">Admin decision</div><span class="cx" style="--i:3"></span>
+          <div class="estep hu seq ix" data-info="intervention">Intervention</div>
+        </div>
+      </div>
+      <div style="height:26px"></div>
+      <div class="lane fb" data-a="left" style="--d:1250">
+        <div class="lab"><b><svg class="ic"><use href="#i-refresh"/></svg>FEEDBACK LOOP</b></div>
+        <div class="steps">
+          <div class="estep seq ix" data-info="feedback">Outcomes</div><span class="cx" style="--i:0"></span>
+          <div class="estep seq ix" data-info="feedback">New labels</div><span class="cx" style="--i:1"></span>
+          <div class="estep seq ix" data-info="retraining">Retraining</div>
+        </div>
+        <p class="desc">Outcomes become new training labels, and the model is retrained. The loop returns to <b style="color:var(--blue)">LEARN</b>.</p>
+      </div>
+    </div>
+    <div class="legend" data-a="fade" style="--d:1500;justify-content:flex-end">
+      <span><i style="background:var(--blue)"></i>ML model</span>
+      <span><i style="background:var(--cyan-50);border:2px dashed var(--cyan)"></i>Generative AI</span>
+      <span><i style="background:var(--navy)"></i>Human decision</span>
+      <span><i style="background:transparent;border:2px dotted var(--faint)"></i>Feedback loop</span>
+    </div>
+  </div>
+  <aside class="notes">This is the full AI pipeline behind risk prediction. Offline, historical signals and their outcomes are labelled, turned into features, used to train XGBoost, evaluated, and saved as a versioned model. Live, new signals are enriched with sentiment and urgency from the text, engineered into the same features, and scored by the deployed model into a risk probability and level. Gemini then validates and explains the prediction, and the admin decides on the intervention. Outcomes become new labels and the model is retrained, so the system improves over time.</aside>
+</section>
+
+<!-- ======================= 11 · STACK ======================= -->
+<section class="slide" data-key="stack" data-sec="Build">
+  <div class="head"><h2 class="title" data-a>Built on a Production-Oriented AI + ML Stack</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+    <div class="stack">
+      <div class="card scard" data-a style="--d:150">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-globe"/></svg></span><h3>Frontend</h3></div>
+        <p class="srole">Student and admin interfaces</p>
+        <div class="chips"><span class="chip ix" data-info="react">React</span><span class="chip ix" data-info="tailwind">Tailwind</span><span class="chip ix" data-info="router">React Router</span></div>
+      </div>
+      <div class="card scard" data-a style="--d:250">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-server"/></svg></span><h3>Backend</h3></div>
+        <p class="srole">APIs, authentication and rate limiting</p>
+        <div class="chips"><span class="chip ix" data-info="node">Node.js</span><span class="chip ix" data-info="express">Express</span><span class="chip ix" data-info="mongoose">Mongoose</span></div>
+      </div>
+      <div class="card scard" data-a style="--d:350">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-spark"/></svg></span><h3>AI</h3></div>
+        <p class="srole">Language reasoning and agent orchestration</p>
+        <div class="chips"><span class="chip ix" data-info="groq">Groq</span><span class="chip ix" data-info="gptoss">GPT-OSS</span><span class="chip gen ix" data-info="gemini">Gemini</span><span class="chip ix" data-info="langchain">LangChain</span><span class="chip ix" data-info="langgraph">LangGraph</span></div>
+      </div>
+      <div class="card scard" data-a style="--d:450">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-tree"/></svg></span><h3>Machine Learning</h3></div>
+        <p class="srole">The risk prediction model</p>
+        <div class="chips"><span class="chip ml ix" data-info="xgboost">XGBoost</span><span class="chip ix" data-info="features">Feature Engineering</span><span class="chip ix" data-info="risklevels">Risk Classification</span></div>
+      </div>
+      <div class="card scard" data-a style="--d:550">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-database"/></svg></span><h3>Data</h3></div>
+        <p class="srole">Operational data and vector search</p>
+        <div class="chips"><span class="chip ix" data-info="mongodb">MongoDB</span><span class="chip ix" data-info="vector">Atlas Vector Search</span></div>
+      </div>
+      <div class="card scard" data-a style="--d:650">
+        <div class="top"><span class="ict"><svg class="ic"><use href="#i-cloud"/></svg></span><h3>Infrastructure</h3></div>
+        <p class="srole">Containerised cloud deployment</p>
+        <div class="chips"><span class="chip ix" data-info="docker">Docker</span><span class="chip ix" data-info="cloudrun">Google Cloud Run</span><span class="chip ix" data-info="nginx">Nginx</span><span class="chip ix" data-info="cloudbuild">Cloud Build</span></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Nothing exotic: a mainstream web stack, Groq-hosted open models and Gemini for language, XGBoost for the risk model, MongoDB for data and vector search, and Docker on Google Cloud Run for deployment. Every piece is a proven, widely used technology.</aside>
+</section>
+
+<!-- ======================= 12 · WHY ======================= -->
+<section class="slide" data-key="why" data-sec="Impact" style="background:#FFFFFF">
+  <div class="head"><h2 class="title" data-a>Why NOVARD-AI?</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:30px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="why-head" data-a="fade" style="--d:150"><p style="color:var(--muted-2)">Traditional approach</p><span class="mid"></span><p style="color:var(--blue)">NOVARD-AI</p></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:300">Fragmented tools</p><span class="cx" data-a="growx" style="--d:380;--i:0"></span><div class="wnew ix" data-goto="2" data-a="right" style="--d:460"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Unified ecosystem<span class="go">Slide 03<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:480">Generic learning</p><span class="cx" data-a="growx" style="--d:560;--i:1"></span><div class="wnew ix" data-goto="3" data-a="right" style="--d:640"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Personalised learning<span class="go">Slide 04<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:660">Reactive support</p><span class="cx" data-a="growx" style="--d:740;--i:2"></span><div class="wnew ix" data-goto="5" data-a="right" style="--d:820"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Predictive intelligence<span class="go">Slide 06<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:840">Answers questions</p><span class="cx" data-a="growx" style="--d:920;--i:3"></span><div class="wnew ix" data-goto="3" data-a="right" style="--d:1000"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Create on your own or with the Agent<span class="go">Slide 04<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:1020">Raw data</p><span class="cx" data-a="growx" style="--d:1100;--i:4"></span><div class="wnew ix" data-goto="9" data-a="right" style="--d:1180"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Actionable insights<span class="go">Slide 10<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+      <div class="wrow"><p class="wold" data-a="left" style="--d:1200">Problem discovery after failure</p><span class="cx" data-a="growx" style="--d:1280;--i:5"></span><div class="wnew ix" data-goto="6" data-a="right" style="--d:1360"><span class="tk"><svg class="ic"><use href="#i-check"/></svg></span>Early warning before escalation<span class="go">Slide 07<svg class="ic"><use href="#i-arrow-right"/></svg></span></div></div>
+    </div>
+    <div class="why-quote" data-a style="--d:1600"><div class="bar"></div><p>“We don’t only build an AI tutor. We build intelligence around the entire learning ecosystem.”</p></div>
+  </div>
+  <aside class="notes">Six contrasts, one idea: most tools answer questions after the fact. NOVARD-AI connects the whole learning ecosystem, acts on requests, and warns early. The point is not another AI tutor but intelligence around everything the student and institution do. Every feature can be created by the student or by the NOVARD Agent. Each NOVARD-AI row jumps to the slide that proves it.</aside>
+</section>
+
+<!-- ======================= 13 · VISION ======================= -->
+<section class="slide" data-key="vision" data-sec="Impact" style="gap:20px">
+  <div class="head"><h2 class="title" data-a>Our Vision</h2></div>
+  <div class="stairs">
+    <div class="stair s1" data-a="growup" style="--d:200"><small>01</small><h3>Understand</h3></div>
+    <div class="stair s2" data-a="growup" style="--d:330"><small>02</small><h3>Personalise</h3></div>
+    <div class="stair s3" data-a="growup" style="--d:460"><small>03</small><h3>Predict</h3></div>
+    <div class="stair s4" data-a="growup" style="--d:590"><small>04</small><h3>Intervene</h3></div>
+    <div class="stair s5" data-a="growup" style="--d:720"><small>05</small><h3>Improve Outcomes</h3></div>
+  </div>
+  <div class="v-cards">
+    <div class="card vcard" data-a style="--d:950">
+      <div class="top"><span class="ict"><svg class="ic"><use href="#i-cap"/></svg></span><h3>For Students</h3></div>
+      <div class="vgrid">
+        <div data-a="fade" style="--d:1150"><svg class="ic"><use href="#i-check"/></svg>Personalised learning</div>
+        <div data-a="fade" style="--d:1230"><svg class="ic"><use href="#i-check"/></svg>Career clarity</div>
+        <div data-a="fade" style="--d:1310"><svg class="ic"><use href="#i-check"/></svg>Faster doubt solving</div>
+        <div data-a="fade" style="--d:1390"><svg class="ic"><use href="#i-check"/></svg>Better learning consistency</div>
+      </div>
+    </div>
+    <div class="card vcard" data-a style="--d:1050">
+      <div class="top"><span class="ict"><svg class="ic"><use href="#i-building"/></svg></span><h3>For Institutions</h3></div>
+      <div class="vgrid">
+        <div data-a="fade" style="--d:1250"><svg class="ic"><use href="#i-check"/></svg>Early risk detection</div>
+        <div data-a="fade" style="--d:1330"><svg class="ic"><use href="#i-check"/></svg>Actionable intelligence</div>
+        <div data-a="fade" style="--d:1410"><svg class="ic"><use href="#i-check"/></svg>Faster intervention</div>
+        <div data-a="fade" style="--d:1490"><svg class="ic"><use href="#i-check"/></svg>System visibility</div>
+      </div>
+    </div>
+  </div>
+  <div class="v-brand" data-a="pop" style="--d:1700">
+    <h2>NOVARD<span>-AI</span></h2>
+    <p class="tag">Predict. Personalise. Empower.</p>
+    <p class="line">AI-powered learning + career intelligence + predictive early warning</p>
+  </div>
+  <aside class="notes">The journey climbs from understanding the student, to personalising, to predicting problems, to intervening, to better outcomes. Students gain clarity and consistency; institutions gain visibility and time to act. Close on the line: Predict. Personalise. Empower.</aside>
+</section>
+
+</main>
+
+<!-- ======================= Viewer chrome ======================= -->
+<nav class="dock" id="dock" aria-label="Presentation controls">
+  <button data-action="prev" title="Previous (←)" aria-label="Previous slide"><svg class="ic"><use href="#i-chev-left"/></svg></button>
+  <span class="count" id="count">01 / 12</span>
+  <button data-action="next" title="Next (→)" aria-label="Next slide"><svg class="ic"><use href="#i-chev"/></svg></button>
+  <span class="sep"></span>
+  <button data-action="overview" title="All slides (O)" aria-label="All slides"><svg class="ic"><use href="#i-grid"/></svg></button>
+  <button data-action="notes" id="notesBtn" title="Speaker notes (N)" aria-label="Speaker notes" aria-pressed="false"><svg class="ic"><use href="#i-file"/></svg></button>
+  <button data-action="fullscreen" id="fsBtn" title="Fullscreen (F)" aria-label="Fullscreen" aria-pressed="false"><svg class="ic"><use href="#i-maximize"/></svg></button>
+  <button data-action="help" title="Shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="ic"><use href="#i-keyboard"/></svg></button>
+</nav>
+
+<div class="notes-panel" id="notesPanel" aria-live="polite"><b>Speaker notes</b><span id="notesText"></span></div>
+<div class="toast" id="toast"><span class="kbd">←</span><span class="kbd">→</span> navigate · click highlighted components to explore · <span class="kbd">?</span> shortcuts</div>
+
+<div class="help" id="help" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="help-card">
+    <h4>Keyboard shortcuts</h4>
+    <div>Next slide<span><span class="kbd">→</span> <span class="kbd">Space</span></span></div>
+    <div>Previous slide<span><span class="kbd">←</span></span></div>
+    <div>First / last slide<span><span class="kbd">Home</span> <span class="kbd">End</span></span></div>
+    <div>All slides<span class="kbd">O</span></div>
+    <div>Speaker notes<span class="kbd">N</span></div>
+    <div>Fullscreen<span class="kbd">F</span></div>
+    <div>Replay this slide's animation<span class="kbd">R</span></div>
+    <div>Close panel<span class="kbd">Esc</span></div>
+    <div>Save as PDF<span><span class="kbd">Ctrl</span> <span class="kbd">P</span></span></div>
+  </div>
+</div>
+
+<div class="overview" id="overview" role="dialog" aria-modal="true" aria-label="All slides">
+  <div class="ov-head"><h4>All slides</h4><span>Click a slide to jump · Esc to close</span></div>
+  <div class="ov-grid" id="ovGrid"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Component details">
+  <div class="dr-top">
+    <button class="back" id="drBack" aria-label="Back"><svg class="ic"><use href="#i-arrow-left"/></svg></button>
+    <span class="crumb" id="drCrumb"></span>
+    <button id="drClose" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dr-body" id="drBody"></div>
+</aside>
+
+<script>
+(function () {
+'use strict';
+
+/* ==========================================================================
+   Content: what each clickable component means
+   ========================================================================== */
+var NAMES = ['Cover','The Problem','The Solution','Two Ways to Create','The AI Agent','Risk Prediction','Risk Example','System Architecture','Architectural Flow','Full AI Pipeline','Technology Stack','Why NOVARD-AI','Our Vision'];
+
+var AGENT_THEN = 'The agent understands the goal, asks for anything missing, shows a draft, and creates it once you confirm.';
+
+var INFO = {
+  platform: { kind:'Platform', icon:'layers', tone:'nv', title:'NOVARD-AI Platform',
+    summary:'One platform for the complete student journey: learning, career guidance, knowledge tools, productivity, an AI agent that can create any of them, and predictive intelligence for institutions.',
+    flow:['Student profile','Create on your own / Ask the agent','Six capabilities','Analytics','Early warnings'],
+    points:['Every capability shares the same learner profile and context','Every feature can be created by the student directly or by the NOVARD Agent','Platform signals feed the risk pipeline for administrators'],
+    includes:['career','learning','knowledge','productivity','agent','predictive'], related:[2,3,8] },
+
+  selfserve: { kind:'Way 1 · Create on your own', icon:'user', title:'Create on Your Own',
+    summary:'Every feature has its own screen. Students can create roadmaps, learning plans, quizzes, todo lists, PDF chats and video summaries directly, with full control over each step.',
+    flow:['Choose a feature','Set your goal & details','Create'],
+    points:['Full control over every setting','Uses the same learner profile as the agent','Anything created by hand can later be extended by the agent, and the other way round'],
+    includes:['career','learning','quiz','productivity','pdf','video','doubt'],
+    related:[3,8], cta:{ label:'Compare with the agent path', open:'agent', icon:'cpu' } },
+
+  career: { kind:'Feature · Career Engine', icon:'compass', title:'Career Intelligence',
+    summary:'Turns a student’s goals, interests and current skills into a personalised career roadmap, and shows which skills are still missing.',
+    ways:{ self:['Open Career Intelligence','Choose a target role','Review the roadmap and skill gaps'], agent:'Build me a roadmap to become a data analyst.' },
+    flow:['Goals & profile','Skill-gap analysis','Career roadmap','Skill plan'],
+    points:['Personalised roadmap toward a target role','Skill-gap analysis compares current skills with what the role needs','Gaps flow straight into AI Learning as skill plans'],
+    tech:['groq','langchain','mongodb'], related:[2,3,7] },
+
+  learning: { kind:'Feature · Learning Engine', icon:'book', title:'AI Learning',
+    summary:'Personalised skill plans, instant doubt solving and quizzes, all in one place.',
+    ways:{ self:['Open AI Learning','Pick a skill and your pace','Generate the skill plan'], agent:'Create a 30-day Data Science learning plan for me.' },
+    flow:['Goal','Skill plan','Learn','Doubt solving','Quiz'],
+    points:['Skill plans built around the learner profile','Doubts answered in context, at the student’s level','Quizzes check understanding as the student progresses'],
+    includes:['doubt','quiz'], tech:['groq','gptoss','langchain'], related:[2,3,4] },
+
+  knowledge: { kind:'Feature', icon:'file', title:'Knowledge Intelligence',
+    summary:'Makes a student’s own study material usable: chat with PDFs and summarise long videos. Both can be used directly or through the agent.',
+    points:['PDF chat: ask questions about uploaded documents','Video summarisation: condense lectures into key points','Both sit next to the learning plan instead of in separate apps'],
+    includes:['pdf','video'], tech:['langchain','vector','groq'], related:[2,7] },
+
+  pdf: { kind:'Feature · PDF Engine', icon:'file', title:'PDF Chat',
+    summary:'Upload study material and ask questions about it. Answers are generated from the document’s own content.',
+    ways:{ self:['Upload a PDF','Ask your question','Read the answer from your document'], agent:'Summarise chapter 3 of my DBMS notes and quiz me on it.' },
+    flow:['Upload PDF','Split into passages','Embed & index','Retrieve passages','Answer'],
+    points:['Works on the student’s own notes, textbooks and papers','Relevant passages are found with Atlas Vector Search','The language model answers using those passages as context'],
+    tech:['langchain','vector','groq','mongodb'], related:[2,7,8] },
+
+  video: { kind:'Feature · Video Engine', icon:'play', title:'Video Summarisation',
+    summary:'Turns a long lecture or tutorial video into a concise summary and key takeaways.',
+    ways:{ self:['Paste a video link','Generate the summary','Save the key takeaways'], agent:'Summarise this lecture video into key points.' },
+    flow:['Video','Transcript','Summary','Key takeaways'],
+    points:['Saves time on long lectures','Key points can feed revision and quizzes','Monitored by the risk pipeline like every other feature (see slide 07)'],
+    tech:['groq','langchain'], related:[2,6,7] },
+
+  quiz: { kind:'Feature · Quiz Engine', icon:'target', title:'Quizzes & Progress',
+    summary:'Generates quizzes on a topic or learning plan so students can check, and measure, their understanding.',
+    ways:{ self:['Choose a topic','Set the number of questions','Take the quiz and see your score'], agent:'Quiz me on SQL joins every Friday.' },
+    flow:['Topic or plan','Questions','Attempt','Score','Feedback'],
+    points:['Questions matched to what the student is learning','Results show where to revise next','Can be created by hand or scheduled by the agent as part of a plan'],
+    tech:['groq','gptoss'], related:[3,4,7] },
+
+  doubt: { kind:'Feature', icon:'chat', title:'Doubt Solving',
+    summary:'Instant explanations when a student is stuck, adjusted to their level and current plan.',
+    ways:{ self:['Type your question','Get an explanation','Ask follow-ups'], agent:'Explain gradient descent like I’m new to ML.' },
+    flow:['Question','Learner context','Explanation','Follow-up'],
+    points:['Answers in the context of what the student is studying','Follow-up questions keep the thread going','Faster than searching across separate tools'],
+    tech:['groq','langchain'], related:[2,3] },
+
+  productivity: { kind:'Feature', icon:'check-square', title:'Productivity',
+    summary:'AI todo planning turns learning plans into daily, trackable learning tasks.',
+    ways:{ self:['Add your own tasks','Set due dates','Tick them off as you go'], agent:'Turn my learning plan into daily tasks for this week.' },
+    flow:['Plan','Tasks','Schedule','Done'],
+    points:['AI todo planning from a goal or plan','Learning tasks linked to the student’s skill plan','Tasks can be added by hand or by the agent after the student confirms'],
+    tech:['groq','mongodb'], related:[2,3,4] },
+
+  agent: { kind:'Way 2 · Novard Agent', icon:'cpu', tone:'nv', title:'NOVARD AI Agent',
+    summary:'The same features, created for you. Describe a goal in plain language and the agent understands it, asks for what is missing, drafts, waits for your confirmation, then creates it using the platform’s own modules.',
+    flow:['Understand','Draft','Confirm','Execute'],
+    points:['Can create anything the student can create by hand','Uses the learner profile and context','Asks clarifying questions when information is missing','Runs tools only after the student confirms the draft'],
+    includes:['career','learning','quiz','productivity','pdf','video','doubt'], includesTitle:'Can create',
+    tech:['langgraph','langchain','groq','gptoss'], related:[4,3,8],
+    cta:{ label:'Watch the agent demo', jump:4, icon:'play' } },
+
+  predictive: { kind:'Core capability · Risk Intelligence', icon:'activity', tone:'nv', title:'Predictive Intelligence',
+    summary:'Detects risk patterns in platform signals early and alerts administrators before problems escalate.',
+    flow:['Signals','XGBoost','Gemini','Admin alert','Intervention'],
+    points:['Risk detection with a trained XGBoost model','Early warnings on four levels: Low, Medium, High, Critical','Admin insights with a plain-language explanation from Gemini','The admin makes the final decision'],
+    tech:['xgboost','gemini','mongodb'], related:[5,6,9],
+    cta:{ label:'See the full AI pipeline', jump:9, icon:'arrow-right' } },
+
+  analytics: { kind:'Insight', icon:'chart', title:'Analytics & Admin Insights',
+    summary:'Turns raw activity, reports and feedback into views administrators can act on.',
+    points:['System visibility across every feature','Feeds the risk pipeline','Surfaces high-risk areas together with an explanation'],
+    tech:['mongodb','xgboost','gemini'], related:[5,9] },
+
+  intervention: { kind:'Pipeline stage', icon:'shield', tone:'nv', title:'Early Intervention',
+    summary:'The admin reviews the alert and acts: investigate, reroute a model, fix the issue or publish a notice, then keep monitoring.',
+    flow:['Investigate','Fix · reroute · notify','Monitor again'],
+    points:['A person makes the final decision','Action happens before complaints pile up','Outcomes become new training labels'],
+    related:[6,9] },
+
+  student: { kind:'User', icon:'user', tone:'nv', title:'Student',
+    summary:'Works from one place and chooses, for every feature, whether to create it themselves or ask the NOVARD Agent to create it.',
+    includes:['selfserve','agent','career','learning','knowledge','productivity'], related:[3,4,8] },
+
+  admin: { kind:'User · Human decision', icon:'users', tone:'nv', title:'Admin',
+    summary:'Receives risk alerts with an explanation, investigates, and makes the final decision on what to do.',
+    includes:['predictive','alert','intervention'], related:[5,6,9] },
+
+  /* ---- request flow (architectural flow slide) ---- */
+  context: { kind:'Request flow · step 4', icon:'database', title:'Context & Retrieval',
+    summary:'Loads the learner profile and history from MongoDB, and finds relevant content with Atlas Vector Search, so every answer and plan fits the student.',
+    tech:['mongodb','vector','mongoose'], related:[7,8] },
+  aigen: { kind:'Request flow · step 5', icon:'spark', title:'AI Generation',
+    summary:'Language models served on Groq (GPT-OSS), orchestrated with LangChain, generate the plan, answer, quiz or summary from that context.',
+    tech:['groq','gptoss','langchain'], related:[7,8] },
+
+  /* ---- risk pipeline ---- */
+  signals: { kind:'Pipeline · Predict', icon:'activity', title:'Signals & Logs',
+    summary:'Operational and feedback signals that every module produces as students use it. They are the raw material for prediction.',
+    pointsTitle:'Signals used', points:['Complaint frequency','Repeat reports','Response latency','AI errors','Feature failures','Negative sentiment','Urgency','Engagement changes'],
+    related:[5,8,9] },
+  historical: { kind:'Pipeline · Learn', icon:'history', title:'Historical Data',
+    summary:'Past platform signals together with what actually happened next: which areas turned into real problems and which did not.',
+    related:[9] },
+  labelling: { kind:'Pipeline · Learn', icon:'tag', title:'Labelling',
+    summary:'Past periods are labelled by outcome, for example whether an area escalated, giving the model examples to learn from.',
+    related:[9] },
+  features: { kind:'Pipeline · Learn & Predict', icon:'sliders', title:'Feature Engineering',
+    summary:'Converts raw signals into model-ready features, for example counts, rates and trends per platform feature over time. Training and live inference use the same features.',
+    flow:['Raw signals','Aggregate','Normalise','Feature vector'],
+    related:[5,9] },
+  training: { kind:'Pipeline · Learn', icon:'tree', title:'XGBoost Training',
+    summary:'The gradient-boosted tree model learns which feature patterns came before real problems.',
+    flow:['Labelled features','Train','Tune','Trained model'],
+    tech:['xgboost'], related:[9] },
+  evaluation: { kind:'Pipeline · Learn', icon:'check-square', title:'Evaluation',
+    summary:'The trained model is checked on data it has not seen before it is used for live predictions.',
+    points:['Held-out validation data','Compared with the previous model version','Only a validated model is deployed'],
+    related:[9] },
+  model: { kind:'Pipeline · Learn', icon:'box', title:'Versioned Model',
+    summary:'The validated model is saved with a version and deployed for live inference, so every score can be traced to the model that produced it.',
+    related:[9] },
+  nlp: { kind:'Pipeline · Predict', icon:'chat', title:'Sentiment & Urgency',
+    summary:'Complaint and feedback text is scored for sentiment and urgency by a language model, turning free text into numeric signals the model can use.',
+    related:[9] },
+  xgboost: { kind:'Machine learning model', layer:'AI / ML', icon:'tree', title:'XGBoost',
+    summary:'A trained gradient-boosted tree model that predicts risk from the engineered features.',
+    flow:['Features','Trained model','Risk probability','Risk level'],
+    pointsTitle:'Role in NOVARD-AI', points:['Predicts risk','Outputs a probability that is classified into four levels','Gradient-boosted trees suit structured, tabular signals like these'],
+    related:[5,9,10], cta:{ label:'Open the risk simulator', open:'risksim', icon:'sliders' } },
+  riskpred: { kind:'Pipeline · Predict', icon:'gauge', title:'Risk Probability',
+    summary:'The model’s risk probability for a platform area, ready to be classified and then validated by Gemini.',
+    related:[5,9] },
+  gemini: { kind:'Generative AI', layer:'AI / ML', icon:'spark', tone:'cyan', title:'Google Gemini',
+    summary:'Gemini acts as an independent AI validation and explanation layer around the ML prediction.',
+    flow:['ML prediction','Contextual review','Plain-language explanation'],
+    pointsTitle:'Role in NOVARD-AI', points:['Provides contextual AI validation and explanation','Explains which signals are driving the risk','Does not replace the model or mathematically prove its prediction'],
+    related:[5,6,9] },
+  risklevels: { kind:'Classification', icon:'bars', title:'Risk Levels',
+    summary:'Every prediction is placed on one of four levels, so admins can see at a glance where to look first.',
+    levels:true, related:[5,6,9] },
+  alert: { kind:'Pipeline · Explain & act', icon:'bell', title:'Admin Alert & Dashboard',
+    summary:'High-risk areas surface on the admin dashboard together with the prediction and Gemini’s explanation.',
+    related:[6,9] },
+  feedback: { kind:'Feedback loop', icon:'refresh', title:'Feedback Loop',
+    summary:'Every intervention has an outcome. Those outcomes become new labels, so the model learns from what actually happened.',
+    flow:['Outcomes','New labels','Retraining','Back to LEARN'], related:[9] },
+  retraining: { kind:'Feedback loop', icon:'refresh', title:'Retraining',
+    summary:'New labelled outcomes are added to the training data and the model is retrained and re-evaluated, closing the loop.',
+    flow:['New labels','Train','Evaluate','Deploy new version'], related:[9] },
+  processing: { kind:'Pipeline stage', icon:'settings', title:'Data Processing',
+    summary:'Cleans and organises raw signals so they can be turned into features.', related:[9] },
+  data: { kind:'Data', layer:'Data', icon:'database', title:'Platform Data',
+    summary:'Student data, reports, analytics, risk data and model logs, stored in MongoDB.',
+    tech:['mongodb','mongoose'], related:[7,8] },
+  risksim: { kind:'Interactive demo', icon:'sliders', title:'Risk Simulator',
+    summary:'Move the signals and watch the risk level and explanation change.',
+    sim:true,
+    note:'Illustrative scoring for this demo only. In NOVARD-AI the risk comes from the trained XGBoost model, and Gemini writes the explanation.',
+    related:[5,6,9] },
+
+  /* ---- technology ---- */
+  react:      { kind:'Technology', layer:'Frontend', icon:'globe', title:'React 18', short:'React', summary:'Component-based UI for the student and admin experiences.' },
+  tailwind:   { kind:'Technology', layer:'Frontend', icon:'globe', title:'Tailwind CSS', summary:'Utility-first styling for a consistent, responsive interface.' },
+  router:     { kind:'Technology', layer:'Frontend', icon:'globe', title:'React Router', summary:'Client-side routing between the platform’s modules.' },
+  node:       { kind:'Technology', layer:'Backend', icon:'server', title:'Node.js', summary:'JavaScript runtime for the backend services.' },
+  express:    { kind:'Technology', layer:'Backend', icon:'server', title:'Express.js', short:'Express', summary:'Web framework that serves NOVARD-AI’s REST APIs, with authentication and rate limiting in front of every module and the agent.' },
+  rest:       { kind:'Interface', layer:'Backend', icon:'server', title:'REST APIs', summary:'The contract between the React frontend and the backend services.' },
+  auth:       { kind:'Security', layer:'Backend', icon:'shield', title:'Authentication', summary:'Protects student and admin accounts and routes.' },
+  ratelimit:  { kind:'Security', layer:'Backend', icon:'shield', title:'Rate Limiting', summary:'Caps request rates to protect the APIs and AI services from overload and abuse.' },
+  mongoose:   { kind:'Technology', layer:'Backend', icon:'database', title:'Mongoose', summary:'Schema modelling for MongoDB data in Node.js.' },
+  groq:       { kind:'Technology', layer:'AI / ML', icon:'zap', title:'Groq', summary:'Fast inference platform that serves the language model.', includes:['gptoss'], includesTitle:'Serves' },
+  gptoss:     { kind:'Technology', layer:'AI / ML', icon:'spark', title:'GPT-OSS', summary:'Open-weight language model, served through Groq, for reasoning and content generation.' },
+  langchain:  { kind:'Technology', layer:'AI / ML', icon:'layers', title:'LangChain', summary:'Building blocks for prompts, retrieval and tool calls.' },
+  langgraph:  { kind:'Technology', layer:'AI / ML', icon:'tree', title:'LangGraph', summary:'Orchestrates the agent’s multi-step, stateful flow: understand, clarify, draft, confirm, execute, calling the same feature modules a student uses by hand.' },
+  mongodb:    { kind:'Technology', layer:'Data', icon:'database', title:'MongoDB', summary:'Database for student data, reports, analytics, risk data and model logs.' },
+  vector:     { kind:'Technology', layer:'Data', icon:'search', title:'Atlas Vector Search', summary:'Semantic search over embedded content, used for retrieval such as PDF chat.' },
+  docker:     { kind:'Technology', layer:'Infrastructure', icon:'cloud', title:'Docker', summary:'Packages each service into a portable container.' },
+  cloudrun:   { kind:'Technology', layer:'Infrastructure', icon:'cloud', title:'Google Cloud Run', summary:'Runs the containers as managed, autoscaling services.' },
+  nginx:      { kind:'Technology', layer:'Infrastructure', icon:'server', title:'Nginx', summary:'Web server and reverse proxy in front of the application.' },
+  cloudbuild: { kind:'Technology', layer:'Infrastructure', icon:'cloud', title:'Cloud Build', summary:'Builds container images and deploys them to Cloud Run.' }
+};
+
+// Technology entries: default "see it" slides + reverse "powers" index
+Object.keys(INFO).forEach(function (k) {
+  var d = INFO[k];
+  if (d.layer && !d.related) d.related = [7, 10];
+  (d.tech || []).forEach(function (t) { if (INFO[t]) { (INFO[t].usedBy = INFO[t].usedBy || []).push(k); } });
+});
+
+/* ==========================================================================
+   Helpers
+   ========================================================================== */
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function ico(n, cls) { return '<svg class="ic' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+var stage = $('#stage');
+var slides = $$('.slide', stage);
+var N = slides.length;
+var cur = -1;
+var timers = [];
+function later(fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+function every(fn, ms) { var id = setInterval(fn, ms); timers.push(id); return id; }
+function clearTimers() { timers.forEach(function (id) { clearTimeout(id); clearInterval(id); }); timers = []; }
+
+/* ---------- gauge ---------- */
+var LV = [ {k:'LOW',max:30,c:'l'}, {k:'MEDIUM',max:55,c:'m'}, {k:'HIGH',max:78,c:'h'}, {k:'CRITICAL',max:101,c:'c'} ];
+var LVC = { l:['#1F6B4A','#E6F5EE','#BFE3D0','#46A57E'], m:['#7A5200','#FFF4D6','#F0DBA0','#E2B23E'], h:['#9A4310','#FDE8D8','#F3C5A2','#E07B39'], c:['#A32727','#FBE3E3','#F1B8B8','#D24B4B'] };
+function levelOf(s) { for (var i = 0; i < LV.length; i++) if (s < LV[i].max) return LV[i]; return LV[3]; }
+function arc(cx, cy, r, s0, s1) {
+  var a0 = Math.PI * (1 - s0 / 100), a1 = Math.PI * (1 - s1 / 100);
+  return 'M' + (cx + r * Math.cos(a0)).toFixed(2) + ' ' + (cy - r * Math.sin(a0)).toFixed(2) +
+         ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r * Math.cos(a1)).toFixed(2) + ' ' + (cy - r * Math.sin(a1)).toFixed(2);
+}
+function gaugeSVG(score, w) {
+  var segs = [[0,30,'l'],[30,55,'m'],[55,78,'h'],[78,100,'c']], p = '';
+  segs.forEach(function (g) { p += '<path d="' + arc(110,110,88,g[0] + (g[0] ? 0.8 : 0), g[1] - (g[1] < 100 ? 0.8 : 0)) + '" stroke="' + LVC[g[2]][3] + '" stroke-width="16" fill="none"/>'; });
+  return '<svg class="gauge" viewBox="0 0 220 124" width="' + w + '" height="' + Math.round(w * 124 / 220) + '" role="img" aria-label="Risk gauge">' + p +
+    '<g class="needle" style="transform:rotate(' + (score * 1.8).toFixed(1) + 'deg)"><line x1="110" y1="110" x2="38" y2="110" stroke="#0B1F3B" stroke-width="4" stroke-linecap="round"/></g>' +
+    '<circle cx="110" cy="110" r="9" fill="#0B1F3B"/><circle cx="110" cy="110" r="3.5" fill="#fff"/></svg>';
+}
+
+/* ==========================================================================
+   Build: footers, gauges, accessibility, pristine copies for the overview
+   ========================================================================== */
+slides.forEach(function (s, i) {
+  if (i > 0) {
+    var f = document.createElement('div');
+    f.className = 'foot';
+    var hasInfo = !!s.querySelector('[data-info],[data-goto]');
+    f.innerHTML = '<div class="brand"><b></b>NOVARD-AI <em>· ' + esc(s.dataset.sec) + '</em></div>' +
+      (hasInfo ? '<div class="hint">' + ico('pointer') + 'Click any component for details</div>' : '<div></div>') +
+      '<div class="num">' + pad(i + 1) + ' / ' + N + '</div>';
+    s.appendChild(f);
+  }
+  $$('[data-gauge]', s).forEach(function (g) { g.innerHTML = gaugeSVG(parseFloat(g.dataset.gauge), 200); });
+  $$('[data-info],[data-goto]', s).forEach(function (el) {
+    if (el.tagName !== 'BUTTON') { el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0'); }
+    if (el.dataset.info && INFO[el.dataset.info]) el.setAttribute('aria-label', (el.textContent.trim() || INFO[el.dataset.info].title) + ': show details');
+  });
+  $$('[data-type]', s).forEach(function (el) { el.dataset.full = el.textContent.trim(); });
+});
+var pristine = slides.map(function (s) { return s.cloneNode(true); });
+
+/* ==========================================================================
+   Navigation
+   ========================================================================== */
+var progress = $('#progress'), count = $('#count'), notesText = $('#notesText');
+
+function go(n, force) {
+  n = Math.max(0, Math.min(N - 1, n));
+  if (n === cur && !force) return;
+  clearTimers();
+  var prev = cur;
+  slides.forEach(function (s, i) {
+    s.classList.toggle('is-current', i === n);
+    s.classList.toggle('is-past', i < n);
+    s.inert = i !== n;
+    s.setAttribute('aria-hidden', i !== n ? 'true' : 'false');
+    if (i !== n && i !== prev) s.classList.remove('play');
+  });
+  if (prev >= 0 && prev !== n) {
+    var ps = slides[prev];
+    setTimeout(function () { if (cur !== prev) ps.classList.remove('play'); }, 760);
+  }
+  var s = slides[n];
+  s.classList.remove('play'); void s.offsetWidth; s.classList.add('play');
+  cur = n;
+  enter(s);
+  progress.style.width = ((n + 1) / N * 100) + '%';
+  count.textContent = pad(n + 1) + ' / ' + N;
+  var a = s.querySelector('aside.notes'); notesText.textContent = a ? a.textContent : '';
+  if (location.hash !== '#' + (n + 1)) history.replaceState(null, '', '#' + (n + 1));
+  document.title = 'NOVARD-AI · ' + NAMES[n];
+}
+function next() { go(cur + 1); }
+function prev() { go(cur - 1); }
+function replay() { go(cur, true); }
+
+/* ---------- per-slide behaviour ---------- */
+function enter(s) {
+  // flowing highlight along pipelines
+  $$('[data-seq]', s).forEach(function (c) {
+    var steps = $$('.seq', c), i = -1;
+    steps.forEach(function (x) { x.classList.remove('lit'); });
+    function tick() {
+      steps.forEach(function (x) { x.classList.remove('lit'); });
+      i = (i + 1) % (steps.length + 2);
+      if (i < steps.length) steps[i].classList.add('lit');
+    }
+    later(function () { tick(); every(tick, +c.dataset.every || 600); }, +c.dataset.seq || 1500);
+  });
+  // typewriter text
+  $$('[data-type]', s).forEach(function (el) {
+    var full = el.dataset.full; el.textContent = '';
+    later(function () {
+      var k = 0, cursor = document.createElement('span'); cursor.className = 'cur';
+      var txt = document.createTextNode(''); el.appendChild(txt); el.appendChild(cursor);
+      var id = every(function () {
+        k += 2; txt.data = full.slice(0, k);
+        if (k >= full.length) { clearInterval(id); later(function () { cursor.remove(); }, 1400); }
+      }, 28);
+    }, +el.dataset.type || 0);
+  });
+  if (s.dataset.key === 'agent') runAgent(s);
+}
+
+/* ---------- AI Agent walkthrough ---------- */
+function runAgent(s) {
+  var chat = $('[data-chat]', s), items = $$('.aitem', s), phases = $$('.phase', s), cf = $('[data-confirm]', s);
+  function m(i) { return $('[data-m="' + i + '"]', chat); }
+  function show(i) { m(i).classList.add('show'); }
+  function hide(i) { m(i).classList.remove('show'); }
+  function ok(i) { m(i).classList.add('ok'); }
+  var tools = $$('[data-tool]', s);
+  function tool(ks) { tools.forEach(function (x) { x.classList.toggle('hot', ks.indexOf(x.dataset.tool) > -1); }); }
+  function list(k) { items.forEach(function (x, j) { x.classList.toggle('on', j === k); x.classList.toggle('done', j < k); }); }
+  function phase(k) { phases.forEach(function (x, j) { x.classList.toggle('on', j === k); x.classList.toggle('done', j < k); }); }
+  $$('.msg', chat).forEach(function (x) { x.classList.remove('show', 'ok'); });
+  cf.classList.remove('pressed'); list(-1); phase(-1); tool([]);
+  var t0 = 1300, plan = [
+    [0,     function () { show(0); list(0); }],
+    [900,   function () { show(1); list(1); phase(0); }],
+    [1800,  function () { ok(1); show(2); list(2); }],
+    [2800,  function () { hide(2); show(3); list(3); }],
+    [4500,  function () { show(4); }],
+    [5200,  function () { show(5); }],
+    [6100,  function () { hide(5); show(6); list(4); phase(1); }],
+    [7700,  function () { cf.classList.add('pressed'); list(5); phase(2); }],
+    [8500,  function () { cf.classList.remove('pressed'); show(7); list(6); phase(3); tool(['learning']); }],
+    [9100,  function () { ok(7); show(8); tool(['todo']); }],
+    [9700,  function () { ok(8); show(9); tool(['quiz']); }],
+    [10300, function () { ok(9); }],
+    [10800, function () { show(10); list(7); tool(['learning','todo','quiz']); phases.forEach(function (x) { x.classList.remove('on'); x.classList.add('done'); }); }]
+  ];
+  plan.forEach(function (p) { later(p[1], t0 + p[0]); });
+}
+
+/* ==========================================================================
+   Detail drawer
+   ========================================================================== */
+var drawer = $('#drawer'), scrim = $('#scrim'), drBody = $('#drBody'), drBack = $('#drBack'), drCrumb = $('#drCrumb');
+var stack = [], lastFocus = null;
+function isDrawerOpen() { return drawer.classList.contains('open'); }
+
+function openInfo(id, from, push) {
+  if (!INFO[id]) return;
+  if (!isDrawerOpen()) { stack = []; lastFocus = document.activeElement; }
+  if (!push) stack = [];
+  stack.push({ id: id, from: from || null });
+  render();
+  drawer.classList.add('open'); scrim.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
+  setTimeout(function () { $('#drClose').focus({ preventScroll: true }); }, 60);
+}
+function closeDrawer() {
+  if (!isDrawerOpen()) return;
+  drawer.classList.remove('open'); scrim.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');
+  stack = [];
+  if (lastFocus && document.contains(lastFocus) && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+}
+function chipFor(k) { var d = INFO[k]; return d ? '<button class="dr-chip" data-open="' + k + '">' + esc(d.short || d.title) + '</button>' : ''; }
+
+function render() {
+  var top = stack[stack.length - 1], d = INFO[top.id], h = '';
+  drBack.classList.toggle('show', stack.length > 1);
+  drCrumb.textContent = stack.map(function (x) { return INFO[x.id].title; }).join('  ›  ');
+  h += '<div class="dr-hero"><span class="ict ' + (d.tone || '') + '">' + ico(d.icon) + '</span><div><div class="dr-kind">' + esc(d.kind) + '</div>' +
+       (d.layer ? '<div class="dr-layer">' + esc(d.layer) + ' layer</div>' : '') + '</div></div>';
+  h += '<h3 class="dr-title">' + esc(d.title) + '</h3>';
+  h += '<p class="dr-sum">' + esc(d.summary) + '</p>';
+  if (top.from) h += '<div class="dr-from">' + ico('shuffle') + '<span>Today a student goes to <b>' + esc(top.from) + '</b> separately. In NOVARD-AI this lives inside one platform, connected to the student’s profile.</span></div>';
+  if (d.ways) h += '<div class="dr-sec">Two ways to create</div><div class="ways"><div class="way"><b>' + ico('user') + 'On your own</b><ol>' + d.ways.self.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></div><div class="way ag"><b>' + ico('cpu') + 'With NOVARD Agent</b><p class="pr">\u201C' + esc(d.ways.agent) + '\u201D</p><p class="then">' + esc(AGENT_THEN) + '</p></div></div>';
+  if (d.flow) h += '<div class="dr-sec">How it works</div><div class="mflow">' + d.flow.map(function (f, k) { return '<span class="n" style="--k:' + k + '">' + esc(f) + '</span>'; }).join(ico('chev', 'ar')) + '</div>';
+  if (d.points) h += '<div class="dr-sec">' + esc(d.pointsTitle || 'What it does') + '</div><ul class="dr-list">' + d.points.map(function (p) { return '<li>' + ico('check') + '<span>' + esc(p) + '</span></li>'; }).join('') + '</ul>';
+  if (d.levels) h += '<div class="dr-sec">The four levels</div><div class="dr-levels">' +
+      [['LOW','l','Normal range. Keep monitoring.'],['MEDIUM','m','Signals drifting. Watch closely.'],['HIGH','h','Clear risk pattern. Investigate.'],['CRITICAL','c','Severe risk. Act now.']].map(function (r) {
+        var c = LVC[r[1]]; return '<div><span style="color:' + c[0] + ';background:' + c[1] + ';border-color:' + c[2] + '">' + r[0] + '</span>' + r[2] + '</div>'; }).join('') + '</div>';
+  if (d.sim) h += simHTML();
+  if (d.includes) h += '<div class="dr-sec">' + esc(d.includesTitle || 'Includes') + '</div><div class="dr-chips">' + d.includes.map(chipFor).join('') + '</div>';
+  if (d.tech) h += '<div class="dr-sec">Built with</div><div class="dr-chips">' + d.tech.map(chipFor).join('') + '</div>';
+  if (d.usedBy) h += '<div class="dr-sec">Powers</div><div class="dr-chips">' + d.usedBy.map(chipFor).join('') + '</div>';
+  if (d.cta) h += '<button class="dr-cta"' + (d.cta.open ? ' data-open="' + d.cta.open + '"' : '') + (d.cta.jump != null ? ' data-jump="' + d.cta.jump + '"' : '') + '>' + ico(d.cta.icon || 'arrow-right') + esc(d.cta.label) + '</button>';
+  if (d.related) h += '<div class="dr-sec">See it in the deck</div><div class="dr-rel">' + d.related.map(function (n) {
+      return '<button data-jump="' + n + '"><b>' + pad(n + 1) + '</b>' + esc(NAMES[n]) + (n === cur ? ' <span style="color:var(--muted-2);font-size:12px">(this slide)</span>' : '') + ico('arrow-right') + '</button>'; }).join('') + '</div>';
+  if (d.note) h += '<p class="dr-note">' + esc(d.note) + '</p>';
+  drBody.innerHTML = h;
+  Array.prototype.forEach.call(drBody.children, function (c, k) { c.style.setProperty('--k', k); });
+  drBody.scrollTop = 0;
+  if (d.sim) bindSim();
+}
+
+/* ---------- risk simulator (illustrative) ---------- */
+var SIG = [
+  { n:'Complaint frequency', w:.22, p:'more frequent complaints' },
+  { n:'Failure rate',        w:.26, p:'a rising failure rate' },
+  { n:'Response latency',    w:.18, p:'higher response latency' },
+  { n:'Negative feedback',   w:.16, p:'more negative feedback' },
+  { n:'Repeated reports',    w:.18, p:'repeated student reports' }
+];
+var PRESETS = { healthy:[15,10,20,15,10], video:[70,80,75,65,70], critical:[92,95,88,90,94] };
+var simVals = PRESETS.video.slice();
+function simHTML() {
+  var h = '<div class="dr-sec">Try it</div><div class="sim"><div class="sim-g"><div id="simGauge">' + gaugeSVG(0, 240) + '</div><span class="sim-lv" id="simLv"></span><span class="sim-score" id="simScore"></span></div>';
+  SIG.forEach(function (s, i) { h += '<div class="sim-row"><label for="sim' + i + '">' + s.n + '<span id="simV' + i + '"></span></label><input type="range" min="0" max="100" step="1" id="sim' + i + '" data-sig="' + i + '" value="' + simVals[i] + '"></div>'; });
+  h += '<div class="sim-ex"><b>Explanation · illustrative</b><span id="simEx"></span></div>';
+  h += '<div class="sim-pre"><button data-pre="healthy">Healthy</button><button data-pre="video">Video Summarizer scenario</button><button data-pre="critical">Critical</button></div></div>';
+  return h;
+}
+function bindSim() {
+  $$('input[data-sig]', drBody).forEach(function (inp) {
+    inp.addEventListener('input', function () { simVals[+inp.dataset.sig] = +inp.value; simUpdate(); });
+  });
+  simUpdate();
+}
+function simUpdate() {
+  var score = 0, contrib = [];
+  SIG.forEach(function (s, i) { var c = s.w * simVals[i]; score += c; contrib.push([c, i]); var v = $('#simV' + i); if (v) v.textContent = simVals[i]; var inp = $('#sim' + i); if (inp && +inp.value !== simVals[i]) inp.value = simVals[i]; });
+  var lv = levelOf(score), col = LVC[lv.c];
+  var nd = $('#simGauge .needle'); if (nd) nd.style.transform = 'rotate(' + (score * 1.8).toFixed(1) + 'deg)';
+  var b = $('#simLv'); b.textContent = lv.k + ' RISK'; b.style.color = col[0]; b.style.background = col[1]; b.style.borderColor = col[2];
+  $('#simScore').textContent = 'Demo score ' + Math.round(score) + ' / 100';
+  contrib.sort(function (a, b) { return b[0] - a[0]; });
+  var a1 = SIG[contrib[0][1]].p, a2 = SIG[contrib[1][1]].p, ex;
+  if (lv.k === 'LOW') ex = 'Signals are within the normal range. No action is needed beyond routine monitoring.';
+  else ex = 'Risk is primarily associated with ' + a1 + ' and ' + a2 + '.' + (lv.k === 'MEDIUM' ? ' Worth watching closely.' : lv.k === 'HIGH' ? ' Recommend investigating this area.' : ' Immediate attention recommended.');
+  $('#simEx').textContent = ex;
+}
+
+drawer.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-open],[data-jump],[data-pre]');
+  if (!t) return;
+  if (t.dataset.pre) { simVals = PRESETS[t.dataset.pre].slice(); simUpdate(); return; }
+  if (t.dataset.open) { openInfo(t.dataset.open, null, true); return; }
+  if (t.dataset.jump != null) { var n = +t.dataset.jump; closeDrawer(); go(n); }
+});
+drBack.addEventListener('click', function () { if (stack.length > 1) { stack.pop(); render(); } });
+$('#drClose').addEventListener('click', closeDrawer);
+scrim.addEventListener('click', closeDrawer);
+
+/* ==========================================================================
+   Overview, notes, help, fullscreen, toast
+   ========================================================================== */
+var overview = $('#overview'), ovGrid = $('#ovGrid'), ovBuilt = false;
+function isOv() { return overview.classList.contains('open'); }
+function buildOverview() {
+  if (ovBuilt) return; ovBuilt = true;
+  pristine.forEach(function (p, i) {
+    var item = document.createElement('button');
+    item.className = 'ov-item'; item.dataset.idx = i; item.setAttribute('aria-label', 'Slide ' + (i + 1) + ': ' + NAMES[i]);
+    var th = document.createElement('div'); th.className = 'ov-thumb';
+    var c = p.cloneNode(true);
+    c.classList.add('is-current', 'static'); c.classList.remove('play', 'is-past');
+    $$('[id]', c).forEach(function (e) { e.removeAttribute('id'); });
+    $$('[tabindex]', c).forEach(function (e) { e.setAttribute('tabindex', '-1'); });
+    c.inert = true; c.setAttribute('aria-hidden', 'true');
+    th.appendChild(c); item.appendChild(th);
+    item.insertAdjacentHTML('beforeend', '<div class="ov-cap"><b>' + pad(i + 1) + '</b>' + esc(NAMES[i]) + '</div>');
+    ovGrid.appendChild(item);
+  });
+}
+function sizeThumbs() { $$('.ov-thumb', ovGrid).forEach(function (t) { t.firstChild.style.transform = 'scale(' + (t.clientWidth / 1920) + ')'; }); }
+function toggleOverview(on) {
+  on = on == null ? !isOv() : on;
+  if (on) { closeDrawer(); buildOverview(); $$('.ov-item', ovGrid).forEach(function (x, i) { x.classList.toggle('cur', i === cur); }); overview.classList.add('open'); requestAnimationFrame(sizeThumbs); var c = $('.ov-item.cur', ovGrid); if (c) setTimeout(function () { c.focus({ preventScroll: false }); }, 50); }
+  else overview.classList.remove('open');
+}
+ovGrid.addEventListener('click', function (e) { var it = e.target.closest('.ov-item'); if (!it) return; toggleOverview(false); go(+it.dataset.idx); });
+
+var notesPanel = $('#notesPanel'), notesBtn = $('#notesBtn');
+function toggleNotes() { var on = !notesPanel.classList.contains('open'); notesPanel.classList.toggle('open', on); notesBtn.setAttribute('aria-pressed', on); }
+var help = $('#help');
+function toggleHelp(on) { help.classList.toggle('open', on == null ? !help.classList.contains('open') : on); }
+help.addEventListener('click', function (e) { if (e.target === help) toggleHelp(false); });
+var fsBtn = $('#fsBtn');
+function toggleFS() {
+  if (!document.fullscreenElement) { (document.documentElement.requestFullscreen || function () {}).call(document.documentElement); }
+  else if (document.exitFullscreen) document.exitFullscreen();
+}
+document.addEventListener('fullscreenchange', function () { fsBtn.setAttribute('aria-pressed', !!document.fullscreenElement); });
+
+function action(a) {
+  switch (a) {
+    case 'prev': prev(); break;
+    case 'next': next(); break;
+    case 'overview': toggleOverview(); break;
+    case 'notes': toggleNotes(); break;
+    case 'fullscreen': toggleFS(); break;
+    case 'help': toggleHelp(); break;
+    case 'replay-agent': if (slides[cur].dataset.key === 'agent') { clearTimers(); runAgent(slides[cur]); } break;
+  }
+}
+
+/* ==========================================================================
+   Input
+   ========================================================================== */
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.drawer') || e.target.closest('.overview')) return;
+  var t = e.target.closest('[data-info],[data-goto],[data-action]');
+  if (!t) return;
+  if (t.dataset.info) openInfo(t.dataset.info, t.dataset.from);
+  else if (t.dataset.goto != null) go(+t.dataset.goto);
+  else if (t.dataset.action) action(t.dataset.action);
+});
+
+document.addEventListener('keydown', function (e) {
+  var k = e.key, tgt = e.target;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (tgt && tgt.matches && tgt.matches('input, textarea, select')) { if (k === 'Escape') closeDrawer(); return; }
+  if (k === 'Escape') { if (help.classList.contains('open')) toggleHelp(false); else if (isDrawerOpen()) closeDrawer(); else if (isOv()) toggleOverview(false); else if (notesPanel.classList.contains('open')) toggleNotes(); return; }
+  // activate role=button elements with Enter / Space
+  if ((k === 'Enter' || k === ' ') && tgt && tgt.getAttribute && tgt.getAttribute('role') === 'button') { e.preventDefault(); tgt.click(); return; }
+  if ((k === 'Enter' || k === ' ') && tgt && tgt.tagName === 'BUTTON') return;
+  if (help.classList.contains('open') || isDrawerOpen()) return;
+  if (isOv()) return;
+  switch (k) {
+    case 'ArrowRight': case 'ArrowDown': case 'PageDown': case ' ': case 'Enter': e.preventDefault(); next(); break;
+    case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace': e.preventDefault(); prev(); break;
+    case 'Home': e.preventDefault(); go(0); break;
+    case 'End': e.preventDefault(); go(N - 1); break;
+    case 'o': case 'O': case 'g': case 'G': toggleOverview(); break;
+    case 'n': case 'N': toggleNotes(); break;
+    case 'f': case 'F': toggleFS(); break;
+    case 'r': case 'R': replay(); break;
+    case '?': toggleHelp(); break;
+  }
+});
+
+var tx = 0, ty = 0;
+stage.addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; tx = t.clientX; ty = t.clientY; }, { passive: true });
+stage.addEventListener('touchend', function (e) {
+  if (isDrawerOpen() || isOv()) return;
+  var t = e.changedTouches[0], dx = t.clientX - tx, dy = t.clientY - ty;
+  if (Math.abs(dx) > 60 && Math.abs(dy) < 80) { dx < 0 ? next() : prev(); }
+}, { passive: true });
+
+/* ---------- fit stage to window ---------- */
+function fit() {
+  var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  document.documentElement.style.setProperty('--s', s);
+  if (isOv()) sizeThumbs();
+}
+window.addEventListener('resize', fit);
+
+/* ---------- idle dock ---------- */
+var dock = $('#dock'), idleT = null;
+function wake() { dock.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(function () { dock.classList.add('idle'); }, 2600); }
+document.addEventListener('mousemove', wake);
+document.addEventListener('keydown', wake);
+
+/* ---------- print: final frames ---------- */
+window.addEventListener('beforeprint', function () {
+  clearTimers();
+  $$('[data-type]', stage).forEach(function (el) { el.textContent = el.dataset.full; });
+  slides.forEach(function (s) { s.classList.add('static'); });
+  $$('.msg', stage).forEach(function (x) { if (!x.classList.contains('typing')) x.classList.add('show', 'ok'); });
+});
+window.addEventListener('afterprint', function () { slides.forEach(function (s) { s.classList.remove('static'); }); replay(); });
+
+window.addEventListener('hashchange', function () { var n = parseInt(location.hash.slice(1), 10); if (n >= 1 && n <= N) go(n - 1); });
+
+/* ---------- start ---------- */
+fit();
+var start = parseInt(location.hash.slice(1), 10);
+go(start >= 1 && start <= N ? start - 1 : 0);
+wake();
+var toast = $('#toast');
+setTimeout(function () { toast.classList.add('show'); }, 900);
+setTimeout(function () { toast.classList.remove('show'); }, 6200);
+
+// expose a tiny API for debugging from the console
+window.NOVARD = { go: go, next: next, prev: prev, open: openInfo, close: closeDrawer };
+})();
+</script>
+</body>
+</html>

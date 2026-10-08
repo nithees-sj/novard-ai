@@ -30,6 +30,8 @@ const SOURCES = {
   youtube: 'YouTube',
   doubt: 'Doubts',
   plan: 'Skill plans',
+  teachback: 'Teach-Back',
+  exam: 'Exam Autopilot',
   other: 'Other',
 };
 

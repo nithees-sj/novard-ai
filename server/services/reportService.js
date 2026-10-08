@@ -598,5 +598,6 @@ module.exports = {
   adminAttachment,
   cleanRef,
   presentForAdmin,
+  verifyFiles,
   _internal: { resolveSource, SNIFF, insertWithSlot },
 };

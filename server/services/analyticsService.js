@@ -7,6 +7,8 @@ const ForumComment = require('../models/forumComment');
 const Roadmap = require('../models/roadmap');
 const SkillGapSession = require('../models/skillGapSession');
 const ChatbotConversation = require('../models/chatbotConversation');
+const TeachBack = require('../models/teachBack');
+const Exam = require('../models/exam');
 const { usageByDay } = require('./usageService');
 
 /**
@@ -139,7 +141,7 @@ function weightedAccuracy(attempts, asOf) {
  * and Doubt quizzes are created with score 0 / null at generation time, so a
  * missing attemptedAt plus a zero/null score means "generated, never taken".
  */
-function collectActivity({ notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps = [], coachSessions = [], chats = [] }) {
+function collectActivity({ notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps = [], coachSessions = [], chats = [], teachBacks = [], exams = [] }) {
   const events = [];      // { at, minutes, kind }
   const attempts = [];    // { at, percentage, questions, correct, topic, domain }
   const items = [];       // { key, title, domain } - distinct things studied
@@ -234,10 +236,32 @@ function collectActivity({ notes, ytVideos, doubts, plans, forumIssues, forumCom
     else if (days.length > 0) activePlans += 1;
     done.forEach((d) => addEvent(d.completedAt, 'planDay', EFFORT_MINUTES.planDay));
 
+    // Each day's quiz (the one that completes the day), every attempt.
+    days.forEach((d) => (d.quizAttempts || []).forEach((a) => addAttempt(a.at, a.correct, a.total, p.skillName, text, 'plan', a.difficulty)));
+
     (p.quizResults || []).forEach((r) => {
       const total = Number(r.totalQuestions) || Number(r.questionCount) || 0;
       const correct = r.correctAnswers !== undefined ? r.correctAnswers : Math.round(((Number(r.score) || 0) / 100) * total);
       addAttempt(r.completedAt, correct, total, p.skillName, text, 'plan', r.difficulty);
+    });
+  });
+
+  // Teach-Back Arena: marks out of 100 count as a 10-question attempt, and every
+  // explanation and coaching question as a question.
+  teachBacks.forEach((t) => {
+    addEvent(t.createdAt, 'materialAdded', EFFORT_MINUTES.materialAdded);
+    (t.turns || []).forEach((m) => { if (m.role === 'student') addEvent(m.at, 'question', EFFORT_MINUTES.question); });
+    (t.coaching || []).forEach((m) => { if (m.role === 'user') addEvent(m.at, 'question', EFFORT_MINUTES.question); });
+    if (t.status === 'graded' && Number.isFinite(t.result?.score)) {
+      addAttempt(t.gradedAt, Math.round(t.result.score / 10), 10, t.concept, `${t.concept} ${t.source?.label || ''}`, 'teachback');
+    }
+  });
+
+  // Exam Autopilot: every submitted practice, review, diagnostic and mock quiz.
+  exams.forEach((e) => {
+    items.push({ key: `exam:${e._id}`, title: e.title, domain: classifyDomain(e.title), at: toDate(e.createdAt) });
+    (e.quizzes || []).forEach((q) => {
+      if (q.submittedAt && q.total > 0) addAttempt(q.submittedAt, q.correct, q.total, e.title, e.title, 'exam');
     });
   });
 
@@ -491,7 +515,7 @@ const COUNT_QUIZ_FIELDS = `quizzes.score quizzes.totalQuestions quizzes.question
 
 /** Everything the student has stored, plus the derived events/attempts/items. */
 async function loadActivity(userId) {
-  const [notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats, usage] = await Promise.all([
+  const [notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats, teachBacks, exams, usage] = await Promise.all([
     // Only the fields the numbers need: message roles and times, never the message text.
     Notes.find({ userId }).select(`title fileName uploadedAt ${CHAT_FIELDS} quizzes.score quizzes.attemptedAt quizzes.createdAt ${SETTINGS_FIELD}`).lean(),
     YouTubeVideo.find({ userId }).select(`title description createdAt ${CHAT_FIELDS} ${COUNT_QUIZ_FIELDS}`).lean(),
@@ -502,9 +526,11 @@ async function loadActivity(userId) {
     Roadmap.find({ userId }).select('createdAt').lean(),
     SkillGapSession.find({ userId }).select('createdAt messages.role messages.createdAt').lean(),
     ChatbotConversation.find({ userId }).select('messages.role messages.createdAt').lean(),
+    TeachBack.find({ userId }).select('concept source.label status result.score gradedAt createdAt turns.role turns.at coaching.role coaching.at').lean(),
+    Exam.find({ userId, status: { $ne: 'draft' } }).select('title createdAt quizzes.correct quizzes.total quizzes.submittedAt').lean(),
     usageByDay(userId),
   ]);
-  const raw = { notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats };
+  const raw = { notes, ytVideos, doubts, plans, forumIssues, forumComments, roadmaps, coachSessions, chats, teachBacks, exams };
   return { raw, usage, data: collectActivity(raw) };
 }
 

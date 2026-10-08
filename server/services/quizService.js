@@ -208,5 +208,7 @@ module.exports = {
   generateQuiz,
   sampleContent,
   summariseAttempts,
+  normaliseQuestion,
+  shuffleOptions,
   _internal: { normaliseQuestion, toAnswerIndex, buildPrompt, shuffleOptions },
 };

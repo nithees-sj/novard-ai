@@ -8,7 +8,7 @@ exports.generatePlan = async (req, res) => {
     planId: plan._id,
     skillName: plan.skillName,
     duration: plan.duration,
-    dailyPlan: plan.dailyPlan,
+    dailyPlan: plan.dailyPlan.map(plans.presentDay),
     createdAt: plan.createdAt,
   });
 };
@@ -38,4 +38,14 @@ exports.deletePlan = async (req, res) => {
 exports.refreshVideo = async (req, res) => {
   const { planId, dayNumber } = req.body;
   res.json(await plans.refreshDayVideo({ userId: currentUserId(req, req.body.userId), planId, dayNumber }));
+};
+
+exports.startDayQuiz = async (req, res) => {
+  const { planId, dayNumber } = req.body;
+  res.status(201).json(await plans.startDayQuiz({ userId: currentUserId(req, req.body.userId), planId, dayNumber }));
+};
+
+exports.submitDayQuiz = async (req, res) => {
+  const { planId, dayNumber, answers } = req.body;
+  res.json(await plans.submitDayQuiz({ userId: currentUserId(req, req.body.userId), planId, dayNumber, answers }));
 };

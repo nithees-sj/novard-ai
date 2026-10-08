@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api, errorMessage, LONG_AI_TIMEOUT_MS } from '../lib/api';
 import logger from '../lib/logger';
 import { currentEmail } from '../lib/session';
@@ -334,6 +335,11 @@ const NotesInlineView = () => {
               icon="book"
               title={selectedNote.title}
               meta={`${selectedNote.fileName || "PDF notes"} · uploaded ${formatDate(selectedNote.uploadedAt)}`}
+              actions={(
+                <Link to={`/teach-back?note=${encodeURIComponent(selectedNote._id)}`} className={btn.secondary} title="Explain these notes to Novard and get marked on your understanding">
+                  <Icon name="teach" /> Teach it back
+                </Link>
+              )}
               tabs={(
                 <TabBar
                   size="sm"

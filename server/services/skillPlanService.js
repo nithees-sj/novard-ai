@@ -8,6 +8,7 @@ const { searchVideos } = require('./youtubeService');
 const { badRequest, conflict, notFound, upstreamError } = require('../utils/httpError');
 const { objectId, text, integer, number, oneOf } = require('../utils/validate');
 const logger = require('../utils/logger');
+const { PASS_PERCENT, DAY_QUIZ_QUESTIONS, passed: hasPassed } = require('../config/learning');
 
 /** Skill Unlocker: day-by-day learning plans with a video per day, progress and quizzes. */
 
@@ -161,6 +162,26 @@ async function findOwnPlan(userId, planId) {
   return plan;
 }
 
+/**
+ * A day as the client sees it: never the answers of a quiz in progress. The
+ * day is completed only by passing its quiz.
+ */
+function presentDay(d) {
+  const attempts = d.quizAttempts || [];
+  return {
+    day: d.day,
+    topic: d.topic,
+    objective: d.objective,
+    youtubeVideo: d.youtubeVideo,
+    completed: Boolean(d.completed),
+    completedAt: d.completedAt || null,
+    quizInProgress: Boolean(d.quiz?.questions?.length),
+    attempts: attempts.length,
+    bestScore: attempts.length ? Math.max(...attempts.map((a) => a.percentage)) : null,
+    lastScore: attempts.length ? attempts[attempts.length - 1].percentage : null,
+  };
+}
+
 async function listPlans(userId) {
   const plans = await SkillPlan.find({ userId })
     .sort({ createdAt: -1 })
@@ -178,7 +199,8 @@ async function listPlans(userId) {
       completed: completedDays === plan.duration,
       quizCompleted: plan.quizCompleted,
       quizScore: plan.quizScore,
-      dailyPlan: plan.dailyPlan,
+      passPercent: PASS_PERCENT,
+      dailyPlan: plan.dailyPlan.map(presentDay),
     };
   });
 }
@@ -238,20 +260,97 @@ async function saveQuizResult({ userId, planId, quizId, score, totalQuestions, q
   return { message: 'Quiz results saved successfully', score: percentage, totalQuestions: total, result };
 }
 
+/** A day is completed only by passing its quiz; it cannot be ticked by hand. */
 async function toggleDay({ userId, planId, dayNumber }) {
+  const plan = await findOwnPlan(userId, planId);
+  const dayNo = integer(dayNumber, 'Day', { min: 1, max: MAX_DAYS * 10 });
+  if (!plan.dailyPlan.some((d) => d.day === dayNo)) throw notFound('Day not found');
+  throw conflict(`Pass the day's quiz (${PASS_PERCENT}% or more) to complete it.`, { code: 'QUIZ_REQUIRED' });
+}
+
+async function findOwnDay(userId, planId, dayNumber) {
   const plan = await findOwnPlan(userId, planId);
   const dayNo = integer(dayNumber, 'Day', { min: 1, max: MAX_DAYS * 10 });
   const day = plan.dailyPlan.find((d) => d.day === dayNo);
   if (!day) throw notFound('Day not found');
+  return { plan, day, dayNo };
+}
 
-  // Conditional on the value just read, so two quick clicks cannot both "complete" the day.
-  const completed = !day.completed;
-  const result = await SkillPlan.updateOne(
-    { _id: plan._id, dailyPlan: { $elemMatch: { day: dayNo, completed: Boolean(day.completed) } } },
-    { $set: { 'dailyPlan.$.completed': completed, 'dailyPlan.$.completedAt': completed ? new Date() : null } }
+const DAY_DIFFICULTY = { beginner: 'beginner', intermediate: 'intermediate' };
+const questionsForClient = (questions) => questions.map((q) => ({ question: q.question, options: q.options }));
+
+/**
+ * The quiz that completes a day: a few questions on that day's topic and
+ * objective. Asking again before submitting returns the same quiz.
+ */
+async function startDayQuiz({ userId, planId, dayNumber }) {
+  const { plan, day, dayNo } = await findOwnDay(userId, planId, dayNumber);
+  if (day.completed) throw conflict('This day is already completed.', { code: 'ALREADY_COMPLETED' });
+  if (day.quiz?.questions?.length) {
+    return { day: dayNo, passPercent: PASS_PERCENT, questions: questionsForClient(day.quiz.questions) };
+  }
+
+  const questions = await generateQuiz({
+    subject: `${plan.skillName} - day ${dayNo}: ${day.topic}`,
+    content:
+      `Skill: ${plan.skillName}\nLearner level: ${plan.preferences?.level || 'beginner'}\n\n`
+      + `Today's topic (ONLY test this): ${day.topic}\nObjective: ${day.objective}`
+      + (day.youtubeVideo?.title ? `\nThe day's video: ${day.youtubeVideo.title}` : ''),
+    options: readQuizOptions({ questionCount: DAY_QUIZ_QUESTIONS, difficulty: DAY_DIFFICULTY[plan.preferences?.level] || 'beginner', style: 'mixed', focus: day.topic }),
+  });
+  // Only if no quiz was started meanwhile, so a double click makes one quiz.
+  await SkillPlan.updateOne(
+    { _id: plan._id, userId, dailyPlan: { $elemMatch: { day: dayNo, completed: { $ne: true }, 'quiz.questions.0': { $exists: false } } } },
+    { $set: { 'dailyPlan.$.quiz': { questions, createdAt: new Date() } } },
   );
-  if (!result.modifiedCount) throw conflict('This day was just updated. Please refresh and try again.');
-  return { message: 'Day completion toggled', completed };
+  const fresh = (await findOwnDay(userId, planId, dayNo)).day;
+  return { day: dayNo, passPercent: PASS_PERCENT, questions: questionsForClient(fresh.quiz?.questions?.length ? fresh.quiz.questions : questions) };
+}
+
+/**
+ * Grade the day's quiz on the server. Passing (PASS_PERCENT or more) completes
+ * the day; either way the attempt is kept and the next try gets new questions.
+ */
+async function submitDayQuiz({ userId, planId, dayNumber, answers }) {
+  const { plan, day, dayNo } = await findOwnDay(userId, planId, dayNumber);
+  const questions = day.quiz?.questions || [];
+  if (!questions.length) throw conflict('Start the day\'s quiz first.', { code: 'NO_QUIZ' });
+  const list = Array.isArray(answers) ? answers : [];
+  if (list.length !== questions.length) throw badRequest(`Send one answer per question (${questions.length}).`);
+  const picked = list.map((a) => (a === null || a === undefined ? -1 : integer(a, 'Answer', { min: -1, max: 3 })));
+
+  const correct = questions.filter((q, i) => picked[i] === q.correctAnswer).length;
+  const percentage = Math.round((correct / questions.length) * 100);
+  const passed = hasPassed(correct / questions.length);
+  const attempt = { correct, total: questions.length, percentage, passed, difficulty: DAY_DIFFICULTY[plan.preferences?.level] || 'beginner', at: new Date() };
+
+  // Tied to this exact quiz, so the same answers cannot be counted twice.
+  const update = await SkillPlan.updateOne(
+    { _id: plan._id, userId, dailyPlan: { $elemMatch: { day: dayNo, 'quiz.createdAt': day.quiz.createdAt } } },
+    {
+      $push: { 'dailyPlan.$.quizAttempts': attempt },
+      $unset: { 'dailyPlan.$.quiz': '' },
+      ...(passed && !day.completed ? { $set: { 'dailyPlan.$.completed': true, 'dailyPlan.$.completedAt': new Date() } } : {}),
+    },
+  );
+  if (!update.modifiedCount) throw conflict('This quiz was already submitted.', { code: 'ALREADY_SUBMITTED' });
+
+  const after = await findOwnPlan(userId, planId);
+  const completedDays = after.dailyPlan.filter((d) => d.completed).length;
+  return {
+    day: dayNo,
+    passPercent: PASS_PERCENT,
+    correct,
+    total: questions.length,
+    percentage,
+    passed,
+    completed: Boolean(after.dailyPlan.find((d) => d.day === dayNo)?.completed),
+    completedDays,
+    progress: Math.round((completedDays / after.duration) * 100),
+    answers: picked,
+    questions: questions.map((q) => ({ question: q.question, options: q.options, correctAnswer: q.correctAnswer, explanation: q.explanation })),
+    dayState: presentDay(after.dailyPlan.find((d) => d.day === dayNo)),
+  };
 }
 
 async function deletePlan({ userId, planId }) {
@@ -284,6 +383,9 @@ module.exports = {
   generatePlanQuiz,
   saveQuizResult,
   toggleDay,
+  startDayQuiz,
+  submitDayQuiz,
+  presentDay,
   deletePlan,
   refreshDayVideo,
   _internal: { readPlanRequest, normaliseDays },

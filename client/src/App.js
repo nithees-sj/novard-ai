@@ -22,6 +22,8 @@ const PAGE_LOADERS = {
   video: () => import("./pages/Video"),
   skillUnlocker: () => import("./pages/SkillUnlocker"),
   todos: () => import("./pages/Todos"),
+  teachBack: () => import("./pages/TeachBack"),
+  exams: () => import("./pages/Exams"),
   reports: () => import("./pages/Reports"),
 };
 const Landing = lazy(() => import("./pages/Landing"));
@@ -35,6 +37,8 @@ const Forum = lazy(PAGE_LOADERS.forum);
 const Video = lazy(PAGE_LOADERS.video);
 const SkillUnlocker = lazy(PAGE_LOADERS.skillUnlocker);
 const Todos = lazy(PAGE_LOADERS.todos);
+const TeachBack = lazy(PAGE_LOADERS.teachBack);
+const Exams = lazy(PAGE_LOADERS.exams);
 const Reports = lazy(PAGE_LOADERS.reports);
 
 /**
@@ -101,6 +105,8 @@ function AppRoutes() {
         <Route path="/career" element={protectedRoute(<Career />)} />
         <Route path="/skill-unlocker" element={protectedRoute(<SkillUnlocker />)} />
         <Route path="/todos" element={protectedRoute(<Todos />)} />
+        <Route path="/teach-back" element={protectedRoute(<TeachBack />)} />
+        <Route path="/exams" element={protectedRoute(<Exams />)} />
         <Route path="/doubts" element={protectedRoute(<Doubts />)} />
         <Route path="/forum" element={protectedRoute(<Forum />)} />
         <Route path="/video" element={protectedRoute(<Video />)} />
